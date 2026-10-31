@@ -547,6 +547,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // A shot sent back off the raised shield (Deflect): the blocked hit's jolt, sound and sparks where it bounced.
     public void PlayDeflect(Vector3 point)
     {
+        deflectReadyAt = Time.time + deflectCooldown;
         ShieldJolt();
         if (!CombatManager.HasInstance) return;
         var cm = CombatManager.Instance;
@@ -562,7 +563,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         foreach (var ps in sparks.GetComponentsInChildren<ParticleSystem>())
         {
             var main = ps.main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-        deflectReadyAt = Time.time + deflectCooldown;
             // Finer pixels, more of them, each a slightly different shade of the spark's own colour.
             main.startSizeMultiplier *= deflectSparkSize;
             var c = main.startColor.mode == ParticleSystemGradientMode.TwoColors ? main.startColor.colorMax : main.startColor.color;
@@ -585,6 +585,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField, Min(1f), Tooltip("Deflect sparks: how many more of them than a blocked hit's.")] float deflectSparkCount = 3f;
     [SerializeField, Min(.1f), Tooltip("Deflect sparks: metres in front of the eyes they burst (in front of the raised shield).")] float deflectSparkDistance = .26f;
     [SerializeField, Min(.1f), Tooltip("Deflect sparks: how much bigger than a blocked hit's.")] float deflectSparkScale = 1.2f;
+    [SerializeField, Min(0f), Tooltip("Seconds after a deflect before the shield can send another shot back (shown in the effect row over the health bar, BuffBarUI).")]
+    float deflectCooldown = 10f;
+    float deflectReadyAt = -100f;
+    public float DeflectCooldownLeft => Mathf.Max(0f, deflectReadyAt - Time.time);
 
     // The raised shield held against something that keeps pushing (the Dungeon Master's beam): the arms shake in the
     // BlockStrain state until it is switched off.
@@ -600,10 +604,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
         return Vector3.Dot(facing, info.Direction.normalized) < threshold;
     }
-    [SerializeField, Min(0f), Tooltip("Seconds after a deflect before the shield can send another shot back (shown in the effect row over the health bar, BuffBarUI).")]
-    float deflectCooldown = 10f;
-    float deflectReadyAt = -100f;
-    public float DeflectCooldownLeft => Mathf.Max(0f, deflectReadyAt - Time.time);
 
     void OnDamaged(DamageInfo info)
     {
