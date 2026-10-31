@@ -112,6 +112,8 @@ public class BossFight : ScriptableObject
     public bool beamOnBeat = true;
     [TabGroup(Tabs, "Beam"), Min(0), Tooltip("Metres the boss backs off from the player and waits while the beam pours (0: it fights on).")]
     public float beamGiveWay = 4.5f;
+    [TabGroup(Tabs, "Beam"), Tooltip("The boss takes no damage while the beam is on, from when it stands in its spotlight until the beam ends (hits show IMMUNE).")]
+    public bool beamImmune = true;
     [TabGroup(Tabs, "Beam"), Tooltip("While the DM charges and pours his beam the boss goes back to where he set it down, faces the table and kneels (HumanoidController Kneel); after the beam it fights on. Takes the place of Beam Give Way.")]
     public bool beamKneel = true;
     [TabGroup(Tabs, "Beam"), ShowIf(nameof(beamKneel)), Min(0), Tooltip("Seconds the boss gets to go back and kneel before the DM starts to charge (he starts sooner if it is already kneeling).")]

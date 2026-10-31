@@ -296,6 +296,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (!IsAlive) return;
         bool spared = Invulnerable != null && Invulnerable(this) || Time.time < SparedUntil;
         info.Target = Character;
+        info.Spared = spared;
 
         bool blessed = BlockBlessing;
         if ((!info.Magic || blessed) && blocker != null && blocker.TryBlock(ref info))

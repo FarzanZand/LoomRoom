@@ -80,6 +80,8 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         if(info.Quiet)return;
         view.until=Time.time+3.5f;view.lossUntil=Time.time+.35f;
+        // A hit that took nothing (a boss shielded while the Dungeon Master's beam pours) says so instead of a number.
+        if(info.Spared){ShowNumber(view.character.transform,Head(view.character),"IMMUNE",new Color(.78f,.8f,.86f),numberScale);return;}
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();

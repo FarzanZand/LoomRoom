@@ -219,20 +219,20 @@ public static class DiscoBallSetup
         var fight = AssetDatabase.LoadAssetAtPath<BossFight>("Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset");
         Undo.RecordObject(fight, "Disco show");
         fight.phaseTwoBossLine = "Let's turn it up!";
-        // The DM's beam comes at the boss's health, not on the beat: at 70% (the second phase begins with it) and at 30%.
-        fight.phaseTwoHealth = .7f;
+        // The second phase at 80%; the DM's beam at the boss's health, not on the beat: at 70% and at 20% (the crew is called in at 45%).
+        fight.phaseTwoHealth = .8f;
         BossEvent healthBeam = null;
         foreach (var e in fight.events)
         {
             if (e.what != BossEvent.What.Beam) continue;
             if (e.when == BossEvent.When.EveryBeats || e.when == BossEvent.When.AtBeat) e.enabled = false;
-            if (e.when == BossEvent.When.AtBossHealth) { e.enabled = true; e.health = healthBeam == null ? .7f : .3f; healthBeam ??= e; }
+            if (e.when == BossEvent.When.AtBossHealth) { e.enabled = true; e.health = healthBeam == null ? .7f : .2f; healthBeam ??= e; }
         }
         if (healthBeam != null && !fight.events.Exists(e => e != healthBeam && e.what == BossEvent.What.Beam && e.when == BossEvent.When.AtBossHealth))
         {
             var second = new BossEvent();
             JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(healthBeam), second);
-            second.health = .3f;
+            second.health = .2f;
             fight.events.Insert(fight.events.IndexOf(healthBeam) + 1, second);
         }
         fight.danceFloor = floor;

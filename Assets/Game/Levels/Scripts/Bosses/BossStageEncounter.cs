@@ -406,6 +406,10 @@ public partial class BossStageEncounter : MonoBehaviour
             Shake(fight.phaseTwoShake);
         }
         ShowTick(health, player);
+        // While the Dungeon Master's beam is on (from the moment the boss stands in its spotlight until the beam ends)
+        // the boss takes no damage: hits on it show IMMUNE.
+        if (fight.beamImmune && beamRun != null && (Kneeling || beam != null && beam.Firing) && boss != null)
+            boss.Stats.SparedUntil = Time.time + .15f;
         // His comments on how it goes.
         if (!halfSaid && health <= .5f) { halfSaid = true; Comment(fight.bossHalf); }
         if (!lowSaid && health <= .2f) { lowSaid = true; Comment(fight.bossLow); }

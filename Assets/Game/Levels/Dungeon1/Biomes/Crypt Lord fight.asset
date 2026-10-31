@@ -126,6 +126,7 @@ MonoBehaviour:
   beamFacing: 0.2
   beamOnBeat: 1
   beamGiveWay: 0
+  beamImmune: 1
   beamKneel: 1
   beamKneelLead: 2.5
   beamDance: {fileID: -203655887218126122, guid: d9671b08a827250449b49748b35c6150, type: 3}
@@ -136,7 +137,7 @@ MonoBehaviour:
   beamBlockedSound: {fileID: 8300000, guid: 350a5a4734ab2854c9f726f4ddaf82a7, type: 3}
   beamVolume: 0.9
   volleyDistance: 7
-  phaseTwoHealth: 0.7
+  phaseTwoHealth: 0.8
   phaseTwoLine:
     text: Now he's angry.
     voice: {fileID: 0}
@@ -237,7 +238,7 @@ MonoBehaviour:
     seconds: 10
     startBeat: 8
     beats: 16
-    health: 0.3
+    health: 0.2
     what: 0
     line:
       text: 
