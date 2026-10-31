@@ -96,7 +96,7 @@ public class TavernTabsUI : MonoBehaviour
         if (ShopUI.HasInstance) ShopUI.Instance.SetHelp(p switch
         {
             Page.Food => "Hover over a dish to see what it does.",
-            Page.Rumours => "Hover over a rumour to see what it costs.",
+            Page.Rumours => "Hover over a rumour to see what you get for it.",
             _ => null,
         });
         Refresh();

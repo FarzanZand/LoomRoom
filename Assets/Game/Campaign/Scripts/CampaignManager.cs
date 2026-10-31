@@ -943,7 +943,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
                                 yield return Ask($"Start a new run in {e.displayName}? Your saved run ({savedDetail}) in {savedPlace.displayName} will be lost.", r => yes = r);
                                 if (!yes) continue;
                             }
-                            if (e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
+                            // Its line is for a new run; a continued one picks up deeper, where it wouldn't fit.
+                            if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
                             if (card != null) { card.Hide(); card.ShowHint(false); }
                             Unhover();
                             // The run starts on the click: the figure is set down there (no walk), and the map sinks
