@@ -157,12 +157,27 @@ public class AdventureSave : MonoBehaviour
         return summary;
     }
 
-    // The game was called LoomRoom until 2026-10-13 and The Table Waits until 2026-10-22; the save folder follows the
-    // product name, so saves from before a rename sit in the old folder beside the new one (the newest name first). Brought over once ever (a PlayerPrefs marker, also set by any save
-    // written here), and only into a folder with no saves yet: a save deleted later must stay deleted. Called by the main
-    // menu as it opens and by Initialize.
+    // The game was called LoomRoom until 2026-10-13 and The Table Waits until 2026-10-22, and its company was Unity's
+    // DefaultCompany until 2026-10-31; the save folder follows both (<company>/<product>), so saves from before a rename sit
+    // in an old folder near the new one (the newest first: the old company with this name, then older names). Brought over
+    // once ever (a PlayerPrefs marker, also set by any save written here; PlayerPrefs follow the names too, so a rename
+    // brings the saves over again), and only into a folder with no saves yet: a save deleted later must stay deleted.
+    // Called by the main menu as it opens and by Initialize.
     const string MigratedPref = "LoomRoom.SavesMigrated";
     static readonly string[] OldProductNames = { "The Table Waits", "LoomRoom" };
+    static readonly string[] OldCompanyNames = { "DefaultCompany" };
+    static IEnumerable<string> OldSaveFolders(string current)
+    {
+        var product = Path.GetFileName(current);
+        var companies = Path.GetDirectoryName(Path.GetDirectoryName(current)) ?? "";
+        var company = Path.GetFileName(Path.GetDirectoryName(current));
+        foreach (var oldCompany in OldCompanyNames) yield return Path.Combine(companies, oldCompany, product);
+        foreach (var oldName in OldProductNames)
+        {
+            yield return Path.Combine(companies, company, oldName);
+            foreach (var oldCompany in OldCompanyNames) yield return Path.Combine(companies, oldCompany, oldName);
+        }
+    }
     static void MarkMigrated()
     {
         if (PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
@@ -176,9 +191,8 @@ public class AdventureSave : MonoBehaviour
         {
             var current = Application.persistentDataPath;
             if (Directory.Exists(current) && Directory.GetFiles(current, "loomroom-*.json*").Length > 0) return;
-            foreach (var oldName in OldProductNames)
+            foreach (var old in OldSaveFolders(current))
             {
-                var old = Path.Combine(Path.GetDirectoryName(current) ?? "", oldName);
                 if (!Directory.Exists(old) || string.Equals(Path.GetFullPath(old), Path.GetFullPath(current), StringComparison.OrdinalIgnoreCase)) continue;
                 var files = Directory.GetFiles(old, "loomroom-*.json*");
                 if (files.Length == 0) continue;
