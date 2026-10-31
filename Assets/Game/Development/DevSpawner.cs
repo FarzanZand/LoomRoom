@@ -8,16 +8,18 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // F10, Editor and development builds only: the spawn window, laid out like Asset Studio in the inventory's look. Left:
-// the kinds (Items, Spells, Room items, Enemies, Rooms) and the groups of the one picked, each with its count. Middle: a
+// the kinds (Items, Spells, Room items, Enemies, Rooms, Cheats, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
 // Click picks, double-click or Enter does the first button, right-click the second. Typing always goes to the search;
 // Esc clears it, then closes. While it is open the game is in the Menu state. Development/Resources/Dev Spawner.prefab is
 // built by DevSpawnerBuilder.Build() (from an eval; edit the prefab freely after), its lists for builds by RefreshLists().
-public class DevSpawner : MonoBehaviour
+// Audio (DevSpawner.Audio.cs): every sound effect, sorted by category or by when it was last heard, to play and to set its
+// volume, pitch and pitch variance, and save.
+public partial class DevSpawner : MonoBehaviour
 {
-    enum Kind { Items, Spells, RoomItems, Enemies, Rooms, Cheats }
-    static readonly string[] KindNames = { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats" };
+    enum Kind { Items, Spells, RoomItems, Enemies, Rooms, Cheats, Audio }
+    static readonly string[] KindNames = { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats", "Audio" };
 
     [Header("Window")]
     [SerializeField] GameObject panel;
@@ -26,7 +28,7 @@ public class DevSpawner : MonoBehaviour
     [SerializeField, Tooltip("The last thing done (or why not), under the grid.")] TMP_Text status;
 
     [Header("Left: kinds and groups")]
-    [SerializeField, Tooltip("Items, Spells, Room items, Enemies, Rooms, Cheats; each with children Label and Count.")] Button[] kindButtons = new Button[6];
+    [SerializeField, Tooltip("Items, Spells, Room items, Enemies, Rooms, Cheats, Audio; each with children Label and Count.")] Button[] kindButtons = new Button[7];
     [SerializeField, Tooltip("Where the picked kind's groups go: one button each, cloned from the template.")] RectTransform groupList;
     [SerializeField, Tooltip("The groups' heading, hidden when a kind has none.")] GameObject groupTitle;
     [SerializeField, Tooltip("A group button (hidden), children Label and Count.")] Button groupTemplate;
@@ -70,13 +72,14 @@ public class DevSpawner : MonoBehaviour
         public string primaryLabel, secondaryLabel;
         public System.Func<string> primary, secondary;
         public System.Func<string> blocked;    // why the buttons can't work here now (null: they can)
+        public Sound sound;                    // an Audio entry: its volume, pitch and variance rows
     }
 
     readonly List<Entry> entries = new();
     readonly List<(GameObject cell, Entry entry)> cells = new();
     readonly List<Button> groupButtons = new();
     Kind kind = Kind.Items;
-    readonly string[] group = { All, All, All, All, All, All };
+    readonly string[] group = { All, All, All, All, All, All, All };
     Entry picked;
     int count = 1, rarity;
     bool open, openedOnce;
@@ -104,6 +107,7 @@ public class DevSpawner : MonoBehaviour
         for (int i = 0; i < rarityButtons.Length; i++) { int r = i; if (rarityButtons[i] != null) rarityButtons[i].onClick.AddListener(() => { rarity = r; ShowDetail(); Refocus(); }); }
         if (countDown != null) countDown.onClick.AddListener(() => { SetCount(count <= 5 ? count - 1 : count == 10 ? 5 : count - 5); Refocus(); });
         if (countUp != null) countUp.onClick.AddListener(() => { SetCount(count < 5 ? count + 1 : count == 5 ? 10 : count + 5); Refocus(); });
+        HookSteppers();
         if (primary != null) primary.onClick.AddListener(() => { Do(picked?.primary); Refocus(); });
         if (secondary != null) secondary.onClick.AddListener(() => { Do(picked?.secondary); Refocus(); });
         // F10 must not end up in the search line; typing anywhere goes there, so it never selects all on focus.
@@ -208,6 +212,7 @@ public class DevSpawner : MonoBehaviour
         groupButtons.Clear();
         if (groupList == null || groupTemplate == null) return;
         var groups = entries.Select(e => e.group).Where(g => !string.IsNullOrEmpty(g)).Distinct().ToList();
+        if (kind == Kind.Audio) groups.Insert(0, LastPlayed);
         if (groupTitle != null) groupTitle.SetActive(groups.Count >= 2);
         if (groups.Count < 2) { group[(int)kind] = All; return; }
         if (!groups.Contains(group[(int)kind])) group[(int)kind] = All;
@@ -217,7 +222,7 @@ public class DevSpawner : MonoBehaviour
             b.name = g;
             b.gameObject.SetActive(true);
             SetLabel(b, g);
-            SetCountText(b, (g == All ? entries.Count : entries.Count(e => e.group == g)).ToString());
+            SetCountText(b, (g == All ? entries.Count : g == LastPlayed ? entries.Count(e => e.sound != null && e.sound.LastHeard >= 0f) : entries.Count(e => e.group == g)).ToString());
             Mark(b, g == group[(int)kind]);
             string pick = g;
             b.onClick.AddListener(() => SetGroup(pick));
@@ -248,7 +253,9 @@ public class DevSpawner : MonoBehaviour
     IEnumerable<Entry> Shown()
     {
         string g = group[(int)kind], filter = search.text.Trim();
-        return entries.Where(e => (g == All || e.group == g) && (filter.Length == 0
+        // Audio's Last played: every sound heard since Play began, the latest first.
+        var from = g == LastPlayed ? entries.Where(e => e.sound != null && e.sound.LastHeard >= 0f).OrderByDescending(e => e.sound.LastHeard) : entries.Where(e => g == All || e.group == g);
+        return from.Where(e => (filter.Length == 0
             || e.name.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0
             || (e.kind ?? "").IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0
             || (e.group ?? "").IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) >= 0));
@@ -377,6 +384,7 @@ public class DevSpawner : MonoBehaviour
         if (countRow != null) countRow.SetActive(picked.usesCount);
         if (countLabel != null) countLabel.text = count.ToString();
         if (rarityRow != null) rarityRow.SetActive(picked.usesRarity);
+        ShowSteppers(picked.sound);
         for (int i = 0; i < rarityButtons.Length; i++) Mark(rarityButtons[i], i == rarity);
         Button(primary, picked.primaryLabel, picked.primary != null && why == null);
         Button(secondary, picked.secondaryLabel, picked.secondary != null && why == null);
@@ -400,7 +408,7 @@ public class DevSpawner : MonoBehaviour
         Say(act());
         // A room item's carried mark changes; a run starting closes the window.
         if (kind == Kind.RoomItems) { var key = picked.key; entries.Clear(); entries.AddRange(Build(kind)); picked = entries.FirstOrDefault(e => e.key == key); Fill(keepScroll: true); }
-        else ShowDetail();
+        else { if (kind == Kind.Audio) MakeGroups(); ShowDetail(); }   // a sound played joins Last played
     }
 
     void Say(string line) { if (status != null) status.text = line; }
@@ -489,6 +497,9 @@ public class DevSpawner : MonoBehaviour
                     primary = () => { int n = 0; foreach (var hud in FindObjectsByType<DungeonHud>()) { hud.RevealAll(); n++; } return n == 0 ? "No map here." : "The whole floor is on the map."; },
                     blocked = () => !InRun ? "Only on a floor of a run." : null,
                 };
+                break;
+            case Kind.Audio:
+                foreach (var e in AudioEntries()) yield return e;
                 break;
             case Kind.Rooms:
                 foreach (var (prefab, g) in Rooms())
