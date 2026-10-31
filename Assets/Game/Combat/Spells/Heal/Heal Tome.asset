@@ -19,7 +19,7 @@ MonoBehaviour:
   unlocksClass: {fileID: 0}
   rarity: 6
   description: Hold it in your left hand to heal yourself.
-  icon: {fileID: 21300000, guid: 4491ac96366b2bd48bbff098e61c0a0c, type: 3}
+  icon: {fileID: 21300000, guid: 6dee25431c26af34693c265653dd1f9a, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}

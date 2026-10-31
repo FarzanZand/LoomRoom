@@ -249,6 +249,8 @@ public class Merchant : MonoBehaviour, IInteractable
         var item = container != null ? container.ItemAt(slot) : null;
         if (player == null || item == null) return false;
         if (!CanSell(player, item, out message)) return false;
+        // The copy in hand itself (a spare elsewhere can be sold instead).
+        if (ItemSlotUI.HeldSlot(player.Equipment, container, slot).HasValue) { message = "Unequip it first."; return false; }
         int price = SellPriceOf(item);
         container.Consume(slot);
         if (player.Wallet != null) player.Wallet.Add(price);

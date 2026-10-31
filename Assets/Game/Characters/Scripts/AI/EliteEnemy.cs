@@ -83,7 +83,6 @@ public class EliteEnemy : MonoBehaviour
             skin.renderingLayerMask = body.renderingLayerMask; skin.updateWhenOffscreen = body.updateWhenOffscreen;
             shells.Add(shell);
         }
-        // A body whose mesh can't be read (not saved readable) gets no shell: said, so a missing tell is noticed.
         if (shells.Count == 0) Debug.LogWarning($"[EliteEnemy] {character.name}: no readable skinned body, so no elite glow.", character);
         stats = character.Stats;
         if (stats != null) stats.Damaged += OnDamaged;   // raised before Died, so the outline goes before the body breaks up
@@ -99,13 +98,15 @@ public class EliteEnemy : MonoBehaviour
         shells.Clear();
     }
 
-    // A copy of the mesh whose normals are averaged over every vertex at one place; made once per mesh.
+    // A copy of the mesh whose normals are averaged over every vertex at one place; made once per mesh. A mesh that can't be
+    // read (the Meshy creatures: rat, bat, urn crawler, F9 from Samus) is used as it is: the shell is pushed out on the GPU
+    // along its own normals, which are already smooth on those bodies.
     static Mesh Smoothed(Mesh source)
     {
         if (smoothed.TryGetValue(source, out var done)) return done;
-        if (!source.isReadable) return smoothed[source] = null;
+        if (!source.isReadable) return smoothed[source] = source;
         var v = source.vertices; var n = source.normals;
-        if (n == null || n.Length != v.Length) return smoothed[source] = null;
+        if (n == null || n.Length != v.Length) return smoothed[source] = source;
         var sums = new Dictionary<Vector3Int, Vector3>();
         Vector3Int Key(Vector3 p) => Vector3Int.RoundToInt(p * 1000f);
         for (int i = 0; i < v.Length; i++) { var k = Key(v[i]); sums[k] = (sums.TryGetValue(k, out var s) ? s : Vector3.zero) + n[i]; }

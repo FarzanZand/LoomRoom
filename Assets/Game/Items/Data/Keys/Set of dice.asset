@@ -20,9 +20,9 @@ MonoBehaviour:
   rarity: 5
   description: Key item. Five old dice from under the symbol tiles. They belong on
     the border of the big table, where they bring luck at the market.
-  icon: {fileID: 21300000, guid: fca501f6e9158c74d97a66067a3912a4, type: 3}
+  icon: {fileID: 21300000, guid: 0dc35e8055404354788f5208c63ed11d, type: 3}
   iconSource:
-    custom: 0
+    custom: 1
     model: {fileID: 1084826909072024753, guid: 2db79c37f26475542a363ba7c3824a97, type: 3}
     outfit: 
     turn: {x: 0, y: 0, z: 0}

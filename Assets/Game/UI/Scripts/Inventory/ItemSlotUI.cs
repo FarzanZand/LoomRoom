@@ -250,11 +250,13 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (item.IsConsumable)
         {
             if (!InventoryManager.HasInstance) return;
+            // A scroll is readied and put away like its spell, as its hotbar key does: using it here never reads it away.
+            if (item.IsScroll) { InventoryManager.Instance.Activate(owner, Container, Anchor); return; }
             if (item.canBeEquipped && eq != null && eq.Get(item.equipSlot) == item)
                 InventoryManager.Instance.UseHeld(owner, item.equipSlot);
             else InventoryManager.Instance.Use(Container, Anchor);
         }
-        else if (eq != null && eq.CanEquip(item) && !HeldSlot(eq, Container, Anchor).HasValue) eq.Equip(item);
+        else if (eq != null && eq.CanEquip(item) && !HeldSlot(eq, Container, Anchor).HasValue) eq.EquipFrom(item, Container, Anchor);
     }
 
     // Right-click on gear: puts it on (a worn item from the bag replaces what is worn), or takes it off when this copy

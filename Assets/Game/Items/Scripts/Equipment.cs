@@ -65,6 +65,8 @@ public class Equipment : MonoBehaviour
             // Resolve after inventory transfers finish so swaps cannot leave ghost equipment.
             // Only hands: worn items are held by Equipment itself, not the bag. A held item swapped out of
             // the hotbar for another one of the same hand (another weapon, another shield) hands over to it.
+            // While eating or drinking the hands are busy and Equip refuses, so a swap made meanwhile is taken up after.
+            if (IsUsingItem) return;
             foreach (var slot in HandSlots)
             {
                 var item = Get(slot);
@@ -131,6 +133,16 @@ public class Equipment : MonoBehaviour
     // Hand items stay in the hotbar (it is how you switch them); worn items leave the bag while equipped.
     public static bool IsHand(EquipmentSlot slot) => slot == EquipmentSlot.RightHand || slot == EquipmentSlot.LeftHand;
 
+    // Equip the copy at this place: with two of one item on the hotbar, the one pressed is the one held (and a scroll's
+    // charges are spent from it), not the first.
+    int preferredAt = -1;
+    public bool EquipFrom(ItemData item, Inventory container, int index)
+    {
+        preferredAt = Character is Player p && container == p.Hotbar ? index : -1;
+        try { return Equip(item); }
+        finally { preferredAt = -1; }
+    }
+
     // grant: equip an item the player doesn't carry (restoring a save), without taking it from the bag.
     // into: a specific slot (a trinket dropped on the second trinket slot).
     public bool Equip(ItemData item, bool playSound = true, bool grant = false, EquipmentSlot? into = null)
@@ -151,10 +163,10 @@ public class Equipment : MonoBehaviour
         if(Character is Player p && (slot==EquipmentSlot.RightHand || slot==EquipmentSlot.LeftHand) && p.Hotbar.IndexOf(item)<0) {
             int from=p.Bag.IndexOf(item);int destination=Get(slot)!=null?p.Hotbar.IndexOf(Get(slot)):-1;
             if(destination<0)destination=p.Hotbar.FirstEmpty();
-            if(from<0 || destination<0 || !Inventory.Move(p.Bag,from,p.Hotbar,destination)){NotificationUI.Show("Make room in the hotbar to equip a hand item");return false;}
+            if(from<0 || destination<0 || !Inventory.Move(p.Bag,from,p.Hotbar,destination)){NotificationUI.Show(from>=0 && destination>=0 ? "Make room in your bag first" : "Make room in the hotbar to equip a hand item");return false;}
         }
         Unequip(slot, true, wasAt);   // a worn item goes back into the bag
-        if(Character is Player held && IsHand(slot))heldAt[slot]=held.Hotbar.IndexOf(item);
+        if(Character is Player held && IsHand(slot))heldAt[slot]=preferredAt>=0 && held.Hotbar.ItemAt(preferredAt)==item ? preferredAt : held.Hotbar.IndexOf(item);
 
         var anchor = GetAnchor(slot);
         if (anchor != null && item.worldPrefab != null)

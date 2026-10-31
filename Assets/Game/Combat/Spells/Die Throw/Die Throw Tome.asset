@@ -21,7 +21,7 @@ MonoBehaviour:
   description: Hold it in your left hand to cast Die Throw. Ask the Dungeon Master
     for a hand. He flicks a die at the enemy you aim at from where he stands, and
     it knocks it across the room.
-  icon: {fileID: 21300000, guid: a22b242fa97f7f04e81fc448df0ebb6e, type: 3}
+  icon: {fileID: 21300000, guid: edbbf420209d76449b0093f9153c2e69, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}

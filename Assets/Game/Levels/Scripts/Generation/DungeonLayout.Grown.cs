@@ -43,10 +43,10 @@ public sealed partial class DungeonLayout
                 var tried = new DungeonLayout(width, depth, seed) { entranceAt = spot };
                 try { tried.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
                 if (!tried.EntrancePlacedAt) continue;
-                if (layout == null || tried.PlacedRequests.Length > layout.PlacedRequests.Length) layout = tried;
-                if (layout.PlacedRequests.Length == requests.Count) break;
+                if (Better(tried, layout, exitAt)) layout = tried;
+                if (Complete(layout, requests, exitAt)) break;
             }
-        if (layout == null || layout.PlacedRequests.Length < requests.Count)
+        if (layout == null || !Complete(layout, requests, exitAt))
         {
             var middle = new DungeonLayout(width, depth, seed);
             if (layout == null) middle.GrowRooms(requests, settings, exitAt, false);
@@ -54,7 +54,7 @@ public sealed partial class DungeonLayout
             {
                 try { middle.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { middle = null; }
             }
-            if (layout == null || middle != null && middle.PlacedRequests.Length > layout.PlacedRequests.Length) layout = middle;
+            if (layout == null || middle != null && Better(middle, layout, exitAt)) layout = middle;
         }
         // Rooms lost: grown again with no hand-built room (its doorways marked, often a single one)
         // until a plain room with free walls stands. Otherwise the starting room's one door can lead into a one-door
@@ -64,12 +64,27 @@ public sealed partial class DungeonLayout
         {
             var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt };
             try { again.GrowRooms(requests, settings, exitAt, true); } catch (InvalidOperationException) when (again.entranceAt.HasValue) { again = null; }
-            if (again != null && again.PlacedRequests.Length > layout.PlacedRequests.Length) layout = again;
+            if (again != null && Better(again, layout, exitAt)) layout = again;
         }
         if (layout.PlacedRequests.Length < requests.Count)
             Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
+        if (exitAt.HasValue && !layout.ExitPlacedAt)
+            Debug.LogWarning($"Dungeon seed {seed}: the exit could not be reached at {exitAt.Value} from any entrance spot; it is grown off the furthest room instead.");
         return layout;
     }
+
+    // A layout whose exit stands where it was asked to (the boss stage in front of the Dungeon Master) beats one whose
+    // exit fell back to the furthest room, whatever their room counts; then the one with more rooms wins. A floor whose
+    // first try already did both is unchanged.
+    static bool Better(DungeonLayout tried, DungeonLayout best, Vector2Int? exitAt)
+    {
+        if (best == null) return true;
+        if (exitAt.HasValue && tried.ExitPlacedAt != best.ExitPlacedAt) return tried.ExitPlacedAt;
+        return tried.PlacedRequests.Length > best.PlacedRequests.Length;
+    }
+
+    static bool Complete(DungeonLayout layout, IList<DungeonShape> requests, Vector2Int? exitAt) =>
+        layout.PlacedRequests.Length == requests.Count && (!exitAt.HasValue || layout.ExitPlacedAt);
 
     // The exit stands where it was asked to (a stage): it has one way in, so no loop or spur is cut into it.
     public bool ExitPlacedAt { get; private set; }
@@ -103,7 +118,6 @@ public sealed partial class DungeonLayout
         {
             Reserve(exitShape, exitAt.Value, false);
             ExitPlacedAt = PlaceAt(exitShape, exitAt.Value);
-            if (!ExitPlacedAt) Debug.LogWarning($"Dungeon seed {seed}: the exit could not be reached at {exitAt.Value}; it is grown off the furthest room instead.");
         }
         if (!ExitPlacedAt)
         {
