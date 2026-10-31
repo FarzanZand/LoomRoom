@@ -21,7 +21,7 @@ MonoBehaviour:
   description: Hold it in your left hand to cast Helping Hand. Ask the Dungeon Master
     for a hand. He appears in front of you and holds it over you, and the light from
     it heals you.
-  icon: {fileID: 21300000, guid: b2ca444607359ed47936b3401a40b48d, type: 3}
+  icon: {fileID: 21300000, guid: 37df9c4cca28ca84e8b9ed79f6d8eaaa, type: 3}
   iconSource:
     custom: 0
     model: {fileID: 0}
