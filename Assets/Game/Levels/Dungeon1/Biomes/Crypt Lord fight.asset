@@ -136,7 +136,7 @@ MonoBehaviour:
   beamBlockedSound: {fileID: 8300000, guid: 350a5a4734ab2854c9f726f4ddaf82a7, type: 3}
   beamVolume: 0.9
   volleyDistance: 7
-  phaseTwoHealth: 0.75
+  phaseTwoHealth: 0.7
   phaseTwoLine:
     text: Now he's angry.
     voice: {fileID: 0}
@@ -172,7 +172,7 @@ MonoBehaviour:
   defeatBurstSound: {fileID: 8300000, guid: 0b4890e18a82fd1428bbdb86a8d7b67f, type: 3}
   defeatBurstVolume: 1
   events:
-  - enabled: 1
+  - enabled: 0
     when: 2
     seconds: 10
     startBeat: 64
@@ -207,7 +207,37 @@ MonoBehaviour:
     seconds: 10
     startBeat: 8
     beats: 16
-    health: 0.75
+    health: 0.7
+    what: 0
+    line:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    music: {fileID: 0}
+    volume: 0.8
+    enemy: {fileID: 0}
+    count: 1
+    shake: 1
+    spell: {fileID: 0}
+    damage: 8
+    volley:
+      count: 3
+      spawnInterval: 0.5
+      rise: 1.2
+      spread: 1.3
+      riseSeconds: 0.35
+      holdSeconds: 0.25
+      launchInterval: 0.45
+      rampSeconds: 0.35
+      scale: 1.3
+      homing: 0
+  - enabled: 1
+    when: 3
+    seconds: 10
+    startBeat: 8
+    beats: 16
+    health: 0.3
     what: 0
     line:
       text: 
