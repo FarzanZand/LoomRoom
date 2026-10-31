@@ -676,6 +676,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4715131645812655251}
     m_Modifications:
+    - target: {fileID: 2343917043062294691, guid: 95eaa472282e09548be772b63ccb3f69, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 0bce6eb05203d3244b8c074bc0938fc6, type: 2}
     - target: {fileID: 4918691259238688910, guid: 95eaa472282e09548be772b63ccb3f69, type: 3}
       propertyPath: m_Name
       value: Shrine

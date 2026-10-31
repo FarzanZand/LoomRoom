@@ -1,162 +1,108 @@
-"""Spell tome icons: the rendered plain book (Tools/tome_plain.png, the tome's own model as the icon renderer drew it) tinted to a
-cover colour, with the spell's mark drawn on it in 4 px blocks, a one-block dark outline and blotchy per-block colour,
-the way the seven drawn tomes are (Frost Lance, Molten Boulder, Raise the Fallen ...).
+"""Spell tome icons: the rendered plain book (Tools/tome_plain.png, the tome's own model as the icon renderer drew it)
+tinted to the tome's cover colour, with the spell's own hotbar icon (its SpellDefinition's icon, a 32 px sprite)
+set on the cover at three times its size, so every book carries the same picture as its spell on the hotbar (the user,
+2026-10-31; before, each cover had a mark drawn for it).
 
-The cover's shading is fitted from a drawn tome (Raise the Fallen) against the plain book's brightness, outside its mark,
-and moved to the new colour, so a new cover shades as the drawn ones do.
+The cover's shading is fitted from a drawn tome (Raise the Fallen) against the plain book's brightness, outside the
+middle, and moved to the cover colour. Covers keep the colours they had: COVERS, else the median of the current icon's
+cover outside the middle.
 
-    python Tools/tome_icons.py <out dir> [name ...]     (no names: all in MARKS)
+    python Tools/tome_icons.py <out dir> [tome name ...]     (no names: every Combat/Spells/*/* Tome.asset)
+    python Tools/tome_icons.py --install                     (writes each icon next to its tome, <spell> Tome icon.png)
 """
-import os, sys
+import glob, os, re, sys
 import numpy as np
 from PIL import Image
 
-ROOT = os.path.join(os.path.dirname(__file__), "..", "Assets", "Game")
-PLAIN = os.path.join(os.path.dirname(__file__), "tome_plain.png")
-REFERENCE = os.path.join(ROOT, "Combat/Spells/Raise the Fallen/Raise the Fallen Tome icon.png")
-BLOCK = 4
-OUTLINE = (24, 18, 22)
-
-# Marks on a grid of 4 px blocks; '.' empty, letters are colours from the mark's palette. Centred on the cover.
-MARKS = {
-    "Fireball": ((102, 42, 40), {"r": (196, 58, 30), "o": (238, 128, 36), "y": (252, 206, 84)}, [
-        "......r.r....",
-        ".....rr.rr...",
-        "...r.rorrr.r.",
-        "...rrroorrrr.",
-        "..rrooooyorr.",
-        "..rooyyyyoor.",
-        ".rroyyyyyyor.",
-        ".rooyyyyyyor.",
-        ".rooyyyyyoor.",
-        ".rrooyyyoorr.",
-        "..rrooooorr..",
-        "...rrrrrrr...",
-    ]),
-    "Heal": ((50, 84, 82), {"g": (98, 184, 86), "l": (166, 222, 128)}, [
-        "....ggg....",
-        "....glg....",
-        "....glg....",
-        "....glg....",
-        "gggggllgggg",
-        "glllllllllg",
-        "ggggglggggg",
-        "....glg....",
-        "....glg....",
-        "....glg....",
-        "....ggg....",
-    ]),
-    "Flick": ((112, 94, 58), {"s": (226, 180, 140), "d": (186, 134, 100), "w": (240, 236, 220)}, [
-        "......w..w...",
-        ".......w.w.w.",
-        ".....ww......",
-        "..ssss...ww..",
-        ".sssssss.....",
-        ".ssssssssss..",
-        ".ssssssdddd..",
-        ".sssssd......",
-        ".ssssd.......",
-        "..sss........",
-    ]),
-    "Helping Hand": ((114, 80, 50), {"s": (232, 188, 146), "d": (190, 140, 104)}, [
-        "...s.s.s....",
-        "...s.s.s.s..",
-        "...s.s.s.s..",
-        "...s.s.s.s..",
-        "s..sssssss..",
-        "ss.sssssss..",
-        ".sssssssss..",
-        "..ssssssss..",
-        "..sssssssd..",
-        "...ssssssd..",
-        "...ssssdd...",
-    ]),
-    "Die Throw": ((56, 54, 62), {"w": (236, 228, 204), "e": (196, 186, 160), "p": (30, 26, 30)}, [
-        "wwwwwwwwwe",
-        "wpwwwwwwpe",
-        "wwwwwwwwwe",
-        "wwwwwwwwwe",
-        "wwwwpwwwwe",
-        "wwwwwwwwwe",
-        "wwwwwwwwwe",
-        "wpwwwwwwpe",
-        "wwwwwwwwwe",
-        "eeeeeeeeee",
-    ]),
-    "Dice Portal": ((50, 54, 96), {"v": (124, 92, 214), "c": (110, 206, 230), "k": (44, 32, 76), "w": (236, 228, 204), "p": (30, 26, 30)}, [
-        "...vvvvvvv...",
-        "..vcccccccv..",
-        ".vcckkkkkccv.",
-        ".vckwwwwwkcv.",
-        "vcckwpwwwkccv",
-        "vckkwwpwwkkcv",
-        "vcckwwwpwkccv",
-        ".vckwwwwwkcv.",
-        ".vcckkkkkccv.",
-        "..vcccccccv..",
-        "...vvvvvvv...",
-    ]),
-}
+HERE = os.path.dirname(os.path.abspath(__file__))
+ASSETS = os.path.join(HERE, "..", "Assets")
+SPELLS = os.path.join(ASSETS, "Game", "Combat", "Spells")
+PLAIN = os.path.join(HERE, "tome_plain.png")
+REFERENCE = os.path.join(SPELLS, "Raise the Fallen", "Raise the Fallen Tome icon.png")
+SCALE = 3
+# Cover colours of the six tomes whose covers were made here first (the others keep the colour their icon has).
+COVERS = {"Fireball": (102, 42, 40), "Heal": (50, 84, 82), "Flick": (112, 94, 58), "Helping Hand": (114, 80, 50),
+          "Die Throw": (56, 54, 62), "Dice Portal": (50, 54, 96)}
 
 
 def lum(a):
     return a[..., :3] @ np.array([.299, .587, .114])
 
 
-def fit_cover():
-    """Per channel, the reference's cover colour as a line in the plain book's brightness, outside its mark; returned
-    as the shading ratio (cover / cover's median) for every pixel of the plain book."""
+def guids():
+    found = {}
+    for meta in glob.glob(os.path.join(ASSETS, "**", "*.meta"), recursive=True):
+        if not (meta.endswith(".png.meta") or meta.endswith(".asset.meta")): continue
+        with open(meta, encoding="utf-8", errors="ignore") as f:
+            g = re.search(r"guid: (\w+)", f.read())
+        if g: found[g.group(1)] = meta[:-5]
+    return found
+
+
+def spell_icon(tome_path, by_guid):
+    """The tome's spell's icon as an RGBA image (a single sprite or one cut from a sheet), or None."""
+    text = open(tome_path, encoding="utf-8").read()
+    s = re.search(r"\n  spell: \{fileID: \d+, guid: (\w+)", text)
+    spell = by_guid.get(s.group(1)) if s else None
+    if spell is None: return None
+    i = re.search(r"\n  icon: \{fileID: (-?\d+), guid: (\w+)", open(spell, encoding="utf-8").read())
+    tex = by_guid.get(i.group(2)) if i else None
+    if tex is None: return None
+    img = Image.open(tex).convert("RGBA")
+    if i.group(1) != "21300000":   # a sprite cut from a sheet: its rect (y from the bottom) in the texture's meta
+        meta = open(tex + ".meta", encoding="utf-8").read()
+        for block in meta.split("- serializedVersion: 2")[1:]:
+            if re.search(r"internalID: " + re.escape(i.group(1)) + r"\b", block):
+                r = re.search(r"rect:\s+serializedVersion: 2\s+x: (\S+)\s+y: (\S+)\s+width: (\S+)\s+height: (\S+)", block)
+                x, y, w, h = (int(float(v)) for v in r.groups())
+                img = img.crop((x, img.height - y - h, x + w, img.height - y)); break
+    return img
+
+
+def fit_shade():
     plain = np.asarray(Image.open(PLAIN).convert("RGBA")).astype(float)
     ref = np.asarray(Image.open(REFERENCE).convert("RGBA")).astype(float)
-    L = lum(plain)
-    solid = plain[..., 3] > 0
-    mask = solid.copy(); mask[40:140, 50:150] = False          # leave the mark out
-    rl = lum(ref)
-    A = np.stack([L[mask], np.ones(mask.sum())], 1)
-    k, c = np.linalg.lstsq(A, rl[mask], rcond=None)[0]
-    shade = (k * L + c)
-    shade = shade / np.median(shade[mask])
-    return plain, solid, shade, ref, mask
+    L = lum(plain); solid = plain[..., 3] > 0
+    mask = solid.copy(); mask[40:140, 50:150] = False
+    k, c = np.linalg.lstsq(np.stack([L[mask], np.ones(mask.sum())], 1), lum(ref)[mask], rcond=None)[0]
+    shade = k * L + c
+    return plain, solid, mask, shade / np.median(shade[mask])
 
 
-def make(name, out_dir, plain, solid, shade, rng):
-    cover, palette, rows = MARKS[name]
+def make(name, icon, cover, plain, solid, shade):
     img = np.zeros_like(plain)
     img[..., :3] = np.clip(np.array(cover)[None, None, :] * shade[..., None], 0, 255)
     img[..., 3] = plain[..., 3]
-    # The mark, centred on the cover (the book's bounding box without its clasps on the left).
+    out = Image.fromarray(img.astype(np.uint8), "RGBA")
+    box = icon.getbbox() or (0, 0, icon.width, icon.height)
+    mark = icon.crop(box).resize(((box[2] - box[0]) * SCALE, (box[3] - box[1]) * SCALE), Image.NEAREST)
     ys, xs = np.nonzero(solid)
-    cx = (xs.min() + 14 + xs.max()) / 2; cy = (ys.min() + ys.max()) / 2
-    h, w = len(rows), max(len(r) for r in rows)
-    grid = np.full((h + 2, w + 2), ".", dtype="<U1")
-    for y, r in enumerate(rows):
-        for x, ch in enumerate(r): grid[y + 1, x + 1] = ch
-    x0 = int(round(cx - (w + 2) * BLOCK / 2)); y0 = int(round(cy - (h + 2) * BLOCK / 2))
-    for y in range(h + 2):
-        for x in range(w + 2):
-            ch = grid[y, x]
-            if ch == ".":
-                near = any(grid[y + dy, x + dx] != "." for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0))
-                           if 0 <= y + dy < h + 2 and 0 <= x + dx < w + 2)
-                if not near: continue
-                col = np.array(OUTLINE, float)
-            else:
-                col = np.array(palette[ch], float) * rng.uniform(.88, 1.06)   # blotchy, block by block
-            img[y0 + y * BLOCK:y0 + (y + 1) * BLOCK, x0 + x * BLOCK:x0 + (x + 1) * BLOCK, :3] = np.clip(col, 0, 255)
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, f"{name} Tome icon.png")
-    Image.fromarray(img.astype(np.uint8), "RGBA").save(path)
-    return path
+    cx = (xs.min() + 14 + xs.max()) / 2; cy = (ys.min() + ys.max()) / 2   # the cover without its clasps on the left
+    out.alpha_composite(mark, (int(round(cx - mark.width / 2)), int(round(cy - mark.height / 2))))
+    return out
+
+
+def main():
+    install = "--install" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--install"]
+    out_dir = None if install else args.pop(0)
+    plain, solid, mask, shade = fit_shade()
+    by_guid = guids()
+    for tome in sorted(glob.glob(os.path.join(SPELLS, "*", "* Tome.asset"))):
+        name = os.path.basename(tome)[:-len(" Tome.asset")]
+        if args and name not in args: continue
+        icon = spell_icon(tome, by_guid)
+        if icon is None: print(name, ": no spell icon"); continue
+        path = os.path.join(os.path.dirname(tome), f"{name} Tome icon.png")
+        if name in COVERS: cover = COVERS[name]
+        else:
+            now = np.asarray(Image.open(path).convert("RGBA")).astype(float)
+            cover = tuple(np.median(now[mask][:, :3], 0) / np.median(shade[mask]))
+        target = path if install else os.path.join(out_dir, f"{name} Tome icon.png")
+        if not install: os.makedirs(out_dir, exist_ok=True)
+        make(name, icon, cover, plain, solid, shade).save(target)
+        print(target)
 
 
 if __name__ == "__main__":
-    out = sys.argv[1]
-    names = sys.argv[2:] or list(MARKS)
-    plain, solid, shade, ref, mask = fit_cover()
-    # Check: the reference's own cover made again from its colour, against the drawn one.
-    rc = np.median(ref[mask][:, :3], 0)
-    again = np.clip(rc[None, None, :] * shade[..., None], 0, 255)
-    err = np.abs(again[mask] - ref[mask][:, :3]).mean()
-    print(f"reference cover made again: mean error {err:.1f} of 255")
-    for n in names:
-        print(make(n, out, plain, solid, shade, np.random.default_rng(sum(n.encode()))))
+    main()

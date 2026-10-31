@@ -36,6 +36,7 @@ public class RunRecapUI : MonoBehaviour
     [SerializeField] Color deathColor = new Color(.85f, .22f, .18f);
     [SerializeField] Color victoryColor = new Color(1f, .8f, .35f);
     [SerializeField, Tooltip("Every run ends by waking in bed: the only button is Wake up.")] bool wakeInBed = true;
+    [SerializeField, Min(0), Tooltip("Space between Stand up and Revive when both show, centred together.")] float reviveGap = 16f;
     [SerializeField, Tooltip("The return button's label after a win (the ending, waking in bed).")] string wakeLabel = "Wake up";
     [SerializeField, Tooltip("The return button's label after a death (back in the room, standing by the table).")] string standLabel = "Stand up";
 
@@ -154,7 +155,15 @@ public class RunRecapUI : MonoBehaviour
         }
         bool unlocked = ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(RunManager.DeathsFlag) >= reviveAfterDeaths;
         // Not in co-op: this recap means everyone has fallen, and the run can't go on for one player alone.
-        if (reviveButton != null) reviveButton.gameObject.SetActive((DebugRevive || unlocked) && !s.victory && !Coop.Running);
+        bool revive = (DebugRevive || unlocked) && !s.victory && !Coop.Running;
+        if (reviveButton != null) reviveButton.gameObject.SetActive(revive);
+        // With Revive beside it, the two share the middle (Revive stood at its authored place, the pair off centre).
+        if (wakes && revive && returnButton != null && reviveButton != null && returnButton.transform is RectTransform back && reviveButton.transform is RectTransform again)
+        {
+            float half = (back.rect.width + reviveGap) * .5f;
+            back.anchoredPosition = new Vector2(-half, back.anchoredPosition.y);
+            again.anchoredPosition = new Vector2(half, back.anchoredPosition.y);
+        }
         // The death that unlocks it: he says so, once per save.
         if (unlocked && !s.victory && !Coop.Running && ProgressionManager.Instance.GetFlag(ReviveUnlockedFlag) == 0)
         {

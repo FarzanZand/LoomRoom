@@ -90,8 +90,13 @@ public class ShopUI : Singleton<ShopUI>
     // Nothing selected and a pad's d-pad or an arrow key pressed: select a ware.
     void Update()
     {
-        if (open && InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
+        if (!open) return;
+        // The wares, the pack's cells, the tabs and Leave: linked by where they sit, so keys and a pad move between them
+        // (the rows and cells had no navigation of their own) and stay on this screen.
+        if (root != null) { root.GetComponentsInChildren(false, focusable); MenuFocus.LinkNearest(focusable); MenuFocus.Tint(focusable); }
+        if (InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
     }
+    readonly System.Collections.Generic.List<Selectable> focusable = new();
 
     // The first ware, else the first pack cell, else Close, so Submit buys or sells.
     void SelectStart()
