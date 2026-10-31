@@ -94,7 +94,7 @@ public class ShopUI : Singleton<ShopUI>
         // The wares, the pack's cells, the tabs and Leave: linked by where they sit, so keys and a pad move between them
         // (the rows and cells had no navigation of their own) and stay on this screen.
         if (root != null) { root.GetComponentsInChildren(false, focusable); MenuFocus.LinkNearest(focusable); MenuFocus.Tint(focusable); }
-        if (InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
+        if (InputManager.MenuInputStarted && InputManager.NothingSelectedIn(root != null ? root.transform : null)) SelectStart();
     }
     readonly System.Collections.Generic.List<Selectable> focusable = new();
 
@@ -342,12 +342,23 @@ public class ShopUI : Singleton<ShopUI>
     }
 
     // The hovered item: big icon, name, its tooltip, and what it costs or fetches here.
+    // The box under the wares holds one line: what the item does (the first sentence of its first line), not its whole
+    // tooltip, which was cut to "..."; the tooltip beside the row says the rest.
+    static string Summary(ItemData item)
+    {
+        string text = item.BuildTooltip(true, false, false);
+        int cut = text.IndexOf('\n');
+        if (cut > 0) text = text.Substring(0, cut);
+        cut = text.IndexOf(". ", System.StringComparison.Ordinal);   // "4-6 Weapon damage. Your own damage, ..." -> its first sentence
+        return cut > 0 ? text.Substring(0, cut) : text;
+    }
+
     void ShowDetails(ItemData item, bool ware = false)
     {
         bool any = item != null;
         if (detailsIcon != null) { detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null; }
         if (detailsName != null) detailsName.text = any ? item.itemName : "";
-        if (details != null) details.text = any ? item.BuildTooltip() : help ?? WaresHelp;
+        if (details != null) details.text = any ? Summary(item) : help ?? WaresHelp;
         if (detailsPrice == null || merchant == null) return;
         if (!any) { detailsPrice.text = ""; return; }
         if (ware)

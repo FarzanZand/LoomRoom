@@ -42,13 +42,15 @@ public class LootLabelsUI : MonoBehaviour
         bool show = template != null && camera != null && player != null && player.kind == PlayerKind.Table && player.IsActive &&
             (!GameManager.HasInstance || GameManager.Instance.GameplayActive);
         near.Clear();
+        // The item the crosshair is on is named by its own "Pick up" prompt: its label would lie over that.
+        var aimed = show && player.Interact != null && player.Interact.Active != null ? player.Interact.Active.GetComponentInParent<WorldItem>() : null;
         if (show)
         {
             Vector3 from = player.transform.position;
             float rangeSqr = range * range;
             foreach (var beam in LootBeam.Active)
             {
-                if (beam == null || beam.Item == null) continue;
+                if (beam == null || beam.Item == null || beam.Item == aimed) continue;
                 float distance = (beam.Base - from).sqrMagnitude;
                 if (distance <= rangeSqr && Visible(camera, beam)) near.Add((beam, distance));
             }

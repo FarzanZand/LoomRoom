@@ -258,6 +258,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (unlockTitle != null) unlockTitle.text = title;
         if (unlockSub != null) unlockSub.text = sub;
         unlockBanner.gameObject.SetActive(true);
+        // The hover card under the resting cursor would lie over it: it goes while the banner shows.
+        HideTip();
         // A banner shown while another is up starts over: the old sequence would otherwise hide the new one early.
         bannerSequence?.Kill();
         unlockBanner.DOKill(true);
@@ -428,6 +430,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
 
     void ShowCard(string title, string body, RectTransform near)
     {
+        if (unlockBanner != null && unlockBanner.gameObject.activeSelf) return;
         tip.gameObject.SetActive(true);
         if (tipTitle != null) tipTitle.text = title;
         if (tipBody != null) tipBody.text = body;
