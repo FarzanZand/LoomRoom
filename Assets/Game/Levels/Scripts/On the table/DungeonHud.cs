@@ -6,9 +6,15 @@ public class DungeonHud : MonoBehaviour
     DungeonGenerator dungeon;
     GameObject canvasRoot;
     Texture2D map;
-    bool[,] shop, exitRoom;
+    bool[,] shop, exitRoom, eventRoom;
     bool pocket;
     RawImage mapImage;
+    // Enemies are drawn on a finer layer over the map (MarkerScale pixels a cell), so a dot sits where the enemy stands
+    // and an elite's dot can have a rim.
+    const int MarkerScale = 4;
+    Texture2D markers;
+    Color32[] markerPixels;
+    static readonly Color32 EnemyDot = new Color32(235, 38, 38, 255), EliteRim = new Color32(240, 192, 64, 255), Clear = new Color32(0, 0, 0, 0);
     bool[,] explored, walked, door;
     int lastRoom=-2;
     float next;
@@ -25,6 +31,10 @@ public class DungeonHud : MonoBehaviour
         var go=new GameObject("Explored map",typeof(RectTransform),typeof(RawImage));go.transform.SetParent(canvasRoot.transform,false);
         mapImage=go.GetComponent<RawImage>();mapImage.texture=map;mapImage.raycastTarget=false;
         var r=mapImage.rectTransform;r.anchorMin=r.anchorMax=new Vector2(1,1);r.pivot=new Vector2(1,1);r.anchoredPosition=new Vector2(-30,-24);r.sizeDelta=new Vector2(w*4,h*4);
+        markers=new Texture2D(w*MarkerScale,h*MarkerScale,TextureFormat.RGBA32,false);markers.filterMode=FilterMode.Point;markerPixels=new Color32[markers.width*markers.height];
+        var dots=new GameObject("Enemy dots",typeof(RectTransform),typeof(RawImage));dots.transform.SetParent(go.transform,false);
+        var dotImage=dots.GetComponent<RawImage>();dotImage.texture=markers;dotImage.raycastTarget=false;
+        var dr=dotImage.rectTransform;dr.anchorMin=Vector2.zero;dr.anchorMax=Vector2.one;dr.offsetMin=dr.offsetMax=Vector2.zero;
         gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>());
     }
 
@@ -47,8 +57,15 @@ public class DungeonHud : MonoBehaviour
         canvasRoot.SetActive(show);if(!show || Time.time<next)return;next=Time.time+.15f;
         if(shop==null)
         {
-            shop=new bool[w,h];exitRoom=new bool[w,h];
+            shop=new bool[w,h];exitRoom=new bool[w,h];eventRoom=new bool[w,h];
             if(dungeon.MerchantRoom>=0)foreach(var c in dungeon.Layout.RoomCells(dungeon.MerchantRoom))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)shop[c.x,c.y]=true;
+            // Rooms with an event of their own (the bell, the dice, the duel, Not a witch...) show purple; the tavern and
+            // the merchant's shop keep the shop's green.
+            foreach(var scripted in dungeon.GetComponentsInChildren<ScriptedEventRoom>(true))
+            {
+                if(scripted.eventName=="tavern" || scripted.eventName=="shop" || !scripted.Find() || scripted.Dungeon!=dungeon || scripted.Room==dungeon.MerchantRoom)continue;
+                foreach(var c in dungeon.Layout.RoomCells(scripted.Room))if(c.x>=0 && c.y>=0 && c.x<w && c.y<h)eventRoom[c.x,c.y]=true;
+            }
             // A pocket (the Skeleton Party) has no exit: its last room is where the portal back stands.
             pocket=dungeon.LevelData!=null && dungeon.LevelData.pocket;
             // Where the stairs really stand (a merchant's stall or a boss stage can move them off the layout's exit).
@@ -98,7 +115,7 @@ public class DungeonHud : MonoBehaviour
             // The way on: unexplored floor touching explored floor shows as a dim pixel, so a passage running off the
             // edge of what has been seen doesn't look like a dead end.
             if(!explored[x,y] && dungeon.Layout.floor[x,y] && Frontier(x,y,w,h))color=new Color(.27f,.29f,.26f,.9f);
-            if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green
+            if(explored[x,y] && dungeon.Layout.floor[x,y])color=shop[x,y] ? new Color(.36f,.68f,.34f,.95f) : eventRoom[x,y] ? new Color(.5f,.3f,.68f,.95f) : new Color(.46f,.48f,.43f,.92f); // the shop room shows green, event rooms purple
             // The exit room shows red, its stairs a brighter red.
             if(explored[x,y] && dungeon.Layout.floor[x,y] && exitRoom[x,y])color=new Color(.72f,.2f,.17f,.95f);
             if(!pocket && explored[x,y] && x==dungeon.ExitCell.x && y==dungeon.ExitCell.y)color=new Color(1f,.35f,.28f);
@@ -107,6 +124,34 @@ public class DungeonHud : MonoBehaviour
             map.SetPixel(x,y,color);
         }
         map.Apply(false);
+        DrawEnemies(w,h);
+    }
+
+    // Every living enemy on explored floor as a red dot where it stands; an elite's has a gold rim.
+    void DrawEnemies(int w,int h)
+    {
+        System.Array.Fill(markerPixels,Clear);
+        var origin=dungeon.Cell(Vector2Int.zero);float cell=(dungeon.Cell(Vector2Int.right)-origin).x;
+        int mw=markers.width,mh=markers.height;
+        foreach(var enemy in EnemyBrain.Active)
+        {
+            if(enemy==null || enemy.Character==null || !enemy.Character.IsAlive)continue;
+            var at=enemy.transform.position;
+            float cx=(at.x-origin.x)/cell,cy=(at.z-origin.z)/cell;
+            int x=Mathf.RoundToInt(cx),y=Mathf.RoundToInt(cy);
+            if(x<0 || y<0 || x>=w || y>=h || !explored[x,y] || !dungeon.Layout.floor[x,y])continue;
+            int mx=Mathf.FloorToInt((cx+.5f)*MarkerScale),my=Mathf.FloorToInt((cy+.5f)*MarkerScale);
+            bool elite=enemy.TryGetComponent<EliteEnemy>(out _);
+            if(elite)Dot(mx,my,2,EliteRim,mw,mh);
+            Dot(mx,my,1,EnemyDot,mw,mh);
+        }
+        markers.SetPixels32(markerPixels);markers.Apply(false);
+    }
+
+    void Dot(int cx,int cy,int radius,Color32 color,int mw,int mh)
+    {
+        for(int x=cx-radius;x<=cx+radius;x++)for(int y=cy-radius;y<=cy+radius;y++)
+            if(x>=0 && y>=0 && x<mw && y<mh)markerPixels[y*mw+x]=color;
     }
 
     // The whole floor on the minimap at once (the spawn window's Show map cheat).
@@ -140,5 +185,5 @@ public class DungeonHud : MonoBehaviour
         return false;
     }
 
-    void OnDestroy(){if(map!=null)Destroy(map);}
+    void OnDestroy(){if(map!=null)Destroy(map);if(markers!=null)Destroy(markers);}
 }
