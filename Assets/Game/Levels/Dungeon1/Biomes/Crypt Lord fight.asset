@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossFight
   music: {fileID: 8300000, guid: cc7e5712c4b45bd4eb5e07bbc6a4f6a7, type: 3}
   musicVolume: 0.8
-  bpm: 152
-  firstBeat: 0.07
+  bpm: 92.05
+  firstBeat: 0.41
   musicFade: 1.2
+  deathSting: {fileID: 8300000, guid: b5117b351f5102f45b89205a39cf7533, type: 3}
+  deathStingVolume: 1
+  musicBackAfter: 3
   openingLine:
     text: You came all this way for him. Very well.
     voice: {fileID: 0}
@@ -140,12 +143,18 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   phaseTwoShake: 1.2
+  phaseTwoDisco:
+  - {r: 1, g: 0.3, b: 0.8, a: 1}
+  - {r: 0.25, g: 0.85, b: 1, a: 1}
+  - {r: 1, g: 0.8, b: 0.25, a: 1}
+  - {r: 0.6, g: 0.4, b: 1, a: 1}
+  - {r: 0.4, g: 1, b: 0.5, a: 1}
   events:
   - enabled: 1
     when: 2
     seconds: 10
     startBeat: 64
-    beats: 138
+    beats: 96
     health: 0.5
     what: 0
     line:
@@ -204,8 +213,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 103
-    beats: 69
+    startBeat: 112
+    beats: 96
     health: 0.5
     what: 5
     line:

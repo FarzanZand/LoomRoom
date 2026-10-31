@@ -192,6 +192,10 @@ public class SpellProjectile : MonoBehaviour
         bool inFace = cam != null && Vector3.Distance(cam.position, transform.position) < nearView + 1.2f;
         foreach (var ps in GetComponentsInChildren<ParticleSystem>(true))
             if (inFace || ps.main.simulationSpace == ParticleSystemSimulationSpace.Local) ps.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+        // A solid ball (the disco ball's mirrored model and its sparkle light) goes with the burst too: kept while the
+        // trail fades, it sat still where it burst for seconds.
+        foreach (var r in GetComponentsInChildren<Renderer>(true)) if (r is MeshRenderer || r is SkinnedMeshRenderer) r.enabled = false;
+        foreach (var spin in GetComponentsInChildren<DiscoBallSpin>(true)) if (spin.sparkle != null) spin.sparkle.enabled = false;
         GetComponent<SpellVisual>().Stop();
     }
 

@@ -232,7 +232,7 @@ public class BossStageEncounter : MonoBehaviour
         }
 
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
-        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss), MessageKind.Warning);
+        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (stageLights != null) stageLights.Follow(boss.transform);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
@@ -384,7 +384,7 @@ public class BossStageEncounter : MonoBehaviour
         if (!phaseTwo && fight.phaseTwoHealth > 0f && health <= fight.phaseTwoHealth)
         {
             phaseTwo = true; halfSaid = true;
-            if (stageLights != null) stageLights.PhaseTwo();
+            if (stageLights != null) stageLights.PhaseTwo(fight != null ? fight.phaseTwoDisco : null);
             Say(fight.phaseTwoLine, true);
             Shake(fight.phaseTwoShake);
         }
@@ -625,7 +625,7 @@ public class BossStageEncounter : MonoBehaviour
         DarkenRoom();
         LightRoom();
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
-        if (stageLights != null) { stageLights.Follow(boss.transform); if (phaseTwo) stageLights.PhaseTwo(); }
+        if (stageLights != null) { stageLights.Follow(boss.transform); if (phaseTwo) stageLights.PhaseTwo(fight != null ? fight.phaseTwoDisco : null); }
         if (seat != null) seat.Focus(StandFor(bossHome), bossHome);
         // A beam cut short by the death can leave the boss kneeling or keeping away.
         if (brain != null) { brain.MovementOverride = null; Kneel(false); brain.Alert(); }
@@ -682,10 +682,28 @@ public class BossStageEncounter : MonoBehaviour
         if (won && boss != null) boss.Died -= OnBossDied;
         if (won && AudioManager.HasInstance && dungeon != null)
         {
-            var music = dungeon.LevelData.MusicFor(dungeon.FloorNumber, out float volume);
-            if (music != null) AudioManager.Instance.CrossfadeMusic(music, dungeon.LevelData.loopMusic, 3f, volume);
-            else AudioManager.Instance.StopMusic(3f);
+            // A sting cuts the fight's music dead (the record scratching to a stop); the floor's comes back after.
+            if (fight != null && fight.deathSting != null && !floorGoing)
+            {
+                AudioManager.Instance.StopMusic(.05f);
+                AudioManager.Instance.PlaySFX2D(fight.deathSting, fight.deathStingVolume);
+                StartCoroutine(FloorMusicAfter(fight.musicBackAfter));
+            }
+            else FloorMusic();
         }
+    }
+
+    void FloorMusic()
+    {
+        var music = dungeon.LevelData.MusicFor(dungeon.FloorNumber, out float volume);
+        if (music != null) AudioManager.Instance.CrossfadeMusic(music, dungeon.LevelData.loopMusic, 3f, volume);
+        else AudioManager.Instance.StopMusic(3f);
+    }
+
+    IEnumerator FloorMusicAfter(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        if (dungeon != null && AudioManager.HasInstance) FloorMusic();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────

@@ -24,6 +24,11 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Music"), Min(0), Tooltip("Seconds from the start of the music to its first beat.")]
     public float firstBeat;
     [TabGroup(Tabs, "Music"), Min(0)] public float musicFade = 1.2f;
+    [TabGroup(Tabs, "Music"), Tooltip("Played the moment the boss dies, the fight's music cut dead under it (a record scratch). Empty: the music fades into the floor's.")]
+    public AudioClip deathSting;
+    [TabGroup(Tabs, "Music"), ShowIf(nameof(deathSting)), Range(0, 1)] public float deathStingVolume = 1f;
+    [TabGroup(Tabs, "Music"), ShowIf(nameof(deathSting)), Min(0), Tooltip("Seconds of silence after the sting before the floor's music comes back.")]
+    public float musicBackAfter = 3f;
 
     // ── Opening ───────────────────────────────────────────────────────
     [TabGroup(Tabs, "Opening"), Tooltip("Said as the player reaches the middle of the stage, before the DM reaches for the boss.")]
@@ -127,6 +132,8 @@ public class BossFight : ScriptableObject
     public float phaseTwoHealth = .5f;
     [TabGroup(Tabs, "Phase two")] public DungeonMaster.Line phaseTwoLine = new() { text = "Now he's angry." };
     [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
+    [TabGroup(Tabs, "Phase two"), Tooltip("A light show for the second phase: the stage's fires, moonlight and follow spot step through these colours, one step a beat of the music, each fire a different one. Empty: the stage's own second-phase colours (green fires, red moonlight).")]
+    public Color[] phaseTwoDisco = new Color[0];
 
     // ── Events ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Events"), Tooltip("What happens during the fight, in any order. Times count from the moment the boss wakes.")]

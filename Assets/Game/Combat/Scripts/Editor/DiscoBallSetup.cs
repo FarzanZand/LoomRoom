@@ -106,6 +106,12 @@ public static class DiscoBallSetup
             if (!(character.data is EnemyData data) || data.spells == null) continue;
             foreach (var s in data.spells)
                 if (s != null && (s.spell == fireball || s.spell == null)) { s.spell = spell; s.handEffect = hand.GetComponent<SpellVisual>(); swapped++; }
+            // He closes in to melee, so a ball that needed 3 m was never thrown once he was there: the single ball from the
+            // two metres his footwork steps back to after a swing (its 1.35 s wind-up is the player's opening; any closer
+            // and it burst in the player's face, its glitter shown back at his hand over the boss bar), the volley from a
+            // step further.
+            foreach (var s in data.spells)
+                if (s != null && s.spell == spell) s.minRange = s.volley ? 2.5f : 2f;
             EditorUtility.SetDirty(data);
         }
         PrefabUtility.SaveAsPrefabAsset(root, lordPath);
@@ -119,6 +125,19 @@ public static class DiscoBallSetup
         fight.beamKneel = true;
         fight.beamDance = dance;
         fight.music = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Music/Xdeviruchi/05 - Battle 1.mp3");
+        // Its beat, measured (librosa: 92.05 a minute, the first downbeat 0.41 s in). It goes round a 96-beat cycle whose
+        // loudest bars start at beats 64, 160, 256: the beams land on those, the DM's volleys in the quieter half between.
+        fight.bpm = 92.05f; fight.firstBeat = .41f;
+        // His fall ends the party: the music cut dead on a record scratch.
+        fight.deathSting = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/SFX/Music stop.mp3");
+        fight.musicBackAfter = 3f;
+        // Phase two is a light show: the stage's lights step through the disco ball's own colours on the beat.
+        fight.phaseTwoDisco = new[] { new Color(1f, .3f, .8f), new Color(.25f, .85f, 1f), new Color(1f, .8f, .25f), new Color(.6f, .4f, 1f), new Color(.4f, 1f, .5f) };
+        foreach (var e in fight.events)
+        {
+            if (e.what == BossEvent.What.Beam && e.when == BossEvent.When.EveryBeats) { e.startBeat = 64; e.beats = 96; }
+            if (e.what == BossEvent.What.Volley && e.when == BossEvent.When.EveryBeats) { e.startBeat = 112; e.beats = 96; }
+        }
         EditorUtility.SetDirty(fight);
         AssetDatabase.SaveAssets();
         return $"Crypt Lord: {swapped} fireballs are disco balls; beam dance {(dance != null ? dance.name + (dance.isLooping ? " (loops)" : " (does not loop)") : "MISSING")}; music {(fight.music != null ? fight.music.name : "MISSING")}";
