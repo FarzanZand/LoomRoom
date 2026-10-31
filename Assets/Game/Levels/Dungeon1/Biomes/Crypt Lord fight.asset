@@ -136,7 +136,7 @@ MonoBehaviour:
   beamBlockedSound: {fileID: 8300000, guid: 350a5a4734ab2854c9f726f4ddaf82a7, type: 3}
   beamVolume: 0.9
   volleyDistance: 7
-  phaseTwoHealth: 0.5
+  phaseTwoHealth: 0.75
   phaseTwoLine:
     text: Now he's angry.
     voice: {fileID: 0}
@@ -154,14 +154,13 @@ MonoBehaviour:
   discoBall: {fileID: 648832377681289351, guid: 67cb16bee95be49448d672fbd8c5cf77, type: 3}
   backupDancer: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
   backupCount: 2
-  backupAtHealth: 0.3
+  backupAtHealth: 0.45
   backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
-  backupHealPerSecond: 0.01
-  backupHealth: 0.35
-  backupBossLine: Hit it, boys!
+  backupHealth: 1
+  backupBossLine: Boys! Get in here!
   backupBrokenLine: Hey! That was my crew!
   backupLine:
-    text: Backup dancers. Break them up or he keeps going.
+    text: Oh, he has a crew.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -203,12 +202,12 @@ MonoBehaviour:
       rampSeconds: 0.35
       scale: 1.3
       homing: 0
-  - enabled: 0
+  - enabled: 1
     when: 3
     seconds: 10
     startBeat: 8
     beats: 16
-    health: 0.5
+    health: 0.75
     what: 0
     line:
       text: 

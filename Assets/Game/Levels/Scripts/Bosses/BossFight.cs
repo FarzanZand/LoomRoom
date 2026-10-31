@@ -142,20 +142,18 @@ public class BossFight : ScriptableObject
     public GameObject discoBall;
 
     // ── Backup dancers ──
-    [TabGroup(Tabs, "Backup"), Tooltip("Who comes out to dance behind the boss (an enemy prefab). Empty: no backup dancers.")]
+    [TabGroup(Tabs, "Backup"), Tooltip("The boss's crew (an enemy prefab): dancing at the back of the stage from the moment it is set down, ignoring the fight, until the boss calls them in to fight. Empty: no backup dancers.")]
     public GameObject backupDancer;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Min(1)] public int backupCount = 2;
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, 1), Tooltip("They come out when the boss's health falls to this share.")]
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, 1), Tooltip("The boss calls them in when its health falls to this share.")]
     public float backupAtHealth = .3f;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Their dance (played straight on their animator, each a little out of step).")]
     public AnimationClip backupDance;
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, .1f), Tooltip("Share of the boss's most health it gets back each second while any of them still dances: break them up.")]
-    public float backupHealPerSecond = .015f;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
     public float backupHealth = .35f;
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as they come out.")]
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as it calls them in.")]
     public string backupBossLine = "";
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box once the last of them has been broken up.")]
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box once the last of them is down.")]
     public string backupBrokenLine = "";
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer))] public DungeonMaster.Line backupLine = new() { text = "Backup dancers. Break them up or he keeps going." };
 

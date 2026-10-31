@@ -130,6 +130,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Tooltip("One enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
+    [SerializeField,Min(0),Tooltip("Top bar: how much lower it sits while a boss's bar is up, so it shows under it (a boss's crew, its adds).")] float topBarUnderBoss=90;
     void LateUpdate()
     {
         if(canvas==null || dungeon==null || !PlayerManager.HasInstance)return;
@@ -154,7 +155,8 @@ public class DungeonCombatFeedback : MonoBehaviour
             {
                 bool shown=show && e==topEnemy && !bossBar;
                 e.root.gameObject.SetActive(shown);
-                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset);}
+                bool bossUp=BossBarUI.HasInstance && BossBarUI.Instance.Boss!=null;
+                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset-(bossUp?topBarUnderBoss:0));}
             }
             else
             {

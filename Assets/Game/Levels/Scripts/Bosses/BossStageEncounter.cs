@@ -219,6 +219,7 @@ public partial class BossStageEncounter : MonoBehaviour
         ShowSetup();
         yield return Carry(boss, spot, fight != null ? fight.placeSeconds : 2f);
         if (boss != null) bossHome = boss.transform.position;
+        SpawnBackup();
         // Said once the boss is down and the room is dark, where it can be read.
         BossBlessing.Announce();
         if (intro)

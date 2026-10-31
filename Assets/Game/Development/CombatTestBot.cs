@@ -285,7 +285,8 @@ public class CombatTestBot : MonoBehaviour
             Character nearest = null; float best = reach;
             foreach (var b in EnemyBrain.Active)
             {
-                if (b == null || !b.Character.IsAlive) continue;
+                // Enemies keeping out of it (a boss's dancing crew, a skeleton party) are left alone, as a player would.
+                if (b == null || !b.Character.IsAlive || b.Entranced) continue;
                 float d = Vector3.Distance(b.transform.position, player.transform.position);
                 if (d < best) { best = d; nearest = b.Character; }
             }

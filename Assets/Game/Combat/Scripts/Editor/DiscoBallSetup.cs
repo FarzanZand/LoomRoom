@@ -219,16 +219,17 @@ public static class DiscoBallSetup
         var fight = AssetDatabase.LoadAssetAtPath<BossFight>("Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset");
         Undo.RecordObject(fight, "Disco show");
         fight.phaseTwoBossLine = "Let's turn it up!";
-        // The second phase is a show the player should see: no beam at that moment (it turned them to the DM).
-        foreach (var e in fight.events) if (e.what == BossEvent.What.Beam && e.when == BossEvent.When.AtBossHealth) e.enabled = false;
+        // The second phase comes early (three quarters health) and the DM's beam comes with it.
+        fight.phaseTwoHealth = .75f;
+        foreach (var e in fight.events) if (e.what == BossEvent.What.Beam && e.when == BossEvent.When.AtBossHealth) { e.enabled = true; e.health = .75f; }
         fight.danceFloor = floor;
         fight.discoBall = rigAsset;
         fight.backupDancer = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
-        fight.backupCount = 2; fight.backupAtHealth = .3f; fight.backupHealPerSecond = .01f; fight.backupHealth = .35f;
+        fight.backupCount = 2; fight.backupAtHealth = .45f; fight.backupHealth = 1f;
         fight.backupDance = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Skeleton dance.anim");
-        fight.backupBossLine = "Hit it, boys!";
+        fight.backupBossLine = "Boys! Get in here!";
         fight.backupBrokenLine = "Hey! That was my crew!";
-        fight.backupLine = new DungeonMaster.Line { text = "Backup dancers. Break them up or he keeps going.", mumble = true };
+        fight.backupLine = new DungeonMaster.Line { text = "Oh, he has a crew.", mumble = true };
         MakeDefeatPose();
         fight.defeatPose = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Disco pose.anim");
         fight.defeatSpinSeconds = .55f; fight.defeatHold = 1.1f;

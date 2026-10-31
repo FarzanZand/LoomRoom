@@ -56,28 +56,24 @@ public partial class BossStageEncounter
         }
     }
 
-    // Every frame of the fight: the beat on the floor and the ball, the backup dancers' call and their hold on the boss.
+    // Every frame of the fight: the beat on the floor and the ball, and the call for the backup dancers.
     void ShowTick(float health, Player player)
     {
         float beat = musicStart >= 0f ? Beat : -1f;
         if (danceFloor != null) danceFloor.Beat(beat);
         if (discoBall != null) discoBall.Beat(beat);
-        if (fight.backupDancer != null && !backupCalled && health <= fight.backupAtHealth && (hand == null || !hand.Busy))
+        if (fight.backupDancer != null && !backupCalled && health <= fight.backupAtHealth)
         {
             backupCalled = true;
-            CallBackup(player);
+            CallBackup();
         }
-        // While any of them still dances the boss gets its health back.
-        bool dancing = false;
         for (int i = backup.Count - 1; i >= 0; i--)
         {
             var (b, graph) = backup[i];
-            if (b == null || b.State == EnemyState.Dead) { if (graph.IsValid()) graph.Destroy(); backup.RemoveAt(i); continue; }
-            if (b.Entranced) dancing = true;
+            if (b == null || b.State == EnemyState.Dead) { if (graph.IsValid()) graph.Destroy(); backup.RemoveAt(i); }
         }
-        if (dancing && boss.Stats != null) boss.Stats.Heal(boss.Stats.MaxHealth * fight.backupHealPerSecond * Time.deltaTime);
-        // The last of them broken up: the boss minds.
-        if (dancing) backupDanced = true;
+        // The last of them down: the boss minds.
+        if (backup.Count > 0) backupDanced = true;
         else if (backupDanced)
         {
             backupDanced = false;
@@ -85,26 +81,37 @@ public partial class BossStageEncounter
         }
     }
 
-    // Out they come behind the boss in a puff each, in a row facing the player, dancing; one blow breaks a dancer's
-    // dance and it fights.
-    void CallBackup(Player player)
+    // As the boss is set down its crew is already there: dancing in a row at the back of the stage (toward the
+    // Dungeon Master, behind where it stands), facing the way the player comes in, a little out of step. They ignore the
+    // fight until it calls them in (or a blow breaks one's dance, and that one fights).
+    void SpawnBackup()
     {
-        var toBoss = boss.transform.position - (player != null ? player.transform.position : StageCentreOr(boss.transform.position)); toBoss.y = 0f;
-        var back = toBoss.sqrMagnitude > .01f ? toBoss.normalized : -boss.transform.forward;
+        if (fight == null || fight.backupDancer == null || boss == null) return;
+        var home = bossHome;
+        var dm = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform.position : home + boss.transform.forward;
+        var back = dm - home; back.y = 0f;
+        back = back.sqrMagnitude > .01f ? back.normalized : -boss.transform.forward;
         var side = Vector3.Cross(Vector3.up, back);
         for (int i = 0; i < fight.backupCount; i++)
         {
-            float across = fight.backupCount > 1 ? (i / (fight.backupCount - 1f) - .5f) * 3.2f : 0f;
-            var spot = boss.transform.position + back * 2.2f + side * across;
+            float across = fight.backupCount > 1 ? (i / (fight.backupCount - 1f) - .5f) * 6.4f : 0f;
+            var spot = home + back * 3.6f + side * across;
             // On the stage, on its floor: out past its edge or into a pillar is pulled back to the nearest walkable ground.
             if (NavMesh.SamplePosition(spot, out var hit, 2.5f, NavMesh.AllAreas)) spot = hit.position;
             var go = Instantiate(fight.backupDancer, spot, Quaternion.LookRotation(-back), dungeon.transform);
             go.name = fight.backupDancer.name + " (backup)";
             if (dungeon.LevelData.ambushSpawnPuff != null) Destroy(Instantiate(dungeon.LevelData.ambushSpawnPuff, spot, Quaternion.identity, dungeon.transform), 4f);
             var brain = go.GetComponent<EnemyBrain>();
-            if (brain == null) continue;
-            StartCoroutine(StartDancer(brain, i));
+            if (brain != null) StartCoroutine(StartDancer(brain, i));
         }
+    }
+
+    // The boss calls them in: they stop dancing and come for the player.
+    void CallBackup()
+    {
+        bool any = false;
+        foreach (var (b, _) in backup.ToArray()) if (b != null && b.State != EnemyState.Dead) { BreakUp(b); any = true; }
+        if (!any) return;
         if (!string.IsNullOrWhiteSpace(fight.backupBossLine) && PortraitDialogueUI.Current != null)
             PortraitDialogueUI.Current.Bark(fight.backupBossLine, boss, fight.bossName);
         Say(fight.backupLine, true);
@@ -127,12 +134,24 @@ public partial class BossStageEncounter
         }
         backup.Add((brain, graph));
         character.Damaged += _ => BreakUp(brain);
+        // A little light of its own from above, in one of the show's colours, so the crew is seen dancing in the dark at
+        // the back of the stage; it goes out when the dancer stops.
+        var glow = new GameObject("Dancer light").AddComponent<Light>();
+        glow.transform.SetParent(character.transform, false);
+        glow.transform.localPosition = new Vector3(0f, 2.6f, .4f);
+        glow.type = LightType.Point; glow.range = 4.5f; glow.intensity = 6f; glow.shadows = LightShadows.None;
+        var colours = fight.phaseTwoDisco;
+        glow.color = colours != null && colours.Length > 0 ? colours[(index * 2) % colours.Length] : new Color(1f, .5f, .85f);
+        dancerLights[brain] = glow;
     }
+
+    readonly Dictionary<EnemyBrain, Light> dancerLights = new();
 
     bool partyOver;
 
     void BreakUp(EnemyBrain brain)
     {
+        if (brain != null && dancerLights.TryGetValue(brain, out var glow)) { if (glow != null) Destroy(glow.gameObject); dancerLights.Remove(brain); }
         if (partyOver) return;
         for (int i = 0; i < backup.Count; i++)
         {
@@ -159,7 +178,7 @@ public partial class BossStageEncounter
         {
             if (graph.IsValid()) graph.Destroy();
             if (b != null && b.Character != null && b.Character.Stats != null && b.Character.IsAlive)
-                b.Character.Stats.TakeDamage(new DamageInfo { Amount = 1e6f, SourceName = "the end of the party", HitPoint = b.transform.position + Vector3.up, Direction = b.transform.forward });
+                b.Character.Stats.TakeDamage(new DamageInfo { Amount = b.Character.Stats.CurrentHealth + 1f, Quiet = true, SourceName = "the end of the party", HitPoint = b.transform.position + Vector3.up, Direction = b.transform.forward });
         }
         backup.Clear();
     }

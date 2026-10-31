@@ -339,11 +339,27 @@ public class DungeonMaster : Singleton<DungeonMaster>
         label.fontSize = pixelGrid * multiple / scale;
     }
 
+    // While a boss's line shows in the portrait box mid-fight (PortraitDialogueUI.Bark) the box covers the lines' place:
+    // they rise above it (barkLift), and come back down after.
+    [SerializeField, Min(0), Tooltip("How far the lines rise while a portrait box line is up mid-fight, in 1920 x 1080 canvas units.")] float barkLift = 150f;
+    float lifted;
+
+    void LiftOverBark()
+    {
+        if (placement != Placement.LowerMiddle || tiktokMode) return;
+        bool bark = PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Barking;
+        float to = bark ? barkLift : 0f;
+        if (Mathf.Approximately(lifted, to)) return;
+        lifted = Mathf.MoveTowards(lifted, to, barkLift * 8f * Time.unscaledDeltaTime);
+        label.rectTransform.anchoredPosition = new Vector2(0, 250 + lifted);
+    }
+
     void Update()
     {
         PauseVoice(Paused);
         if (label == null) return;
         SnapSize();
+        LiftOverBark();
         float now = Time.unscaledTime;
         // Paused: the lines on screen keep their age, so none fades behind the menu.
         if (Paused) for (int i = 0; i < lines.Count; i++) { var l = lines[i]; l.shown += Time.unscaledDeltaTime; lines[i] = l; }
