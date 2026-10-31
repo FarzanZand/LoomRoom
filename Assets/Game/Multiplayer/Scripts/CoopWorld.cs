@@ -484,7 +484,7 @@ public static class CoopWorld
         var drop = c.GetComponent<DungeonLootDrop>();
         var spawn = new EnemySpawn
         {
-            floorKey = FloorKey, id = enemyIds[c], prefab = prefab, position = c.transform.position, yaw = c.transform.eulerAngles.y,
+            floorKey = FloorKey, id = enemyIds[c], prefab = prefab, prefabName = MultiplayerManager.Instance.EnemyPrefab(prefab).name, position = c.transform.position, yaw = c.transform.eulerAngles.y,
             lootSeed = drop != null ? drop.seed : 0,
             health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
             elite = c.TryGetComponent<EliteEnemy>(out var el) ? (sbyte)el.trait : (sbyte)-1, eliteFloors = el != null ? el.extraFloors : 0f,
@@ -497,7 +497,7 @@ public static class CoopWorld
     public static void ReceiveSpawn(ulong sender, EnemySpawn spawn)
     {
         if (!Coop.IsGuest || spawn.floorKey != FloorKey || Floor == null) return;
-        var prefab = MultiplayerManager.Instance.EnemyPrefab(spawn.prefab);
+        var prefab = MultiplayerManager.Instance.EnemyPrefab(spawn.prefab, spawn.prefabName.ToString());
         if (prefab == null) return;
         var go = Object.Instantiate(prefab, spawn.position, Quaternion.Euler(0, spawn.yaw, 0), Floor.transform);
         var c = go.GetComponent<Character>();

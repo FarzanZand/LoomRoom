@@ -785,6 +785,13 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     }
 
     public GameObject EnemyPrefab(int index) => enemyPrefabs != null && index >= 0 && index < enemyPrefabs.Length ? enemyPrefabs[index] : null;
+    public GameObject EnemyPrefab(int index, string name)
+    {
+        var byIndex = EnemyPrefab(index);
+        if (string.IsNullOrEmpty(name) || byIndex != null && byIndex.name == name || enemyPrefabs == null) return byIndex;
+        foreach (var p in enemyPrefabs) if (p != null && p.name == name) return p;
+        return byIndex;
+    }
 
     // ── Flags (the host's story and unlocks) ──────────────────────────
 

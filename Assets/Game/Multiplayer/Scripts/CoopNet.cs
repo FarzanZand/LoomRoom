@@ -199,6 +199,7 @@ public struct EnemySpawn : INetworkSerializable
     public int floorKey;
     public ushort id;
     public int prefab;               // index into MultiplayerManager.enemyPrefabs
+    public FixedString64Bytes prefabName; // and its name, which wins if the two lists differ (an editor's out of date)
     public Vector3 position;
     public float yaw;
     public int lootSeed;
@@ -209,7 +210,7 @@ public struct EnemySpawn : INetworkSerializable
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
-        s.SerializeValue(ref floorKey); s.SerializeValue(ref id); s.SerializeValue(ref prefab);
+        s.SerializeValue(ref floorKey); s.SerializeValue(ref id); s.SerializeValue(ref prefab); s.SerializeValue(ref prefabName);
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
         s.SerializeValue(ref health); s.SerializeValue(ref maxHealth); s.SerializeValue(ref side);
         s.SerializeValue(ref elite); s.SerializeValue(ref eliteFloors);

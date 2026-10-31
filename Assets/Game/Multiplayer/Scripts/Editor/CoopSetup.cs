@@ -244,12 +244,7 @@ public static class CoopSetup
         // One room body per body the room player has, handed out by player slot.
         if (roomBodies != null && roomBodies.Length > 0 && roomBodies.All(b => b != null)) manager.roomBodies = roomBodies;
         if (manager.defaultTableBody == null && bodies.TryGetValue("fighter", out var fighter)) manager.defaultTableBody = fighter;
-        manager.enemyPrefabs = AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Game/Characters/Enemies" })
-            .Select(AssetDatabase.GUIDToAssetPath)
-            .Where(p => !p.Contains("/_Archive/") && !p.Contains("/Base/"))
-            .Select(p => AssetDatabase.LoadAssetAtPath<GameObject>(p))
-            .Where(p => p != null && p.GetComponent<EnemyBrain>() != null)
-            .OrderBy(p => p.name).ToArray();
+        manager.enemyPrefabs = CoopEnemyList.Find();
         var saved = PrefabUtility.SaveAsPrefabAsset(go, ManagerPrefabPath);
         if (existing != null) PrefabUtility.UnloadPrefabContents(go); else Object.DestroyImmediate(go);
         return saved;
