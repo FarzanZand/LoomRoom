@@ -143,6 +143,186 @@ public static class DiscoBallSetup
         return $"Crypt Lord: {swapped} fireballs are disco balls; beam dance {(dance != null ? dance.name + (dance.isLooping ? " (loops)" : " (does not loop)") : "MISSING")}; music {(fight.music != null ? fight.music.name : "MISSING")}";
     }
 
+    // The disco boss's show (Levels/Dungeon1/Biomes/Disco; textures from Tools/disco_show_textures.py and
+    // Tools/disco_ball_texture.py, sounds from Tools/boss_intro_sounds.py): the dance floor's material, the disco ball on
+    // its chain (a 1 m ball at 128 texels a metre, the chain stacked from the realms' full height chains, a spot light
+    // throwing dots), and on the Crypt Lord fight: his phase two line, the floor and the ball, the backup dancers (two
+    // Crypt Soldiers doing the skeleton party's dance) and his defeat (a spin, the Point pose, a burst of glitter).
+    // Safe to run again.
+    public static string Show()
+    {
+        const string Disco = "Assets/Game/Levels/Dungeon1/Biomes/Disco/", Clips = "Assets/Game/Audio/Clips/Dialogue/";
+        var tile = Import(Disco + "Dance floor tile.png", TextureWrapMode.Clamp);
+        var dots = Import(Disco + "Disco spots.png", TextureWrapMode.Clamp);
+        var floor = AssetDatabase.LoadAssetAtPath<Material>(Disco + "Dance floor.mat");
+        if (floor == null) { floor = new Material(Shader.Find("LoomRoom/Dance Floor")); AssetDatabase.CreateAsset(floor, Disco + "Dance floor.mat"); }
+        floor.shader = Shader.Find("LoomRoom/Dance Floor");
+        floor.SetTexture("_BaseMap", tile);
+        floor.SetFloat("_Intensity", 1f);
+        EditorUtility.SetDirty(floor);
+
+        // The big ball: the small ball's material with a texture at its own size.
+        var ballMaterial = AssetDatabase.LoadAssetAtPath<Material>(Disco + "Disco Ball big.mat");
+        if (ballMaterial == null) { ballMaterial = new Material(AssetDatabase.LoadAssetAtPath<Material>(Folder + "Disco Ball.mat")); AssetDatabase.CreateAsset(ballMaterial, Disco + "Disco Ball big.mat"); }
+        ballMaterial.SetTexture("_BaseMap", Import(Disco + "Disco Ball big.png"));
+        ballMaterial.SetTexture("_EmissionMap", Import(Disco + "Disco Ball big emission.png"));
+        // Hung in the dark it has little to mirror: less metal so the stage's lights show on it, its lit tiles brighter.
+        ballMaterial.SetFloat("_Metallic", .45f); ballMaterial.SetFloat("_Smoothness", .7f);
+        ballMaterial.SetColor("_EmissionColor", Color.white * 3f);
+        EditorUtility.SetDirty(ballMaterial);
+
+        var rig = new GameObject("Disco ball rig");
+        var show = rig.AddComponent<BossDiscoBall>();
+        var ball = new GameObject("Ball");
+        ball.transform.SetParent(rig.transform, false);
+        var sphere = new GameObject("Mesh");
+        sphere.transform.SetParent(ball.transform, false);
+        sphere.transform.localScale = Vector3.one * .5f;   // the built-in sphere mesh is 2 units across: a 1 m ball
+        sphere.AddComponent<MeshFilter>().sharedMesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+        var r = sphere.AddComponent<MeshRenderer>();
+        r.sharedMaterial = ballMaterial; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var glow = new GameObject("Glow").AddComponent<Light>();
+        glow.transform.SetParent(rig.transform, false);
+        glow.transform.localPosition = new Vector3(0f, -.9f, 0f);
+        glow.type = LightType.Point; glow.range = 3f; glow.intensity = 3f; glow.color = new Color(1f, .9f, 1f); glow.shadows = LightShadows.None;
+        var spot = new GameObject("Spots").AddComponent<Light>();
+        spot.transform.SetParent(rig.transform, false);
+        spot.transform.localPosition = new Vector3(0f, -.55f, 0f);
+        spot.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+        spot.type = LightType.Spot; spot.spotAngle = 130f; spot.innerSpotAngle = 110f; spot.range = 14f; spot.intensity = 160f;
+        spot.cookie = dots; spot.shadows = LightShadows.None;
+        // The chain: copies of the realms' full height chains stacked up from the ball's top, out of sight above.
+        var chainPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Dungeon1/Realms/Props/Full height chains.prefab");
+        int links = 0;
+        if (chainPrefab != null)
+        {
+            var chain = new GameObject("Chain");
+            chain.transform.SetParent(rig.transform, false);
+            float y = .48f;
+            for (int i = 0; i < 7; i++)
+            {
+                var piece = (GameObject)PrefabUtility.InstantiatePrefab(chainPrefab, chain.transform);
+                foreach (var c in piece.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
+                var bounds = new Bounds(piece.transform.position, Vector3.zero); bool any = false;
+                foreach (var pr in piece.GetComponentsInChildren<Renderer>(true)) { if (!any) bounds = pr.bounds; else bounds.Encapsulate(pr.bounds); any = true; pr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+                // Its foot on the top of the one below (or the ball), centred over the ball.
+                piece.transform.position += new Vector3(-bounds.center.x, y - bounds.min.y, -bounds.center.z);
+                y += bounds.size.y;
+                links++;
+            }
+        }
+        show.ball = ball.transform; show.spots = spot;
+        show.lowerSound = AssetDatabase.LoadAssetAtPath<AudioClip>(Clips + "Disco ball lower.wav");
+        var rigAsset = PrefabUtility.SaveAsPrefabAsset(rig, Disco + "Disco ball rig.prefab");
+        Object.DestroyImmediate(rig);
+
+        var fight = AssetDatabase.LoadAssetAtPath<BossFight>("Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset");
+        Undo.RecordObject(fight, "Disco show");
+        fight.phaseTwoBossLine = "Let's turn it up!";
+        // The second phase is a show the player should see: no beam at that moment (it turned them to the DM).
+        foreach (var e in fight.events) if (e.what == BossEvent.What.Beam && e.when == BossEvent.When.AtBossHealth) e.enabled = false;
+        fight.danceFloor = floor;
+        fight.discoBall = rigAsset;
+        fight.backupDancer = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
+        fight.backupCount = 2; fight.backupAtHealth = .3f; fight.backupHealPerSecond = .01f; fight.backupHealth = .35f;
+        fight.backupDance = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Skeleton dance.anim");
+        fight.backupBossLine = "Hit it, boys!";
+        fight.backupBrokenLine = "Hey! That was my crew!";
+        fight.backupLine = new DungeonMaster.Line { text = "Backup dancers. Break them up or he keeps going.", mumble = true };
+        MakeDefeatPose();
+        fight.defeatPose = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Disco pose.anim");
+        fight.defeatSpinSeconds = .55f; fight.defeatHold = 1.1f;
+        fight.defeatBurst = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "Disco Ball Impact.prefab");
+        fight.defeatBurstScale = 2.5f;
+        fight.defeatBurstSound = AssetDatabase.LoadAssetAtPath<AudioClip>(Clips + "Disco defeat burst.wav");
+        EditorUtility.SetDirty(fight);
+        AssetDatabase.SaveAssets();
+        return $"dance floor {floor.shader.name}, disco ball rig ({links} chain pieces), backup {(fight.backupDancer != null ? fight.backupDancer.name : "MISSING")} dancing {(fight.backupDance != null ? fight.backupDance.name : "MISSING")}, defeat pose {(fight.defeatPose != null ? fight.defeatPose.name : "MISSING")}";
+    }
+
+    // The disco boss's last pose (Characters/Animations/ThirdPerson/Gestures/Disco pose.anim): the right arm thrown
+    // straight up, the left hand on the hip, a lean away from the raised arm, the head tipped up after the hand, a leg out.
+    // Made from the Point gesture's standing first frame (its body height and feet), eased into over a fifth of a second
+    // and held. Edit the .anim freely; running this again overwrites it.
+    public static readonly Dictionary<string, float> DiscoPose = new()
+    {
+        ["Right Shoulder Down-Up"] = .9f, ["Right Arm Down-Up"] = 1f, ["Right Arm Front-Back"] = .15f, ["Right Arm Twist In-Out"] = 0f,
+        ["Right Forearm Stretch"] = 1f, ["Right Forearm Twist In-Out"] = 0f, ["Right Hand Down-Up"] = .2f,
+        ["Left Arm Down-Up"] = -.15f, ["Left Arm Front-Back"] = -.35f, ["Left Arm Twist In-Out"] = .4f, ["Left Forearm Stretch"] = -.55f, ["Left Hand Down-Up"] = -.4f,
+        ["Spine Left-Right"] = -.35f, ["Chest Left-Right"] = -.25f, ["UpperChest Left-Right"] = -.2f,
+        ["Head Nod Down-Up"] = .35f, ["Head Tilt Left-Right"] = .2f, ["Neck Nod Down-Up"] = .2f,
+        ["Right Upper Leg In-Out"] = .35f, ["Left Upper Leg In-Out"] = -.05f,
+    };
+
+    public static string MakeDefeatPose()
+    {
+        const string source = "Assets/Game/Characters/Animations/ThirdPerson/Gestures/Point.anim", target = "Assets/Game/Characters/Animations/ThirdPerson/Gestures/Disco pose.anim";
+        var point = AssetDatabase.LoadAssetAtPath<AnimationClip>(source);
+        if (point == null) return "no Point.anim";
+        var clip = new AnimationClip { name = "Disco pose" };
+        var settings = AnimationUtility.GetAnimationClipSettings(point);
+        settings.loopTime = false; settings.stopTime = 1.5f;
+        var done = new HashSet<string>();
+        foreach (var binding in AnimationUtility.GetCurveBindings(point))
+        {
+            var curve = AnimationUtility.GetEditorCurve(point, binding);
+            float start = curve.Evaluate(0f), end = DiscoPose.TryGetValue(binding.propertyName, out float pose) ? pose : start;
+            if (DiscoPose.ContainsKey(binding.propertyName)) done.Add(binding.propertyName);
+            AnimationUtility.SetEditorCurve(clip, binding, new AnimationCurve(new Keyframe(0f, start), new Keyframe(.2f, end), new Keyframe(1.5f, end)));
+        }
+        // Muscles the gesture never keys get their own curves.
+        foreach (var kv in DiscoPose)
+        {
+            if (done.Contains(kv.Key)) continue;
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve("", typeof(Animator), kv.Key), new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.2f, kv.Value), new Keyframe(1.5f, kv.Value)));
+        }
+        AnimationUtility.SetAnimationClipSettings(clip, settings);
+        var old = AssetDatabase.LoadAssetAtPath<AnimationClip>(target);
+        if (old != null) { EditorUtility.CopySerialized(clip, old); EditorUtility.SetDirty(old); } else AssetDatabase.CreateAsset(clip, target);
+        AssetDatabase.SaveAssets();
+        return "Disco pose.anim from Point's first frame, " + DiscoPose.Count + " muscles posed";
+    }
+
+    // A picture of the Crypt Lord in a clip at a time (for checking a pose), saved to path.
+    public static string RenderPose(string clipPath, float time, string path)
+    {
+        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Lord.prefab");
+        var go = (GameObject)Object.Instantiate(prefab, new Vector3(0, -500, 0), Quaternion.identity);
+        foreach (var b in go.GetComponentsInChildren<MonoBehaviour>(true)) b.enabled = false;
+        var anim = go.GetComponentInChildren<Animator>();
+        clip.SampleAnimation(anim.gameObject, time);
+        var bounds = new Bounds(go.transform.position + Vector3.up, Vector3.zero);
+        foreach (var r in go.GetComponentsInChildren<Renderer>()) bounds.Encapsulate(r.bounds);
+        var cam = new GameObject("Pose camera").AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(.22f, .22f, .26f);
+        cam.fieldOfView = 30f;
+        cam.transform.position = bounds.center + new Vector3(0, .2f, 1f).normalized * (bounds.extents.magnitude * 3.2f);
+        cam.transform.LookAt(bounds.center);
+        var light = new GameObject("Pose light").AddComponent<Light>();
+        light.type = LightType.Directional; light.intensity = 1.4f; light.transform.rotation = Quaternion.Euler(40, 160, 0);
+        var rt = new RenderTexture(512, 640, 24);
+        cam.targetTexture = rt; cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(512, 640, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, 512, 640), 0, 0); tex.Apply();
+        RenderTexture.active = null;
+        System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(go); Object.DestroyImmediate(cam.gameObject); Object.DestroyImmediate(light.gameObject); Object.DestroyImmediate(rt); Object.DestroyImmediate(tex);
+        return "rendered " + path;
+    }
+
+    static Texture2D Import(string path, TextureWrapMode wrap)
+    {
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.filterMode = FilterMode.Point;
+        importer.textureCompression = TextureImporterCompression.Uncompressed;
+        importer.mipmapEnabled = false;
+        importer.npotScale = TextureImporterNPOTScale.None;
+        importer.wrapMode = wrap;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
     static Texture2D Import(string path)
     {
         var importer = (TextureImporter)AssetImporter.GetAtPath(path);

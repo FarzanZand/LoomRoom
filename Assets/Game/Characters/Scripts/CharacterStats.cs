@@ -332,6 +332,14 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
     // ── Healing ───────────────────────────────────────────────────────
 
+    // Health set to a share of the most (a boss's backup dancers come out weaker than their kind).
+    public void SetHealthShare(float share)
+    {
+        if (!IsAlive) return;
+        CurrentHealth = Mathf.Clamp(MaxHealth * share, 1f, MaxHealth);
+        HealthChanged?.Invoke();
+    }
+
     public void Heal(float amount)
     {
         if (!IsAlive) return;

@@ -134,6 +134,42 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
     [TabGroup(Tabs, "Phase two"), Tooltip("A light show for the second phase: the stage's fires, moonlight and follow spot step through these colours, one step a beat of the music, each fire a different one. Empty: the stage's own second-phase colours (green fires, red moonlight).")]
     public Color[] phaseTwoDisco = new Color[0];
+    [TabGroup(Tabs, "Phase two"), Tooltip("Said by the boss itself in the portrait box as the second phase begins (the fight goes on under it), in place of the DM's line above. Empty: the DM's line.")]
+    public string phaseTwoBossLine = "";
+    [TabGroup(Tabs, "Phase two"), Tooltip("The dance floor (BossDanceFloor): tiles over the stage that light up in the light show's colours on the beat from the second phase on. Empty: none.")]
+    public Material danceFloor;
+    [TabGroup(Tabs, "Phase two"), Tooltip("A disco ball on a chain (BossDiscoBall) lowered over the stage as the second phase begins, throwing moving spots of light across it. Empty: none.")]
+    public GameObject discoBall;
+
+    // ── Backup dancers ──
+    [TabGroup(Tabs, "Backup"), Tooltip("Who comes out to dance behind the boss (an enemy prefab). Empty: no backup dancers.")]
+    public GameObject backupDancer;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Min(1)] public int backupCount = 2;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, 1), Tooltip("They come out when the boss's health falls to this share.")]
+    public float backupAtHealth = .3f;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Their dance (played straight on their animator, each a little out of step).")]
+    public AnimationClip backupDance;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, .1f), Tooltip("Share of the boss's most health it gets back each second while any of them still dances: break them up.")]
+    public float backupHealPerSecond = .015f;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
+    public float backupHealth = .35f;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as they come out.")]
+    public string backupBossLine = "";
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box once the last of them has been broken up.")]
+    public string backupBrokenLine = "";
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer))] public DungeonMaster.Line backupLine = new() { text = "Backup dancers. Break them up or he keeps going." };
+
+    // ── Defeat ──
+    [TabGroup(Tabs, "Defeat"), Tooltip("The boss's last moment when it falls: it spins round, strikes this pose and holds it, then bursts (DeathBurst) in the Defeat Burst effect. Empty: it falls at once as any enemy does.")]
+    public AnimationClip defeatPose;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(0)] public float defeatSpinSeconds = .55f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(0), Tooltip("Seconds the pose is held before the burst.")]
+    public float defeatHold = 1.1f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose))] public GameObject defeatBurst;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(.1f)] public float defeatBurstScale = 2.2f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose))] public AudioClip defeatBurstSound;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Range(0, 1)] public float defeatBurstVolume = 1f;
+    public float DefeatSeconds => defeatPose != null ? defeatSpinSeconds + defeatHold : 0f;
 
     // ── Events ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Events"), Tooltip("What happens during the fight, in any order. Times count from the moment the boss wakes.")]

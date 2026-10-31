@@ -96,3 +96,19 @@ render("Boss landing B.wav", [
     clip(os.path.join(LIB, "Clothes", "Light_Armor_06.wav"), .05, .45, .85),
     tone(SUB, .8, 0, 1.1),
 ], 1.8)
+
+# The disco ball coming down on its chain: a winch's grinding run, slowing, and a clunk as the chain takes its weight
+# (BossDiscoBall lowers it over 3 s).
+render("Disco ball lower.wav", [
+    clip(os.path.join(LIB, "Doors", "Portal_Mechanic_Start_01.wav"), 0, .8, 1.1, "afade=t=out:st=2.4:d=0.6", end=3.2),
+    clip(os.path.join(LIB, "Doors", "Drs_Locked_02.wav"), 2.85, .9, .8, start=.1, end=.6),
+    tone(SUB, .5, 2.9, .5),
+], 3.8)
+
+# The disco boss's last pose bursting: a pop, glittering drops and a shimmer of chimes.
+render("Disco defeat burst.wav", [
+    clip(os.path.join(A, "Game", "Audio", "Clips", "Misc", "pop waw.wav"), 0, 1.0, .9),
+    clip(os.path.join(LIB, "Magic", "Mgc_Fading_Drops_Fire_02.wav"), .03, .8, 1.15),
+    clip(os.path.join(LIB, "SoundFX", "WindChimes.mp3"), .05, .35, 1.2, "afade=t=out:st=0.8:d=1.2", end=2.2),
+    tone(SUB, .6, 0, .6),
+], 2.4)

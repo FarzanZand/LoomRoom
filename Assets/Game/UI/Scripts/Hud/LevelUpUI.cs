@@ -31,10 +31,12 @@ public class LevelUpUI : MonoBehaviour
     static LevelUpUI current;
     int waitingLevel;   // a level-up waiting for the skill popup on screen to finish (0: none)
     public static bool Showing => current != null && current.show != null && current.show.IsActive();
+    // A level-up waits until this time (Time.time): a boss's last pose is not covered by it (BossStageEncounter).
+    public static float HoldUntil;
     // Called by the skill popup when it is about to show its next one: a waiting level-up goes first.
     public static bool PlayWaiting()
     {
-        if (current == null || current.waitingLevel == 0) return false;
+        if (current == null || current.waitingLevel == 0 || Time.time < HoldUntil) return false;
         int level = current.waitingLevel; current.waitingLevel = 0;
         current.Clear();
         current.Play(level, Merge(current.pending));
@@ -60,7 +62,12 @@ public class LevelUpUI : MonoBehaviour
         if (group != null) group.alpha = 0f;
     }
 
-    void Update() { if (progress == null) Bind(); }
+    void Update()
+    {
+        if (progress == null) Bind();
+        // Held back (a boss's last pose): it plays once the hold is over, after any skill popup on screen.
+        if (waitingLevel > 0 && HoldUntil > 0f && Time.time >= HoldUntil && !ExperienceBarUI.Playing) { HoldUntil = 0f; PlayWaiting(); }
+    }
 
     void Bind()
     {
@@ -73,7 +80,7 @@ public class LevelUpUI : MonoBehaviour
     void LeveledUp(int level, List<string> gains)
     {
         // A skill popup on screen finishes first; it hands over when it is done (PlayWaiting).
-        if (!Showing && (waitingLevel > 0 || ExperienceBarUI.Playing)) { waitingLevel = level; pending.AddRange(gains); return; }
+        if (!Showing && (waitingLevel > 0 || ExperienceBarUI.Playing || Time.time < HoldUntil)) { waitingLevel = level; pending.AddRange(gains); return; }
         // Still showing the last level (or two in one go): every line not yet faded out stays in the list, those still
         // to come in included, and points from several levels are summed ("+2 attribute points").
         if (show != null && show.IsActive()) { show.Kill(); foreach (var l in lines) if (l != null && !gone.Contains(l)) pending.Add(l.text); }

@@ -11,7 +11,7 @@ using UnityEngine.Playables;
 // a moment it attacks. During the fight the DM fires his beam and does whatever else the fight's events ask (by
 // seconds, beats of the music or the boss's health) and he only talks about the fight. When the boss falls the stair
 // opens, the way on appears on the stage and the DM straightens up again.
-public class BossStageEncounter : MonoBehaviour
+public partial class BossStageEncounter : MonoBehaviour
 {
     DungeonGenerator dungeon;
     DungeonMilestone milestone;
@@ -216,6 +216,7 @@ public class BossStageEncounter : MonoBehaviour
         brain = boss.GetComponent<EnemyBrain>();
         if (brain != null) brain.Wary = true;
         boss.Died += OnBossDied;
+        ShowSetup();
         yield return Carry(boss, spot, fight != null ? fight.placeSeconds : 2f);
         if (boss != null) bossHome = boss.transform.position;
         // Said once the boss is down and the room is dark, where it can be read.
@@ -385,9 +386,10 @@ public class BossStageEncounter : MonoBehaviour
         {
             phaseTwo = true; halfSaid = true;
             if (stageLights != null) stageLights.PhaseTwo(fight != null ? fight.phaseTwoDisco : null);
-            Say(fight.phaseTwoLine, true);
+            PhaseTwoShow();
             Shake(fight.phaseTwoShake);
         }
+        ShowTick(health, player);
         // His comments on how it goes.
         if (!halfSaid && health <= .5f) { halfSaid = true; Comment(fight.bossHalf); }
         if (!lowSaid && health <= .2f) { lowSaid = true; Comment(fight.bossLow); }
@@ -564,8 +566,9 @@ public class BossStageEncounter : MonoBehaviour
         lost = false;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
-        MessageLog.Post($"{boss.TheNameCap} is dead. The way on is open.", MessageKind.Good);
+        MessageLog.Post($"{(fight != null && !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap)} is dead. The way on is open.", MessageKind.Good);
         Finish(true);
+        StartCoroutine(DefeatScene());
     }
 
     void Defeat()
@@ -637,18 +640,32 @@ public class BossStageEncounter : MonoBehaviour
         finished = true;
         Cleanup(won);
         if (won && dungeon != null && boss != null) StartCoroutine(BossChest(boss.transform.position));
+        // The way on rises on the stage, after the boss's last pose (it would come up in front of it).
         if (won && exit != null)
         {
-            exit.Sealed = false;
-            exit.gameObject.SetActive(true);
-            if (AudioManager.HasInstance && milestone.introSting != null) AudioManager.Instance.PlaySFX(milestone.introSting, exit.transform.position, .5f);
+            if (fight != null && fight.DefeatSeconds > 0f) StartCoroutine(OpenExitAfter(fight.DefeatSeconds + .4f));
+            else OpenExit();
         }
+    }
+
+    IEnumerator OpenExitAfter(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        OpenExit();
+    }
+
+    void OpenExit()
+    {
+        if (exit == null) return;
+        exit.Sealed = false;
+        exit.gameObject.SetActive(true);
+        if (AudioManager.HasInstance && milestone.introSting != null) AudioManager.Instance.PlaySFX(milestone.introSting, exit.transform.position, .5f);
     }
 
     // The boss chest, a moment after the kill (the body is thrown first), facing the player.
     IEnumerator BossChest(Vector3 at)
     {
-        yield return new WaitForSeconds(1.2f);
+        yield return new WaitForSeconds(1.2f + (fight != null ? fight.DefeatSeconds : 0f));
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         // Clear of the exit stairs that rise in the middle of the stage.
         if (exit != null)
@@ -666,6 +683,7 @@ public class BossStageEncounter : MonoBehaviour
     void Cleanup(bool won, bool floorGoing = false)
     {
         if (stageLights != null) stageLights.Calm();
+        ShowEnd(won);
         BossBlessing.Clear();
         StopAllCoroutines(); beamRun = null;
         if (beam != null) beam.Stop();
@@ -675,7 +693,12 @@ public class BossStageEncounter : MonoBehaviour
         if (seat != null) seat.Unfocus();
         ShutStair(false);
         DungeonMasterRemarks.Hold = false;
-        if (darkened && !floorGoing && LightingManager.Instance != null && dungeon != null) LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
+        // Won with a defeat scene, the room stays dark for it (the spotlight on the last pose) and comes back after the burst.
+        if (darkened && !floorGoing && LightingManager.Instance != null && dungeon != null)
+        {
+            if (won && fight != null && fight.DefeatSeconds > 0f) StartCoroutine(RoomBackAfter(fight.DefeatSeconds + .3f));
+            else LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
+        }
         darkened = false;
         if (BossBarUI.HasInstance) BossBarUI.Instance.Hide();
         // A lost fight keeps listening: a revive picks it up again, and a boss that dies meanwhile still opens the way.
@@ -691,6 +714,12 @@ public class BossStageEncounter : MonoBehaviour
             }
             else FloorMusic();
         }
+    }
+
+    IEnumerator RoomBackAfter(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        if (LightingManager.Instance != null && dungeon != null) LightingManager.Instance.BlendToMood(dungeon.LevelData.DungeonLighting(dungeon.FloorNumber), 2.5f);
     }
 
     void FloorMusic()

@@ -297,7 +297,7 @@ public static class PortraitDialogueSetup
         if (fight == null) return "no Crypt Lord fight asset";
         Undo.RecordObject(fight, "Intro dialogue");
         fight.introDialogue = true;
-        fight.introCard = BossIntroCard.BossTitle;
+        fight.introCard = BossIntroCard.Versus;
         // The intro around it: the theatre spotlight (the forest's warm moonbeam: a spot, a shaft and dust from high
         // above) with its switch-on clunk (Tools/boss_intro_sounds.py, as is the boss's landing), a heavy thud for each letter of the boss's name, and the versus screen's
         // whooshes, thuds and slam for when the card is switched to it.

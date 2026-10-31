@@ -28,6 +28,10 @@ public class DeathBurst : MonoBehaviour
     DamageInfo lastHit;
     readonly List<Rigidbody> pieces = new();
     public bool HasBurst { get; private set; }
+    // Seconds between the death and the burst, for a last moment someone else plays out (a boss's defeat pose,
+    // BossStageEncounter): the Animator keeps running meanwhile. 0: the burst comes at the end of the death frame.
+    public float HoldSeconds { get; set; }
+    float burstAt;
 
     void Awake() => character = GetComponent<Character>();
     void OnEnable() { character.Damaged += Remember; character.Died += OnDied; }
@@ -40,14 +44,16 @@ public class DeathBurst : MonoBehaviour
     {
         if (HasBurst || pending) return;
         pending = true;
+        burstAt = Time.time + HoldSeconds;
         // Hold the current pose: with the Animator running, the Dead flag and death trigger would move it first.
-        if (character.Animator != null) character.Animator.enabled = false;
+        if (HoldSeconds <= 0f && character.Animator != null) character.Animator.enabled = false;
     }
 
     void LateUpdate()
     {
-        if (!pending) return;
+        if (!pending || Time.time < burstAt) return;
         pending = false;
+        if (character.Animator != null) character.Animator.enabled = false;
         Burst();
     }
 

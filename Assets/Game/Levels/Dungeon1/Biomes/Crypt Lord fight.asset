@@ -71,7 +71,7 @@ MonoBehaviour:
     model: {fileID: 0}
     text: You heard the king. Dance.
     choices: []
-  introCard: 1
+  introCard: 2
   title:
     lettersPerSecond: 11
     subtitleFade: 0.4
@@ -149,6 +149,29 @@ MonoBehaviour:
   - {r: 1, g: 0.8, b: 0.25, a: 1}
   - {r: 0.6, g: 0.4, b: 1, a: 1}
   - {r: 0.4, g: 1, b: 0.5, a: 1}
+  phaseTwoBossLine: Let's turn it up!
+  danceFloor: {fileID: 2100000, guid: 2743806b102874944b19636fddc4d606, type: 2}
+  discoBall: {fileID: 648832377681289351, guid: 67cb16bee95be49448d672fbd8c5cf77, type: 3}
+  backupDancer: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  backupCount: 2
+  backupAtHealth: 0.3
+  backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
+  backupHealPerSecond: 0.01
+  backupHealth: 0.35
+  backupBossLine: Hit it, boys!
+  backupBrokenLine: Hey! That was my crew!
+  backupLine:
+    text: Backup dancers. Break them up or he keeps going.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  defeatPose: {fileID: 7400000, guid: 4f92cea444cf5ed44ba8d4066a7e2ded, type: 2}
+  defeatSpinSeconds: 0.55
+  defeatHold: 1.1
+  defeatBurst: {fileID: 9198749250686254271, guid: 30f20a54427535f418d179a9f88e3f8c, type: 3}
+  defeatBurstScale: 2.5
+  defeatBurstSound: {fileID: 8300000, guid: 0b4890e18a82fd1428bbdb86a8d7b67f, type: 3}
+  defeatBurstVolume: 1
   events:
   - enabled: 1
     when: 2
@@ -180,7 +203,7 @@ MonoBehaviour:
       rampSeconds: 0.35
       scale: 1.3
       homing: 0
-  - enabled: 1
+  - enabled: 0
     when: 3
     seconds: 10
     startBeat: 8

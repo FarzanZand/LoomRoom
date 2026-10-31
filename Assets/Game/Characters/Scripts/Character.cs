@@ -25,10 +25,14 @@ public class Character : MonoBehaviour
 
     // A word in front of the name for this one character (an elite's "Brutal", EliteEnemy). Empty: none.
     [System.NonSerialized] public string namePrefix;
-    public string DisplayName => (string.IsNullOrEmpty(namePrefix) ? "" : namePrefix + " ") + (data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name);
+    // A name this one character goes by in place of its data's (a boss's stage name, BossFight.bossName), said as a
+    // proper name. Empty: the data's.
+    [System.NonSerialized] public string nameOverride;
+    public string DisplayName => (string.IsNullOrEmpty(namePrefix) ? "" : namePrefix + " ") + (!string.IsNullOrEmpty(nameOverride) ? nameOverride : data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name);
+    bool ProperName => !string.IsNullOrEmpty(nameOverride) || data != null && data.properName;
     // The name as a sentence uses it: "the Crypt Rat", or a proper name as it is (CharacterData.properName).
-    public string TheName => data != null && data.properName ? DisplayName : "the " + DisplayName;
-    public string TheNameCap => data != null && data.properName ? DisplayName : "The " + DisplayName;
+    public string TheName => ProperName ? DisplayName : "the " + DisplayName;
+    public string TheNameCap => ProperName ? DisplayName : "The " + DisplayName;
     // Proper names seen this session, so text built from a name alone (the killer line) leaves the article off.
     public static readonly System.Collections.Generic.HashSet<string> ProperNames = new();
     public bool   IsAlive     => Stats == null || Stats.IsAlive;

@@ -43,8 +43,10 @@ public class PortraitDialogueUI : MonoBehaviour
     int picked = -1, selected;
 
     public bool Open { get; private set; }
-    // While it is up the hotbar and vitals step aside (HudCanvas.BehindMenu).
-    public static bool Covers => Current != null && Current.Open;
+    // A line said in the middle of play (Bark): no state pushed, nothing to press, the HUD stays.
+    public bool Barking { get; private set; }
+    // While it is up the hotbar and vitals step aside (HudCanvas.BehindMenu); not for a bark.
+    public static bool Covers => Current != null && Current.Open && !Current.Barking;
 
     void Awake() { Current = this; Hide(true); }
     void OnDestroy() { if (Current == this) Current = null; }
@@ -80,6 +82,44 @@ public class PortraitDialogueUI : MonoBehaviour
 
     bool shown;
     Action firstShown;
+
+    // One line said in the middle of play (a boss's taunt in its fight): the box with the speaker, typed out, held while
+    // it is read (hold seconds plus a little a letter), then gone. It pushes no game state and can't be skipped, so the
+    // fight goes on under it. Ignored while the box is up for anything else.
+    // A bark said while another is up waits for it (one quick after another: the boss's crew broken up while its call
+    // for them still shows).
+    public void Bark(string text, Character speaker, string speakerName, float hold = 1.4f)
+    {
+        if (string.IsNullOrWhiteSpace(text) || !isActiveAndEnabled) return;
+        if (Barking) { barks.Enqueue((text, speaker, speakerName, hold)); return; }
+        if (Open) return;
+        StartCoroutine(BarkRun(text, speaker, speakerName, hold));
+    }
+
+    readonly Queue<(string text, Character speaker, string name, float hold)> barks = new();
+
+    IEnumerator BarkRun(string text, Character speaker, string speakerName, float hold)
+    {
+        Open = true; Barking = true;
+        stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();
+        stage.resolution = portraitResolution; stage.turn = portraitTurn; stage.bodyBelow = portraitBodyBelow; stage.roomAbove = portraitRoomAbove;
+        shown = false; firstShown = null;
+        yield return Box(PortraitSpeaker.Boss, null, null, text, speaker, speakerName);
+        if (arrow != null) arrow.enabled = false;
+        yield return new WaitForSeconds(hold + text.Length * .03f);
+        // The next waiting one follows on in the same box.
+        while (barks.Count > 0)
+        {
+            var next = barks.Dequeue();
+            yield return Box(PortraitSpeaker.Boss, null, null, next.text, next.speaker, next.name);
+            if (arrow != null) arrow.enabled = false;
+            yield return new WaitForSeconds(next.hold + next.text.Length * .03f);
+        }
+        yield return Fade(0f);
+        Hide(false);
+        stage.Clear();
+        Open = false; Barking = false;
+    }
 
     // One line: the Dungeon Master's in his own feed as always (the box steps aside while he
     // speaks), anyone else's in the box. Wait: hold until it is read and pressed on (a line with answers doesn't).
@@ -207,6 +247,7 @@ public class PortraitDialogueUI : MonoBehaviour
 
     bool Pressed()
     {
+        if (Barking) return false;
         if (testPress) { testPress = false; return true; }
         return InputManager.HasInstance && InputManager.Instance.SkipLinePressed;
     }
