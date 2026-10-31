@@ -120,6 +120,7 @@ public enum CoopEventKind : byte
     PartySpoiled = 21, // a Skeleton Party's dance broke up (position = the party's room spot)
     Ping = 20,          // a player pointed at something (position = where, item = what it is called; CoopPing)
     NpcProvoked = 23,   // a provokable character was struck (id = it on the floor, amount = its hits so far; ProvokableNpc)
+    PlayerSpell = 24,   // a player's spell, seen by the others (CoopSpells: item = the spell, id = the enemy aimed at + 1)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,
@@ -148,11 +149,13 @@ public struct CoopEvent : INetworkSerializable
     public Vector3 position, direction;
     public FixedString128Bytes item;
     public byte target;           // a player aimed at (Coop.NoSlot: none)
+    public Vector3 extra;         // a third point where one is needed (a spell's eye)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref kind); s.SerializeValue(ref slot); s.SerializeValue(ref floorKey); s.SerializeValue(ref id);
         s.SerializeValue(ref amount); s.SerializeValue(ref position); s.SerializeValue(ref direction); s.SerializeValue(ref item); s.SerializeValue(ref target);
+        s.SerializeValue(ref extra);
     }
 }
 
@@ -196,12 +199,13 @@ public struct EnemySpawn : INetworkSerializable
     public float yaw;
     public int lootSeed;
     public float health, maxHealth;  // as the host made it (the intro's killer is much tougher than its prefab)
+    public byte side;                // a summon on the players' side (Raise the Fallen): 1 + its summoner's slot; 0 an enemy
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref floorKey); s.SerializeValue(ref id); s.SerializeValue(ref prefab);
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
-        s.SerializeValue(ref health); s.SerializeValue(ref maxHealth);
+        s.SerializeValue(ref health); s.SerializeValue(ref maxHealth); s.SerializeValue(ref side);
     }
 }
 

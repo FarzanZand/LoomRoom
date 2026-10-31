@@ -277,7 +277,11 @@ public static class CoopWorld
         var info = strike.ToInfo(CharacterOf(strike.slot));
         // Stunned first, as on the striker's machine, so the hurt reaction plays.
         if (strike.stun > 0f && enemy.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(strike.stun);
+        // Flicked and still in the air here (the flick runs here too, a moment behind): down first, as for a blow it lands.
+        if (enemy.Stats.CurrentHealth <= info.Amount) Flick.Ground(enemy);
         enemy.Stats.TakeDamage(info);
+        // A strike from inside a Shadow Veil gave the striker away there; the copy of the veil here goes too.
+        if (info.Source != null) ShadowVeil.Break(info.Source);
     }
 
     // Host: any damage to an enemy goes to the guests with its health after it.
@@ -301,6 +305,7 @@ public static class CoopWorld
         var enemy = Enemy(hit.enemy);
         if (enemy == null || enemy.Stats == null || !enemy.IsAlive) return;
         var info = hit.ToInfo(CharacterOf(hit.slot));
+        if (hit.Died) Flick.Ground(enemy);
         enemy.Stats.ApplyNetworkDamage(info, hit.health);
         if (hit.Died && hit.slot != Coop.LocalSlot && RunManager.HasInstance) RunManager.Instance.AwardPartyKill(enemy);
     }
@@ -468,6 +473,7 @@ public static class CoopWorld
             floorKey = FloorKey, id = enemyIds[c], prefab = prefab, position = c.transform.position, yaw = c.transform.eulerAngles.y,
             lootSeed = drop != null ? drop.seed : 0,
             health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
+            side = c.TryGetComponent<Summon>(out var summon) && summon.Summoner != null && summon.Summoner.Faction == Faction.Player ? (byte)(1 + Mathf.Clamp(SlotOf(summon.Summoner), 0, 250)) : (byte)0,
         };
         spawnHistory.Add(spawn);
         CoopMessages.ToGuests(CoopMessages.Spawn, spawn);
@@ -488,6 +494,15 @@ public static class CoopWorld
         if (c.Stats != null && spawn.maxHealth > 0 && c.Stats.MaxHealth > 0 && Mathf.Abs(c.Stats.MaxHealth - spawn.maxHealth) > .01f)
             c.Stats.AddModifier(new StatModifier(StatType.MaxHealth, spawn.maxHealth / c.Stats.MaxHealth - 1f, ModifierType.PercentMultiply, Coop.PartySource));
         pendingHealth[c] = spawn.health;
+        // Raised for a player (Raise the Fallen): on the players' side here too, with its aura, so it isn't fought.
+        if (spawn.side > 0)
+        {
+            c.FactionOverride = Faction.Player;
+            var by = CharacterOf(spawn.side - 1);
+            var spell = CoopSpells.RaiseSpell();
+            if (by != null && spell != null) Summon.Bind(c, by, spell.raise.summon, spell.name)?.ShowAura();
+            CoopSpells.TakeBones(spawn.position);
+        }
         while (enemies.Count < spawn.id) enemies.Add(null);
         if (enemies.Count == spawn.id) { enemies.Add(c); enemyIds[c] = spawn.id; }
         else { enemies[spawn.id] = c; enemyIds[c] = spawn.id; }
@@ -632,7 +647,9 @@ public static class CoopWorld
         if (!Coop.Running || !Coop.IsHost || !TryEnemyId(enemy, out var id) || !(enemy.data is EnemyData data)) return;
         int index = data.spells.IndexOf(cast);
         if (index < 0) return;
-        Send(new CoopEvent { kind = CoopEventKind.EnemySpell, id = id, amount = index, position = position, direction = direction, target = (byte)SlotOf(target) });
+        // Aimed at a player's summon rather than a player: its number on the floor + 1, in extra.x.
+        int aimed = target != null && SlotOf(target) == Coop.NoSlot && TryEnemyId(target, out var t) ? t + 1 : 0;
+        Send(new CoopEvent { kind = CoopEventKind.EnemySpell, id = id, amount = index, position = position, direction = direction, target = (byte)SlotOf(target), extra = new Vector3(aimed, 0f, 0f) });
     }
 
     // Host: whom a caster's spell goes at, picked when the cast begins: any player it can see within the spell's
@@ -688,7 +705,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: return;
         }
         history.Add(e);
     }
@@ -872,6 +889,9 @@ public static class CoopWorld
                 if (audio != null) AudioManager.Instance.PlaySFXData(audio, enemy.transform.position + Vector3.up);
                 break;
             }
+            case CoopEventKind.PlayerSpell:
+                if (e.slot != Coop.LocalSlot) CoopSpells.Play(e);
+                break;
             case CoopEventKind.EnemySpell:
             {
                 // The look only: no damage here (the host's spell hurts, and its blows reach players from there).
@@ -882,7 +902,13 @@ public static class CoopWorld
                 if (spell == null) break;
                 if (CoopPlayer.CoopTiming) Debug.Log($"[Coop] enemy {e.id} cast {spell.name}");
                 if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, e.position, spell.releaseVolume);
-                if (spell.groundArea) GroundAreaSpell.Cast(enemy, spell, 0f, e.position, null);
+                // A spell of its own kind (chain lightning, a sweeping arc): at the same one (a raise comes as a spawn).
+                if (spell.effect != SpellEffect.Standard)
+                {
+                    var at = e.target != Coop.NoSlot ? CharacterOf(e.target) : e.extra.x > 0f ? Enemy(Mathf.RoundToInt(e.extra.x) - 1) : null;
+                    if (spell.effect != SpellEffect.RaiseTheFallen && at != null) SpellEffects.CastByEnemy(enemy, spell, 0f, e.position, at);
+                }
+                else if (spell.groundArea) GroundAreaSpell.Cast(enemy, spell, 0f, e.position, null);
                 else if (cast.volley)
                 {
                     // At the same player as on the host (here the balls only show; the host's hurt).

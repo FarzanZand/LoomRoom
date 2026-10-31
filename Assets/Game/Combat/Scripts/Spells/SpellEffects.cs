@@ -24,7 +24,9 @@ public static class SpellEffects
             case SpellEffect.SweepingArc: SweepingArc.Cast(player, spell, power, hand, view.forward, null, progress); break;
             case SpellEffect.RaiseTheFallen:
                 var heap = BoneHeap.Nearest(player.transform.position, spell.raise.reach);
-                if (heap != null) RaiseTheFallen.Cast(player, spell, heap, progress);
+                // A co-op guest: the host raises it (CoopSpells) and its skeleton comes from there.
+                if (heap != null && Coop.IsGuest) { progress?.Practise(spell.Skill, SkillAction.Cast); CoopSpells.TakeBones(heap.Centre ?? player.transform.position); }
+                else if (heap != null) RaiseTheFallen.Cast(player, spell, heap, progress);
                 break;
             case SpellEffect.Flick: Flick.Cast(player, spell, power, progress); break;
             case SpellEffect.HelpingHand: HelpingHand.Cast(player, spell, power, progress); break;
@@ -68,7 +70,8 @@ public static class SpellEffects
     // Magic damage straight onto one character, as a spell's blast would land it.
     public static bool Strike(Character owner, Character target, float power, Vector3 at, Vector3 from, string sourceName = null)
     {
-        if (target == null || !target.IsAlive || target == owner) return false;
+        // No power: a spell only shown (a co-op teammate's, cast again here by their stand-in, CoopSpells).
+        if (power <= 0f || target == null || !target.IsAlive || target == owner) return false;
         if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) { ProvokableNpc.TryProvoke(target, owner); return false; }
         var dir = at - from; dir.y = 0f;
         target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = at, Direction = dir.sqrMagnitude > .0001f ? dir.normalized : Vector3.forward });

@@ -131,7 +131,7 @@ public class Flick : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { running = null; picked = null; }
 
-    Player caster;
+    Character caster;   // the player, or in co-op a teammate's stand-in (Echo)
     SpellDefinition spell;
     FlickSettings settings;
     AdventurerProgress progress;
@@ -141,6 +141,7 @@ public class Flick : MonoBehaviour
     Transform looseDie;
 
     static Transform View(Player player) => player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : player.transform;
+    static Transform View(Character c) => c is Player player ? View(player) : c.transform;
 
     // The enemy picked as the cast began: kept through the wind-up, so one that steps in close meanwhile is still the one.
     static Character picked; static float pickedAt;
@@ -200,6 +201,19 @@ public class Flick : MonoBehaviour
         var go = new GameObject(spell.name + " (flick)");
         var flick = go.AddComponent<Flick>();
         flick.caster = player; flick.spell = spell; flick.settings = spell.flick; flick.power = power; flick.progress = progress; flick.target = target;
+        running = flick;
+        flick.StartCoroutine(flick.Run());
+    }
+
+    // Co-op: a teammate's flick, cast again here by their stand-in at the enemy they picked. No power: it only shows
+    // (the blow comes from their machine), though on the host the enemy really flies, since the host runs it.
+    public static void Echo(Character caster, SpellDefinition spell, Character target)
+    {
+        if (caster == null || spell == null || target == null || !target.IsAlive || Running) return;
+        if (spell.flick.reach != FlickReach.Portal && (BossStageEncounter.Current != null || DungeonMasterReach.Busy || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return;
+        var go = new GameObject(spell.name + " (flick, teammate)");
+        var flick = go.AddComponent<Flick>();
+        flick.caster = caster; flick.spell = spell; flick.settings = spell.flick; flick.power = 0f; flick.target = target;
         running = flick;
         flick.StartCoroutine(flick.Run());
     }
@@ -809,6 +823,12 @@ public class Flick : MonoBehaviour
 
     // It flies off its feet along direction, tumbling, until it meets the floor; the first wall or floor it hits does the
     // damage. Anyone else in its way is bowled over. A body that lives through it lies stunned where it lands.
+    // Bodies in the air right now, each with the way to give it back its colliders and physics. A blow can come from
+    // elsewhere and kill one mid-flight (co-op: the caster's machine sends the blow, the host the death); it is put down
+    // first (Ground), as the flight does itself before a blow it knows will kill.
+    static readonly Dictionary<Character, System.Action> airborne = new();
+    public static void Ground(Character body) { if (body != null && airborne.TryGetValue(body, out var restore)) restore(); }
+
     IEnumerator Fly(Character body, Vector3 direction, float damage, bool fromFinger)
     {
         if (body == null || !body.IsAlive) yield break;
@@ -826,18 +846,26 @@ public class Flick : MonoBehaviour
         var colliders = body.GetComponentsInChildren<Collider>(true);
         var bodies = body.GetComponentsInChildren<Rigidbody>(true);
         var solid = new bool[colliders.Length]; var kinematic = new bool[bodies.Length];
+        // A co-op guest's copy of the enemy (the host runs it): it flies here for the look and lands where the host
+        // says; its agent and motor stay off.
+        bool puppet = brain != null && brain.NetworkPuppet;
         if (brain != null) brain.enabled = false;
         if (agent != null) agent.enabled = false;
         if (motor != null) motor.enabled = false;
         for (int i = 0; i < colliders.Length; i++) { solid[i] = colliders[i].enabled; colliders[i].enabled = false; }
         for (int i = 0; i < bodies.Length; i++) { kinematic[i] = bodies[i].isKinematic; bodies[i].isKinematic = true; }
+        bool restored = false;
         void Restore()
         {
+            if (restored) return;
+            restored = true;
+            airborne.Remove(body);
             for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].isKinematic = kinematic[i];
             for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = solid[i];
-            if (motor != null) motor.enabled = true;
+            if (motor != null && !puppet) motor.enabled = true;
         }
 
+        airborne[body] = Restore;
         var dir = Flat(direction);
         float height = solid.Length > 0 && colliders[0] != null ? Mathf.Max(.4f, colliders[0].bounds.size.y) : 1.6f;
         var v = dir * settings.launchSpeed + Vector3.up * settings.launchUp;
@@ -860,6 +888,8 @@ public class Flick : MonoBehaviour
         }
         for (float t = 0; t < 4f && body != null && !landed; t += Time.deltaTime)
         {
+            // Killed in the air by a blow from elsewhere (it was put down first): its death has it now.
+            if (!body.IsAlive) { Restore(); flying = false; yield break; }
             float dt = Time.deltaTime;
             v.y -= settings.gravity * dt;
             var step = v * dt;
@@ -897,12 +927,14 @@ public class Flick : MonoBehaviour
             yield return null;
         }
         if (body == null) { flying = false; yield break; }
+        if (!body.IsAlive) { Restore(); flying = false; yield break; }
         if (!struck && Strike(p)) { flying = false; yield break; }
         // It lived: on its feet again where it landed, facing back the way it came, and stunned a moment.
         var face = -dir;
         if (NavMesh.SamplePosition(p, out var onMesh, 3f, NavMesh.AllAreas)) p = onMesh.position;
         body.transform.SetPositionAndRotation(p, Quaternion.LookRotation(face));
         Restore();
+        if (puppet) { brain.enabled = true; flying = false; yield break; }
         if (agent != null) { agent.enabled = true; agent.Warp(p); if (agent.isOnNavMesh) { agent.ResetPath(); agent.velocity = Vector3.zero; } }
         if (brain != null) { brain.enabled = true; brain.Motor?.Resume(); brain.Stun(settings.stunSeconds); }
         flying = false;

@@ -217,6 +217,7 @@ public class PlayerSpellcasting : MonoBehaviour
             // Left where the player stands: parented under the player its particles never started.
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
             if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+            CoopSpells.Cast(player, spell, player.transform.position, Vector3.zero);
         }
         else if (spell.effect != SpellEffect.Standard) CastEffect(spell);
         else if (spell.groundArea) CastOnGround(spell);
@@ -257,6 +258,7 @@ public class PlayerSpellcasting : MonoBehaviour
         if (spell.homing && hit.collider != null && hit.collider.GetComponentInParent<Character>() is { } aimed && aimed != player && aimed.IsAlive)
         { projectile.HomingTarget = aimed; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(player, spell, Power(spell), progress);
+        CoopSpells.Cast(player, spell, origin, direction, view.position, projectile.HomingTarget);
 
         // The flame leaves the hand and relights once the throw has recovered.
         if (held != null) { held.Stop(); held = null; }
@@ -269,6 +271,8 @@ public class PlayerSpellcasting : MonoBehaviour
         var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : transform;
         var origin = castOrigin != null ? castOrigin.position : view.position;
         SpellEffects.CastByPlayer(player, spell, Power(spell), view, origin, progress);
+        // Co-op: the enemy a flick went for, so the others' Dungeon Master goes for the same one.
+        CoopSpells.Cast(player, spell, spell.effect == SpellEffect.RaiseTheFallen ? player.transform.position : origin, view.forward, view.position, spell.effect == SpellEffect.Flick ? Flick.Watched : null);
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }
@@ -283,6 +287,7 @@ public class PlayerSpellcasting : MonoBehaviour
         foreach (var hit in hits)
             if (!hit.transform.IsChildOf(player.transform)) { point = hit.point; break; }
         GroundAreaSpell.Cast(player, spell, Power(spell), GroundAreaSpell.GroundBelow(point), progress);
+        CoopSpells.Cast(player, spell, view.position, GroundAreaSpell.GroundBelow(point));
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }

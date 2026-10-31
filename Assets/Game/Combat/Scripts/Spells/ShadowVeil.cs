@@ -28,12 +28,12 @@ public class ShadowVeil : MonoBehaviour
 {
     static readonly List<ShadowVeil> active = new();
 
-    Player player;
+    Character player;   // the player, or in co-op a teammate's stand-in (CoopSpells): enemies here lose sight of them too
     ShadowVeilSettings settings;
     SpellVisual wisps;
     float until;
 
-    public static void Begin(Player player, SpellDefinition spell)
+    public static void Begin(Character player, SpellDefinition spell)
     {
         if (player == null || spell == null) return;
         var veil = player.GetComponent<ShadowVeil>();
@@ -41,7 +41,7 @@ public class ShadowVeil : MonoBehaviour
         veil.Set(player, spell.veil);
     }
 
-    void Set(Player who, ShadowVeilSettings with)
+    void Set(Character who, ShadowVeilSettings with)
     {
         player = who; settings = with;
         until = Time.time + settings.seconds;
@@ -49,9 +49,11 @@ public class ShadowVeil : MonoBehaviour
         if (wisps == null && settings.wisps != null)
         {
             // On the view, low and ahead, so it curls up round the arms in first person and round the body from outside.
-            var view = player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : player.transform;
+            // A teammate's stand-in: round its body.
+            var me = player as Player;
+            var view = me != null && me.CameraRig != null && me.CameraRig.Camera != null ? me.CameraRig.Camera.transform : player.transform;
             wisps = Instantiate(settings.wisps, view);
-            wisps.transform.localPosition = new Vector3(0f, -.55f, .35f);
+            wisps.transform.localPosition = me != null ? new Vector3(0f, -.55f, .35f) : new Vector3(0f, 1f, 0f);
             wisps.transform.localRotation = Quaternion.identity;
         }
     }
@@ -68,7 +70,7 @@ public class ShadowVeil : MonoBehaviour
         active.Remove(this);
         if (wisps != null) wisps.Stop();
         wisps = null;
-        if (settings != null && settings.endSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(settings.endSound, settings.endVolume);
+        if (settings != null && settings.endSound != null && AudioManager.HasInstance && player is Player) AudioManager.Instance.PlaySFX2D(settings.endSound, settings.endVolume);
         Destroy(this);
     }
 

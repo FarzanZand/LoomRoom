@@ -92,7 +92,8 @@ public class HelpingHand : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { running = null; }
 
-    Player caster;
+    Character caster;   // the player, or in co-op a teammate's stand-in (Echo)
+    bool echo;
     SpellDefinition spell;
     HelpingHandSettings settings;
     AdventurerProgress progress;
@@ -100,6 +101,7 @@ public class HelpingHand : MonoBehaviour
     Vector3 ahead;   // where the player looked as they cast: his palm is held that way (turning the view doesn't swing his arm)
 
     static Transform View(Player player) => player.CameraRig != null && player.CameraRig.Camera != null ? player.CameraRig.Camera.transform : player.transform;
+    static Transform View(Character c) => c is Player player ? View(player) : c.transform;
 
     public static string Refusal(Player player, SpellDefinition spell)
     {
@@ -117,6 +119,19 @@ public class HelpingHand : MonoBehaviour
         var help = go.AddComponent<HelpingHand>();
         help.caster = player; help.spell = spell; help.settings = spell.helpingHand; help.power = power; help.progress = progress;
         help.ahead = Flat(View(player).forward);
+        running = help;
+        help.StartCoroutine(help.Run());
+    }
+
+    // Co-op: a teammate's helping hand, cast again here by their stand-in, for the look: he comes and holds his hand over
+    // them; the healing is their own machine's.
+    public static void Echo(Character caster, SpellDefinition spell, Vector3 ahead)
+    {
+        if (caster == null || spell == null || Running || BossStageEncounter.Current != null || DungeonMasterReach.Busy || DungeonMasterReach.Hand == null) return;
+        var go = new GameObject(spell.name + " (helping hand, teammate)");
+        var help = go.AddComponent<HelpingHand>();
+        help.caster = caster; help.spell = spell; help.settings = spell.helpingHand; help.echo = true;
+        help.ahead = Flat(ahead).sqrMagnitude > .01f ? Flat(ahead).normalized : Flat(caster.transform.forward);
         running = help;
         help.StartCoroutine(help.Run());
     }
@@ -364,7 +379,11 @@ public class HelpingHand : MonoBehaviour
             var pour = Instantiate(settings.pour, caster.transform.position, Quaternion.identity);
             StartCoroutine(Keep(pour, settings.burstHealSeconds + .4f));
         }
-        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+        if (spell.impactSound != null && AudioManager.HasInstance)
+        {
+            if (echo) AudioManager.Instance.PlaySFX(spell.impactSound, at, spell.impactVolume);
+            else AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+        }
         yield return Mend(power, settings.burstHealSeconds);
         done();
     }
@@ -391,7 +410,7 @@ public class HelpingHand : MonoBehaviour
 
     void Heal(float amount)
     {
-        if (caster == null || !caster.IsAlive || amount <= 0f) return;
+        if (echo || caster == null || !caster.IsAlive || amount <= 0f) return;
         float before = caster.Stats.CurrentHealth;
         caster.Stats.Heal(amount);
         healed += amount;

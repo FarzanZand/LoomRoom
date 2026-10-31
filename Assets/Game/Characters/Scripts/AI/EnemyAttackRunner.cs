@@ -496,7 +496,7 @@ public class EnemyAttackRunner
         Vector3 velocity = mover != null ? mover.velocity : Vector3.zero; velocity.y = 0f;
         if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, origin, spell.releaseVolume);
 
-        if (spell.effect != SpellEffect.Standard) { SpellEffects.CastByEnemy(Character, spell, damage, origin, target); return; }
+        if (spell.effect != SpellEffect.Standard) { SpellEffects.CastByEnemy(Character, spell, damage, origin, target); CoopWorld.EnemyCast(Character, cast, origin, Vector3.zero, target); return; }
         if (spell.groundArea)
         {
             Vector3 spot = target.transform.position + velocity * spell.areaDelay * cast.leadTarget;
