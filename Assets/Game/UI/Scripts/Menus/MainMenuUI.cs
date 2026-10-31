@@ -205,6 +205,12 @@ public class MainMenuUI : MonoBehaviour
         bool any = AdventureSave.SaveExists;
         if (playButton != null) playButton.gameObject.SetActive(any);
         if (loadButton != null) loadButton.gameObject.SetActive(any);
+        // Keys and a pad walk the column top to bottom: the scene's own links sent every button to Quit, so New game,
+        // Load game and Settings couldn't be reached.
+        var column = new System.Collections.Generic.List<Selectable>();
+        var parent = newGameButton != null ? newGameButton.transform.parent : null;
+        if (parent != null) foreach (Transform child in parent) if (child.TryGetComponent<Selectable>(out var button)) column.Add(button);
+        MenuFocus.Chain(column);
         SelectFirst();
     }
 
@@ -310,6 +316,9 @@ public class MainMenuUI : MonoBehaviour
             }
             if (row.delete != null) row.delete.gameObject.SetActive(save.exists && mode == SavesMode.Load);
         }
+        // Keys and a pad move between the saves, their Delete buttons and Back by where they sit (Down stayed on the
+        // first save).
+        if (savesPanel != null) { Canvas.ForceUpdateCanvases(); MenuFocus.LinkNearest(savesPanel.GetComponentsInChildren<Selectable>()); }
     }
 
     static string Details(AdventureSave.Summary save)
