@@ -12,12 +12,12 @@ public static class CoopSpells
 
     // The caster's machine: what was cast and where. a: where it leaves from (the hand), b: its direction or the spot on
     // the ground, eye: the caster's eye, target: the enemy it is aimed at (a flick, a homing bolt).
-    public static void Cast(Player caster, SpellDefinition spell, Vector3 a, Vector3 b, Vector3 eye = default, Character target = null)
+    public static void Cast(Player caster, SpellDefinition spell, Vector3 a, Vector3 b, Vector3 eye = default, Character target = null, float power = 0f)
     {
         if (!Coop.Running || CoopWorld.Floor == null || caster == null || spell == null || caster.kind != PlayerKind.Table) return;
         int id = CoopWorld.TryEnemyId(target, out var enemy) ? enemy + 1 : 0;
         if (CoopPlayer.CoopTiming) Debug.Log($"[Coop] I cast {spell.name} (enemy {id - 1})");
-        CoopWorld.Send(new CoopEvent { kind = CoopEventKind.PlayerSpell, item = spell.name, position = a, direction = b, extra = eye, id = id, target = Coop.NoSlot });
+        CoopWorld.Send(new CoopEvent { kind = CoopEventKind.PlayerSpell, item = spell.name, position = a, direction = b, extra = eye, id = id, target = Coop.NoSlot, amount = Mathf.RoundToInt(power * 100f) });
     }
 
     static SpellDefinition Find(string name)
@@ -65,7 +65,8 @@ public static class CoopSpells
                 var heap = BoneHeap.Nearest(e.position, spell.raise.reach + 2f);
                 if (heap != null) RaiseTheFallen.Cast(caster, spell, heap, null);
                 return;
-            case SpellEffect.Flick: if (target != null) Flick.Echo(caster, spell, target); return;
+            // A guest's flick is the host's to carry out, with the guest's power (its blow counts as theirs).
+            case SpellEffect.Flick: if (target != null) Flick.Echo(caster, spell, target, Coop.IsHost ? e.amount / 100f : 0f); return;
             case SpellEffect.HelpingHand: HelpingHand.Echo(caster, spell, e.direction); return;
         }
         if (spell.groundArea) { GroundAreaSpell.Cast(caster, spell, 0f, e.direction, null); return; }

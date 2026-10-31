@@ -205,15 +205,15 @@ public class Flick : MonoBehaviour
         flick.StartCoroutine(flick.Run());
     }
 
-    // Co-op: a teammate's flick, cast again here by their stand-in at the enemy they picked. No power: it only shows
-    // (the blow comes from their machine), though on the host the enemy really flies, since the host runs it.
-    public static void Echo(Character caster, SpellDefinition spell, Character target)
+    // Co-op: a teammate's flick, cast again here by their stand-in at the enemy they picked. On the host it is the real
+    // one (the host runs the enemies: it flies and is struck with the caster's power); on a guest it only shows.
+    public static void Echo(Character caster, SpellDefinition spell, Character target, float power = 0f)
     {
         if (caster == null || spell == null || target == null || !target.IsAlive || Running) return;
         if (spell.flick.reach != FlickReach.Portal && (BossStageEncounter.Current != null || DungeonMasterReach.Busy || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return;
         var go = new GameObject(spell.name + " (flick, teammate)");
         var flick = go.AddComponent<Flick>();
-        flick.caster = caster; flick.spell = spell; flick.settings = spell.flick; flick.power = 0f; flick.target = target;
+        flick.caster = caster; flick.spell = spell; flick.settings = spell.flick; flick.power = power; flick.target = target;
         running = flick;
         flick.StartCoroutine(flick.Run());
     }
@@ -832,6 +832,9 @@ public class Flick : MonoBehaviour
     IEnumerator Fly(Character body, Vector3 direction, float damage, bool fromFinger)
     {
         if (body == null || !body.IsAlive) yield break;
+        // A co-op guest's copy of an enemy: the host's flies (and is struck there); its flight comes here on the host's
+        // snapshots, so it flies one way everywhere.
+        if (body.TryGetComponent<EnemyBrain>(out var copy) && copy.NetworkPuppet) yield break;
         // A boss or an elite can't be sent flying (EnemyMotor.Steadfast): the blow lands where it stands, and it reels.
         if (body.TryGetComponent<EnemyMotor>(out var steady) && steady.Steadfast)
         {

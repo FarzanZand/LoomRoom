@@ -55,7 +55,7 @@ public static class CoopWorld
     static float nextNoise;
     static void OnNoise(Vector3 position, float radius, Character source)
     {
-        if (Applying || !Coop.IsGuest || Floor == null || !(source is Player p) || p.kind != PlayerKind.Table || Time.time < nextNoise) return;
+        if (Applying || !Coop.IsGuest || Floor == null || !(source is Player p) || p.kind != PlayerKind.Table || Time.time < nextNoise && nextNoise - Time.time < 1f) return;
         nextNoise = Time.time + .15f;
         Send(new CoopEvent { kind = CoopEventKind.Noise, position = position, amount = Mathf.RoundToInt(radius * 100f) });
     }
@@ -84,6 +84,7 @@ public static class CoopWorld
         enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear(); provokables.Clear();
         loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0;
+        nextSnapshot = nextNoise = 0f;
     }
 
     public static int KeyFor(int runSeed, int floor) => unchecked(runSeed * 31 + floor * 7919 + 1);
@@ -393,7 +394,8 @@ public static class CoopWorld
             foreach (var e in events) if (e.floorKey == FloorKey) Play(e);
         }
         if (!Coop.IsHost || Floor == null || enemies.Count == 0) return;
-        if (Time.unscaledTime < nextSnapshot) return;
+        // (A time far ahead is left from an earlier Play in the editor, whose clock started again at 0.)
+        if (Time.unscaledTime < nextSnapshot && nextSnapshot - Time.unscaledTime < 1f) return;
         nextSnapshot = Time.unscaledTime + 1f / Mathf.Max(1f, MultiplayerManager.Instance.snapshotRate);
         var batch = new List<EnemySnapshot>(16);
         for (int i = 0; i < enemies.Count; i++)

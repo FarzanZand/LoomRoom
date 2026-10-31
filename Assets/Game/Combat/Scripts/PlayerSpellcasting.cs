@@ -272,7 +272,7 @@ public class PlayerSpellcasting : MonoBehaviour
         var origin = castOrigin != null ? castOrigin.position : view.position;
         SpellEffects.CastByPlayer(player, spell, Power(spell), view, origin, progress);
         // Co-op: the enemy a flick went for, so the others' Dungeon Master goes for the same one.
-        CoopSpells.Cast(player, spell, spell.effect == SpellEffect.RaiseTheFallen ? player.transform.position : origin, view.forward, view.position, spell.effect == SpellEffect.Flick ? Flick.Watched : null);
+        CoopSpells.Cast(player, spell, spell.effect == SpellEffect.RaiseTheFallen ? player.transform.position : origin, view.forward, view.position, spell.effect == SpellEffect.Flick ? Flick.Watched : null, Power(spell));
         if (held != null) { held.Stop(); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }

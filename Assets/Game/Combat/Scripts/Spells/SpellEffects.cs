@@ -28,7 +28,8 @@ public static class SpellEffects
                 if (heap != null && Coop.IsGuest) { progress?.Practise(spell.Skill, SkillAction.Cast); CoopSpells.TakeBones(heap.Centre ?? player.transform.position); }
                 else if (heap != null) RaiseTheFallen.Cast(player, spell, heap, progress);
                 break;
-            case SpellEffect.Flick: Flick.Cast(player, spell, power, progress); break;
+            // A co-op guest's flick only shows here: the host's copy of it flies the enemy and strikes it (CoopSpells).
+            case SpellEffect.Flick: Flick.Cast(player, spell, Coop.IsGuest ? 0f : power, progress); break;
             case SpellEffect.HelpingHand: HelpingHand.Cast(player, spell, power, progress); break;
         }
     }

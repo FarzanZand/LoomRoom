@@ -18,7 +18,7 @@ public static class CoopPing
     {
         if (!Coop.Running || !PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         if (GameManager.HasInstance && GameManager.Instance.State != GameState.Explore) return;
-        if (Time.unscaledTime < next) return;
+        if (Time.unscaledTime < next && next - Time.unscaledTime < 1f) return;   // (far ahead: left from an earlier Play)
         next = Time.unscaledTime + .4f;
         var player = PlayerManager.Instance.Active;
         var cam = PlayerManager.Instance.OutputCamera;
