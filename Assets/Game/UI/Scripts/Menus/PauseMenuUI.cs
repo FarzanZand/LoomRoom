@@ -197,9 +197,12 @@ public class PauseMenuUI : MonoBehaviour
         settings.Open();
     }
 
+    Selectable[] focusables;
+
     // Settings' own Back button closes it; bring the pause panel back either way.
     void Update()
     {
+        if (open) MenuFocus.Tint(focusables ??= new Selectable[] { resumeButton, settingsButton, adventuresButton, leaveButton, mainMenuButton, quitButton, confirmYes, confirmNo });
         if (open && pausePanel != null && !pausePanel.activeSelf && (settings == null || !settings.IsOpen) && (confirmPanel == null || !confirmPanel.activeSelf)) CloseSettings();
     }
 

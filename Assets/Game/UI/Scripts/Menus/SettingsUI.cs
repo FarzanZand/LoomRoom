@@ -150,7 +150,26 @@ public class SettingsUI : MonoBehaviour
         // The key list starts at its top (Move forward).
         var list = root.GetComponentInChildren<ScrollRect>(true);
         if (list != null) { Canvas.ForceUpdateCanvases(); list.verticalNormalizedPosition = 1f; }
+        keyList = list;
+        // Keys and a pad walk the screen top to bottom: the left column, then the key list, then its reset, then Back.
+        order.Clear();
+        order.AddRange(new Selectable[] { masterVolume, musicVolume, sfxVolume, sensitivity, fieldOfView, pixelation, windowMode, resolution, vsync, brightness });
+        if (bindings != null) foreach (var row in bindings) if (row != null) order.Add(row.Button);
+        order.Add(resetBindings);
+        order.Add(backButton);
+        MenuFocus.Chain(order);
         masterVolume?.Select();
+    }
+
+    readonly List<Selectable> order = new();
+    ScrollRect keyList;
+
+    void Update()
+    {
+        if (!IsOpen) return;
+        MenuFocus.Tint(order);
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events != null) MenuFocus.Follow(keyList, events.currentSelectedGameObject);
     }
 
     public void Close()
