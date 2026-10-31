@@ -485,6 +485,7 @@ public static class CoopWorld
             floorKey = FloorKey, id = enemyIds[c], prefab = prefab, position = c.transform.position, yaw = c.transform.eulerAngles.y,
             lootSeed = drop != null ? drop.seed : 0,
             health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
+            elite = c.TryGetComponent<EliteEnemy>(out var el) ? (sbyte)el.trait : (sbyte)-1, eliteFloors = el != null ? el.extraFloors : 0f,
             side = c.TryGetComponent<Summon>(out var summon) && summon.Summoner != null && summon.Summoner.Faction == Faction.Player ? (byte)(1 + Mathf.Clamp(SlotOf(summon.Summoner), 0, 250)) : (byte)0,
         };
         spawnHistory.Add(spawn);
@@ -500,7 +501,7 @@ public static class CoopWorld
         var c = go.GetComponent<Character>();
         if (c == null) { Object.Destroy(go); return; }
         networkSpawned.Add(c);
-        Floor.SetUpNetworkEnemy(go, spawn.lootSeed);
+        Floor.SetUpNetworkEnemy(go, spawn.lootSeed, spawn.elite, spawn.eliteFloors);
         // The host's own changes to it (a buffed killer): the same health here.
         // A multiplier on top of everything else, so the result is exactly the host's.
         if (c.Stats != null && spawn.maxHealth > 0 && c.Stats.MaxHealth > 0 && Mathf.Abs(c.Stats.MaxHealth - spawn.maxHealth) > .01f)

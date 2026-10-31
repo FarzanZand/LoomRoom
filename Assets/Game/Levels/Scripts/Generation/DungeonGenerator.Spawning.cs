@@ -842,12 +842,12 @@ public partial class DungeonGenerator
 
     // Elites are rolled on their own stream, so turning them on or off moves no other roll on the floor.
     System.Random eliteRandom;
-    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false)
+    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false,bool mayBeElite=true)
     {
         var character=enemy.GetComponent<Character>();
         // Now and then an elite (DungeonBiome.eliteChance): never the boss, an event's own actor or a named one.
         float eliteFloors=0f;
-        if(!boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
+        if(mayBeElite && !boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
            && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
             eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
         if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors);
@@ -864,12 +864,14 @@ public partial class DungeonGenerator
         return character;
     }
 
-    // Co-op guests: an enemy the host made mid-floor, set up the same way (its floor scaling and its loot seed).
-    public Character SetUpNetworkEnemy(GameObject enemy,int lootSeed)
+    // Co-op guests: an enemy the host made mid-floor, set up the same way (its floor scaling and its loot seed), an elite
+    // only when the host's is (eliteTrait -1: none).
+    public Character SetUpNetworkEnemy(GameObject enemy,int lootSeed,int eliteTrait=-1,float eliteFloors=0f)
     {
-        var character=SetUpEnemy(enemy,null);
+        var character=SetUpEnemy(enemy,null,null,false,false);
+        if(eliteTrait>=0 && eliteFloors>0f)EliteEnemy.Make(character,(EliteTrait)eliteTrait,eliteFloors);
         var drop=enemy.GetComponent<DungeonLootDrop>();
-        if(drop!=null){if(!drop.overrideLevelTable)drop.table=FloorLoot;drop.seed=lootSeed;drop.floorNumber=FloorNumber;}
+        if(drop!=null){if(!drop.overrideLevelTable)drop.table=FloorLoot;drop.seed=lootSeed;drop.floorNumber=FloorNumber+Mathf.RoundToInt(eliteTrait>=0?eliteFloors:0f);}
         return character;
     }
 
