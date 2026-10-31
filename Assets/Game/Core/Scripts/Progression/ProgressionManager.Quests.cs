@@ -130,7 +130,7 @@ public partial class ProgressionManager
     {
         EnsureBuiltInQuests();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted += OfferQuestsForRun;
-        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp += ClassItemPickedUp;
+        if (InventoryManager.HasInstance) { InventoryManager.Instance.ItemPickedUp += ClassItemPickedUp; InventoryManager.Instance.ItemPickedUp += ShieldPickedUp; }
         if (PlayerManager.HasInstance)
         {
             PlayerManager.Instance.PlayerSwapped += WithdrawDungeonQuests;
@@ -142,7 +142,7 @@ public partial class ProgressionManager
     {
         base.OnDestroy();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted -= OfferQuestsForRun;
-        if (InventoryManager.HasInstance) InventoryManager.Instance.ItemPickedUp -= ClassItemPickedUp;
+        if (InventoryManager.HasInstance) { InventoryManager.Instance.ItemPickedUp -= ClassItemPickedUp; InventoryManager.Instance.ItemPickedUp -= ShieldPickedUp; }
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= WithdrawDungeonQuests;
     }
 
@@ -166,19 +166,46 @@ public partial class ProgressionManager
         CompleteQuest(TableQuest);
         // Until the player has opened the inventory once, every run starts by saying how (the intro's included).
         if (!HasFlag(InventoryOpenedFlag) && QuestState(InventoryQuest) == 0) GiveQuest(InventoryQuest);
-        // The shield bash guide, from the first run (the intro's included) until the first bash (ShieldBash completes it).
-        if (QuestState(ShieldBashQuest) == 0) GiveQuest(ShieldBashQuest);
         if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady());
     }
 
-    // A frame later, so the run's ranks are in (AdventurerProgress.Begin).
+    // A frame later, so the run's ranks and starting items are in (AdventurerProgress.Begin).
     IEnumerator OfferWhenRunReady()
     {
         yield return null;
-        if (!MetaActive || QuestState(DeflectQuest) != 0 || !PlayerManager.HasInstance) yield break;
-        var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-        var progress = table != null ? table.GetComponent<AdventurerProgress>() : null;
+        OfferShieldQuests();
+    }
+
+    // The shield quests (the shield bash guide, from the first run, the intro's included, until the first bash; the
+    // deflect once Deflect is unlocked) only while the table player carries a shield: a run without one (a Wizard's)
+    // can do neither. An open one is taken back (not done) while none is carried, and offered again when one is
+    // picked up (ShieldPickedUp).
+    void OfferShieldQuests()
+    {
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (table == null) return;
+        if (!CarriesShield(table))
+        {
+            foreach (var id in new[] { ShieldBashQuest, DeflectQuest }) if (QuestState(id) == 1) SetFlag(QuestFlag(id), 0);
+            return;
+        }
+        if (QuestState(ShieldBashQuest) == 0) GiveQuest(ShieldBashQuest);
+        if (!MetaActive || QuestState(DeflectQuest) != 0) return;
+        var progress = table.GetComponent<AdventurerProgress>();
         if (Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) GiveQuest(DeflectQuest);
+    }
+
+    // A shield in the bag or on the hotbar (hand items stay on the hotbar while held).
+    static bool CarriesShield(Player player)
+    {
+        foreach (var inv in new[] { player.Bag, player.Hotbar })
+            if (inv != null) for (int i = 0; i < inv.SlotCount; i++) { var item = inv.ItemAt(i); if (item != null && item.itemType == ItemType.Shield) return true; }
+        return false;
+    }
+
+    void ShieldPickedUp(ItemData item, Player player, int count)
+    {
+        if (item != null && item.itemType == ItemType.Shield && player != null && player.kind == PlayerKind.Table) OfferShieldQuests();
     }
 
     // A shot sent back off the shield (ArrowProjectile, SpellProjectile).

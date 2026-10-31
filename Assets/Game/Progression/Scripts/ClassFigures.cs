@@ -200,6 +200,8 @@ public class ClassFigures : MonoBehaviour
             for (int i = 0; i < mats.Length; i++) mats[i] = figureMaterial;
             r.sharedMaterials = mats;
         }
+        // A die of the first morning's last throw lying here slides back off the spot, behind the row.
+        RollingDie.ClearOf(position, rotation * Vector3.back, Mathf.Max(bounds.extents.x, bounds.extents.z));
         // A generous box so the small figure is easy to hover.
         var box = root.AddComponent<BoxCollider>();
         box.isTrigger = true;
