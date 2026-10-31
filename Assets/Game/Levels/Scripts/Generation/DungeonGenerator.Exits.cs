@@ -89,19 +89,48 @@ public partial class DungeonGenerator
         float height=Layout.InBounds(cell) && Layout.floor[cell.x,cell.y] ? HeightAt(cell.x,cell.y) : data.architectureTileSize;
         var p=root.position;
         var wood=data.woodMaterial;
-        // A look of its own frames the hatch in its style's trim (the level's is the old 32 px sandstone).
+        // The hatch is framed in its room style's trim (the level's own is the old 32 px sandstone, 10.7 texels a metre).
         int region=Layout.InBounds(cell) && Layout.floor[cell.x,cell.y] ? Layout.RegionIds[cell.x,cell.y] : -1;
-        var frame=OwnLook && region>=0 ? DungeonRoomStyle.Resolve(RegionStyles[region]!=null ? RegionStyles[region].trim : null,data.trimMaterial) : data.trimMaterial;
-        foreach(float x in new[]{-.28f,.28f}) Box("Rail",p+new Vector3(x,height*.5f,0),new Vector3(.08f,height,.08f),wood,root);
-        for(float y=.3f;y<height-.1f;y+=.36f) Box("Rung",p+new Vector3(0,y,0),new Vector3(.52f,.05f,.06f),wood,root);
+        var styleTrim=region>=0 && RegionStyles[region]!=null ? RegionStyles[region].trim : null;
+        var frame=DungeonRoomStyle.Resolve(styleTrim,data.trimMaterial);
+        foreach(float x in new[]{-.28f,.28f}) MetricBox("Rail",p+new Vector3(x,height*.5f,0),new Vector3(.08f,height,.08f),wood,root);
+        for(float y=.3f;y<height-.1f;y+=.36f) MetricBox("Rung",p+new Vector3(0,y,0),new Vector3(.52f,.05f,.06f),wood,root);
         // Hatch: a dark square framed in wood, just under the ceiling.
-        Box("Hatch",p+Vector3.up*(height-.05f),new Vector3(1.1f,.06f,1.1f),wood,root);
+        MetricBox("Hatch",p+Vector3.up*(height-.05f),new Vector3(1.1f,.06f,1.1f),wood,root);
         foreach(var d in new[]{Vector3.right,Vector3.left,Vector3.forward,Vector3.back})
         {
             var size=d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.32f,.14f,.12f);
             // The style's trim laid per tile like the walls (stretched over a plain box it came out 1,100 texels a metre).
-            if(OwnLook)ArchitectureBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
-            else Box("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
+            if(frame!=data.trimMaterial)ArchitectureBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
+            else MetricBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
         }
+    }
+
+    // A box whose faces are mapped in metres, so its texture lands at the dungeon's 128 texels a metre whatever the box's
+    // size (Box puts the texture once over each face: the ladder's 32 px oak came out 48 to 226 a metre). One mesh per
+    // size and density, kept with the floor's architecture meshes.
+    const float TexelsPerMetre=128f;
+    GameObject MetricBox(string name,Vector3 pos,Vector3 size,Material material,Transform parent)
+    {
+        var go=Box(name,pos,size,material,parent);
+        var tex=material!=null && material.HasProperty("_BaseMap") ? material.GetTexture("_BaseMap") : null;
+        if(tex==null) return go;
+        float uvPerMetre=TexelsPerMetre/(tex.width*Mathf.Max(.0001f,material.GetTextureScale("_BaseMap").x));
+        var world=go.transform.lossyScale;
+        var key=(world,new Vector3(-1f,uvPerMetre,0f));
+        if(!architectureMeshes.TryGetValue(key,out var mesh))
+        {
+            mesh=Instantiate(go.GetComponent<MeshFilter>().sharedMesh); mesh.name="Metric box UVs";
+            var vertices=mesh.vertices; var normals=mesh.normals; var uv=new Vector2[vertices.Length];
+            for(int i=0;i<vertices.Length;i++)
+            {
+                var q=Vector3.Scale(vertices[i],world); var n=normals[i];
+                float ax=Mathf.Abs(n.x),ay=Mathf.Abs(n.y),az=Mathf.Abs(n.z);
+                uv[i]=(ax>=ay && ax>=az ? new Vector2(q.z,q.y) : ay>=az ? new Vector2(q.x,q.z) : new Vector2(q.x,q.y))*uvPerMetre;
+            }
+            mesh.uv=uv; architectureMeshes.Add(key,mesh);
+        }
+        go.GetComponent<MeshFilter>().sharedMesh=mesh;
+        return go;
     }
 }
