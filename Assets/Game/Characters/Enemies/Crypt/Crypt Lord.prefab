@@ -3689,9 +3689,9 @@ MonoBehaviour:
   - spell: {fileID: 11400000, guid: 843cc090eb9805a409d95ec3f979ac70, type: 2}
     weight: 1.5
     handEffect: {fileID: 6658911669708422142, guid: a8956d6a0e5a49e41876dddab72e42ae, type: 3}
-    minRange: 2.5
+    minRange: 0
     maxRange: 14
-    cooldown: 14
+    cooldown: 10
     animatorTrigger: CastSpell
     releaseTime: 1.35
     aimTrackSpeed: 0
