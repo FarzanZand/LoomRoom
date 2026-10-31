@@ -71,5 +71,16 @@ public class DungeonShrine : MonoBehaviour, IInteractable
         if (AudioManager.HasInstance && offerClip != null) AudioManager.Instance.PlaySFX(offerClip, transform.position, offerVolume, .03f);
         MessageLog.Post($"The shrine drinks. Your {item.BaseItem.itemName} is now {raised.DisplayName}.", MessageKind.Good);
         foreach (var go in litWhileUnused) if (go != null) go.SetActive(false);
+        CoopWorld.FeatureUsed(this);
+    }
+
+    // Co-op: a teammate bled on it. It answers the party once, so it is dry here too.
+    public void Silence(string who)
+    {
+        if (used) return;
+        used = true;
+        foreach (var go in litWhileUnused) if (go != null) go.SetActive(false);
+        if (offerClip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(offerClip, transform.position, offerVolume, .03f);
+        if (!string.IsNullOrEmpty(who)) MessageLog.Post($"{who} bleeds on the shrine.", MessageKind.Info);
     }
 }

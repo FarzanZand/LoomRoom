@@ -212,11 +212,22 @@ public class Merchant : MonoBehaviour, IInteractable
         }
         wallet.TrySpend(ware.price);
         if (--ware.count <= 0) wares.RemoveAt(index);
+        CoopWorld.WareBought(this, ware.item);
         PlayTrade();
         message = $"You buy the {ware.item.itemName} for {ware.price} {Currency}.";
         MessageLog.Post(message, MessageKind.Loot);
         Practise(player, SkillAction.Buy);
         return true;
+    }
+
+    // Co-op with shared loot: a teammate bought one of this ware.
+    public void Sold(string saveId)
+    {
+        EnsureStock();
+        int i = wares.FindIndex(w => w.item != null && w.item.saveId == saveId);
+        if (i < 0) return;
+        if (--wares[i].count <= 0) wares.RemoveAt(i);
+        if (ShopUI.HasInstance) ShopUI.Instance.RefreshWares();
     }
 
     public bool CanSell(Player player, ItemData item, out string reason)

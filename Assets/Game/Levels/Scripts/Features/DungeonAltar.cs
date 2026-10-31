@@ -63,8 +63,21 @@ public class DungeonAltar : MonoBehaviour, IInteractable
             if (prayClip != null) AudioManager.Instance.PlaySFX(prayClip, transform.position, prayVolume, .03f);
             AudioManager.Instance.PlaySkillUp();
         }
+        CoopWorld.BeginDrops();
         MessageLog.Post($"The altar takes {price} health. {Bless(progress, Pick())}", MessageKind.Good);
+        CoopWorld.EndDrops();
         if (activeGlow != null) activeGlow.SetActive(false);
+        CoopWorld.FeatureUsed(this);
+    }
+
+    // Co-op: a teammate gave it their blood. It answers the party once, so it is silent here too.
+    public void Silence(string who)
+    {
+        if (used) return;
+        used = true;
+        if (activeGlow != null) activeGlow.SetActive(false);
+        if (prayClip != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(prayClip, transform.position, prayVolume, .03f);
+        if (!string.IsNullOrEmpty(who)) MessageLog.Post($"{who} bleeds on the altar.", MessageKind.Info);
     }
 
     Blessing Pick()

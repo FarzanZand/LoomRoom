@@ -125,6 +125,8 @@ public enum CoopEventKind : byte
     EventUse = 27,      // a player used a scripted event room's piece (id = the room on the floor, amount = which use; ICoopEventRoom)
     EventStep = 28,     // the host's event room moved on (id = the room, amount = the step, extra.x = a value, item = a seed)
     Meddle = 26,        // the Dungeon Master meddles (DungeonMasterMeddling): amount 0 adds an enemy at position in room id, 1 takes chest id
+    FeatureUsed = 29,   // a blood altar or a shrine answered someone (id = it among the floor's altars and shrines): silent for all
+    WareBought = 30,    // shared loot: a ware was bought (id = the merchant on the floor, item = the ware's save id): gone for all
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,

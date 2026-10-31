@@ -83,7 +83,7 @@ public static class CoopWorld
         Floor = null; FloorKey = 0;
         enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear(); provokables.Clear();
         loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
-        lootScope = -1; lootCounter = 0; dropCounter = 0;
+        lootScope = -1; lootCounter = 0; dropCounter = 0; gathering = null;
         nextSnapshot = nextNoise = 0f;
     }
 
@@ -548,6 +548,7 @@ public static class CoopWorld
     // DungeonPickup.Spawn and CurrencyManager.SpawnCoins: a key for each piece of loot.
     public static void Spawned(GameObject piece)
     {
+        if (Coop.Running && gathering != null && piece != null) { gathering.Add(piece); return; }
         if (!Coop.Running || piece == null || lootScope < 0 || Personal(piece)) return;
         Tag(piece, lootScope * 64 + Mathf.Min(63, lootCounter++));
     }
@@ -589,6 +590,63 @@ public static class CoopWorld
         int key = (DropScope + Coop.LocalSlot * 4096 + (dropCounter++ % 4096)) * 64;
         Tag(item.gameObject, key);
         Send(new CoopEvent { kind = CoopEventKind.ItemDropped, id = key, amount = count, position = item.transform.position, item = new FixedString128Bytes(Coop.SaveId(item.Item)) });
+    }
+
+    // What a player's own action puts on the floor (an altar's blessing), between BeginDrops and EndDrops: shown to everyone
+    // as a dropped item once it has landed, and its gold counted for the party when picked up, as dropped loot is.
+    static List<GameObject> gathering;
+    public static void BeginDrops() { gathering = Coop.Running && Floor != null ? new List<GameObject>() : null; }
+    public static void EndDrops()
+    {
+        var pieces = gathering; gathering = null;
+        if (pieces == null || pieces.Count == 0 || !MultiplayerManager.HasInstance) return;
+        foreach (var piece in pieces)
+            if (piece != null && piece.GetComponent<CoinPickup>() != null) Tag(piece, (DropScope + Coop.LocalSlot * 4096 + (dropCounter++ % 4096)) * 64);
+        MultiplayerManager.Instance.StartCoroutine(SendDrops(pieces));
+    }
+    static System.Collections.IEnumerator SendDrops(List<GameObject> pieces)
+    {
+        yield return new WaitForSeconds(1.2f);
+        foreach (var piece in pieces)
+        {
+            if (piece == null || Floor == null) continue;
+            if (piece.TryGetComponent<WorldItem>(out var item)) Dropped(item, item.Count);
+            else if (piece.TryGetComponent<CoinPickup>(out var coins) && lootKeys.TryGetValue(piece, out var key))
+                Send(new CoopEvent { kind = CoopEventKind.ItemDropped, id = key, amount = coins.Amount, position = piece.transform.position, item = new FixedString128Bytes(Gold) });
+        }
+    }
+    const string Gold = "$gold";
+
+    // A blood altar or a shrine answered someone: it is silent for everyone (it answers the party once).
+    // Every T on the floor and in its portals' pockets, in the same order on every machine.
+    static List<T> OnFloor<T>() where T : Component
+    {
+        var found = new List<T>();
+        if (Floor == null) return found;
+        var roots = new List<DungeonGenerator> { Floor };
+        roots.AddRange(PortalArch.PocketsOf(Floor));
+        foreach (var root in roots) if (root != null) found.AddRange(root.GetComponentsInChildren<T>(true));
+        return found;
+    }
+    static List<Component> Features()
+    {
+        var features = new List<Component>(OnFloor<DungeonAltar>());
+        features.AddRange(OnFloor<DungeonShrine>());
+        return features;
+    }
+    public static void FeatureUsed(Component feature)
+    {
+        if (!Coop.Running || Applying || Floor == null) return;
+        int id = Features().IndexOf(feature);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.FeatureUsed, id = id });
+    }
+
+    // Shared loot: a ware one player bought is gone from that merchant everywhere.
+    public static void WareBought(Merchant merchant, ItemData item)
+    {
+        if (!Coop.Running || Applying || Floor == null || !MultiplayerManager.Instance.SharedLoot || item == null) return;
+        int id = OnFloor<Merchant>().IndexOf(merchant);
+        if (id >= 0) Send(new CoopEvent { kind = CoopEventKind.WareBought, id = id, item = new FixedString128Bytes(Coop.SaveId(item)) });
     }
 
     // ── Floor events ──────────────────────────────────────────────────
@@ -949,6 +1007,21 @@ public static class CoopWorld
             case CoopEventKind.Noise:
                 if (Coop.IsHost) NoiseEvents.Report(e.position, e.amount / 100f, CharacterOf(e.slot));
                 break;
+            case CoopEventKind.FeatureUsed:
+            {
+                var features = Features();
+                if (e.id < 0 || e.id >= features.Count) break;
+                string who = MultiplayerManager.Instance.PlayerInSlot(e.slot) is CoopPlayer user ? user.DisplayName : null;
+                if (features[e.id] is DungeonAltar altar) altar.Silence(who);
+                else if (features[e.id] is DungeonShrine shrine) shrine.Silence(who);
+                break;
+            }
+            case CoopEventKind.WareBought:
+            {
+                var merchants = OnFloor<Merchant>();
+                if (e.id >= 0 && e.id < merchants.Count) merchants[e.id].Sold(e.item.ToString());
+                break;
+            }
             case CoopEventKind.EventUse:
                 EventRoom(e.id)?.Used(e.amount, CharacterOf(e.slot));
                 break;
@@ -1017,6 +1090,12 @@ public static class CoopWorld
                 if (wallet != null && e.amount > 0) wallet.Add(e.amount);
                 break;
             case CoopEventKind.ItemDropped:
+                if (e.item.ToString() == Gold)
+                {
+                    var coins = CurrencyManager.HasInstance ? CurrencyManager.Instance.SpawnCoins(e.amount, e.position, Floor.transform) : null;
+                    if (coins != null) Tag(coins.gameObject, e.id);
+                    break;
+                }
                 var item = Coop.Item(e.item.ToString());
                 if (item == null || !InventoryManager.HasInstance) break;
                 // Put down as floor loot is, resting on the floor below where it was let go (it is not thrown here).
