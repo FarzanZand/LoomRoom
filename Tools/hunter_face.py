@@ -18,6 +18,10 @@ eyeH=float(np.percentile(h[eyes],10)) if eyes.sum() else .56   # the eyes' lower
 print('eye texels',eyes.sum(),'eye height',round(eyeH,3))
 rng=np.random.default_rng(11)
 cl=rng.uniform(.86,1.12,(130,130))
+blob=rng.normal(0,1,(256,256))
+for _ in range(3): blob=(blob+np.roll(blob,1,0)+np.roll(blob,-1,0)+np.roll(blob,1,1)+np.roll(blob,-1,1))/5   # soft, uneven
+blob=blob/blob.std()
+
 out=src.copy()
 def paint(mask,base,calm=1.0):
     ys,xs=np.nonzero(mask)
@@ -27,19 +31,27 @@ def paint(mask,base,calm=1.0):
 # hair
 hair=head&((h>.71)|((h>.42)&(fw<-.3))|((h>.6)&(fw<.45)&(np.abs(nx)>.45)))&~eyes
 skinlike=(rgb[:,:,0]>140)&(rgb[:,:,0]>rgb[:,:,2]+15)
-for _ in range(2):   # fill the texels between triangles at the crop's edge
+for _ in range(4):   # fill the texels between triangles at the crop's edge (the islands' pale rims)
     grow=np.zeros_like(hair)
     grow[1:]|=hair[:-1]; grow[:-1]|=hair[1:]; grow[:,1:]|=hair[:,:-1]; grow[:,:-1]|=hair[:,1:]
     hair|=grow&skinlike&~(head&(h<.71)&(fw>.3))
-paint(hair,(26,20,17))
+ys,xs=np.nonzero(hair)
+for y,x in zip(ys,xs): out[y,x,:3]=np.clip(np.array((26,20,17))*(1+.12*blob[y,x])*rng.uniform(.92,1.06),0,255)
 dark=hair&(rng.random(hair.shape)<.16); out[dark,:3]*=.7
 # face mask (cloth): below the eyes, the front and sides of the jaw
 mask=head&(h<eyeH-.015)&(fw>-.35)&~hair
-paint(mask,(72,64,56),.0)
+# the mask's edge: skin-like texels touching it (left uncovered between triangles) join it, never the eye strip
+for _ in range(4):
+    near_m=np.zeros_like(mask)
+    for a_,b_ in ((1,0),(-1,0),(0,1),(0,-1)): near_m|=np.roll(np.roll(mask,a_,0),b_,1)
+    mask|=near_m&skinlike&~hair&~eyes&~(head&(h>=eyeH-.03)&(fw>.2))
+ys,xs=np.nonzero(mask)
+for y,x in zip(ys,xs):
+    out[y,x,:3]=np.clip(np.array((72,64,56))*(1+.06*blob[y,x])*rng.uniform(.95,1.05),0,255)
 ys,xs=np.nonzero(mask)
 for y,x in zip(ys,xs):
     f=out[y,x,:3]
-    weave=1+.07*(((y+(x//3))%2)*2-1)+rng.normal(0,.035)   # threads: rows shifted every third texel, uneven
+    weave=1+.04*(((y+(x//3))%2)*2-1)+rng.normal(0,.035)   # threads: rows shifted every third texel, uneven
     f*=weave
     band=(h[y,x]*14+np.sin(xf[y,x]*7)*.25)%1
     if band<.22: f*=.74
@@ -62,5 +74,11 @@ touch=np.zeros_like(hair)
 for a,b in ((1,0),(-1,0),(0,1),(0,-1)): touch|=np.roll(np.roll(hair,a,0),b,1)
 gap=head&touch&~hair&~mask&~eyes&~strip&(np.abs(nx)>.35)&skinlike
 out[gap,:3]=np.array([30,23,20])
+# stray pale texels left where hair and mask meet: a skin-like texel with two or more painted neighbours takes their mean
+painted=hair|mask
+for y,x in zip(*np.nonzero(skinlike&~painted&~eyes)):
+    nb=[(y+a_,x+b_) for a_,b_ in ((1,0),(-1,0),(0,1),(0,-1)) if 0<=y+a_<256 and 0<=x+b_<256 and painted[y+a_,x+b_]]
+    if len(nb)>=2 and not (head[y,x] and h[y,x]>=eyeH-.03 and h[y,x]<.72 and fw[y,x]>.2):
+        out[y,x,:3]=np.mean([out[a_,b_,:3] for a_,b_ in nb],0)
 Image.fromarray(out.astype(np.uint8)).save(T)
 print('hair',hair.sum(),'mask',mask.sum(),'strip',strip.sum(),'gap',gap.sum())
