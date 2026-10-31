@@ -295,14 +295,15 @@ public class InventoryManager : Singleton<InventoryManager>
         if (eq == null || !eq.CanEquip(item)) return;
         // Only the copy in hand is put away; a spare copy of the held item (two Bronze Swords) does nothing.
         if (ItemSlotUI.HeldSlot(eq, container, index).HasValue) eq.Unequip(item);
-        else if (!eq.IsEquipped(item)) eq.Equip(item);
+        else if (!eq.IsEquipped(item)) eq.EquipFrom(item, container, index);
     }
 
     // Use the consumable the player is currently holding in a hand.
     public bool UseHeld(Player player, EquipmentSlot slot = EquipmentSlot.RightHand)
     {
         var item = player?.Equipment?.Get(slot);
-        if (item == null || !item.IsConsumable) return false;
+        // A readied scroll is cast like its spell (PlayerSpellcasting), never used up from the hand.
+        if (item == null || !item.IsConsumable || item.IsScroll) return false;
 
         if (player.Equipment.IsUsingItem) return true;
         player.Equipment.Consume(item, () => CompleteHeldUse(player, slot, item));
