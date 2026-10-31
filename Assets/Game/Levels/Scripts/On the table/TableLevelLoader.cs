@@ -191,8 +191,9 @@ public class TableLevelLoader : MonoBehaviour
                 LootSource.GenerationLevel = resume != null ? Mathf.Max(1, resume.lootLevel) : descending ? player.GetComponent<AdventurerProgress>().Level : 1;
                 generationLevel = LootSource.GenerationLevel.Value;
                 // With the reveal (from the room) the floor is built over several frames while the campaign map folds away;
-                // going down the stairs it is too, behind the black, so the game and its music never stall for the build.
-                preparing = PrepareRoutine(level, useReveal, useReveal || descending);
+                // going down the stairs it is too, behind the black, so the game and its music never stall for the build
+                // (not in a toolbar debug session, which skips the fade: the player would stand on the bare table meanwhile).
+                preparing = PrepareRoutine(level, useReveal, useReveal || descending && faded);
             }
             catch(Exception e) { failure=e; }
             while(failure==null) {
