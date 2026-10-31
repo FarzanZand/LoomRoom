@@ -119,7 +119,29 @@ public class InventoryUI : MonoBehaviour
         for (int i = 0; i < slots.Count; i++)
             if (slots[i] != null) slots[i].Bind(bound, i);
         itemGrid?.Bind(bound);
+        LinkCells();
         Refresh();
+    }
+
+    // Keys and a pad move cell to cell and stop at the bag's edges: left to themselves they walked off the bottom row onto
+    // other HUD buttons (a hidden card's Pick) and the bag lost the selection.
+    void LinkCells()
+    {
+        int w = bound != null ? bound.GridWidth : 0;
+        if (w <= 0) return;
+        UnityEngine.UI.Selectable Cell(int i) => i >= 0 && i < slots.Count && slots[i] != null && slots[i].TryGetComponent<UnityEngine.UI.Selectable>(out var c) ? c : null;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var cell = Cell(i);
+            if (cell == null) continue;
+            var nav = cell.navigation;
+            nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
+            nav.selectOnUp = Cell(i - w);
+            nav.selectOnDown = Cell(i + w);
+            nav.selectOnLeft = i % w > 0 ? Cell(i - 1) : null;
+            nav.selectOnRight = i % w < w - 1 ? Cell(i + 1) : null;
+            cell.navigation = nav;
+        }
     }
 
     public void Toggle()
