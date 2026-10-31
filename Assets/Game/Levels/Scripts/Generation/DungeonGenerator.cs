@@ -154,7 +154,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); bodies.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -906,6 +906,7 @@ public partial class DungeonGenerator : MonoBehaviour
             var col=go.AddComponent<BoxCollider>(); col.center=Vector3.up*.5f; col.size=new Vector3(1.4f,1,.9f);
             go.AddComponent<InteractableTrigger>();
         }
+        AddBody(go);
         return container;
     }
 

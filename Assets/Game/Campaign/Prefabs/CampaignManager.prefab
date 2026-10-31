@@ -54,6 +54,8 @@ MonoBehaviour:
   burnSound: {fileID: 8300000, guid: c0950232261258942b4b9b9d11ef8ef9, type: 3}
   burnLoop: {fileID: 8300000, guid: 1e265126e51901d4285a02b09895d365, type: 3}
   burnVolume: 0.5
+  startGlowColour: {r: 1, g: 0.78, b: 0.38, a: 1}
+  startGlowWidth: 0.1
   useCampaign: 1
   mapPrefab: {fileID: 5509045572063656809, guid: 545f2a3eb3c487f42babbd2c3f5025a0, type: 3}
   mapSpot: {fileID: 0}

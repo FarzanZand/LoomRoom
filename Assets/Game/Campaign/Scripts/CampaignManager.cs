@@ -742,7 +742,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
         var cleared = new List<string>();
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)
+                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;
@@ -750,6 +751,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         wonLinePending = false;
         if (figure != null) { Destroy(figure); figure = null; figureCollider = null; }
         if (marker != null) Destroy(marker);
+        ClearNewPlaces();
         Map.dropPending = true;
         Map.gameObject.SetActive(false);
     }
@@ -950,6 +952,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
                             At = e;
                             PlaceFigure(e);
                             Current = e;
+                            MarkVisited(e);
                             StartCoroutine(CameraEase.Zoom(player.CameraRig, 0f, .35f, smooth: false));
                             player.Look.HeightOverride = null;
                             if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
@@ -1291,6 +1294,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         if (Map == null) return;
         SavedRun(out var place, out _, out _);
         UpdateMarker(place);
+        RefreshNewPlaces();
     }
 
     void UpdateMarker(CampaignEncounter place)

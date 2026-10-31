@@ -5,8 +5,9 @@ public enum EliteTrait { Tough = 0, Brutal = 1, Swift = 2 }
 
 // An elite: now and then a generated enemy comes out as one (DungeonBiome.eliteChance, rolled in DungeonGenerator.SetUpEnemy).
 // It grows as if it were DungeonBiome.eliteFloors deeper (stats and the loot it drops), and has one trait on top: Tough
-// (more health), Brutal (harder hits) or Swift (faster swings). Its name says so ("Brutal Crypt Soldier"), a thin outline
-// in the trait's colour is drawn round its body, and it is worth twice the experience (RunManager).
+// (more health), Brutal (harder hits) or Swift (faster swings). Its name says so ("Brutal Crypt Soldier"), it stands 20%
+// bigger with a soft glow in the trait's colour round its body (the user's pick of four looks, 2026-10-31; a thin hard
+// outline before), and it is worth twice the experience (RunManager).
 public class EliteEnemy : MonoBehaviour
 {
     public EliteTrait trait;
@@ -14,8 +15,8 @@ public class EliteEnemy : MonoBehaviour
     public float extraFloors;
 
     public const float ToughHealth = .6f, BrutalDamage = .35f, SwiftAttackSpeed = .25f, Experience = 2f;
-    // About two of the dungeon's texels (128 a metre): it reads as a drawn edge, not a glow.
-    const float OutlineWidth = .016f;
+    // How far the glow reaches past the body, and how much bigger an elite is than its kind.
+    const float GlowWidth = .06f, Size = 1.2f;
 
     public static string Word(EliteTrait t) => t switch { EliteTrait.Tough => "Tough", EliteTrait.Brutal => "Brutal", _ => "Swift" };
     static Color Glow(EliteTrait t) => t switch { EliteTrait.Tough => new Color(.55f, .95f, .35f), EliteTrait.Brutal => new Color(1f, .28f, .2f), _ => new Color(.45f, .85f, 1f) };
@@ -45,22 +46,24 @@ public class EliteEnemy : MonoBehaviour
         character.namePrefix = Word(trait);
         // Not knocked around or into pits, like a boss: it reels harder instead (EnemyMotor.Steadfast).
         if (character.TryGetComponent<EnemyMotor>(out var motor)) motor.Steadfast = true;
+        character.transform.localScale *= Size;
         elite.Outline(character, Glow(trait));
         return elite;
     }
 
-    // The tell (a soft light at its chest only lit a coloured pool at its feet): each skinned body part gets a shell
-    // beside it on the same bones, its mesh with smoothed normals (so hard edges don't split the line), drawn by
-    // Characters/Enemies/Elite/Elite Outline.shader (back faces pushed out, one flat colour, unlit, so no bloom; pushed
-    // back in depth, so the edges of plates and bones layered inside the body don't show it; a hit flash's tint doesn't
-    // reach its _Color). Gone the moment it dies, before the body is thrown or broken up.
+    // The tell (a soft light at its chest only lit a coloured pool at its feet; a hard outline looked awful, F9 f28a4b18,
+    // 256c1b38): each skinned body part gets a shell beside it on the same bones, its mesh with smoothed normals (so hard
+    // edges don't split it), drawn by Characters/Enemies/Elite/Elite Glow.shader (back faces pushed out, added to what is
+    // behind, strongest against the body and gone at its edge in a few hard steps; pushed back in depth, so it never lies
+    // over the body; a hit flash's tint doesn't reach its _Color). Gone the moment it dies, before the body is thrown or
+    // broken up.
     void Outline(Character character, Color colour)
     {
-        var template = Resources.Load<Material>("Elite outline");
-        if (template == null) { Debug.LogWarning("[EliteEnemy] Resources/Elite outline material is missing."); return; }
-        outline = new Material(template) { name = "Elite outline" };
-        outline.SetColor("_Color", colour * .9f);
-        outline.SetFloat("_Width", OutlineWidth);
+        var template = Resources.Load<Material>("Elite glow");
+        if (template == null) { Debug.LogWarning("[EliteEnemy] Resources/Elite glow material is missing."); return; }
+        outline = new Material(template) { name = "Elite glow" };
+        outline.SetColor("_Color", colour);
+        outline.SetFloat("_Width", GlowWidth);
         foreach (var body in character.GetComponentsInChildren<SkinnedMeshRenderer>())
         {
             if (!body.enabled || body.sharedMesh == null) continue;
@@ -81,7 +84,7 @@ public class EliteEnemy : MonoBehaviour
             shells.Add(shell);
         }
         // A body whose mesh can't be read (not saved readable) gets no shell: said, so a missing tell is noticed.
-        if (shells.Count == 0) Debug.LogWarning($"[EliteEnemy] {character.name}: no readable skinned body, so no elite outline.", character);
+        if (shells.Count == 0) Debug.LogWarning($"[EliteEnemy] {character.name}: no readable skinned body, so no elite glow.", character);
         stats = character.Stats;
         if (stats != null) stats.Damaged += OnDamaged;   // raised before Died, so the outline goes before the body breaks up
     }

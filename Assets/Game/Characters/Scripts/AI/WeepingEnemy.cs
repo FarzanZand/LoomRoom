@@ -25,6 +25,10 @@ public class WeepingEnemy : MonoBehaviour
     Character character;
     AudioSource source;
     bool awake;
+    // Kneeling, its knees were 8 cm over the floor (its root stands on the walking mesh, a few cm over the floor, and the
+    // pose's lowest point is above the root; F9 39e2adaa): the model is set down onto the floor while it kneels.
+    Transform model;
+    float sink, sinkNow;
 
     public bool Weeping => !awake;
 
@@ -36,6 +40,7 @@ public class WeepingEnemy : MonoBehaviour
         brain.Entranced = true;
         if (brain.Perception != null) brain.Perception.NoCloseAwareness = true;
         Kneel(true);
+        StartCoroutine(SetDown());
         if (weeping != null)
         {
             source = gameObject.AddComponent<AudioSource>();
@@ -50,6 +55,41 @@ public class WeepingEnemy : MonoBehaviour
     void OnDestroy()
     {
         if (character != null) { character.Damaged -= Hurt; character.Died -= Dropped; }
+    }
+
+    // Once the kneeling pose has settled: how far its lowest point is over the floor under it, sunk 1 cm in.
+    System.Collections.IEnumerator SetDown()
+    {
+        yield return new WaitForSeconds(.6f);
+        if (awake || character.Animator == null) yield break;
+        model = character.Animator.transform;
+        float lowest = float.MaxValue;
+        var baked = new Mesh();
+        foreach (var skin in GetComponentsInChildren<SkinnedMeshRenderer>())
+        {
+            if (!skin.enabled) continue;
+            skin.BakeMesh(baked, true);
+            foreach (var v in baked.vertices) lowest = Mathf.Min(lowest, skin.transform.TransformPoint(v).y);
+        }
+        Destroy(baked);
+        if (lowest == float.MaxValue) yield break;
+        float floor = float.MinValue;
+        foreach (var hit in Physics.RaycastAll(transform.position + Vector3.up * 1.5f, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore))
+            if (!hit.collider.transform.IsChildOf(transform) && hit.point.y <= lowest + .02f) floor = Mathf.Max(floor, hit.point.y);
+        if (floor == float.MinValue) yield break;
+        sink = Mathf.Clamp(lowest - floor + .01f, 0f, .25f);
+    }
+
+    // Down while kneeling, back up as it stands.
+    void LateUpdate()
+    {
+        if (model == null) return;
+        float target = awake ? 0f : sink;
+        if (Mathf.Approximately(sinkNow, target)) return;
+        float step = (awake ? .4f : 1f) * Time.deltaTime;
+        float next = Mathf.MoveTowards(sinkNow, target, step);
+        model.localPosition += Vector3.down * (next - sinkNow) / Mathf.Max(.0001f, model.parent != null ? model.parent.lossyScale.y : 1f);
+        sinkNow = next;
     }
 
     // Kneeling in the moonlight, kept there: an entranced brain does nothing, the animator holds the pose.

@@ -475,6 +475,7 @@ public partial class DungeonGenerator
         if (socket != null && socket.overrideLightColor) color = socket.lightColor;
         // The prefab carries its own mounting height; its origin sits on the floor at the wall face.
         var torch = Instantiate(prefab, Cell(cell) + WallLightOffset(dir, data.cellSize), Quaternion.LookRotation(-new Vector3(dir.x, 0, dir.y)), parent);
+        IntoWall(torch, cell, dir);
         DungeonWallLight.Apply(torch, color, TorchBrightness);
         furnished.Add(cell);
     }
@@ -504,16 +505,54 @@ public partial class DungeonGenerator
                 var prefab = DungeonWeightedPrefab.Choose(style.wallDecor, decorRandom);
                 if (prefab == null) break;
                 var outward = new Vector3(dir.x, 0, dir.y);
-                Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f), Quaternion.LookRotation(-outward), geometry);
+                var copies = new List<GameObject> { Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f), Quaternion.LookRotation(-outward), geometry) };
                 // A full-height piece (PropMount: a pilaster, a long banner) is made for one tile: stacked up a taller room's wall.
                 if (PropMount.KindOf(prefab) == PropMount.Kind.FullHeight)
                     for (float up = data.architectureTileSize; up < HeightAt(cell.x, cell.y) - .5f; up += data.architectureTileSize)
-                        Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f) + Vector3.up * up, Quaternion.LookRotation(-outward), geometry);
+                        copies.Add(Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f) + Vector3.up * up, Quaternion.LookRotation(-outward), geometry));
+                ClearCornice(copies, cell, outward, style);
+                // One that would cut into what stands at the wall (a grate through a barrel) is left out.
+                bool cut = false;
+                foreach (var c in copies) if (CutsIntoBody(c)) { cut = true; break; }
+                if (cut) { foreach (var c in copies) DestroyImmediate(c); continue; }
                 // Taken: a torch or a wall prop placed after it would stand inside the piece (torches inside carved pilasters).
                 furnished.Add(cell);
                 count--;
             }
         }
+    }
+
+    // A wall light's back 1 cm into its wall, whatever its model: the walls are built outside the cell's edge, and set by
+    // WallLightOffset every torch stood 13 cm off its wall (F9 8ffcf8a1).
+    void IntoWall(GameObject light, Vector2Int cell, Vector2Int dir)
+    {
+        if (!BodyOf(light, out var body)) return;
+        var outward = new Vector3(dir.x, 0, dir.y);
+        float rear = Vector3.Dot(body.center, outward) + Mathf.Abs(dir.x) * body.extents.x + Mathf.Abs(dir.y) * body.extents.z;
+        float face = Vector3.Dot(Cell(cell), outward) + data.cellSize * .5f;
+        light.transform.position += outward * (face + .01f - rear);
+    }
+
+    // A wall piece whose top reaches into the cornice (a banner's rod) stands out from the wall until its back is 1 cm in
+    // front of the cornice: the cornice stands out from the wall, and the rod was seen behind it (F9 5ff41eb8). Lowered
+    // instead, a floor-length banner went into the floor. One that reaches the ceiling (a pilaster) is built to run past
+    // the cornice and stays.
+    void ClearCornice(List<GameObject> copies, Vector2Int cell, Vector3 outward, DungeonRoomStyle style)
+    {
+        if (style != null && style.hideTrims) return;
+        float top = float.MinValue, rear = float.MinValue;
+        foreach (var go in copies)
+            if (BodyOf(go, out var body))
+            {
+                top = Mathf.Max(top, body.max.y);
+                rear = Mathf.Max(rear, Vector3.Dot(body.center, outward) + Mathf.Abs(outward.x) * body.extents.x + Mathf.Abs(outward.z) * body.extents.z);
+            }
+        if (top == float.MinValue) return;
+        float ceiling = Cell(cell).y + HeightAt(cell.x, cell.y), corniceFoot = ceiling - .6f;
+        if (top <= corniceFoot || top >= ceiling - .05f) return;
+        float front = Vector3.Dot(Cell(cell), outward) + data.cellSize * .5f - TrimDepth - .01f;
+        if (rear <= front) return;
+        foreach (var go in copies) go.transform.position -= outward * (rear - front);
     }
 
     // Beside a doorway: decorations there would clip the door frame.
@@ -605,6 +644,12 @@ public partial class DungeonGenerator
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
         var placed = Instantiate(rule.prefab, pos, rotation, geometry);
         BackToWall(placed, rule.placement, size);
+        // Flat on its wall (a banner): its rod in front of the cornice, not behind it.
+        if (rule.prefab.TryGetComponent<PropMount>(out var mount) && mount.castsNoShadow && index < RegionStyles.Length)
+            ClearCornice(new List<GameObject> { placed }, CellOf(pos), -placed.transform.forward, RegionStyles[index]);
+        // Its body cuts into something already standing there (a long table through a crate, a rug under a pillar):
+        // left out. Its footprint's cells were free, but a body can reach past them.
+        if (PropMount.KindOf(rule.prefab) != PropMount.Kind.HangsFromCeiling && CutsIntoBody(placed)) { DestroyImmediate(placed); return true; }
         // Only its spot was free: a big body (a golem's arm, an obelisk) reaches into the cells round it. One that would
         // stand in a walkway or cut part of the room off from its ways in is taken away again (the user was shut in
         // a Realms hall by an obelisk beside a fence).
@@ -630,6 +675,48 @@ public partial class DungeonGenerator
         // Furnishing groups may hold breakables (a barrel under candles, pots on a shelf): give them loot.
         if (placed.GetComponentInChildren<DungeonDestructible>(true) != null) SeedGroup(placed, unchecked(pos.GetHashCode() ^ seed0));
         return true;
+    }
+
+    // What stands in the rooms with a body: breakables, chests, a hand-built room's own pieces and the furnishing placed
+    // so far. Furnishing keeps out of them (CutsIntoBody); cleared with each floor.
+    readonly List<Bounds> bodies = new();
+    const float BodyInset = .03f;
+
+    // The box round a piece's visible body (no particles or lines), or none.
+    static bool BodyOf(GameObject go, out Bounds bounds)
+    {
+        bounds = default; bool any = false;
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+        {
+            if (!r.enabled || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
+            if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds);
+        }
+        return any;
+    }
+
+    // A flat piece (a rug) is no body: a table may stand on it.
+    void AddBody(GameObject go) { if (go != null && BodyOf(go, out var b) && b.size.y >= .1f) bodies.Add(b); }
+
+    // Each part of the new piece is tested on its own (an L-shaped group's box would take in the floor beside it), a
+    // little in from its edges so pieces that only touch still stand. Taken as a body itself when it stands.
+    bool CutsIntoBody(GameObject placed)
+    {
+        var parts = new List<Bounds>();
+        foreach (var r in placed.GetComponentsInChildren<Renderer>())
+        {
+            if (!r.enabled || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
+            var b = r.bounds; b.Expand(-2f * BodyInset);
+            if (b.size.x > 0f && b.size.z > 0f) parts.Add(b);
+        }
+        foreach (var part in parts)
+            foreach (var body in bodies)
+            {
+                // A flat piece (a rug) under a raised one is still a cut: test the full height of both.
+                var a = part; if (a.size.y < .1f) a.Expand(new Vector3(0f, .1f, 0f));
+                if (a.Intersects(body)) return true;
+            }
+        AddBody(placed);
+        return false;
     }
 
     void HangFromCeilingOf(GameObject placed, Vector2Int cell)

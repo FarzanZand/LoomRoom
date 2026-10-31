@@ -33,9 +33,9 @@ Transform:
   - {fileID: 3206748094867723974}
   - {fileID: 800141684826992743}
   - {fileID: 2478442185015569694}
-  - {fileID: 9191901407665329675}
-  - {fileID: 8280952953462352541}
   - {fileID: 2357821901949053791}
+  - {fileID: 8280952953462352541}
+  - {fileID: 8017094454433275508}
   - {fileID: 501774013108489708}
   - {fileID: 5842527665026422435}
   - {fileID: 8214939742266950261}
@@ -640,11 +640,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.2470117
+      value: -0.24701169
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.3001463
+      value: 2.2979956
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.z
@@ -684,7 +684,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5403870895647110404, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_Name
-      value: Candle flame 2
+      value: Candle flame 1
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4070398620257768825, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
@@ -855,7 +855,7 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
   m_PrefabInstance: {fileID: 6847751657725007345}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &7420990438211242888
+--- !u!1001 &8017094454433275507
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -877,11 +877,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.24701169
+      value: 0.2470117
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2.2979956
+      value: 2.3001463
       objectReference: {fileID: 0}
     - target: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_LocalPosition.z
@@ -921,7 +921,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5403870895647110404, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
       propertyPath: m_Name
-      value: Candle flame 1
+      value: Candle flame 2
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 4070398620257768825, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
@@ -929,8 +929,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
---- !u!4 &9191901407665329675 stripped
+--- !u!4 &8017094454433275508 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1832005025999150467, guid: 7e30e9c120f5a6049ac4e551a19ecc83, type: 3}
-  m_PrefabInstance: {fileID: 7420990438211242888}
+  m_PrefabInstance: {fileID: 8017094454433275507}
   m_PrefabAsset: {fileID: 0}

@@ -18,6 +18,8 @@ var sb = new System.Text.StringBuilder();
 void Folder(string path) { var parts = path.Split('/'); var cur = parts[0]; for (int i = 1; i < parts.Length; i++) { var next = cur + "/" + parts[i]; if (!UnityEditor.AssetDatabase.IsValidFolder(next)) UnityEditor.AssetDatabase.CreateFolder(cur, parts[i]); cur = next; } }
 Folder(D); System.IO.Directory.CreateDirectory("Temp/Realms");
 var flame = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Game/Combat/Spells/Fireball/Fireball Hand.prefab");
+// A brazier's bowl: the wall torch's fire.
+var bowlFire = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>("Assets/Synty/PolygonDarkFantasy/Prefabs/FX/FX_Candle_Flame_01.prefab");
 // A held flame hums (the spell's loop) for the hand that holds it; on a prop that is a hum from every fire on the floor,
 // which the user called awful (2026-10-30): the props' flames are silent.
 void Quiet(UnityEngine.GameObject f) { foreach (var a in f.GetComponentsInChildren<UnityEngine.AudioSource>(true)) UnityEngine.Object.DestroyImmediate(a); }
@@ -192,6 +194,9 @@ var list = new (string name, string src, float height, UnityEngine.Color fire, b
     case "Gold pile": case "Gold coins": case "Gold hoard": return new[] { ("gold", "") };
     case "Ore crate": case "Ore crates": return new[] { ("ore", "") };
     case "Crystal cluster": case "Crystal cluster 2": return new[] { ("crystal", "") };
+    // The cellars' wood: planks as faces, lit top edges, dark creases (Tools/prop_structure.py), so it matches the
+    // breakable barrel it stands beside (F9 0a8bffa7: two barrel styles in one room).
+    case "Weapon barrel": return new[] { ("wood", "") };
   }
   return new (string, string)[0];
 }
@@ -223,6 +228,14 @@ void Paint(string pname, string sourceMesh, UnityEngine.Mesh mesh, UnityEngine.M
       PixelRestyle.BakeGBuffer(meshPath, tex.width, tex.height, gb, synty ? "synty:" + sourceMesh : meshPath, synty ? null : texPath);
       var size = UnityEngine.Vector3.Scale(mesh.bounds.size, worldScale);
       o = Run($"Tools/prop_stone_drawn.py \"{gb}\" {tex.width} {tex.height} \"{texPath}\" --extent {size.x:F3},{size.y:F3},{size.z:F3} {args}");
+    }
+    else if (mode == "wood")
+    {
+      var meshPath = UnityEditor.AssetDatabase.GetAssetPath(mesh);
+      var gb = $"Temp/Realms/gb/{System.IO.Path.GetFileNameWithoutExtension(texPath)}.bin";
+      bool synty = PixelRestyle.SyntySource(sourceMesh, out _, out _);
+      PixelRestyle.BakeGBuffer(meshPath, tex.width, tex.height, gb, synty ? "synty:" + sourceMesh : meshPath, synty ? null : texPath);
+      o = Run($"Tools/prop_structure.py \"{texPath}\" \"{gb}\" \"{texPath}\"");
     }
     else o = Run($"Tools/realms_grade.py {mode} \"{texPath}\"" + (emiPath != null ? $" \"{emiPath}\"" : ""));
     sb.Append($"    {pname} {mode}: {o}\n");
@@ -447,16 +460,23 @@ foreach (var (pname, src, height, fire, flat) in list)
         var spots = bowl
           ? new[] { (0f, 0f, 1.5f), (.24f, .1f, 1.05f), (-.22f, .14f, 1.1f), (.08f, -.24f, 1f), (-.14f, -.2f, .95f), (.26f, -.12f, .85f) }
           : new[] { (0f, 0f, 1f) };
-        float across = UnityEngine.Mathf.Min(b2.size.x, b2.size.z);
-        float baseScale = bowl ? UnityEngine.Mathf.Clamp(across * .55f, .5f, 1.2f) : UnityEngine.Mathf.Clamp(b2.size.x * .9f, .6f, 1.6f);
+        float bowlAcross = UnityEngine.Mathf.Min(b2.size.x, b2.size.z);
+        float baseScale = bowl ? UnityEngine.Mathf.Clamp(bowlAcross * .55f, .5f, 1.2f) : UnityEngine.Mathf.Clamp(b2.size.x * .9f, .6f, 1.6f);
         for (int k = 0; k < spots.Length; k++)
         {
           var (fx, fz, fs) = spots[k];
-          var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(flame);
+          // A bowl burns with the wall torch's own fire (Synty's candle flame scaled up, as on the torch): the held spell
+          // flame keeps its particles small on screen and stayed a few dots in the bowl (F9 fa3a17dc).
+          var f = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(bowl && bowlFire != null ? bowlFire : flame);
           f.name = spots.Length > 1 ? $"Flame {k}" : "Flame"; f.transform.SetParent(holder.transform, false);
           Quiet(f);
-          f.transform.localPosition = new UnityEngine.Vector3(fx * across, b2.size.y * (bowl ? .86f : .92f), fz * across);
-          f.transform.localScale = UnityEngine.Vector3.one * baseScale * fs;
+          f.transform.localPosition = new UnityEngine.Vector3(fx * bowlAcross * (bowlFire != null ? .7f : 1f), b2.size.y * (bowl ? .84f : .92f), fz * bowlAcross * (bowlFire != null ? .7f : 1f));
+          f.transform.localScale = bowl && bowlFire != null
+            ? new UnityEngine.Vector3(1.6f, 1.6f, 1.6f) * (bowlAcross / .8f) * fs / UnityEngine.Mathf.Max(.01f, holder.transform.lossyScale.y)
+            : UnityEngine.Vector3.one * baseScale * fs;
+          // Its particles grow with that scale (the hearth's flames are set so too); left alone they stay candle-sized.
+          if (bowl && bowlFire != null)
+            foreach (var ps in f.GetComponentsInChildren<UnityEngine.ParticleSystem>(true)) { var m = ps.main; m.scalingMode = UnityEngine.ParticleSystemScalingMode.Hierarchy; }
         }
       }
     }

@@ -501,6 +501,8 @@ public partial class DungeonGenerator
             {
                 if(block==null || !block.solid || !block.TryGetComponent<BoxCollider>(out var box))continue;
                 var b=box.bounds;
+                // Also a body for furnishing to keep out of (its mesh is built later, so its renderer can't tell yet).
+                if(b.size.y>=.1f)bodies.Add(b);
                 for(float x=b.min.x+.05f;x<=b.max.x;x+=data.cellSize*.5f)for(float z=b.min.z+.05f;z<=b.max.z;z+=data.cellSize*.5f)taken.Add(CellOf(new Vector3(x,0,z)));
                 taken.Add(CellOf(new Vector3(b.max.x-.05f,0,b.max.z-.05f)));
             }
@@ -515,6 +517,7 @@ public partial class DungeonGenerator
                     if(r==null || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer)continue;
                     var b=r.bounds;
                     if(b.size.x>8f || b.size.z>8f)continue;
+                    if(b.size.y>=.1f)bodies.Add(b);
                     var lo=CellOf(b.min+new Vector3(.05f,0f,.05f)); var hi=CellOf(b.max-new Vector3(.05f,0f,.05f));
                     for(int x=Mathf.Min(lo.x,hi.x);x<=Mathf.Max(lo.x,hi.x);x++)for(int z=Mathf.Min(lo.y,hi.y);z<=Mathf.Max(lo.y,hi.y);z++)taken.Add(new Vector2Int(x,z));
                 }
@@ -697,6 +700,7 @@ public partial class DungeonGenerator
     DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,int seed)
     {
         var go=Instantiate(prefab,pos,rotation,transform);
+        AddBody(go);
         var d=go.GetComponent<DungeonDestructible>();
         if(d==null){SeedGroup(go,seed,rewardOverride);return go.GetComponentInChildren<DungeonDestructible>();}
         d.loot=First(rewardOverride,FloorLoot);
