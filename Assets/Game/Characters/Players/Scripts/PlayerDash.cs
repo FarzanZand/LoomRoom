@@ -2,12 +2,13 @@ using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-// The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres the way
-// the movement keys point at that moment (back when none are held), for a share of the most stamina. It is fast at once
-// and slows to a stop, so it reads as a burst, not a glide. It moves the player only: hits still land while dashing.
-// Feel: the view widens and eases back, leans into a sideways dash and nods with a forward or backward one, dips a little;
-// the arms and held items trail behind and spring back (PlayerViewPresentation.Offset); pale streaks rush past the way it
-// travels; a whoosh on the push-off and a scuff as it stops. Added to the table player by PlayerCombat.
+// The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres to the
+// side or back, the way the movement keys point at that moment (never forward; back when none are held), for a flat
+// stamina cost. It is fast at once and slows to a stop, so it reads as a burst, not a glide. It moves the player only:
+// hits still land while dashing. Feel: the view widens and eases back, leans into a sideways dash and nods up out of a
+// backward one, dips a little, all slight; the arms and held items trail behind and tip over against it, then spring back
+// (PlayerViewPresentation.Offset, Tilt); streaks can rush past (off by default); a whoosh on the push-off and a scuff as
+// it stops. Added to the table player by PlayerCombat.
 // Before PlayerMotor, so the press moves the player the same frame.
 [DefaultExecutionOrder(-5)]
 public class PlayerDash : MonoBehaviour
@@ -24,8 +25,8 @@ public class PlayerDash : MonoBehaviour
     float covered, lastStep;   // share of the dash's time played, and last frame's planned step in metres
     Vector3 direction, viewDirection, lastPosition;   // world (flat) and in the view's frame at the press
 
-    // Springs for the view's lean and the arms' trail.
-    Vector3 lean, leanVelocity, trail, trailVelocity;
+    // Springs for the view's lean and the arms' trail and tilt.
+    Vector3 lean, leanVelocity, trail, trailVelocity, tilt, tiltVelocity;
     float dip, dipVelocity;
 
     static DashTuning Tuning => CombatManager.HasInstance ? CombatManager.Instance.dash : null;
@@ -53,9 +54,9 @@ public class PlayerDash : MonoBehaviour
         if (InputManager.HasInstance) InputManager.Instance.SprintPressed -= OnSprintPressed;
         Stop();
         queued = false;
-        lean = leanVelocity = trail = trailVelocity = Vector3.zero;
+        lean = leanVelocity = trail = trailVelocity = tilt = tiltVelocity = Vector3.zero;
         dip = dipVelocity = FovKick = 0f;
-        if (view != null) view.Offset = Vector3.zero;
+        if (view != null) { view.Offset = Vector3.zero; view.Tilt = Vector3.zero; }
     }
 
     void Start()
@@ -87,13 +88,21 @@ public class PlayerDash : MonoBehaviour
         if (bash != null && bash.Busy) return false;
         if (player.Equipment != null && player.Equipment.IsUsingItem) return false;
 
+        // Sideways and back only, never forward: the forward part of the keys is dropped (forward and a side key dash
+        // straight to that side), forward alone does nothing, and no key at all steps back.
+        if (move.sqrMagnitude < .04f) move = Vector2.down;
+        else
+        {
+            move.y = Mathf.Min(0f, move.y);
+            if (move.sqrMagnitude < .04f) return false;
+        }
+
         var stats = player.Stats;
         if (stats != null && stats.HasStat(StatType.MaxStamina) && !DevGodMode.On &&
-            !stats.TryUseStamina(stats.MaxStamina * t.staminaShare, player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f))
+            !stats.TryUseStamina(t.staminaCost, player.PlayerData != null ? player.PlayerData.staminaRegenDelay : 1f))
             return false;   // TryUseStamina reports it
 
         var yaw = player.Look != null ? player.Look.YawTransform : transform;
-        if (move.sqrMagnitude < .04f) move = t.backWhenStill ? Vector2.down : Vector2.up;
         move.Normalize();
         viewDirection = new Vector3(move.x, 0f, move.y);
         var forward = yaw.forward; forward.y = 0f; forward.Normalize();
@@ -109,8 +118,9 @@ public class PlayerDash : MonoBehaviour
         leanVelocity += new Vector3(viewDirection.z * t.pitch, 0f, -viewDirection.x * t.roll) * t.kick;
         dipVelocity -= t.dip * t.kick;
         trailVelocity -= viewDirection * t.armsTrail * t.kick;
+        tiltVelocity += Tilted(t) * t.kick;
 
-        Streaks(true);
+        if (t.showStreaks) Streaks(true);
         if (t.noiseRadius > 0f) NoiseEvents.Report(transform.position, t.noiseRadius, player);
         if (t.dashAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(t.dashAudio);
         Dashed?.Invoke();
@@ -182,11 +192,13 @@ public class PlayerDash : MonoBehaviour
         float hold = dashing && t != null ? 1f - Mathf.Clamp01(since / Mathf.Max(.05f, t.duration)) : 0f;
         var leanTarget = t != null ? new Vector3(viewDirection.z * t.pitch, 0f, -viewDirection.x * t.roll) * hold : Vector3.zero;
         var trailTarget = t != null ? -viewDirection * t.armsTrail * hold : Vector3.zero;
+        var tiltTarget = t != null ? Tilted(t) * hold : Vector3.zero;
         float dipTarget = t != null ? -t.dip * hold : 0f;
         Spring(ref lean, ref leanVelocity, leanTarget, hz, damping, dt);
         Spring(ref trail, ref trailVelocity, trailTarget, hz * 1.2f, damping, dt);
+        Spring(ref tilt, ref tiltVelocity, tiltTarget, hz, damping, dt);
         Spring(ref dip, ref dipVelocity, dipTarget, hz, damping, dt);
-        if (view != null) view.Offset = trail;
+        if (view != null) { view.Offset = trail; view.Tilt = tilt; }
 
         // Wider at once, then eased back: up over the first fifth, down over the rest.
         float fov = 0f;
@@ -198,6 +210,10 @@ public class PlayerDash : MonoBehaviour
         }
         FovKick = fov;
     }
+
+    // The arms and weapon tip over against the dash, turning about the eye: away from a sideways dash (the weapon's head
+    // lags) and forward out of a backward one.
+    Vector3 Tilted(DashTuning t) => new Vector3(-viewDirection.z * t.armsTilt * .5f, -viewDirection.x * t.armsTilt * .35f, viewDirection.x * t.armsTilt);
 
     static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
 
@@ -243,48 +259,50 @@ public class PlayerDash : MonoBehaviour
 [Serializable]
 public class DashTuning
 {
-    [Tooltip("Sprint (Shift) pressed dashes the table player the way the movement keys point (back when none are held). Off: Shift only sprints, as before.")]
+    [Tooltip("Sprint (Shift) pressed dashes the table player to the side or back, the way the movement keys point (never forward; back when none are held). Off: Shift only sprints, as before.")]
     public bool enabled = true;
-    [ShowIf(nameof(enabled)), Range(0f, 1f), Tooltip("Share of the most stamina one dash costs. Refused when there isn't that much left.")]
-    public float staminaShare = .5f;
+    [ShowIf(nameof(enabled)), Min(0f), Tooltip("Stamina one dash costs (every class starts with 40, so two from full). Refused when there isn't that much left.")]
+    public float staminaCost = 20f;
     [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash covers when nothing is in the way.")]
     public float distance = 3.6f;
     [ShowIf(nameof(enabled)), Min(.05f), Tooltip("Seconds a dash takes.")]
-    public float duration = .26f;
+    public float duration = .45f;
     [ShowIf(nameof(enabled)), Range(0f, 4f), Tooltip("How front-loaded it is: speed falls off as (1 - t)^this. 0 = even speed, higher = a harder burst and a softer stop.")]
-    public float falloff = 1.3f;
+    public float falloff = .7f;
     [ShowIf(nameof(enabled)), Min(0f), Tooltip("Seconds after a dash ends before the next one can start.")]
     public float cooldown = .2f;
     [ShowIf(nameof(enabled)), Range(0f, .5f), Tooltip("A press during a dash, or this many seconds before its cooldown is over, is kept and dashes as soon as it can.")]
     public float buffer = .15f;
-    [ShowIf(nameof(enabled)), Tooltip("With no movement key held, dash backward (a back step). Off: forward.")]
-    public bool backWhenStill = true;
     [ShowIf(nameof(enabled)), Min(0f), Tooltip("Metres within which enemies hear the push-off (as they hear running). 0 = silent.")]
     public float noiseRadius = 8f;
     [ShowIf(nameof(enabled)), Tooltip("Only from the ground.")]
     public bool groundedOnly = true;
 
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 20f), Tooltip("Degrees the view widens as the dash starts, eased back.")]
-    public float fovKick = 6f;
+    public float fovKick = 1.5f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Min(.05f), Tooltip("Seconds the wider view takes to come back.")]
     public float fovSeconds = .4f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 15f), Tooltip("Degrees the view leans into a sideways dash.")]
-    public float roll = 5f;
+    public float roll = 1.5f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 10f), Tooltip("Degrees the view nods: down into a forward dash, up out of a backward one.")]
-    public float pitch = 1.5f;
+    public float pitch = .8f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, .3f), Tooltip("Metres the view dips as the legs push off.")]
-    public float dip = .05f;
+    public float dip = .03f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 2f), Tooltip("Share of the push-off's dip the view dips again as the dash stops (the feet catching).")]
     public float stopDip = 1f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, .3f), Tooltip("Metres the arms and held items trail behind the dash, sprung back after.")]
-    public float armsTrail = .09f;
+    public float armsTrail = .06f;
+    [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 20f), Tooltip("Degrees the arms and held items tip over against the dash about the eye (the weapon's head lagging), sprung back after.")]
+    public float armsTilt = 7f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 20f), Tooltip("How hard the press kicks the lean, dip and trail (a share of each, per second): the snap at the start.")]
-    public float kick = 6f;
+    public float kick = 3f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(1f, 12f), Tooltip("How quickly the lean, dip and trail follow and settle (springs, cycles a second).")]
     public float springHz = 4f;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(.1f, 1.5f), Tooltip("Spring damping: below 1 overshoots a little and settles, 1 and more never overshoots.")]
     public float springDamping = .6f;
-    [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Tooltip("Streaks that rush past the view while dashing, turned along the dash (a child of the camera).")]
+    [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Tooltip("Pale streaks rush past the view while dashing.")]
+    public bool showStreaks;
+    [ShowIf("@enabled && showStreaks"), FoldoutGroup("Feel"), Tooltip("Streaks that rush past the view while dashing, turned along the dash (a child of the camera).")]
     public GameObject streaks;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 3f), Tooltip("How far a sideways dash's streaks are turned back toward the view's front (0 = straight from the side, out of sight).")]
     public float streakForward = 1.2f;

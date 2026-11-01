@@ -92,6 +92,9 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(-1), Tooltip("The hotbar, health, mana, stamina and XP bars and buff frames: Pixel (the old pixel kit) or Rugged (the inventory's grey stone frames). Switches live, also outside Play mode (HudStyleImage).")]
     public HudStyle hudStyle = HudStyle.Rugged;
     public static HudStyle CurrentHudStyle => HasInstance ? Instance.hudStyle : HudStyle.Rugged;
+    [PropertyOrder(-1), Tooltip("The stamina readout under the crosshair (a segment per 10 stamina, shown while stamina is below full, StaminaReadoutUI). Off: never shown; the stamina bar with the vitals stays.")]
+    public bool showStaminaReadout = true;
+    public static bool StaminaReadoutShown => !HasInstance || Instance.showStaminaReadout;
     // Gear rarities, renamed 2026-10-20 (Plain, Fine, Superior, Masterwork, Legendary): the colours follow the usual ladder,
     // white, green, blue, gold, then Legendary in red.
     [PropertyOrder(2), FormerlySerializedAs("plain"), Tooltip("Slot fill and border of Common gear and consumables: a faint white (names stay white).")] public Color common = DefaultCommon;

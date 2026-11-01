@@ -300,30 +300,31 @@ MonoBehaviour:
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}
   blockFrontalDot: -0.3
-  blockStaminaCost: 12
+  blockStaminaCost: 20
   shieldStaminaPerSecond: 4
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
   dash:
     enabled: 1
-    staminaShare: 0.5
+    staminaCost: 20
     distance: 3.6
-    duration: 0.26
-    falloff: 1.3
+    duration: 0.45
+    falloff: 0.7
     cooldown: 0.2
     buffer: 0.15
-    backWhenStill: 1
     noiseRadius: 8
     groundedOnly: 1
-    fovKick: 6
+    fovKick: 1.5
     fovSeconds: 0.4
-    roll: 5
-    pitch: 1.5
-    dip: 0.05
+    roll: 1.5
+    pitch: 0.8
+    dip: 0.03
     stopDip: 1
-    armsTrail: 0.09
-    kick: 6
+    armsTrail: 0.06
+    armsTilt: 7
+    kick: 3
     springHz: 4
     springDamping: 0.6
+    showStreaks: 0
     streaks: {fileID: 7664258301829467767, guid: dfa9ace42b2078d419918525be726088, type: 3}
     streakForward: 1.2
     dashAudio: {fileID: 11400000, guid: 2f2df9ad73a830c45a0ed6e3f2512076, type: 2}
