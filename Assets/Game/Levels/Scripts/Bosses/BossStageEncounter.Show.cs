@@ -131,7 +131,11 @@ public partial class BossStageEncounter
         yield return null;
         if (brain == null || brain.Character == null) yield break;
         var character = brain.Character;
-        if (character.Stats != null) character.Stats.SetHealthShare(fight.backupHealth);
+        if (character.Stats != null)
+        {
+            character.Stats.SetHealthShare(fight.backupOneHit ? 1f : fight.backupHealth);
+            character.Stats.DiesInOneHit = fight.backupOneHit;
+        }
         brain.Entranced = true;
         var graph = default(PlayableGraph);
         if (fight.backupDance != null && character.Animator != null)

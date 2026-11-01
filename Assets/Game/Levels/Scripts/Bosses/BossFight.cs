@@ -151,7 +151,9 @@ public class BossFight : ScriptableObject
     public float backupAtHealth = .3f;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Their dance (played straight on their animator, each a little out of step).")]
     public AnimationClip backupDance;
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Any blow that does damage drops a backup dancer at once (the user, 2026-11-01). Off: they have Backup Health.")]
+    public bool backupOneHit = true;
+    [TabGroup(Tabs, "Backup"), ShowIf("@backupDancer != null && !backupOneHit"), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
     public float backupHealth = .35f;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as it calls them in.")]
     public string backupBossLine = "";

@@ -288,6 +288,9 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // (RunManager.reviveGrace).
     public float SparedUntil { get; set; }
 
+    // Any hit that takes health kills outright (a boss's backup dancers, BossFight.backupOneHit).
+    public bool DiesInOneHit { get; set; }
+
     // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
     public bool BlockBlessing { get; set; }
 
@@ -315,6 +318,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (info.Blocked && blessed) actual = 0;
         // Blocking's second bonus: less of a blocked hit gets through.
         else if (info.Blocked && adventurer != null) actual *= adventurer.BlockedDamageMultiplier;
+        if (DiesInOneHit && actual > 0f) actual = Mathf.Max(actual, CurrentHealth);
         info.Amount   = actual;
 
         if (!spared) CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
