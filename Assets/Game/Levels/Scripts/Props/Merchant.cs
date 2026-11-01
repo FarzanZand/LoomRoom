@@ -95,7 +95,9 @@ public class Merchant : MonoBehaviour, IInteractable
     public IReadOnlyList<Ware> Wares { get { EnsureStock(); foreach (var w in wares) w.price=PriceOf(w.item); return wares; } }
     public string Currency => CurrencyManager.HasInstance ? CurrencyManager.Instance.currencyName : "gold";
 
-    public string Prompt => $"Trade with the {merchantName.ToLowerInvariant()}";
+    public string Prompt => (Keeper != null ? "Talk to the " : "Trade with the ") + merchantName.ToLowerInvariant();
+    // A tavern keeper greets first and asks what you're after (TavernKeeper.Talk); the shop opens from there.
+    TavernKeeper Keeper => GetComponentInParent<TavernKeeper>() ?? GetComponentInChildren<TavernKeeper>();
     public bool CanInteract(Character who) => DungeonFeatureUtility.TablePlayer(who) != null;
 
     public void Interact(Character who)
@@ -103,7 +105,16 @@ public class Merchant : MonoBehaviour, IInteractable
         var player = DungeonFeatureUtility.TablePlayer(who);
         if (player == null) return;
         EnsureStock();
+        if (Keeper != null && Keeper.Talk(this, player)) return;
         if (greetings != null && greetings.Length > 0) MessageLog.Post(greetings[Random.Range(0, greetings.Length)], MessageKind.Lore);
+        OpenShop(player);
+    }
+
+    // The shop screen, with no greeting (the keeper has said his).
+    public void OpenShop(Player player)
+    {
+        if (player == null) return;
+        EnsureStock();
         if (ShopUI.HasInstance) ShopUI.Instance.Open(this, player);
         else Debug.LogWarning("[Merchant] No ShopUI in the scene.", this);
     }

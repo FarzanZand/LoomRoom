@@ -37,5 +37,4 @@ MonoBehaviour:
     inPerson: 1
   rumoured: 1
   rumour: People who go past the Crypt come back with sand in their boots.
-  rumourTold: There's a pit not far from the Crypt where they fight for a crowd.
-    A champion waits in it. Nobody has thrown him out yet.
+  rumourTold: There's a pit past the Crypt where they fight for a crowd. A champion waits in it. Nobody's thrown him out yet.

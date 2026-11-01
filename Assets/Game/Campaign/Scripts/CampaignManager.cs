@@ -133,7 +133,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         if (e == null || PM == null) return;
         PM.SetFlag(RumourPrefix + e.id, 1);
         PM.CompleteQuest(ProgressionManager.RumourQuest);
-        // Its card, as a class's when one is unlocked: shown once the shop screen closes.
+        // Its card, as a class's when one is unlocked: shown once the keeper's dialogue closes.
         ClassUnlockedUI.ShowPlace(e);
     }
 

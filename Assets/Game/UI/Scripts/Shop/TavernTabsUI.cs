@@ -1,12 +1,11 @@
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The tavern keeper's tabs on the shop screen (ShopUI): Wares (the merchant's rows, as always), Food (TavernDish cards:
-// eat once a run, it lasts the run) and Rumours (only while one is left to sell: a cryptic line until paid, then the
-// place it tells of, which joins the campaign map). With a plain merchant the tabs are hidden and the wares show.
-// Everything is authored in the scene (TavernSetup.Build makes it); this fills it.
+// The tavern keeper's tabs on the shop screen (ShopUI): Wares (the merchant's rows, as always) and Food (TavernDish
+// cards: eat once a run, it lasts the run). With a plain merchant the tabs are hidden and the wares show. Rumours are
+// no longer sold here: the keeper tells them himself (TavernKeeper.Talk). Everything is authored in the scene
+// (TavernSetup.Build makes it); this fills it.
 public class TavernTabsUI : MonoBehaviour
 {
     [System.Serializable]
@@ -30,30 +29,25 @@ public class TavernTabsUI : MonoBehaviour
     }
 
     [SerializeField] GameObject tabRow;
-    [SerializeField] Tab wares, food, rumours;
+    [SerializeField] Tab wares, food;
+    [Tooltip("The old Rumours tab and its panel, still in the scene until it is next rebuilt: kept hidden.")]
+    [SerializeField] Tab rumours;
     [Tooltip("The wares' rows, headers and sold-out lines: hidden on the other tabs.")]
     [SerializeField] GameObject[] waresParts = new GameObject[0];
     [SerializeField] GameObject foodPanel, rumourPanel;
     [SerializeField] Card[] dishCards = new Card[0];
-    [SerializeField] Card[] rumourCards = new Card[0];
-    [SerializeField] TMP_Text rumourEmpty;
-    [SerializeField] Sprite rumourIcon;
     [SerializeField] Color gold = new(1f, .851f, .4f), good = new(.62f, .82f, .49f), dim = new(.72f, .68f, .6f), tooDear = new(.69f, .353f, .306f), text = new(.9f, .9f, .9f);
 
-    enum Page { Wares, Food, Rumours }
+    enum Page { Wares, Food }
     Page page;
     TavernKeeper keeper;
     Player player;
-    // Rumours bought while the screen is open: shown told (the place's name) until it closes.
-    readonly List<CampaignEncounter> told = new();
 
     void Awake()
     {
         if (wares.button != null) wares.button.onClick.AddListener(() => Show(Page.Wares));
         if (food.button != null) food.button.onClick.AddListener(() => Show(Page.Food));
-        if (rumours.button != null) rumours.button.onClick.AddListener(() => Show(Page.Rumours));
         Hover(food, "Food", "Once a run", "What a dish gives lasts until the run ends.");
-        Hover(rumours, "Rumours", "Places you haven't found", "Pay for a rumour to hear where it is. The place joins your campaign map.");
         Hover(wares, "Wares", "Buy and sell", "Supplies and gear for this run. Right click your own things to sell them.");
     }
 
@@ -69,16 +63,17 @@ public class TavernTabsUI : MonoBehaviour
     {
         keeper = merchant != null ? merchant.GetComponentInParent<TavernKeeper>() ?? merchant.GetComponentInChildren<TavernKeeper>() : null;
         player = who;
-        told.Clear();
         if (player != null && player.Wallet != null) player.Wallet.Changed += OnGold;
         if (tabRow != null) tabRow.SetActive(keeper != null);
+        if (rumours?.button != null) rumours.button.gameObject.SetActive(false);
+        if (rumourPanel != null) rumourPanel.SetActive(false);
         Show(Page.Wares);
     }
 
     public void Unbind()
     {
         if (player != null && player.Wallet != null) player.Wallet.Changed -= OnGold;
-        keeper = null; player = null; told.Clear();
+        keeper = null; player = null;
     }
 
     void OnGold(int total, int delta) => Refresh();
@@ -86,22 +81,19 @@ public class TavernTabsUI : MonoBehaviour
     void Show(Page p)
     {
         if (keeper == null) p = Page.Wares;
-        if (p == Page.Rumours && !RumoursShown) p = Page.Wares;
         page = p;
         foreach (var part in waresParts) if (part != null) part.SetActive(p == Page.Wares);
         if (foodPanel != null) foodPanel.SetActive(p == Page.Food);
-        if (rumourPanel != null) rumourPanel.SetActive(p == Page.Rumours);
         // The wares' own rows come and go with what is left; ShopUI fills them again.
         if (p == Page.Wares && ShopUI.HasInstance) ShopUI.Instance.RefreshWares();
         if (ShopUI.HasInstance) ShopUI.Instance.SetHelp(p switch
         {
             Page.Food => "Hover over a dish to see what it does.",
-            Page.Rumours => "Hover over a rumour to see what you get for it.",
             _ => null,
         });
         Refresh();
         // A pad: the first card's button is selected on the tab, so Submit acts at once.
-        if (InputManager.PadConnected && p != Page.Wares) SelectFirst(p == Page.Food ? dishCards : rumourCards);
+        if (InputManager.PadConnected && p != Page.Wares) SelectFirst(dishCards);
     }
 
     static void SelectFirst(Card[] cards)
@@ -116,17 +108,11 @@ public class TavernTabsUI : MonoBehaviour
         if (keeper != null && page != Page.Wares) foreach (var part in waresParts) if (part != null && part.activeSelf) part.SetActive(false);
     }
 
-    bool RumoursShown => keeper != null && (keeper.HasRumours || told.Count > 0);
-
     void Refresh()
     {
         if (keeper == null) return;
-        if (rumours.button != null) rumours.button.gameObject.SetActive(RumoursShown);
-        // How many are waiting, so a new one is noticed.
-        if (rumours.label != null) { int left = keeper.Rumours.Count; rumours.label.text = left > 0 ? $"Rumours ({left})" : "Rumours"; }
-        Mark(wares, page == Page.Wares); Mark(food, page == Page.Food); Mark(rumours, page == Page.Rumours);
+        Mark(wares, page == Page.Wares); Mark(food, page == Page.Food);
         if (page == Page.Food) FillDishes();
-        if (page == Page.Rumours) FillRumours();
     }
 
     void Mark(Tab t, bool on)
@@ -177,55 +163,6 @@ public class TavernTabsUI : MonoBehaviour
             TavernKeeper.Result.AlreadyEaten => "You have had that already this run.",
             _ => "",
         });
-        Refresh();
-    }
-
-    void FillRumours()
-    {
-        var list = new List<(CampaignEncounter place, bool known)>();
-        foreach (var e in told) list.Add((e, true));
-        foreach (var e in keeper.Rumours) if (!told.Contains(e)) list.Add((e, false));
-        for (int i = 0; i < rumourCards.Length; i++)
-        {
-            var c = rumourCards[i];
-            if (c?.root == null) continue;
-            c.root.SetActive(i < list.Count);
-            if (i >= list.Count) continue;
-            var (place, known) = list[i];
-            if (c.icon != null) { c.icon.sprite = rumourIcon; c.icon.enabled = rumourIcon != null; }
-            if (known)
-            {
-                c.name.text = $"{place.displayName}  <color=#{ColorUtility.ToHtmlStringRGB(dim)}>act {place.act}</color>";
-                c.info.text = string.IsNullOrEmpty(place.rumourTold) ? place.description : place.rumourTold; c.info.color = text;
-                c.note.text = "Now on your campaign map"; c.note.color = good;
-                c.price.gameObject.SetActive(false); if (c.coin != null) c.coin.SetActive(false);
-                c.button.gameObject.SetActive(false);
-                if (c.hover != null) c.hover.Set(place.displayName, $"Act {place.act} · on your campaign map", (string.IsNullOrEmpty(place.description) ? "" : place.description + "\n\n") + "It rises onto the map as soon as you are back in the room.");
-            }
-            else
-            {
-                c.name.text = "A rumour";
-                c.info.text = $"\"{place.rumour}\""; c.info.color = text;
-                c.note.text = "Pay to hear the rest."; c.note.color = dim;
-                c.price.gameObject.SetActive(true); if (c.coin != null) c.coin.SetActive(true);
-                c.price.text = keeper.rumourPrice.ToString(); c.price.color = Coins >= keeper.rumourPrice ? text : tooDear;
-                c.button.gameObject.SetActive(true);
-                c.buttonLabel.text = "Listen";
-                c.buttonLabel.color = Coins >= keeper.rumourPrice ? text : dim;
-                c.button.onClick.RemoveAllListeners();
-                var p = place;
-                c.button.onClick.AddListener(() => Buy(p));
-                if (c.hover != null) c.hover.Set("A rumour", $"{keeper.rumourPrice} gold", "About somewhere you haven't found yet. Pay to hear where it is: the place joins your campaign map, and you can go there from the table.");
-            }
-        }
-        if (rumourEmpty != null) rumourEmpty.gameObject.SetActive(keeper.Rumours.Count == 0);
-    }
-
-    void Buy(CampaignEncounter place)
-    {
-        var result = keeper.BuyRumour(place, player);
-        if (result == TavernKeeper.Result.Done) { told.Add(place); Say($"{place.displayName} is on your campaign map now."); }
-        else if (result == TavernKeeper.Result.NoMoney) Say($"A rumour costs {keeper.rumourPrice} gold.");
         Refresh();
     }
 
