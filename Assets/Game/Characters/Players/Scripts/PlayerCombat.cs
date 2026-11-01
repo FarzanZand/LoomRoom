@@ -211,6 +211,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         spells = GetComponent<PlayerSpellcasting>();
         progress = GetComponent<AdventurerProgress>();
         bash = GetComponent<ShieldBash>();
+        // The dash (CombatManager > Player > Dash) goes with fighting.
+        if (GetComponent<PlayerDash>() == null) gameObject.AddComponent<PlayerDash>();
         relay = GetComponentInChildren<WeaponAnimationRelay>(true);
         if (armsAnimator == null && relay != null) armsAnimator = relay.GetComponent<Animator>();
         attackHash           = AnimatorHelper.TagHash(attackTag);
@@ -614,11 +616,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         // A spell that lands on the raised shield still hurts, but the shield shows the hit rather than the arms flinching.
         string trigger = info.Blocked || (info.Magic && ShieldFaces(info)) ? blockHitTrigger : hurtTrigger;
         // The arms own attack timing and hitbox events. Keep windup, charge and
-        // release playing through hits, including transitions into an attack.
-        if (!IsAttacking) AnimatorHelper.SetTrigger(armsAnimator, trigger);
+        // release playing through hits, including transitions into an attack; eating or drinking plays through too
+        // (the user, 2026-11-01: a hit cut the meal off while its use still went on).
+        bool eating = player.Equipment != null && player.Equipment.IsUsingItem;
+        if (!IsAttacking && !eating) AnimatorHelper.SetTrigger(armsAnimator, trigger);
         // Character already plays Hurt on its own animator; only add what it doesn't.
         // One body: the body is the arms' animator, which has had its say above.
-        if (bodyAnimator != armsAnimator && (info.Blocked || bodyAnimator != player.Animator)) AnimatorHelper.SetTrigger(bodyAnimator, trigger);
+        if (!eating && bodyAnimator != armsAnimator && (info.Blocked || bodyAnimator != player.Animator)) AnimatorHelper.SetTrigger(bodyAnimator, trigger);
     }
 
     // ── Charge feel ───────────────────────────────────────────────────

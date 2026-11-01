@@ -45,6 +45,7 @@ public struct NetDamage : INetworkSerializable
     public float health;          // host -> guests: the enemy's health after the hit
     public float stun;            // guest -> host: seconds the blow stuns the enemy (a shield bash)
     public FixedString128Bytes weapon;
+    public bool spared;           // host -> guests: it took no health (the boss shielded during a beam: IMMUNE)
 
     const byte Heavy = 1, Critical = 2, Backstab = 4, Magic = 8, Blocked = 16, Parried = 32, FromEffect = 64, DiedFlag = 128;
     public bool Died { get => (flags & DiedFlag) != 0; set => flags = (byte)(value ? flags | DiedFlag : flags & ~DiedFlag); }
@@ -55,7 +56,7 @@ public struct NetDamage : INetworkSerializable
         {
             amount = info.Amount, hitPoint = info.HitPoint, direction = info.Direction, swing = info.SwingDirection,
             knockback = info.KnockbackForce, attack = -1, slot = Coop.NoSlot,
-            weapon = new FixedString128Bytes(Coop.SaveId(info.Weapon)),
+            weapon = new FixedString128Bytes(Coop.SaveId(info.Weapon)), spared = info.Spared,
         };
         if (info.Heavy) d.flags |= Heavy;
         if (info.Critical) d.flags |= Critical;
@@ -79,7 +80,7 @@ public struct NetDamage : INetworkSerializable
             HitPoint = hitPoint, Direction = direction, SwingDirection = swing, KnockbackForce = knockback,
             Heavy = (flags & Heavy) != 0, Critical = (flags & Critical) != 0, Backstab = (flags & Backstab) != 0,
             Magic = (flags & Magic) != 0, Blocked = (flags & Blocked) != 0, Parried = (flags & Parried) != 0,
-            FromEffect = (flags & FromEffect) != 0,
+            FromEffect = (flags & FromEffect) != 0, Spared = spared,
         };
     }
 
@@ -88,7 +89,7 @@ public struct NetDamage : INetworkSerializable
         s.SerializeValue(ref enemy); s.SerializeValue(ref slot); s.SerializeValue(ref amount);
         s.SerializeValue(ref hitPoint); s.SerializeValue(ref direction); s.SerializeValue(ref swing);
         s.SerializeValue(ref knockback); s.SerializeValue(ref flags); s.SerializeValue(ref attack);
-        s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon);
+        s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon); s.SerializeValue(ref spared);
     }
 }
 
@@ -127,6 +128,8 @@ public enum CoopEventKind : byte
     Meddle = 26,        // the Dungeon Master meddles (DungeonMasterMeddling): amount 0 adds an enemy at position in room id, 1 takes chest id
     FeatureUsed = 29,   // a blood altar or a shrine answered someone (id = it among the floor's altars and shrines): silent for all
     WareBought = 30,    // shared loot: a ware was bought (id = the merchant on the floor, item = the ware's save id): gone for all
+    BossIntroDone = 31, // a guest's boss intro (its lines and versus screen) is over: the host's fight waits for everyone's
+    BossFightBegun = 32, // host: the stage fight's battle begins (every intro still showing is put away)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,

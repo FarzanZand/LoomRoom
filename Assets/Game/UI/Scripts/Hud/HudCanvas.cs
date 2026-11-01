@@ -8,8 +8,12 @@ public class HudCanvas : MonoBehaviour
     [SerializeField] Canvas canvas;
     HotbarUI hotbar;
     PlayerVitalsUI vitals;
-    CanvasGroup hotbarGroup, vitalsGroup;
-    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene;
+    CanvasGroup hotbarGroup, vitalsGroup, all;
+    // The whole HUD steps aside until this time (Time.time): a boss's last pose is shown clean (BossStageEncounter).
+    public static float HideUntil;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ClearHide() => HideUntil = 0f;
+    public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene
+        || PortraitDialogueUI.Covers || BossTitleUI.Covers || VersusScreenUI.Covers;
 
     void Awake()
     {
@@ -18,6 +22,7 @@ public class HudCanvas : MonoBehaviour
         vitals = GetComponentInChildren<PlayerVitalsUI>(true);
         hotbarGroup = Group(hotbar);
         vitalsGroup = Group(vitals);
+        all = Group(this);
     }
 
     static CanvasGroup Group(Component c) => c == null ? null : c.TryGetComponent<CanvasGroup>(out var g) ? g : c.gameObject.AddComponent<CanvasGroup>();
@@ -27,6 +32,7 @@ public class HudCanvas : MonoBehaviour
         float alpha = BehindMenu ? 0f : 1f;
         if (hotbarGroup != null) hotbarGroup.alpha = alpha;
         if (vitalsGroup != null) vitalsGroup.alpha = alpha;
+        if (all != null) all.alpha = Mathf.MoveTowards(all.alpha, Time.time < HideUntil ? 0f : 1f, Time.unscaledDeltaTime * 4f);
     }
 
     void OnEnable()

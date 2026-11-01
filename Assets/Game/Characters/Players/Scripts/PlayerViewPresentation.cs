@@ -14,6 +14,10 @@ public class PlayerViewPresentation : MonoBehaviour
     OneBodyRig body;
     // Metres the arms and held items sit below the camera (PlayerDeathFall drops them out of view).
     public float LowerBy { get; set; }
+    // Metres in the view's frame the arms and held items are moved by, and degrees they are turned by about the eye
+    // (the dash's trail and tilt, PlayerDash).
+    public Vector3 Offset { get; set; }
+    public Vector3 Tilt { get; set; }
 
     void Awake()
     {
@@ -57,7 +61,9 @@ public class PlayerViewPresentation : MonoBehaviour
         if (player == null || !player.IsActive || brain.OutputCamera == null ||
             !PlayerManager.HasInstance || brain.OutputCamera != PlayerManager.Instance.OutputCamera) return;
         var view = brain.OutputCamera.transform;
-        transform.SetPositionAndRotation(LowerBy != 0f ? view.TransformPoint(0f, -LowerBy, 0f) : view.position, view.rotation);
+        var offset = Offset + Vector3.down * LowerBy;
+        var rotation = Tilt != Vector3.zero ? view.rotation * Quaternion.Euler(Tilt) : view.rotation;
+        transform.SetPositionAndRotation(offset != Vector3.zero ? view.TransformPoint(offset) : view.position, rotation);
         FitViewModel(brain.OutputCamera);
     }
 }

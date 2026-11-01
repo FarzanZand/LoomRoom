@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Builds Development/Resources/Dev Spawner.prefab, the spawn window (DevSpawner, F10), laid out like Asset Studio in the
+// Builds Development/Resources/Dev Spawner.prefab, the spawn window (DevSpawner, F7), laid out like Asset Studio in the
 // inventory's look: the plain grey frame and slots, gold PixelOperator-Bold titles, PixelOperator text. Left the kinds and
 // their groups, middle the search and a scrolling grid, right the picked entry and its buttons. Edit the prefab freely
 // afterwards; running this again replaces it. RefreshLists() (from an eval) only refills the enemy and room lists that

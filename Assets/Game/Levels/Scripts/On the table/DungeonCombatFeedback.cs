@@ -83,6 +83,8 @@ public class DungeonCombatFeedback : MonoBehaviour
         if(info.Quiet)return;
         view.until=Time.time+3.5f;view.lossUntil=Time.time+.35f;
         if(!Mine(info))return;
+        // A hit that took nothing (a boss shielded while the Dungeon Master's beam pours) says so instead of a number.
+        if(info.Spared){ShowNumber(view.character.transform,Head(view.character),"IMMUNE",new Color(.78f,.8f,.86f),numberScale);return;}
         bool special=!info.Blocked && (info.Critical || info.Backstab);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
@@ -134,6 +136,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Tooltip("One enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
+    [SerializeField,Min(0),Tooltip("Top bar: how much lower it sits while a boss's bar is up, so it shows under it (a boss's crew, its adds).")] float topBarUnderBoss=130;
     void LateUpdate()
     {
         if(canvas==null || dungeon==null || !PlayerManager.HasInstance)return;
@@ -153,12 +156,15 @@ public class DungeonCombatFeedback : MonoBehaviour
         foreach(var e in enemies)
         {
             if(e.character==null){e.root.gameObject.SetActive(false);continue;}
-            bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
+            // A stage boss being set down and introduced gets its own bar once the battle begins, not this one before.
+            bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character
+                || BossStageEncounter.Current!=null && BossStageEncounter.Current.Boss==e.character && !BossStageEncounter.Current.Fighting;
             if(topBar)
             {
                 bool shown=show && e==topEnemy && !bossBar;
                 e.root.gameObject.SetActive(shown);
-                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset);}
+                bool bossUp=BossBarUI.HasInstance && BossBarUI.Instance.Boss!=null;
+                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset-(bossUp?topBarUnderBoss:0));}
             }
             else
             {

@@ -25,6 +25,7 @@ public partial class BossStageEncounter
             return;
         }
         if (Coop.IsHost && !AnyoneAlive()) { Defeat(); return; }
+        if (Coop.IsGuest) GuestDancers();
         if (Fighting) RunEvents(local);
     }
 
@@ -49,11 +50,101 @@ public partial class BossStageEncounter
             case CoopEventKind.BossVolley:
                 if (started && fight != null && index >= 0 && index < fight.events.Count) Attack(false, target, fight.events[index]);
                 break;
+            case CoopEventKind.BossFightBegun: hostBegun = true; break;
         }
     }
 
-    // Guests: the boss is the host's, arriving as its enemy; his hand goes through setting it down meanwhile.
-    IEnumerator TakeHostBoss(Vector3 spot)
+    // The intro (its spotlight, lines and versus screen) runs on every machine, each for its own player. The battle
+    // begins for everyone at once: when the host's intro and every guest's are over, or a while after the host's.
+    bool hostBegun;
+    Coroutine introRun;
+    GameObject introSpotlight;
+    readonly HashSet<int> introsDone = new();
+    const float IntroWait = 12f;
+
+    // Whose eyes the intro is seen through: here, the local player (in co-op whoever stepped up may be a teammate).
+    static Player IntroPlayer(Character stepped)
+    {
+        if (!Coop.Running) return stepped as Player;
+        return PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table ? PlayerManager.Instance.Active as Player : null;
+    }
+
+    // Host: a guest has read its intro.
+    public void GuestIntroDone(int slot) { if (Coop.IsHost) introsDone.Add(slot); }
+
+    // Host: waits for every guest still standing to finish its intro, then the boss can be struck and the guests begin.
+    IEnumerator CoopBegin(bool intro)
+    {
+        if (intro)
+        {
+            bool waiting = false;
+            for (float t = 0f; t < IntroWait && boss != null && boss.IsAlive; t += Time.deltaTime)
+            {
+                bool all = true;
+                foreach (var c in CoopWorld.Party())
+                {
+                    int slot = CoopWorld.SlotOf(c);
+                    if (slot != Coop.LocalSlot && !introsDone.Contains(slot)) { all = false; break; }
+                }
+                if (all) break;
+                if (!waiting) { waiting = true; MessageLog.Post("Waiting for the others.", MessageKind.Info); }
+                yield return null;
+            }
+        }
+        if (boss != null && boss.Stats != null) boss.Stats.SparedUntil = 0f;
+        CoopWorld.BossStage(CoopEventKind.BossFightBegun, 0, 0, Vector3.zero);
+    }
+
+    IEnumerator GuestIntro(bool talk, BossIntroCard card)
+    {
+        yield return Intro(IntroPlayer(null), talk, card);
+        introRun = null;
+        CoopWorld.BossStage(CoopEventKind.BossIntroDone, Coop.LocalSlot, 0, Vector3.zero);
+    }
+
+    // The host's battle began while this guest's intro was still showing: it is put away, the fight's music on.
+    void CutIntro()
+    {
+        if (introRun != null) StopCoroutine(introRun);
+        introRun = null;
+        EndIntro();
+        if (introSpotlight != null) StartCoroutine(Dim(introSpotlight, fight != null ? fight.spotlightFadeOut : .5f));
+        introSpotlight = null;
+        if (musicStart < 0f && fight != null) StartFightMusic();
+    }
+
+    // Guests: the host's crew, made there and sent here, dance here too until they are called in or struck.
+    IEnumerator GuestBackup()
+    {
+        if (fight == null || fight.backupDancer == null) yield break;
+        string name = fight.backupDancer.name;
+        var taken = new HashSet<Character>();
+        int index = 0;
+        for (float t = 0f; t < 6f && index < fight.backupCount && !finished && !backupCalled; t += Time.deltaTime)
+        {
+            foreach (var e in CoopWorld.Enemies)
+            {
+                if (e == null || !e.IsAlive || e == boss || taken.Contains(e) || !e.name.StartsWith(name)) continue;
+                var flat = e.transform.position - bossHome; flat.y = 0f;
+                if (flat.magnitude > 9f) continue;
+                taken.Add(e);
+                var b = e.GetComponent<EnemyBrain>();
+                if (b != null) StartCoroutine(StartDancer(b, index++));
+            }
+            yield return null;
+        }
+    }
+
+    // Guests: a dancer the host has broken up (struck, or called in) stops dancing here.
+    void GuestDancers()
+    {
+        foreach (var (b, graph) in backup.ToArray())
+            if (b != null && graph.IsValid() && (b.State == EnemyState.Chase || b.State == EnemyState.Attack || b.State == EnemyState.Investigate)) BreakUp(b);
+    }
+
+    // Guests: the boss is the host's, arriving as its enemy; his hand goes through setting it down meanwhile, then the
+    // intro and the show as on the host.
+    IEnumerator TakeHostBoss(Vector3 spot, bool intro, bool talk, BossIntroCard card)
     {
         string name = milestone.boss != null ? milestone.boss.name : null;
         for (float t = 0; t < 8f && boss == null; t += Time.deltaTime)
@@ -65,6 +156,7 @@ public partial class BossStageEncounter
         if (boss == null) { Debug.LogWarning("[Coop] Boss stage: the host's boss never came.", this); yield break; }
         brain = boss.GetComponent<EnemyBrain>();
         boss.Died += OnBossDied;
+        ShowSetup();
         if (hand != null)
         {
             var held = new GameObject("Boss (in his hand)").transform;
@@ -73,13 +165,23 @@ public partial class BossStageEncounter
             Destroy(held.gameObject);
         }
         else Landed(boss, spot);
-        // Said once the boss is down, as on the host.
-        BossBlessing.Announce();
-        yield return new WaitForSeconds(fight != null ? fight.wakeDelay : 1f);
+        if (boss != null) bossHome = boss.transform.position;
+        StartCoroutine(GuestBackup());
+        // Said once the boss is down, as on the host (with an intro, as the battle begins).
+        if (!intro) BossBlessing.Announce();
+        if (intro) introRun = StartCoroutine(GuestIntro(talk, card));
+        for (float t = 0f; !hostBegun && t < 40f; t += Time.deltaTime)
+        {
+            if (boss == null || !boss.IsAlive) yield break;
+            yield return null;
+        }
+        if (introRun != null) CutIntro();
         if (boss == null || !boss.IsAlive) yield break;
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title);
-        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.introMessage.Trim(), MessageKind.Warning);
-        if (fight != null) Say(fight.fightLine, true);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
+        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
+        if (fight != null && !intro) Say(fight.fightLine, true);
+        if (intro) BossBlessing.Announce();
+        if (stageLights != null) stageLights.Follow(boss.transform);
         var local = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         if (hand != null && local != null) hand.Watch(local.transform.position, false);
         fightStart = Time.time;

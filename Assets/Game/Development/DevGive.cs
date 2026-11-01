@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 
-// What the dev console (additem, addspell, addroomitem) and the spawn window (F10, DevSpawner) give: items into the table
+// What the dev console (additem, addspell, addroomitem) and the spawn window (F7, DevSpawner) give: items into the table
 // player's pack or onto the floor, spell tomes, room key items and enemies. Each returns the line to show.
 public static class DevGive
 {

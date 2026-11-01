@@ -45,6 +45,8 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(200), Tooltip("Width of the lines in TikTok mode, in the 1920 x 1080 canvas: a 9:16 crop of it is 607 wide.")]
     float tiktokWidth = 560f;
     public static bool TikTokMode => HasInstance && Instance.tiktokMode;
+    [SerializeField, Tooltip("With the bag open the lines keep to the gap between the character panel and the bag (1920 x 1080 canvas): their width there and how far left of the middle the gap's middle is.")]
+    Vector2 bagOpenWidthAndShift = new(440f, -79f);
 
     [Header("Feed")]
     [SerializeField, Tooltip("Also show message log lines (pickups, doors, kills). Combat damage is always left out.")] bool showEvents = true;
@@ -330,6 +332,20 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     // Font Size is the size wanted at the reference resolution; the nearest whole multiple of the font's
     // pixel grid on the actual screen is used.
+    // The bag open (its character panel at the left, the bag at the right): the line narrows into the gap between them,
+    // or it ran into the bag; back to its place when the bag closes. Not at the lower left. In TikTok mode it stays inside
+    // a 9:16 crop too (440 wide about 79 left of the middle is within its 607).
+    bool besideBag;
+    void FitBesideBag()
+    {
+        bool bag = GameManager.HasInstance && GameManager.Instance.State == GameState.Inventory && (tiktokMode || placement == Placement.LowerMiddle);
+        if (bag == besideBag) return;
+        besideBag = bag;
+        var r = label.rectTransform;
+        r.sizeDelta = new Vector2(bag ? bagOpenWidthAndShift.x : tiktokMode ? tiktokWidth : 1200f, r.sizeDelta.y);
+        r.anchoredPosition = new Vector2(bag ? bagOpenWidthAndShift.y : 0f, r.anchoredPosition.y);
+    }
+
     void SnapSize()
     {
         float scale = label.canvas != null ? label.canvas.scaleFactor : 1f;
@@ -339,11 +355,28 @@ public class DungeonMaster : Singleton<DungeonMaster>
         label.fontSize = pixelGrid * multiple / scale;
     }
 
+    // While a boss's line shows in the portrait box mid-fight (PortraitDialogueUI.Bark) the box covers the lines' place:
+    // they rise above it (barkLift), and come back down after.
+    [SerializeField, Min(0), Tooltip("How far the lines rise while a portrait box line is up mid-fight, in 1920 x 1080 canvas units.")] float barkLift = 150f;
+    float lifted;
+
+    void LiftOverBark()
+    {
+        if (placement != Placement.LowerMiddle || tiktokMode) return;
+        bool bark = PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Barking;
+        float to = bark ? barkLift + PortraitDialogueUI.Current.barkRaise : 0f;
+        if (Mathf.Approximately(lifted, to)) return;
+        lifted = Mathf.MoveTowards(lifted, to, Mathf.Max(barkLift, to) * 8f * Time.unscaledDeltaTime);
+        label.rectTransform.anchoredPosition = new Vector2(label.rectTransform.anchoredPosition.x, 250 + lifted);
+    }
+
     void Update()
     {
         PauseVoice(Paused);
         if (label == null) return;
         SnapSize();
+        FitBesideBag();
+        LiftOverBark();
         float now = Time.unscaledTime;
         // Paused: the lines on screen keep their age, so none fades behind the menu.
         if (Paused) for (int i = 0; i < lines.Count; i++) { var l = lines[i]; l.shown += Time.unscaledDeltaTime; lines[i] = l; }
@@ -354,6 +387,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if ((GameManager.HasInstance && !overMenus && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
             || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive)
         {
+            if (!blanked) { label.text = ""; blanked = true; }
+            return;
+        }
+        // The boss's versus screen and title card cover the screen: the lines from before are left behind (the last line
+        // of a boss's intro showed through the versus screen's dim and came back after it).
+        if (VersusScreenUI.Covers || BossTitleUI.Covers)
+        {
+            if (lines.Count > 0) lines.Clear();
             if (!blanked) { label.text = ""; blanked = true; }
             return;
         }

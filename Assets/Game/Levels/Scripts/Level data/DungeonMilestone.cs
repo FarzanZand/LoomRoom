@@ -15,7 +15,7 @@ public class DungeonMilestone
     [Tooltip("Shown under the boss name on the health bar.")]
     public string title = "Guardian";
     [TextArea, Tooltip("Posted as the fight starts. {boss} is the boss's name.")] public string introMessage = "{boss} guards the stairs down.";
-    public string Intro(Character boss) => introMessage.Trim().Replace("{boss}", boss != null ? boss.TheNameCap : "The guardian");
+    public string Intro(Character boss, string name = null) => introMessage.Trim().Replace("{boss}", !string.IsNullOrWhiteSpace(name) ? name : boss != null ? boss.TheNameCap : "The guardian");
     public AudioClip introSting;
     [Range(0, 1)] public float stingVolume = 1f;
     public AudioClip bossMusic;

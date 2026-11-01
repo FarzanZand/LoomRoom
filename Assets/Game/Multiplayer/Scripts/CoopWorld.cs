@@ -786,7 +786,8 @@ public static class CoopWorld
     // Host: the stage fight's moments for the guests (BossStageEncounter).
     public static void BossStage(CoopEventKind kind, int target, int index, Vector3 position)
     {
-        if (!Coop.Running || !Coop.IsHost) return;
+        // A guest says only that its intro is over.
+        if (!Coop.Running || !Coop.IsHost && kind != CoopEventKind.BossIntroDone) return;
         Send(new CoopEvent { kind = kind, target = (byte)Mathf.Clamp(target, 0, 255), amount = index, position = position });
     }
 
@@ -974,7 +975,13 @@ public static class CoopWorld
             case CoopEventKind.AmbushCleared:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].ClearedOnHost();
                 break;
-            case CoopEventKind.BossStageOpened: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley:
+            case CoopEventKind.BossIntroDone:
+            {
+                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                if (stage != null) stage.GuestIntroDone(e.slot);
+                break;
+            }
+            case CoopEventKind.BossStageOpened: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.BossFightBegun:
             {
                 var stage = Object.FindAnyObjectByType<BossStageEncounter>();
                 if (stage != null) stage.FromHost(e.kind, e.target, e.amount, e.position);

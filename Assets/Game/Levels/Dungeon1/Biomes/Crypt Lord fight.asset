@@ -12,11 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a12eead55650357439207b4be50e015f, type: 3}
   m_Name: Crypt Lord fight
   m_EditorClassIdentifier: Assembly-CSharp::BossFight
-  music: {fileID: 8300000, guid: ad8b2ddb027ec3847aaf00ce543f4e92, type: 3}
+  music: {fileID: 8300000, guid: cc7e5712c4b45bd4eb5e07bbc6a4f6a7, type: 3}
   musicVolume: 0.8
-  bpm: 152
-  firstBeat: 0.07
+  bpm: 92.05
+  firstBeat: 0.41
   musicFade: 1.2
+  deathSting: {fileID: 8300000, guid: b5117b351f5102f45b89205a39cf7533, type: 3}
+  deathStingVolume: 1
+  musicBackAfter: 3
   openingLine:
     text: You came all this way for him. Very well.
     voice: {fileID: 0}
@@ -24,6 +27,85 @@ MonoBehaviour:
     inPerson: 0
   reachDelay: 1.2
   placeSeconds: 4.6
+  enterMusicFade: 2
+  spotlightDelay: 1
+  spotlight: {fileID: 4696081989565957123, guid: 90d4468408f2f8d43b3b95cb31a55381, type: 3}
+  landSound: {fileID: 8300000, guid: 9a3fd2df109b8fa41ae4066d8a348e3f, type: 3}
+  landVolume: 1
+  spotlightSound: {fileID: 8300000, guid: e79220549b839dc49b5bb8047e6eba18, type: 3}
+  spotlightVolume: 0.9
+  spotlightFadeOut: 0.8
+  dialogueDelay: 2
+  introDialogue: 1
+  bossName: Edgar the disco king
+  introLines:
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Well, well. Someone found my dance floor.
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Nobody has come down those stairs in a hundred years. The music got lonely.
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: So tell me. Do you want to party?
+    choices:
+    - label: Yes
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: Finally, someone with taste! Try to keep up.
+    - label: No
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: Nobody says no to the disco king. You're dancing anyway!
+  - speaker: 1
+    name: 
+    model: {fileID: 0}
+    text: You heard the king. Dance.
+    choices: []
+  introCard: 2
+  title:
+    lettersPerSecond: 11
+    subtitleFade: 0.4
+    hold: 1.4
+    fadeOut: 0.5
+    letterSound:
+    - {fileID: 8300000, guid: b0c75b87ffdc44a388c2aead54014fad, type: 3}
+    - {fileID: 8300000, guid: cf9a672a95bdc4181bad47a5e6e03ecf, type: 3}
+    letterVolume: 0.8
+    letterPitch: 0.7
+    letterPitchVariance: 0.05
+  versus:
+    leftIn: 0.26
+    rightDelay: 0.5
+    rightIn: 0.26
+    slamDelay: 0.22
+    hold: 1.6
+    throwOut: 0.3
+    shake: 18
+    heroAura: {r: 0.88, g: 0.64, b: 0.29, a: 0.5}
+    bossAura: {r: 0.18, g: 0.71, b: 0.68, a: 0.52}
+    bandWhoosh:
+    - {fileID: 8300000, guid: 66c075aeb2dcb4076bdbf11d1776836d, type: 3}
+    bandLand:
+    - {fileID: 8300000, guid: b0c75b87ffdc44a388c2aead54014fad, type: 3}
+    - {fileID: 8300000, guid: b11279cfa37cf42cb98c67f0a74d2082, type: 3}
+    slam:
+    - {fileID: 8300000, guid: b29876153e4b14d4299b75e4f7ef690a, type: 3}
+    - {fileID: 8300000, guid: 762052cce11fab84aaefb239c9c6c910, type: 3}
+    - {fileID: 8300000, guid: dc200c391309841c39b4f134cc7bd26a, type: 3}
+    throwOff:
+    - {fileID: 8300000, guid: d1610b49de30b46439425f9d649e854f, type: 3}
+    volume: 0.9
+  fightMusicFade: 0.25
   painting: {fileID: 0}
   changeRoomLighting: 1
   roomLighting: 2
@@ -34,8 +116,7 @@ MonoBehaviour:
   paintingLight: 0
   paintingLightColor: {r: 1, g: 0.9, b: 0.75, a: 1}
   wakeDelay: 1.1
-  landSound: {fileID: 8300000, guid: 6df976f37fe297c4d8da67f40cb3eaf6, type: 3}
-  landVolume: 1
+  openWithSpell: 1
   fightLine:
     text: Begin.
     voice: {fileID: 0}
@@ -48,27 +129,59 @@ MonoBehaviour:
   beamFacing: 0.2
   beamOnBeat: 1
   beamGiveWay: 0
+  beamImmune: 1
   beamKneel: 1
   beamKneelLead: 2.5
+  beamDance: {fileID: -203655887218126122, guid: d9671b08a827250449b49748b35c6150, type: 3}
+  beamDanceSpeed: 1
   beamColor: {r: 2, g: 0.95, b: 0.3, a: 1}
   beamChargeSound: {fileID: 8300000, guid: be0f71459df354c49a2d754371c38f37, type: 3}
   beamLoopSound: {fileID: 8300000, guid: ca3d6a0a1b57b514d87f9fe9efa06ecb, type: 3}
   beamBlockedSound: {fileID: 8300000, guid: 350a5a4734ab2854c9f726f4ddaf82a7, type: 3}
   beamVolume: 0.9
   volleyDistance: 7
-  phaseTwoHealth: 0.5
+  phaseTwoHealth: 0.8
   phaseTwoLine:
     text: Now he's angry.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
   phaseTwoShake: 1.2
+  phaseTwoDisco:
+  - {r: 1, g: 0.3, b: 0.8, a: 1}
+  - {r: 0.25, g: 0.85, b: 1, a: 1}
+  - {r: 1, g: 0.8, b: 0.25, a: 1}
+  - {r: 0.6, g: 0.4, b: 1, a: 1}
+  - {r: 0.4, g: 1, b: 0.5, a: 1}
+  phaseTwoBossLine: Let's turn it up!
+  danceFloor: {fileID: 2100000, guid: 2743806b102874944b19636fddc4d606, type: 2}
+  discoBall: {fileID: 648832377681289351, guid: 67cb16bee95be49448d672fbd8c5cf77, type: 3}
+  backupDancer: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  backupCount: 2
+  backupAtHealth: 0.45
+  backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
+  backupOneHit: 1
+  backupHealth: 1
+  backupBossLine: Boys! Get in here!
+  backupBrokenLine: Hey! That was my crew!
+  backupLine:
+    text: Oh, he has a crew.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  defeatPose: {fileID: 7400000, guid: 4f92cea444cf5ed44ba8d4066a7e2ded, type: 2}
+  defeatSpinSeconds: 0.55
+  defeatHold: 1.1
+  defeatBurst: {fileID: 9198749250686254271, guid: 30f20a54427535f418d179a9f88e3f8c, type: 3}
+  defeatBurstScale: 2.5
+  defeatBurstSound: {fileID: 8300000, guid: 0b4890e18a82fd1428bbdb86a8d7b67f, type: 3}
+  defeatBurstVolume: 1
   events:
-  - enabled: 1
+  - enabled: 0
     when: 2
     seconds: 10
     startBeat: 64
-    beats: 138
+    beats: 96
     health: 0.5
     what: 0
     line:
@@ -99,7 +212,37 @@ MonoBehaviour:
     seconds: 10
     startBeat: 8
     beats: 16
-    health: 0.5
+    health: 0.7
+    what: 0
+    line:
+      text: 
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    music: {fileID: 0}
+    volume: 0.8
+    enemy: {fileID: 0}
+    count: 1
+    shake: 1
+    spell: {fileID: 0}
+    damage: 8
+    volley:
+      count: 3
+      spawnInterval: 0.5
+      rise: 1.2
+      spread: 1.3
+      riseSeconds: 0.35
+      holdSeconds: 0.25
+      launchInterval: 0.45
+      rampSeconds: 0.35
+      scale: 1.3
+      homing: 0
+  - enabled: 1
+    when: 3
+    seconds: 10
+    startBeat: 8
+    beats: 16
+    health: 0.2
     what: 0
     line:
       text: 
@@ -127,8 +270,8 @@ MonoBehaviour:
   - enabled: 1
     when: 2
     seconds: 10
-    startBeat: 103
-    beats: 69
+    startBeat: 112
+    beats: 96
     health: 0.5
     what: 5
     line:

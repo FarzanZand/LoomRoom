@@ -41,6 +41,7 @@ public partial class AudioManager
     {
         if (!sfxDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] SFX key '{key}' not found."); return null; }
+        AudioPlayLog.HeardSfx(key);
         return PlaySFX(e.clip, position, e.volume, e.pitchVariance);
     }
 
@@ -50,7 +51,7 @@ public partial class AudioManager
     public AudioSource PlayFirstSFX(Vector3 position, params string[] keys)
     {
         foreach (var key in keys)
-            if (HasSFX(key)) { var e = sfxDict[key]; return PlaySFX(e.clip, position, e.volume, e.pitchVariance); }
+            if (HasSFX(key)) { var e = sfxDict[key]; AudioPlayLog.HeardSfx(key); return PlaySFX(e.clip, position, e.volume, e.pitchVariance); }
         return null;
     }
 
@@ -58,6 +59,7 @@ public partial class AudioManager
     {
         if (!sfxDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] SFX key '{key}' not found."); return null; }
+        AudioPlayLog.HeardSfx(key);
         return PlaySFX2D(e.clip, e.volume, e.pitchVariance);
     }
 
@@ -70,6 +72,7 @@ public partial class AudioManager
 
     public AudioSource PlaySFXData(AudioData data, Vector3 position)
     {
+        AudioPlayLog.Heard(data);
         var src = data != null ? Play(sfxPool, data.GetClip(), data.volume, data.RandomPitch(), position) : null;
         if (src == null) return null;
         src.minDistance = Mathf.Max(.01f, data.minDistance);
@@ -77,11 +80,17 @@ public partial class AudioManager
         return src;
     }
 
-    public AudioSource PlaySFXData2D(AudioData data) =>
-        data != null ? Play(sfxPool, data.GetClip(), data.volume, data.RandomPitch(), null) : null;
+    public AudioSource PlaySFXData2D(AudioData data)
+    {
+        AudioPlayLog.Heard(data);
+        return data != null ? Play(sfxPool, data.GetClip(), data.volume, data.RandomPitch(), null) : null;
+    }
 
-    public AudioSource PlayUIData(AudioData data) =>
-        data != null ? PlayUI(data.GetClip(), data.volume, data.RandomPitch()) : null;
+    public AudioSource PlayUIData(AudioData data)
+    {
+        AudioPlayLog.Heard(data);
+        return data != null ? PlayUI(data.GetClip(), data.volume, data.RandomPitch()) : null;
+    }
 
     public bool HasUI(string key) => !string.IsNullOrEmpty(key) && uiDict.ContainsKey(key);
 
@@ -96,6 +105,7 @@ public partial class AudioManager
     {
         if (!uiDict.TryGetValue(key, out var e))
         { Debug.LogWarning($"[AudioManager] UI key '{key}' not found."); return null; }
+        AudioPlayLog.HeardUI(key);
         if (e.source == UIEntry.Source.Data)
         {
             var src = PlayUIData(e.data);
@@ -110,6 +120,7 @@ public partial class AudioManager
     AudioSource Play(List<AudioSource> pool, AudioClip clip, float volume, float pitch, Vector3? position)
     {
         if (clip == null) return null;
+        AudioPlayLog.Heard(clip);
         // UI sounds (the DM's voice, menu clicks) always play; sound effects are limited per clip.
         if (pool == sfxPool && TooMany(pool, clip)) return null;
         var src = ClaimSource(pool);

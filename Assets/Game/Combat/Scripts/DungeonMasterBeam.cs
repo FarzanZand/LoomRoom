@@ -52,8 +52,15 @@ public partial class DungeonMasterBeam : MonoBehaviour
     [Min(0), Tooltip("Shake each damage tick while it is held off, and while it burns.")] public float blockedShake = .12f, hitShake = .35f;
     [Min(.1f), Tooltip("While a raised shield holds the beam off, its block sound repeats this often (the fight's Beam Blocked Sound, or the game's block sound when that is empty).")]
     public float blockSoundInterval = .35f;
+    [Min(1), Tooltip("While a raised shield holds the beam off, the bursts, sparks and block sound come this many times as often, so the shield feels like it shakes under the stream.")]
+    public float blockedPulseRate = 3f;
+    [Range(0, 1), Tooltip("Volume of each pulse's clang (the game's block sound, CombatManager > Block Audio) while the shield holds the beam off.")]
+    public float pulseVolume = .55f;
 
     public bool Firing { get; private set; }
+    // Shield pulses (clangs) and bursts on the shield in this pour, for tests.
+    public int ShieldPulses { get; private set; }
+    public int ShieldBursts { get; private set; }
     // What the last frame of the beam saw (tests read it).
     public string State { get; private set; } = "";
 
@@ -68,7 +75,7 @@ public partial class DungeonMasterBeam : MonoBehaviour
     Transform flare;
     Material flareInstance;
     Light palm, shieldLight;
-    AudioSource sound;
+    AudioSource sound, pulse;
     bool cancelled;
     Player strained;   // whose shield shakes against the beam
     SpellVisual charge;
@@ -95,6 +102,7 @@ public partial class DungeonMasterBeam : MonoBehaviour
         FirstPersonLighting.SetLayers(shieldLight, FirstPersonLighting.ArmsLayer);
         impulse = gameObject.AddComponent<Unity.Cinemachine.CinemachineImpulseSource>();
         sound = gameObject.AddComponent<AudioSource>(); sound.playOnAwake = false; sound.spatialBlend = 0f; sound.loop = true;
+        pulse = gameObject.AddComponent<AudioSource>(); pulse.playOnAwake = false; pulse.spatialBlend = 0f;
     }
 
     LineRenderer MakeLine(string name, Material material)
@@ -149,18 +157,27 @@ public partial class DungeonMasterBeam : MonoBehaviour
     }
 
     // One ring of the shield holding the beam off: the fight's own sound, else the game's block sound, at the shield.
-    static void ShieldSound(BossFight fight, Vector3 at)
+    // The shield ringing under the beam: the fight's Beam Blocked Sound as it first catches it, then a short clang of the
+    // game's block sound on every pulse, on the beam's own source (the shared pool plays at most three of one clip at
+    // once, and the long blocked sound was cut to three a beam), each a little higher or lower so it rattles.
+    void ShieldSound(BossFight fight, Vector3 at, bool first)
     {
         if (!AudioManager.HasInstance) return;
-        if (fight != null && fight.beamBlockedSound != null) { AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume, .06f); return; }
-        if (CombatManager.HasInstance && CombatManager.Instance.blockAudio != null) AudioManager.Instance.PlaySFXData(CombatManager.Instance.blockAudio, at);
+        if (first && fight != null && fight.beamBlockedSound != null) { AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume, .06f); return; }
+        var block = CombatManager.HasInstance ? CombatManager.Instance.blockAudio : null;
+        if (block == null || block.clips == null || block.clips.Length == 0) return;
+        var clip = block.clips[Random.Range(0, block.clips.Length)];
+        if (clip == null) return;
+        if (AudioManager.Instance.SfxGroup != null) pulse.outputAudioMixerGroup = AudioManager.Instance.SfxGroup;
+        pulse.pitch = Random.Range(.9f, 1.12f);
+        pulse.PlayOneShot(clip, block.volume * pulseVolume);
     }
 
     // Warns, pours for the fight's beam time, then stops. result: true when the player held it off throughout.
     public IEnumerator Fire(Player target, BossFight fight, System.Action<bool> result)
     {
         if (Firing || target == null || fight == null) yield break;
-        Firing = true; cancelled = false; widthScale = 1f;
+        Firing = true; cancelled = false; widthScale = 1f; ShieldPulses = ShieldBursts = 0;
         bool held = true;
         view = target.CameraRig != null ? target.CameraRig.Camera : null;
         if (AudioManager.HasInstance && AudioManager.Instance.SfxGroup != null) sound.outputAudioMixerGroup = AudioManager.Instance.SfxGroup;
@@ -201,6 +218,7 @@ public partial class DungeonMasterBeam : MonoBehaviour
         sparks.Play(); spray.Play();
         flare.gameObject.SetActive(true); shieldLight.enabled = true;
         float tick = 0, impact = impactInterval, blockSound = 0f;
+        bool wasHolding = false;
         bool lastCovered = false, lastBlocking = false; var lastEnd = Vector3.zero;
         // One tick's worth (the seconds since the last): nothing behind cover, stamina on a held shield, a burn otherwise.
         void Pay()
@@ -236,15 +254,18 @@ public partial class DungeonMasterBeam : MonoBehaviour
             tick += Time.deltaTime; impact += Time.deltaTime;
             // The shield rings with every moment it holds the beam off (a pillar taking it is silent).
             blockSound -= Time.deltaTime;
-            if (blocking && !covered && blockSound <= 0f) { blockSound = blockSoundInterval; ShieldSound(fight, end); }
+            bool shieldHolds = blocking && !covered;
+            if (shieldHolds && blockSound <= 0f) { blockSound = blockSoundInterval / blockedPulseRate; ShieldSound(fight, end, !wasHolding); ShieldPulses++; }
             else if (!blocking || covered) blockSound = 0f;
-            if (impact >= impactInterval && impactEffect != null)
+            wasHolding = shieldHolds;
+            if (impact >= (shieldHolds ? impactInterval / blockedPulseRate : impactInterval) && impactEffect != null)
             {
                 impact = 0;
                 // A little way up the beam from the shield: at the shield itself the burst would be a cloud over the view.
                 var burst = end + (origin - end).normalized * impactOut;
                 Instantiate(impactEffect, burst, Quaternion.LookRotation(origin - end));
                 if (blocking && blockSparks != null) Destroy(Instantiate(blockSparks, burst, Quaternion.LookRotation(origin - end)), 2f);
+                if (shieldHolds) ShieldBursts++;
             }
             State = $"guard {(target.Combat != null && target.Combat.IsGuarding)} dot {FacingDot(target, origin):F2} blocking {blocking} covered {covered}";
             lastCovered = covered; lastBlocking = blocking; lastEnd = end;

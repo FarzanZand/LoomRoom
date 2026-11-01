@@ -6,6 +6,10 @@ using UnityEngine.Serialization;
 // The script of a boss fight on the stage in front of the Dungeon Master (DungeonMilestone.fight, run by
 // BossStageEncounter): the music and its beat, how the DM sets the boss down, his energy beam, events on a
 // timeline (seconds, beats or the boss's health) and what he says while it lasts. One asset per fight.
+// What plays just before the battle begins, after the intro's dialogue (BossFight > Intro). Serialized by number:
+// append only.
+public enum BossIntroCard { None = 0, BossTitle = 1, Versus = 2 }
+
 [CreateAssetMenu(menuName = "LoomRoom/Boss Fight")]
 public class BossFight : ScriptableObject
 {
@@ -20,6 +24,11 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Music"), Min(0), Tooltip("Seconds from the start of the music to its first beat.")]
     public float firstBeat;
     [TabGroup(Tabs, "Music"), Min(0)] public float musicFade = 1.2f;
+    [TabGroup(Tabs, "Music"), Tooltip("Played the moment the boss dies, the fight's music cut dead under it (a record scratch). Empty: the music fades into the floor's.")]
+    public AudioClip deathSting;
+    [TabGroup(Tabs, "Music"), ShowIf(nameof(deathSting)), Range(0, 1)] public float deathStingVolume = 1f;
+    [TabGroup(Tabs, "Music"), ShowIf(nameof(deathSting)), Min(0), Tooltip("Seconds of silence after the sting before the floor's music comes back.")]
+    public float musicBackAfter = 3f;
 
     // ── Opening ───────────────────────────────────────────────────────
     [TabGroup(Tabs, "Opening"), Tooltip("Said as the player reaches the middle of the stage, before the DM reaches for the boss.")]
@@ -28,6 +37,45 @@ public class BossFight : ScriptableObject
     public float reachDelay = 1.2f;
     [TabGroup(Tabs, "Opening"), Min(.2f), Tooltip("Seconds the DM takes to bring the boss up from under the table, show it and set it down.")]
     public float placeSeconds = 4.6f;
+    // ── Intro ─────────────────────────────────────────────────────────
+    // With dialogue or a card on, the fight opens with an intro, in this order: the floor's music fades as the player
+    // steps onto the stage; the DM sets the boss down and it stands idle; the spotlight snaps on over it; the dialogue;
+    // the card (the boss's name typed out, or the versus screen); then the battle begins with the fight's music.
+    // Without either, the fight opens as before (the music at once, his opening and fight lines in the feed).
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the floor's music takes to fade out as the player steps onto the stage.")]
+    public float enterMusicFade = 2f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds after the boss is set down before the spotlight comes on.")]
+    public float spotlightDelay = 1f;
+    [TabGroup(Tabs, "Intro"), AssetsOnly, Tooltip("The spotlight set over the boss (a prefab: lights, a shaft, dust), from the moment it comes on until the battle begins. Empty: none.")]
+    public GameObject spotlight;
+    // The intro's two sounds side by side (made by Tools/boss_intro_sounds.py: Boss landing, Spotlight clunk, each with
+    // a B take in Audio/Clips/Dialogue to swap in).
+    [TabGroup(Tabs, "Intro"), Tooltip("Played the moment the boss's feet touch the stage as the DM sets it down (with or without an intro).")]
+    public AudioClip landSound;
+    [TabGroup(Tabs, "Intro"), Range(0, 1)] public float landVolume = 1f;
+    [TabGroup(Tabs, "Intro"), Tooltip("Played as the spotlight comes on.")]
+    public AudioClip spotlightSound;
+    [TabGroup(Tabs, "Intro"), Range(0, 1)] public float spotlightVolume = 1f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds its lights take to go out as the battle begins.")]
+    public float spotlightFadeOut = .8f;
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds after the spotlight before the dialogue starts.")]
+    public float dialogueDelay = 2f;
+    [TabGroup(Tabs, "Intro"), Tooltip("Dialogue boxes (PortraitDialogueUI: each speaker's head and shoulders idling beside a box, typed out) in place of his opening and fight lines in the feed.")]
+    public bool introDialogue;
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), Tooltip("The boss's name on its boxes, its title and the boss bar. Empty: the boss's own name.")]
+    public string bossName;
+    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), ListDrawerSettings(ShowFoldout = true)]
+    public List<PortraitLine> introLines = new();
+    public bool HasIntroDialogue => introDialogue && introLines != null && introLines.Count > 0;
+    [TabGroup(Tabs, "Intro"), Tooltip("Just before the battle, after the dialogue. Boss Title: the boss's name typed out large in the upper half of the screen (BossTitleUI), its title fading in beneath, the fight's music starting with the first letter. Versus: the cinematic you-versus-the-boss screen (VersusScreenUI), the music starting as it clears. None: straight into the battle.")]
+    public BossIntroCard introCard = BossIntroCard.None;
+    [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.BossTitle"), InlineProperty, HideLabel]
+    public BossTitleSettings title = new();
+    [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.Versus"), InlineProperty, HideLabel]
+    public VersusSettings versus = new();
+    [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the fight's music takes to come in.")]
+    public float fightMusicFade = .25f;
+
     // ── Room ──────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Room"), Tooltip("The picture in the painting on the wall behind the Dungeon Master (RoomPainting) for this fight. It is changed while the boss floor loads and put back when the floor is left (after a death, on the way back to the room), so it is never seen changing. Empty: the painting's own.")]
     [PreviewField(70)] public Texture2D painting;
@@ -46,9 +94,8 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Room"), ShowIf("@paintingLight > 0")] public Color paintingLightColor = new(1f, .9f, .75f);
     [TabGroup(Tabs, "Opening"), Min(0), Tooltip("Seconds the boss stands still after it is set down, before it attacks.")]
     public float wakeDelay = 1.1f;
-    [TabGroup(Tabs, "Opening"), Tooltip("Sound when the boss touches the stage.")]
-    public AudioClip landSound;
-    [TabGroup(Tabs, "Opening"), Range(0, 1)] public float landVolume = 1f;
+    [TabGroup(Tabs, "Opening"), Tooltip("The boss opens the fight with a spell (its volley if it has one), whatever its cooldown. Off: its spells start the fight on their full cooldown, so it opens in close.")]
+    public bool openWithSpell;
     [TabGroup(Tabs, "Opening"), Tooltip("Said when the boss is down and the fight begins.")]
     public DungeonMaster.Line fightLine = new() { text = "Begin." };
 
@@ -67,10 +114,15 @@ public class BossFight : ScriptableObject
     public bool beamOnBeat = true;
     [TabGroup(Tabs, "Beam"), Min(0), Tooltip("Metres the boss backs off from the player and waits while the beam pours (0: it fights on).")]
     public float beamGiveWay = 4.5f;
+    [TabGroup(Tabs, "Beam"), Tooltip("The boss takes no damage while the beam is on, from when it stands in its spotlight until the beam ends (hits show IMMUNE).")]
+    public bool beamImmune = true;
     [TabGroup(Tabs, "Beam"), Tooltip("While the DM charges and pours his beam the boss goes back to where he set it down, faces the table and kneels (HumanoidController Kneel); after the beam it fights on. Takes the place of Beam Give Way.")]
     public bool beamKneel = true;
     [TabGroup(Tabs, "Beam"), ShowIf(nameof(beamKneel)), Min(0), Tooltip("Seconds the boss gets to go back and kneel before the DM starts to charge (he starts sooner if it is already kneeling).")]
     public float beamKneelLead = 2.5f;
+    [TabGroup(Tabs, "Beam"), ShowIf(nameof(beamKneel)), Tooltip("Danced instead of kneeling: once back at its spot the boss turns to the player and plays this clip, looped, until the beam is over. Empty: it kneels to the DM.")]
+    public AnimationClip beamDance;
+    [TabGroup(Tabs, "Beam"), ShowIf("@beamKneel && beamDance != null"), Min(.1f)] public float beamDanceSpeed = 1f;
     [TabGroup(Tabs, "Beam"), ColorUsage(false, true)] public Color beamColor = new(2f, 1.35f, .55f, 1f);
     [TabGroup(Tabs, "Beam")] public AudioClip beamChargeSound, beamLoopSound, beamBlockedSound;
     [TabGroup(Tabs, "Beam"), Range(0, 1)] public float beamVolume = .9f;
@@ -84,6 +136,44 @@ public class BossFight : ScriptableObject
     public float phaseTwoHealth = .5f;
     [TabGroup(Tabs, "Phase two")] public DungeonMaster.Line phaseTwoLine = new() { text = "Now he's angry." };
     [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
+    [TabGroup(Tabs, "Phase two"), Tooltip("A light show for the second phase: the stage's fires, moonlight and follow spot step through these colours, one step a beat of the music, each fire a different one. Empty: the stage's own second-phase colours (green fires, red moonlight).")]
+    public Color[] phaseTwoDisco = new Color[0];
+    [TabGroup(Tabs, "Phase two"), Tooltip("Said by the boss itself in the portrait box as the second phase begins (the fight goes on under it), in place of the DM's line above. Empty: the DM's line.")]
+    public string phaseTwoBossLine = "";
+    [TabGroup(Tabs, "Phase two"), Tooltip("The dance floor (BossDanceFloor): tiles over the stage that light up in the light show's colours on the beat from the second phase on. Empty: none.")]
+    public Material danceFloor;
+    [TabGroup(Tabs, "Phase two"), Tooltip("A disco ball on a chain (BossDiscoBall) lowered over the stage as the second phase begins, throwing moving spots of light across it. Empty: none.")]
+    public GameObject discoBall;
+
+    // ── Backup dancers ──
+    [TabGroup(Tabs, "Backup"), Tooltip("The boss's crew (an enemy prefab): dancing at the back of the stage from the moment it is set down, ignoring the fight, until the boss calls them in to fight. Empty: no backup dancers.")]
+    public GameObject backupDancer;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Min(1)] public int backupCount = 2;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, 1), Tooltip("The boss calls them in when its health falls to this share.")]
+    public float backupAtHealth = .3f;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Their dance (played straight on their animator, each a little out of step).")]
+    public AnimationClip backupDance;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Any blow that does damage drops a backup dancer at once (the user, 2026-11-01). Off: they have Backup Health.")]
+    public bool backupOneHit = true;
+    [TabGroup(Tabs, "Backup"), ShowIf("@backupDancer != null && !backupOneHit"), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
+    public float backupHealth = .35f;
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as it calls them in.")]
+    public string backupBossLine = "";
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box once the last of them is down.")]
+    public string backupBrokenLine = "";
+    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer))] public DungeonMaster.Line backupLine = new() { text = "Backup dancers. Break them up or he keeps going." };
+
+    // ── Defeat ──
+    [TabGroup(Tabs, "Defeat"), Tooltip("The boss's last moment when it falls: it spins round, strikes this pose and holds it, then bursts (DeathBurst) in the Defeat Burst effect. Empty: it falls at once as any enemy does.")]
+    public AnimationClip defeatPose;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(0)] public float defeatSpinSeconds = .55f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(0), Tooltip("Seconds the pose is held before the burst.")]
+    public float defeatHold = 1.1f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose))] public GameObject defeatBurst;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Min(.1f)] public float defeatBurstScale = 2.2f;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose))] public AudioClip defeatBurstSound;
+    [TabGroup(Tabs, "Defeat"), ShowIf(nameof(defeatPose)), Range(0, 1)] public float defeatBurstVolume = 1f;
+    public float DefeatSeconds => defeatPose != null ? defeatSpinSeconds + defeatHold : 0f;
 
     // ── Events ────────────────────────────────────────────────────────
     [TabGroup(Tabs, "Events"), Tooltip("What happens during the fight, in any order. Times count from the moment the boss wakes.")]

@@ -32,6 +32,9 @@ using UnityEngine;
 //   kill [name]             the enemy (or the nearest of that name) dies at once      yaw <degrees>  turn the view by that much
 //   opener <spell words>    the enemy's next attack is its spell of that name      freezeall / unfreezeall  every enemy's brain off/on
 //   walk <seconds> <speed> <forward|back|left|right>  walk that way relative to the view
+//   dash [forward|back|left|right|none]  dash that way, as Shift with those keys held (PlayerDash)      rest  full stamina
+//   shift [forward|back|left|right|none] [seconds]  press Shift as a player does, holding that movement key for the seconds (.35)
+//                           (it walks too; a press during a dash is buffered, PlayerDash.buffer)
 //   approach <metres> [speed]  walk straight at the enemy, facing it, until that close (up to 4 s)
 //   pin [off]               the enemy can't walk (it still turns and attacks)
 //   behind <metres> [speed]  walk round the enemy to stand that far behind its back, facing it (up to 6 s)
@@ -137,6 +140,29 @@ public class CombatTestBot : MonoBehaviour
                             yield return null;
                         }
                         break;
+                    case "shift":
+                        {
+                            string way = parts.Length > 1 ? parts[1] : "none";
+                            var move = way == "forward" ? Vector2.up : way == "back" ? Vector2.down : way == "left" ? Vector2.left : way == "right" ? Vector2.right : Vector2.zero;
+                            var im = InputManager.Instance;
+                            var moveProp = typeof(InputManager).GetProperty("Move");
+                            moveProp.GetSetMethod(true).Invoke(im, new object[] { move });
+                            Send("SprintHeld", "SprintPressed", true);
+                            Log("shift " + way);
+                            yield return new WaitForSeconds(F(2, .35f));
+                            typeof(InputManager).GetProperty("SprintHeld").GetSetMethod(true).Invoke(im, new object[] { false });
+                            moveProp.GetSetMethod(true).Invoke(im, new object[] { Vector2.zero });
+                            break;
+                        }
+                    case "rest": if (player.Stats != null) player.Stats.RestoreStamina(9999f); break;
+                    case "dash":
+                        {
+                            string way = parts.Length > 1 ? parts[1] : "none";
+                            var move = way == "forward" ? Vector2.up : way == "back" ? Vector2.down : way == "left" ? Vector2.left : way == "right" ? Vector2.right : Vector2.zero;
+                            var dash = player.GetComponent<PlayerDash>();
+                            Log("dash " + way + " " + (dash != null && dash.TryStart(move) ? "started" : "refused"));
+                            break;
+                        }
                     case "walk":
                         for (float t = 0, limit = F(1, 1f), speed = F(2, 3f); t < limit; t += Time.deltaTime)
                         {
@@ -287,7 +313,8 @@ public class CombatTestBot : MonoBehaviour
             Character nearest = null; float best = reach;
             foreach (var b in EnemyBrain.Active)
             {
-                if (b == null || !b.Character.IsAlive) continue;
+                // Enemies keeping out of it (a boss's dancing crew, a skeleton party) are left alone, as a player would.
+                if (b == null || !b.Character.IsAlive || b.Entranced) continue;
                 float d = Vector3.Distance(b.transform.position, player.transform.position);
                 if (d < best) { best = d; nearest = b.Character; }
             }
@@ -579,14 +606,26 @@ public class CombatTestBot : MonoBehaviour
         int previous = Time.captureFramerate;
         Time.captureFramerate = 30;
         int frames = Mathf.CeilToInt(seconds * 30f);
+        // The player's motion and the dash's feel per frame, beside the frames.
+        var motion = new StringBuilder("frame,x,z,speed,stamina,dashing,fov,pitch,roll,dip" + System.Environment.NewLine);
+        var dash = player != null ? player.GetComponent<PlayerDash>() : null;
         for (int i = 0; i < frames; i++)
         {
             yield return new WaitForEndOfFrame();
+            if (player != null)
+            {
+                var p = player.transform.position; var v = player.Motor != null ? player.Motor.Velocity : Vector3.zero; v.y = 0f;
+                motion.AppendLine(string.Join(",", i, p.x.ToString("0.000"), p.z.ToString("0.000"), v.magnitude.ToString("0.00"),
+                    player.Stats != null ? player.Stats.CurrentStamina.ToString("0.0") : "", dash != null && dash.Dashing ? 1 : 0,
+                    dash != null ? dash.FovKick.ToString("0.00") : "", dash != null ? dash.CameraRotation.x.ToString("0.00") : "",
+                    dash != null ? dash.CameraRotation.z.ToString("0.00") : "", dash != null ? dash.CameraDip.ToString("0.000") : ""));
+            }
             var shot = ScreenCapture.CaptureScreenshotAsTexture();
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"{i:000}.png"), shot.EncodeToPNG());
             Destroy(shot);
         }
         Time.captureFramerate = previous;
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "motion.csv"), motion.ToString());
         Log($"captured {frames} frames to {dir}");
     }
 

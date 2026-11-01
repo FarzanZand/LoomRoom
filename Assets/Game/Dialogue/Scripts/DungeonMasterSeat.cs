@@ -70,6 +70,8 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     Vector3? focusAt, faceAt;
     [Tooltip("World units a second he moves when a boss fight brings him up to the table.")]
     [Min(.1f)] public float focusSpeed = 8f;
+    [Min(0), Tooltip("How far his body sinks while he leans over the table (his lean's depth; the lean clip's own root motion used to carry him this far down, a frame at a time, and made him shake).")]
+    public float leanDrop = 1.43f;
     [Tooltip("Held while a boss fight brings him to the table: he leans over it on his forearms, face low over the stage.")]
     public string leanState = "Lean On Table";
     [Tooltip("His standing idle, back from the table.")]
@@ -134,13 +136,16 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     }
     bool returning;
 
-    void Update()
+    // After the animation step (LateUpdate, not Update): the Animator applies its clips' root motion to his body each
+    // frame after Update, so a place set in Update was drawn with that frame's root motion on top, and the leaning clip's
+    // made him pop up 6-8 cm for a frame several times a second through every fight. Set here, the drawn place is this one.
+    void LateUpdate()
     {
         // Seated (and sitting down), he stays on the chair: the clips' root motion would walk him off it.
         if (!standing) { body.SetPositionAndRotation(seatPosition, seatRotation); return; }
         if (focusAt.HasValue)
         {
-            var target = new Vector3(focusAt.Value.x, seatPosition.y, focusAt.Value.z);
+            var target = new Vector3(focusAt.Value.x, seatPosition.y - leanDrop, focusAt.Value.z);
             body.position = Vector3.MoveTowards(body.position, target, focusSpeed * Time.deltaTime);
             var look = faceAt.Value - body.position; look.y = 0;
             if (look.sqrMagnitude > .01f) body.rotation = Quaternion.RotateTowards(body.rotation, Quaternion.LookRotation(look), turnSpeed * Time.deltaTime);

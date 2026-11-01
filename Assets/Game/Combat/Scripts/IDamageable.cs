@@ -23,6 +23,7 @@ public struct DamageInfo
     public bool      Critical;        // rolled by the hitbox; bigger number, longer hit stop
     public bool      Backstab;        // struck an unaware or turned-away enemy
     public bool      Quiet;           // no damage number (a summon falling apart when its time is up)
+    public bool      Spared;          // set by TakeDamage: the target took no health from it (invulnerable, revive grace)
 
     public static DamageInfo Simple(float amount, Character source = null)
         => new DamageInfo { Amount = amount, Source = source, Direction = Vector3.zero };

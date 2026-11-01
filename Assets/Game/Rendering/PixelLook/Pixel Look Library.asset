@@ -4514,3 +4514,15 @@ MonoBehaviour:
     pixelQueue: -1
     texelsPerUnit: 0
     baseTexels: 0
+  - material: {fileID: 2100000, guid: 314b980a012962e48907050bd68bb0db, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: 97b43e43c8632a14abf7a0d2b90ead43, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
