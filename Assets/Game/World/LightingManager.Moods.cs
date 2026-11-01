@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 // optionally the table/room light groups. The source skybox material is never modified.
 public sealed partial class LightingManager
 {
-    // A mood to try on the room (F7 in Play mode toggles it). Out of the inspector: the mood assets are the biomes'
+    // A mood to try on the room (F4 in Play mode toggles it). Out of the inspector: the mood assets are the biomes'
     // lighting presets, edited under a biome's Lighting dropdown and seen by testing a level that uses them.
     [HideInInspector]
     public SceneMood moodPreset;

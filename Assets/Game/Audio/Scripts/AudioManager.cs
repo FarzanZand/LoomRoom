@@ -49,7 +49,7 @@ public partial class AudioManager : Singleton<AudioManager>
     [SerializeField] private MusicEntry[] musicLibrary;
     [Sirenix.OdinInspector.TabGroup(Tabs, LibrariesTab), Sirenix.OdinInspector.LabelText("UI Library"), Tooltip("Flat sounds heard the same anywhere: UI, game cues (level up, item drops by rarity), the DM's syllables.")]
     [SerializeField] private UIEntry[] uiLibrary;
-    // Read by the F10 window's Audio list (DevSpawner), which edits the entries in place.
+    // Read by the F7 window's Audio list (DevSpawner), which edits the entries in place.
     public SFXEntry[] SfxLibrary => sfxLibrary;
     public UIEntry[] UiLibrary => uiLibrary;
 

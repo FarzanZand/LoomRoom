@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// F10, Editor and development builds only: the spawn window, laid out like Asset Studio in the inventory's look. Left:
+// F7, Editor and development builds only: the spawn window, laid out like Asset Studio in the inventory's look. Left:
 // the kinds (Items, Spells, Room items, Enemies, Rooms, Cheats, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
@@ -110,7 +110,7 @@ public partial class DevSpawner : MonoBehaviour
         HookSteppers();
         if (primary != null) primary.onClick.AddListener(() => { Do(picked?.primary); Refocus(); });
         if (secondary != null) secondary.onClick.AddListener(() => { Do(picked?.secondary); Refocus(); });
-        // F10 must not end up in the search line; typing anywhere goes there, so it never selects all on focus.
+        // F7 must not end up in the search line; typing anywhere goes there, so it never selects all on focus.
         search.onValidateInput = (text, index, c) => Time.frameCount <= openedFrame + 1 ? '\0' : c;
         search.onFocusSelectAll = false;
         search.onValueChanged.AddListener(_ => Fill(keepScroll: false));
@@ -129,7 +129,7 @@ public partial class DevSpawner : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
-        if (keyboard.f10Key.wasPressedThisFrame) { if (open) Close(); else Open(); return; }
+        if (keyboard.f7Key.wasPressedThisFrame) { if (open) Close(); else Open(); return; }
         if (!open) return;
         if (keyboard.escapeKey.wasPressedThisFrame)
         {

@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// The F10 window's Audio Save for the Audio Manager's libraries (DevSpawner): the SFX and UI Library live on the Audio
+// The F7 window's Audio Save for the Audio Manager's libraries (DevSpawner): the SFX and UI Library live on the Audio
 // Manager in Room.unity, a scene object Play mode can't save, so each saved entry waits in SessionState
 // (DevSpawner.PendingAudioKey: lines of "sfx|key|volume|pitch|variance" or "ui|..." ) and is written into the scene's
 // Audio Manager when Play stops; the scene is saved when it had no other unsaved changes, else it is left dirty to save.
@@ -16,7 +16,7 @@ static class DevAudioSave
         string pending = SessionState.GetString(DevSpawner.PendingAudioKey, "");
         if (string.IsNullOrEmpty(pending)) return;
         var manager = Object.FindAnyObjectByType<AudioManager>(FindObjectsInactive.Include);
-        if (manager == null) { Debug.LogWarning("[DevAudioSave] No Audio Manager in the open scene: the F10 audio changes are kept for the next time Play stops in Room."); return; }
+        if (manager == null) { Debug.LogWarning("[DevAudioSave] No Audio Manager in the open scene: the F7 audio changes are kept for the next time Play stops in Room."); return; }
         SessionState.EraseString(DevSpawner.PendingAudioKey);
         var scene = manager.gameObject.scene;
         bool wasDirty = scene.isDirty;
@@ -44,6 +44,6 @@ static class DevAudioSave
         so.ApplyModifiedPropertiesWithoutUndo();
         EditorSceneManager.MarkSceneDirty(scene);
         if (!wasDirty) EditorSceneManager.SaveScene(scene);
-        Debug.Log($"[DevAudioSave] {done} Audio Manager library entr{(done == 1 ? "y" : "ies")} from the F10 window written into {scene.name}" + (wasDirty ? " (the scene had other unsaved changes: save it to keep them)." : " and saved."));
+        Debug.Log($"[DevAudioSave] {done} Audio Manager library entr{(done == 1 ? "y" : "ies")} from the F7 window written into {scene.name}" + (wasDirty ? " (the scene had other unsaved changes: save it to keep them)." : " and saved."));
     }
 }

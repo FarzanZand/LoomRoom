@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// The F10 window's Audio kind (the user's request, 2026-10-31): every sound effect, listed by category (the SFX Library,
+// The F7 window's Audio kind (the user's request, 2026-10-31): every sound effect, listed by category (the SFX Library,
 // the UI Library, the AudioData assets, clips played straight from components) or, under Last played, by when it was
 // last heard (AudioPlayLog). The search finds a sound by its name, its clip or its category. Picked, it plays with Enter
 // or Play, and its volume, pitch and pitch variance are stepped live with - and +; Save keeps them: an AudioData asset is

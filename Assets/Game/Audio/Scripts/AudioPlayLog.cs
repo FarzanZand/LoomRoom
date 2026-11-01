@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 
-// When each sound was last heard, for the F10 window's Audio list (DevSpawner): a library key, an AudioData asset or a
+// When each sound was last heard, for the F7 window's Audio list (DevSpawner): a library key, an AudioData asset or a
 // clip played straight from a component. AudioManager tells it of every one-shot it plays. The Heard calls are left out
 // of release builds (Conditional), so the game pays nothing there.
 public static class AudioPlayLog
