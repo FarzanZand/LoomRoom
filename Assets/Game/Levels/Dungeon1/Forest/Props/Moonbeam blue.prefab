@@ -4913,10 +4913,10 @@ Light:
   serializedVersion: 13
   m_Type: 0
   m_Color: {r: 0.55, g: 0.7, b: 1, a: 1}
-  m_Intensity: 300
+  m_Intensity: 3000
   m_Range: 20
-  m_SpotAngle: 40
-  m_InnerSpotAngle: 18
+  m_SpotAngle: 28
+  m_InnerSpotAngle: 10
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
     m_Type: 2
@@ -5007,7 +5007,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7659218956331373362}
-  m_Mesh: {fileID: 1771869209027545315, guid: cd82cc0b1df4a6a4fb54f280db18cfff, type: 3}
+  m_Mesh: {fileID: 4300000, guid: 2618faa8264f14449862c0b692d744ba, type: 2}
 --- !u!23 &7876130221570171105
 MeshRenderer:
   m_ObjectHideFlags: 0

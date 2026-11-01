@@ -190,21 +190,24 @@ UnityEngine.GameObject Air(string name, bool leaves, UnityEngine.Color colour)
 //  - Moonbeam <colour>: the dungeon's moonlight (a spot from 11 m up, its shaft and motes) without its night-sky card,
 //    falling into a clearing; its light is the prop's child.
 //  - Lit lantern stand: the forest's lantern stand with a warm point light at its lantern.
-UnityEngine.GameObject Beam(string name, UnityEngine.Color colour, float strength)
+UnityEngine.GameObject Beam(string name, UnityEngine.Color colour, float strength, string shaft = null)
 {
   var src = Load<UnityEngine.GameObject>("Assets/Game/Levels/Shared/Props/Effects/Moonlight.prefab");
   var root = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(src);
   UnityEditor.PrefabUtility.UnpackPrefabInstance(root, UnityEditor.PrefabUnpackMode.Completely, UnityEditor.InteractionMode.AutomatedAction);
   root.name = name;
   var sky = root.transform.Find("Night sky"); if (sky != null) UnityEngine.Object.DestroyImmediate(sky.gameObject);
-  foreach (var light in root.GetComponentsInChildren<UnityEngine.Light>()) { light.color = colour; light.intensity = strength; light.spotAngle = 40f; light.innerSpotAngle = 18f; light.range = 20f; light.shadows = UnityEngine.LightShadows.Soft; }
+  // A pool the beam's width, bright enough to read as where the beam lands (2026-11-01: at 40 degrees and a tenth of
+  // this it was a faint wide wash and the shaft looked like a curtain behind an unlit floor).
+  foreach (var light in root.GetComponentsInChildren<UnityEngine.Light>()) { light.color = colour; light.intensity = strength; light.spotAngle = 28f; light.innerSpotAngle = 10f; light.range = 20f; light.shadows = UnityEngine.LightShadows.Soft; }
+  if (shaft != null) root.transform.Find("Shaft").GetComponent<UnityEngine.Renderer>().sharedMaterial = Load<UnityEngine.Material>(shaft);
   var saved = UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, $"{F}/Props/{name}.prefab");
   UnityEngine.Object.DestroyImmediate(root);
   return saved;
 }
-Beam("Moonbeam", new UnityEngine.Color(.75f, .85f, 1f), 260f);
-Beam("Moonbeam warm", new UnityEngine.Color(1f, .78f, .55f), 240f);
-Beam("Moonbeam blue", new UnityEngine.Color(.55f, .7f, 1f), 300f);
+Beam("Moonbeam", new UnityEngine.Color(.75f, .85f, 1f), 2600f);
+Beam("Moonbeam warm", new UnityEngine.Color(1f, .78f, .55f), 2400f, "Assets/Game/Levels/Shared/Props/Effects/Moon shaft warm.mat");
+Beam("Moonbeam blue", new UnityEngine.Color(.55f, .7f, 1f), 3000f);
 {
   var src = Load<UnityEngine.GameObject>($"{F}/Props/Lantern stand/Lantern stand.prefab");
   var root = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(src);
