@@ -10233,6 +10233,7 @@ MonoBehaviour:
   killColor: {r: 1, g: 0.6, b: 0.22, a: 1}
   tiktokMode: 1
   tiktokWidth: 560
+  bagOpenWidthAndShift: {x: 440, y: -79}
   showEvents: 1
   fontSize: 32
   outline: 0
@@ -10247,6 +10248,7 @@ MonoBehaviour:
   punctuationPause: 0.25
   readBase: 1.2
   readPerWord: 0.3
+  barkLift: 150
 --- !u!114 &87319290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -136778,8 +136780,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &1117279193
-GameObject:
 --- !u!1 &1116746506
 GameObject:
   m_ObjectHideFlags: 0
@@ -136856,6 +136856,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1116746506}
   m_CullTransparentMesh: 1
+--- !u!1 &1117279193
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -148573,8 +148575,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1220062495}
   m_CullTransparentMesh: 1
---- !u!1 &1221485309
-GameObject:
 --- !u!1 &1221040526
 GameObject:
   m_ObjectHideFlags: 0
@@ -148648,6 +148648,8 @@ CanvasGroup:
   m_Interactable: 0
   m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
+--- !u!1 &1221485309
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -163904,8 +163906,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1326260787}
   m_CullTransparentMesh: 0
---- !u!1 &1329134737
-GameObject:
 --- !u!1 &1326713369
 GameObject:
   m_ObjectHideFlags: 0
@@ -163997,6 +163997,8 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1326713369}
   m_CullTransparentMesh: 1
+--- !u!1 &1329134737
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -189152,8 +189154,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <color=#9E291A>HP</color> 35    <color=#244794>MP</color> 15    <color=#216B45>SP</color>
-    41
+  m_text: <color=#9E291A>HP</color> 35    <color=#244794>MP</color> 30    <color=#216B45>SP</color>
+    46
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -200506,6 +200508,7 @@ MonoBehaviour:
   introduction: Table/Introduction
   conversation: Room/Talk
   focusSpeed: 8
+  leanDrop: 1.43
   leanState: Lean On Table
   standingState: IdleWalkRunBT
   leanBlend: 0.8
@@ -349162,9 +349165,49 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 83362866}
     m_Modifications:
+    - target: {fileID: 47002393238191210, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4284596973
+      objectReference: {fileID: 0}
+    - target: {fileID: 47002393238191210, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 285078222642680430, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4291948799
+      objectReference: {fileID: 0}
+    - target: {fileID: 285078222642680430, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 682863743222800361, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4284596973
+      objectReference: {fileID: 0}
+    - target: {fileID: 682863743222800361, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 2498690103520673484, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
       propertyPath: m_Name
       value: Boss dialogue
+      objectReference: {fileID: 0}
+    - target: {fileID: 3669247433174733667, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4284596973
+      objectReference: {fileID: 0}
+    - target: {fileID: 3669247433174733667, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789782469240525525, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4284596973
+      objectReference: {fileID: 0}
+    - target: {fileID: 3789782469240525525, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 5473077227157861843, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
       propertyPath: m_Pivot.x
@@ -349245,6 +349288,38 @@ PrefabInstance:
     - target: {fileID: 5473077227157861843, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5957901924097238078, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4291943392
+      objectReference: {fileID: 0}
+    - target: {fileID: 5957901924097238078, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 6551586216858777916, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 6585731805017278214, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 6599249819470444955, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4291943392
+      objectReference: {fileID: 0}
+    - target: {fileID: 6599249819470444955, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 8610173433419443284, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 8877957625119174723, guid: aab28c6689302ee4d990656b699eeb9b, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -393321,6 +393396,7 @@ MonoBehaviour:
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
   sfxPoolSize: 48
   uiPoolSize: 8
+  uiPoolMost: 20
   maxSameClip: 3
   sameClipGap: 0.05
   logCutSounds: 1
@@ -394542,6 +394618,8 @@ MonoBehaviour:
   blockedShake: 0.12
   hitShake: 0.35
   blockSoundInterval: 0.35
+  blockedPulseRate: 3
+  pulseVolume: 0.55
 --- !u!222 &8119043743811694077
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -400797,9 +400875,6 @@ MonoBehaviour:
   blockStaminaCost: 20
   shieldStaminaPerSecond: 4
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
-  landedCameraKick: 0.85
-  hurtCameraKick: 2
-  blockCameraKick: 0.8
   dash:
     enabled: 1
     staminaCost: 20
@@ -400826,6 +400901,9 @@ MonoBehaviour:
     streaks: {fileID: 7664258301829467767, guid: dfa9ace42b2078d419918525be726088, type: 3}
     streakForward: 1.2
     dashAudio: {fileID: 11400000, guid: 2f2df9ad73a830c45a0ed6e3f2512076, type: 2}
+  landedCameraKick: 0.85
+  hurtCameraKick: 2
+  blockCameraKick: 0.8
   hurtScreenAlpha: 0.6
   hurtScreenDuration: 0.4
   hurtScreenHold: 0.1
@@ -400900,14 +400978,14 @@ MonoBehaviour:
   impactFromSwing: 0.65
   impactBodySway: 9
   steadfastRecoil: 1.7
-  hitFlashEnabled: 1
-  hitFlashColor: {r: 2.4, g: 1.9, b: 1.45, a: 1}
-  hitFlashDuration: 0.1
   fullStaggerOnLightHits: 0
   lightHitJolt: 1.5
   plantFeetInKnockback: 1
   footPlantReach: 0.4
   footPlantRelease: 0.2
+  hitFlashEnabled: 1
+  hitFlashColor: {r: 2.4, g: 1.9, b: 1.45, a: 1}
+  hitFlashDuration: 0.1
   hitParticlePrefabs:
   - {fileID: 6471780803784122185, guid: 2a2c4fd85c07b3c4890ea6604664a1ef, type: 3}
   defaultHitAudio: {fileID: 11400000, guid: 6d42536549be02a4aa8e2bafd38cbe4b, type: 2}
