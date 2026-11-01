@@ -89,9 +89,9 @@ public static partial class MetaProgressionSetup
             // Seen from the room the wall's +x is on the left: Blocking first, reading left to right.
             float x = 56f - c * 16f;
             string id = order[c].ToString().ToLowerInvariant();
-            // One mount per milestone, the first at the bottom: Athletics has three (15 the dash, 25, 50), the rest two.
+            // One mount per milestone, the first at the bottom: Athletics 15 (the dash) and 50 (sprint), the rest 25 and 50.
             // Rows 13.5 apart so the third stays clear of the ceiling.
-            int[] values = order[c] == AdventureSkill.Athletics ? new[] { 15, 25, 50 } : new[] { 25, 50 };
+            int[] values = order[c] == AdventureSkill.Athletics ? new[] { 15, 50 } : new[] { 25, 50 };
             for (int r = 0; r < values.Length; r++)
             {
                 float y = 28.5f + r * 13.5f;

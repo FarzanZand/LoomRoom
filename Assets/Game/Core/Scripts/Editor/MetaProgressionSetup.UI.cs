@@ -251,7 +251,7 @@ public static partial class MetaProgressionSetup
     }
 
     // A skill row's ten bubbles, the milestones' larger with a mark, an icon and their value over them, at the values the
-    // manager's milestones say (Athletics 15, 25, 50; Blocking 25, 50; the others 25, 50).
+    // manager's milestones say (Athletics 15 and 50; the others 25 and 50).
     static void SkillBubbles(Transform p, string id, float y, AdventureSkill skill, CharacterSheetUI.Row row)
     {
         var meta = Object.FindAnyObjectByType<ProgressionManager>(FindObjectsInactive.Include);

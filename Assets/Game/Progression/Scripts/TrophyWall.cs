@@ -26,6 +26,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Min(.1f), Tooltip("A trophy's longest side, in room units (the room is ~22 units to the metre).")] public float trophySize = 7f;
     [Tooltip("Long trophies (swords, maces, knives) hang at this angle.")] public float longTilt = 45f;
     [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
+    [Tooltip("Boots (worn boots, and any trophy named boots: the Winged boots) hang turned round once more about the upright, so they show the side the user picked (2026-11-02).")]
+    public bool turnBootsRound = true;
     [Tooltip("SFX Library key played as the trophies go up.")] public string hangKey = "trophyHang";
     public AudioClip hangClip;
     [Tooltip("UI Library key played for each trophy as it goes up, one after another.")] public string trophyKey = "equipItem";
@@ -156,6 +158,11 @@ public class TrophyWall : MonoBehaviour, IInteractable
             go.transform.RotateAround(bounds.Value.center, anchor.parent.up, 180f);
             bounds = Measure(renderers);
         }
+        if (turnBootsRound && anchor.parent != null && Boots(item))
+        {
+            go.transform.RotateAround(bounds.Value.center, anchor.parent.up, 180f);
+            bounds = Measure(renderers);
+        }
         // Thick things (rings) stand out of the wall toward the viewer and look bigger, so their depth counts too.
         size = bounds.Value.size;
         float across = Mathf.Max(size.x, size.y) + size.z;
@@ -175,6 +182,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
     }
 
     // True when the area-weighted middle of the model's surface lies behind its bounds' middle, along `outward`.
+    static bool Boots(ItemData item) => item.equipSlot == EquipmentSlot.Boots || item.itemName.IndexOf("boots", System.StringComparison.OrdinalIgnoreCase) >= 0;
+
     static bool FrontAway(Renderer[] renderers, Vector3 centre, Vector3 outward)
     {
         float sum = 0f, weight = 0f;
