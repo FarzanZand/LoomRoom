@@ -132,7 +132,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     [SerializeField,Tooltip("One enemy bar with its name at the top of the screen, for the enemy last hit (or aimed at), instead of bars over heads.")] bool topBar=true;
     [SerializeField,Min(0),Tooltip("Top bar: distance from the top of the screen.")] float topBarOffset=96;
     [SerializeField,Min(.1f),Tooltip("Top bar: size against the bar over a head.")] float topBarScale=1.8f;
-    [SerializeField,Min(0),Tooltip("Top bar: how much lower it sits while a boss's bar is up, so it shows under it (a boss's crew, its adds).")] float topBarUnderBoss=90;
+    [SerializeField,Min(0),Tooltip("Top bar: how much lower it sits while a boss's bar is up, so it shows under it (a boss's crew, its adds).")] float topBarUnderBoss=130;
     void LateUpdate()
     {
         if(canvas==null || dungeon==null || !PlayerManager.HasInstance)return;
@@ -152,7 +152,9 @@ public class DungeonCombatFeedback : MonoBehaviour
         foreach(var e in enemies)
         {
             if(e.character==null){e.root.gameObject.SetActive(false);continue;}
-            bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character;
+            // A stage boss being set down and introduced gets its own bar once the battle begins, not this one before.
+            bool bossBar=BossBarUI.HasInstance && BossBarUI.Instance.Boss==e.character
+                || BossStageEncounter.Current!=null && BossStageEncounter.Current.Boss==e.character && !BossStageEncounter.Current.Fighting;
             if(topBar)
             {
                 bool shown=show && e==topEnemy && !bossBar;

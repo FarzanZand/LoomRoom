@@ -222,8 +222,9 @@ public partial class BossStageEncounter : MonoBehaviour
         yield return Carry(boss, spot, fight != null ? fight.placeSeconds : 2f);
         if (boss != null) bossHome = boss.transform.position;
         SpawnBackup();
-        // Said once the boss is down and the room is dark, where it can be read.
-        BossBlessing.Announce();
+        // Said once the boss is down and the room is dark, where it can be read; with an intro, once it is over and the
+        // battle begins (said while he set the boss down, it was gone before anyone knew what it was for).
+        if (!intro) BossBlessing.Announce();
         if (intro)
         {
             yield return Intro(player, talk, card);
@@ -236,8 +237,10 @@ public partial class BossStageEncounter : MonoBehaviour
         }
 
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
-        if (!string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
+        // An intro has already named the boss (its dialogue, title or versus screen): no line in the feed on top.
+        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
         if (fight != null && !intro) Say(fight.fightLine, true);
+        if (intro) BossBlessing.Announce();
         if (stageLights != null) stageLights.Follow(boss.transform);
         if (brain != null) { brain.enabled = true; brain.Alert(); }
         if (hand != null) hand.Watch(player.transform.position, false);

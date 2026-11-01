@@ -364,9 +364,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         if (placement != Placement.LowerMiddle || tiktokMode) return;
         bool bark = PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Barking;
-        float to = bark ? barkLift : 0f;
+        float to = bark ? barkLift + PortraitDialogueUI.Current.barkRaise : 0f;
         if (Mathf.Approximately(lifted, to)) return;
-        lifted = Mathf.MoveTowards(lifted, to, barkLift * 8f * Time.unscaledDeltaTime);
+        lifted = Mathf.MoveTowards(lifted, to, Mathf.Max(barkLift, to) * 8f * Time.unscaledDeltaTime);
         label.rectTransform.anchoredPosition = new Vector2(label.rectTransform.anchoredPosition.x, 250 + lifted);
     }
 
@@ -387,6 +387,14 @@ public class DungeonMaster : Singleton<DungeonMaster>
         if ((GameManager.HasInstance && !overMenus && (GameManager.Instance.State == GameState.Menu || GameManager.Instance.State == GameState.Paused))
             || PixelCrushers.DialogueSystem.DialogueManager.isConversationActive)
         {
+            if (!blanked) { label.text = ""; blanked = true; }
+            return;
+        }
+        // The boss's versus screen and title card cover the screen: the lines from before are left behind (the last line
+        // of a boss's intro showed through the versus screen's dim and came back after it).
+        if (VersusScreenUI.Covers || BossTitleUI.Covers)
+        {
+            if (lines.Count > 0) lines.Clear();
             if (!blanked) { label.text = ""; blanked = true; }
             return;
         }

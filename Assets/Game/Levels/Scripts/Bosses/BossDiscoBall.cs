@@ -55,6 +55,24 @@ public class BossDiscoBall : MonoBehaviour
 
     public void Off() => target = 0f;
 
+    // Wound back up on its chain, out of sight, after a moment; then gone.
+    public void Raise(float after) { StopAllCoroutines(); StartCoroutine(RaiseRun(after)); }
+
+    IEnumerator RaiseRun(float after)
+    {
+        yield return new WaitForSeconds(after);
+        var from = transform.position;
+        var to = from + Vector3.up * dropFrom;
+        if (lowerSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(lowerSound, lowerVolume * .6f);
+        for (float t = 0f; t < lowerSeconds; t += Time.deltaTime)
+        {
+            float u = t / lowerSeconds;
+            transform.position = Vector3.LerpUnclamped(from, to, u * u * (3f - 2f * u));
+            yield return null;
+        }
+        Destroy(gameObject);
+    }
+
     void Update()
     {
         if (ball != null) ball.Rotate(0f, spin * Time.deltaTime, 0f, Space.Self);

@@ -32,6 +32,7 @@ public class PortraitDialogueUI : MonoBehaviour
     [Tooltip("The blips' pitch for the boss (a deep voice is lower) and anyone else.")]
     public float bossPitch = .8f, otherPitch = 1f;
     [Min(0)] public float fadeSeconds = .18f;
+    [Min(0), Tooltip("Canvas units a line said mid-fight (Bark) sits higher than a conversation's, clear of the hotbar and vitals the HUD keeps showing.")] public float barkRaise = 130f;
     [Header("Portrait")]
     [Tooltip("Pixels across the speaker's portrait (drawn point-filtered, so fewer is chunkier).")] public int portraitResolution = 256;
     [Tooltip("Degrees the speaker is turned from facing the camera.")] public float portraitTurn = 22f;
@@ -48,7 +49,17 @@ public class PortraitDialogueUI : MonoBehaviour
     // While it is up the hotbar and vitals step aside (HudCanvas.BehindMenu); not for a bark.
     public static bool Covers => Current != null && Current.Open && !Current.Barking;
 
-    void Awake() { Current = this; Hide(true); }
+    RectTransform box;
+    Vector2 boxHome;
+
+    void Awake()
+    {
+        Current = this;
+        if (group != null) { box = (RectTransform)group.transform; boxHome = box.anchoredPosition; }
+        Hide(true);
+    }
+
+    void Raise(bool bark) { if (box != null) box.anchoredPosition = boxHome + (bark ? Vector2.up * barkRaise : Vector2.zero); }
     void OnDestroy() { if (Current == this) Current = null; }
 
     // Put away at once (the fight whose lines these were was cancelled: the caller's coroutine stopped mid-line). A bark
@@ -60,6 +71,7 @@ public class PortraitDialogueUI : MonoBehaviour
         Hide(true);
         if (stage != null) stage.Clear();
         Open = false; Barking = false;
+        SlowReading(false);
     }
 
     // Plays the lines. The boss is the fight's boss (its look and, unless a line names someone, its name); firstShown
@@ -68,6 +80,11 @@ public class PortraitDialogueUI : MonoBehaviour
     {
         if (lines == null || lines.Count == 0) yield break;
         Open = true;
+        Raise(false);
+        // The Dungeon Master's lines among them keep the conversation's pace (his feed's reading pause held the next
+        // line, and a boss's versus screen, a few seconds on a line already read). Put back by the end or Abort (a
+        // coroutine stopped from outside never runs its finally).
+        SlowReading(true);
         stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();
         stage.resolution = portraitResolution; stage.turn = portraitTurn; stage.bodyBelow = portraitBodyBelow; stage.roomAbove = portraitRoomAbove;
         if (portrait != null) portrait.texture = null;
@@ -89,7 +106,19 @@ public class PortraitDialogueUI : MonoBehaviour
         Hide(false);
         stage.Clear();
         Open = false;
+        SlowReading(false);
     }
+
+    float readingBefore = -1f;
+
+    void SlowReading(bool on)
+    {
+        if (!DungeonMaster.HasInstance) return;
+        if (on && readingBefore < 0f) { readingBefore = DungeonMaster.Instance.ReadingScale; DungeonMaster.Instance.ReadingScale = readingBefore * readingScale; }
+        else if (!on && readingBefore >= 0f) { DungeonMaster.Instance.ReadingScale = readingBefore; readingBefore = -1f; }
+    }
+
+    [Range(.2f, 1f), Tooltip("The Dungeon Master's reading pause on his lines in a conversation here, against his feed's own.")] public float readingScale = .55f;
 
     bool shown;
     Action firstShown;
@@ -112,6 +141,7 @@ public class PortraitDialogueUI : MonoBehaviour
     IEnumerator BarkRun(string text, Character speaker, string speakerName, float hold)
     {
         Open = true; Barking = true;
+        Raise(true);
         stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();
         stage.resolution = portraitResolution; stage.turn = portraitTurn; stage.bodyBelow = portraitBodyBelow; stage.roomAbove = portraitRoomAbove;
         shown = false; firstShown = null;

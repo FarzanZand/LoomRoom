@@ -114,7 +114,15 @@ public partial class BossStageEncounter
         if (!any) return;
         if (!string.IsNullOrWhiteSpace(fight.backupBossLine) && PortraitDialogueUI.Current != null)
             PortraitDialogueUI.Current.Bark(fight.backupBossLine, boss, fight.bossName);
-        Say(fight.backupLine, true);
+        StartCoroutine(SayAfterBark(fight.backupLine));
+    }
+
+    // The Dungeon Master answers once the boss has had its say (both at once, his line sat on top of its box).
+    IEnumerator SayAfterBark(DungeonMaster.Line line)
+    {
+        yield return null;
+        while (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Barking) yield return null;
+        if (!finished) Say(line, true);
     }
 
     // A frame after it is made (its stats and brain set up): weaker, entranced and dancing, a little out of step.
@@ -180,6 +188,9 @@ public partial class BossStageEncounter
         if (danceFloor != null) danceFloor.Off();
         if (discoBall != null) discoBall.Off();
         if (!won) return;
+        // Won: the ball is wound back up out of sight after the boss's last pose (it hung over the Dungeon Master's
+        // face for the rest of the floor).
+        if (discoBall != null) discoBall.Raise(fight.DefeatSeconds + .5f);
         partyOver = true;
         foreach (var (b, graph) in backup.ToArray())
         {
