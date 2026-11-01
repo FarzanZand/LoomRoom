@@ -96,7 +96,7 @@ public class StaminaReadoutUI : MonoBehaviour
         if (group != null && group.alpha <= 0f || template == null || max <= 0f) { shown = current; return; }
         if (!Mathf.Approximately(max, laidOutFor)) LayOut(max);
 
-        // Falls fast (a dash takes 20 at once) and fills as it regenerates, eased either way.
+        // Falls fast (a dash takes 10 at once) and fills as it regenerates, eased either way.
         shown = Mathf.Lerp(shown, current, 1f - Mathf.Exp(-smoothSpeed * dt));
         // The flash fades out over its time, so it reads as a blink.
         float flash = refusing ? 1f - (Time.unscaledTime - refusedAt) / refusedSeconds : 0f;

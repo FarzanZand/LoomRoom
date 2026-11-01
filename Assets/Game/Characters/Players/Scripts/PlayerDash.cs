@@ -265,7 +265,7 @@ public class DashTuning
     [Tooltip("Sprint (Shift) pressed dashes the table player to the side or back, the way the movement keys point (never forward; back when none are held). Off: Shift only sprints, as before.")]
     public bool enabled = true;
     [ShowIf(nameof(enabled)), Min(0f), Tooltip("Stamina one dash costs (every class starts with 40, so two from full). Refused when there isn't that much left.")]
-    public float staminaCost = 20f;
+    public float staminaCost = 10f;
     [ShowIf(nameof(enabled)), Min(.5f), FormerlySerializedAs("distance"), Tooltip("Metres a dash straight to the side covers when nothing is in the way.")]
     public float sideDistance = 2.6f;
     [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash straight back covers when nothing is in the way (a diagonal is in between).")]

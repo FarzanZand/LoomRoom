@@ -300,12 +300,12 @@ MonoBehaviour:
   chargeReadyKick: 0.3
   chargeReadyAudio: {fileID: 0}
   blockFrontalDot: -0.3
-  blockStaminaCost: 20
+  blockStaminaCost: 10
   shieldStaminaPerSecond: 4
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
   dash:
     enabled: 1
-    staminaCost: 20
+    staminaCost: 10
     sideDistance: 2.6
     backDistance: 1.82
     duration: 0.45
