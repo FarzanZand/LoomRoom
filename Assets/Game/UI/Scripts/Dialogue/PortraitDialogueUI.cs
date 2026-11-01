@@ -132,7 +132,7 @@ public class PortraitDialogueUI : MonoBehaviour
     {
         if (string.IsNullOrWhiteSpace(text) || !isActiveAndEnabled) return;
         // Said without the box, so nothing covers the fight (UIManager > Boss Bark Style).
-        if (UIManager.BossBark != BossBarkStyle.Box && BossBarkUI.HasInstance) { BossBarkUI.Instance.Say(text, speaker, speakerName, UIManager.BossBark); return; }
+        if (UIManager.BossBark != BossBarkStyle.Box && BossBarkUI.Instance != null) { BossBarkUI.Instance.Say(text, speaker, speakerName, UIManager.BossBark); return; }
         if (Barking) { barks.Enqueue((text, speaker, speakerName, hold)); return; }
         if (Open) return;
         StartCoroutine(BarkRun(text, speaker, speakerName, hold));
