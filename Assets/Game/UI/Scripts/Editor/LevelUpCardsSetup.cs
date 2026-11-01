@@ -155,7 +155,7 @@ public static class LevelUpCardsSetup
             // Tabletop sounds, not chimes (the user, 2026-11-02): a sheet of paper picked up as each panel comes, a die's
             // knock on the table on hover, a book shut on the pick, paper folding away as the others go.
             deal = Sound("Tarot pop", 1f, .04f, Lib + "Items/Itm_Note_Up_01.wav", Lib + "Items/Itm_Note_Up_02.wav"),
-            hover = Sound("Tarot hover", .45f, .05f, Table + "Dice knock 1.wav", Table + "Dice knock 2.wav", Table + "Dice knock 3.wav"),
+            hover = Sound("Tarot hover", .45f, 0f, Table + "Dice knock 1.wav"),   // one knock at one pitch (the user)
             pick = Sound("Tarot pick", 1f, .03f, Lib + "Items/Itm_Book_Close_01.wav", Lib + "Items/Itm_Book_Close_02.wav"),
             leave = Sound("Tarot leave", .9f, .04f, Lib + "Items/Itm_Note_Close_01.wav", Lib + "Items/Itm_Note_Close_02.wav"),
         };

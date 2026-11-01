@@ -245,7 +245,7 @@ public class LevelUpCardsUI : MonoBehaviour
     {
         if (phase != Phase.Choosing || hovered == i) return;
         hovered = i; keyboard = i;
-        Play(art.hover, 1f + i * .04f);
+        Play(art.hover, 1f);   // one pitch on every panel (the user)
         cards[i].transform.SetAsLastSibling();
     }
     public void PointerLeft(int i) { if (hovered == i) hovered = -1; }
@@ -279,7 +279,7 @@ public class LevelUpCardsUI : MonoBehaviour
         int step = InputManager.Instance.NavigateStep;
         keyboard = keyboard < 0 ? (step < 0 ? cards.Length - 1 : 0) : (keyboard + step + cards.Length) % cards.Length;
         hovered = -1;
-        Play(art.hover, 1f + keyboard * .04f);
+        Play(art.hover, 1f);
         cards[keyboard].transform.SetAsLastSibling();
     }
     void Submit() { if (phase == Phase.Choosing && keyboard >= 0) Pick(keyboard); }
