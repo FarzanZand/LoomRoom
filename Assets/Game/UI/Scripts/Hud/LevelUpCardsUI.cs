@@ -7,14 +7,15 @@ using UnityEngine.UI;
 
 // The level-up cards (ProgressionManager > Level up Reward on Cards): while the table player has an attribute point
 // left in a run (AdventurerProgress.UnspentPoints), no enemy is chasing or attacking them and no boss fight is on, the
-// Dungeon Master deals four tarot cards, one per attribute, each with its score now and after and what a point there
-// gives (ProgressionManager.AttributeEffects, so the cards say what the sheet and the character panel say). They drop in
-// face down, his eyes on their backs, and turn over as they land, while he says one of his deal lines. With
+// Dungeon Master puts up four panels, one per attribute, each with its score now and after and what a point there gives
+// (ProgressionManager.AttributeEffects, so the panels say what the sheet and the character panel say). They pop up one
+// after another (a fade, a small rise and a soft overshoot in size; no turning or spinning, the user, 2026-11-02) while
+// he says one of his deal lines. With
 // ProgressionManager's Auto Popup they come by themselves and the game waits meanwhile (Menu state, time stopped);
 // without it a prompt says "Press R to level up" and R brings them up while the game goes on (Menu state for the
 // cursor, time running; Esc puts them away, the point kept). Pick one with the mouse, 1-4, or the arrows and Enter; it
-// takes the point and flies up toward the level meter while the others turn face down and drop away. With two points
-// left the cards are dealt again. A prefab (UI/Prefabs/Progression/Level up cards, made by LevelUpCardsSetup.Build())
+// takes the point with a small pulse and fades away rising, while the others shrink a little and fade. With two points
+// left they come up again. A prefab (UI/Prefabs/Progression/Level up cards, made by LevelUpCardsSetup.Build())
 // that ProgressionManager puts on the HUD canvas (ProgressionManager.levelUpCards).
 public class LevelUpCardsUI : MonoBehaviour
 {
@@ -22,12 +23,11 @@ public class LevelUpCardsUI : MonoBehaviour
     [Serializable]
     public class CardArt
     {
-        public Sprite face, back, divider, keyFrame;
+        public Sprite face, divider, keyFrame;
         public Color name = Color.white, ink = Color.white, gain = Color.white, faded = new(1f, 1f, 1f, .6f), glow = new(1f, .85f, .4f, .8f);
         public Material titleMaterial, bodyMaterial;
         [Range(0f, 1f), Tooltip("How dark the screen goes behind the cards.")] public float dim = .6f;
-        [Tooltip("Played as each card comes in, a little higher each time.")] public AudioData deal;
-        [Tooltip("Each card turning over as it lands.")] public AudioData land;
+        [Tooltip("Played as each panel pops up, a little higher each time.")] public AudioData deal;
         public AudioData hover, pick, leave;
     }
 
@@ -45,13 +45,12 @@ public class LevelUpCardsUI : MonoBehaviour
     public List<DungeonMaster.Line> dealLines = new();
 
     [FoldoutGroup("Timing"), Min(0f), Tooltip("Seconds after the point is earned before the cards come (the LEVEL UP banner lands first).")] public float afterLevelUp = .9f;
-    [FoldoutGroup("Timing"), Min(.05f)] public float dealSeconds = .42f, dealGap = .1f, flipSeconds = .2f;
+    [FoldoutGroup("Timing"), Min(.05f), Tooltip("Seconds each panel takes to pop up, and between one panel and the next.")] public float dealSeconds = .32f, dealGap = .07f;
     [FoldoutGroup("Timing"), Min(0f), Tooltip("Seconds after the last card is in before a pick counts, so a click meant for a swing doesn't take one.")] public float pickDelay = .25f;
-    [FoldoutGroup("Timing"), Min(.05f)] public float leaveSeconds = .35f, flyUpSeconds = .55f;
+    [FoldoutGroup("Timing"), Min(.05f), Tooltip("Seconds the panels take to go once one is picked.")] public float leaveSeconds = .45f;
     [FoldoutGroup("Hover"), Min(0f)] public float hoverLift = 26f, hoverScale = 1.07f;
     [FoldoutGroup("Hover"), Min(.1f)] public float hoverSpeed = 14f;
 
-    static readonly float[] restTilt = { 2.2f, .8f, -.8f, -2.2f };
     static readonly MetaAttribute[] order = { MetaAttribute.Strength, MetaAttribute.Dexterity, MetaAttribute.Constitution, MetaAttribute.Intelligence };
 
     enum Phase { Closed, Dealing, Choosing, Leaving }
@@ -134,7 +133,7 @@ public class LevelUpCardsUI : MonoBehaviour
         if (phase == Phase.Dealing)
         {
             for (int i = 0; i < cards.Length; i++) PoseDealing(i, t - i * dealGap);
-            if (t >= (cards.Length - 1) * dealGap + dealSeconds + flipSeconds + pickDelay) { phase = Phase.Choosing; phaseStart = Time.unscaledTime; }
+            if (t >= (cards.Length - 1) * dealGap + dealSeconds + pickDelay) { phase = Phase.Choosing; phaseStart = Time.unscaledTime; }
         }
         else if (phase == Phase.Choosing)
         {
@@ -149,7 +148,7 @@ public class LevelUpCardsUI : MonoBehaviour
         else if (phase == Phase.Leaving)
         {
             for (int i = 0; i < cards.Length; i++) PoseLeaving(i, t);
-            if (t >= leaveSeconds + flyUpSeconds) Finish();
+            if (t >= leaveSeconds + (cards.Length - 1) * .04f) Finish();
         }
     }
 
@@ -189,7 +188,7 @@ public class LevelUpCardsUI : MonoBehaviour
         if (card == null) return;
         var track = meta != null ? meta.Track(attribute) : null;
         if (card.face != null) { card.face.sprite = art.face; card.face.color = Color.white; }
-        if (card.back != null) { card.back.sprite = art.back != null ? art.back : art.face; card.back.color = Color.white; }
+        if (card.back != null) card.back.enabled = false;
         if (card.divider != null) { card.divider.sprite = art.divider; card.divider.enabled = art.divider != null; }
         if (card.keyFrame != null) { card.keyFrame.sprite = art.keyFrame; card.keyFrame.enabled = art.keyFrame != null; }
         // The glow is the card's own shape a little larger, in the glow colour.
@@ -215,7 +214,7 @@ public class LevelUpCardsUI : MonoBehaviour
             card.effects.fontSharedMaterial = art.bodyMaterial != null ? art.bodyMaterial : card.effects.font.material;
         }
         if (card.key != null) { card.key.text = (i + 1).ToString(); card.key.color = art.ink; }
-        card.FaceUp(false);
+        card.FaceUp(true);
         if (card.group != null) card.group.alpha = 0f;
     }
 
@@ -316,44 +315,35 @@ public class LevelUpCardsUI : MonoBehaviour
 
     // ── Poses ─────────────────────────────────────────────────────────
 
-    // Card i t seconds into its own deal: dropped from above with a small bounce, squashing a little as it lands, then
-    // turned over.
+    // Panel i t seconds into its own pop-up: faded in, risen a little and grown to its size with a soft overshoot.
     void PoseDealing(int i, float t)
     {
         var card = cards[i];
         if (card == null || card.body == null) return;
         float k = Mathf.Clamp01(t / dealSeconds);
         var body = card.body;
-        if (backdrop != null) backdrop.color = new Color(0f, 0f, 0f, art.dim * Mathf.Clamp01((Time.unscaledTime - phaseStart) / .3f));
+        if (backdrop != null) backdrop.color = new Color(0f, 0f, 0f, art.dim * Ease.OutCubic(Mathf.Clamp01((Time.unscaledTime - phaseStart) / .25f)));
         if (title != null) title.alpha = Mathf.Clamp01((Time.unscaledTime - phaseStart - .2f) / .3f);
-        if (card.group != null) card.group.alpha = t <= 0f ? 0f : Mathf.Clamp01(t / .08f);
-        if (t > 0f && landed[i] == 0f) { landed[i] = .5f; Play(art.deal, .9f + i * .08f); }
-        float tilt = restTilt[i];
-        body.anchoredPosition = Vector2.LerpUnclamped(new Vector2(0f, 820f), Vector2.zero, Ease.OutBounceSoft(k));
-        body.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(tilt * 4f, tilt, k));
-        float after = t - dealSeconds * .7f;
-        float squash = after > 0f ? Mathf.Sin(Mathf.Min(after / .16f, 1f) * Mathf.PI) * .05f : 0f;
-        body.localScale = new Vector3(1f + squash, 1f - squash, 1f);
-        if (k >= 1f && landed[i] < 1f) { landed[i] = 1f; Play(art.land, .95f + i * .05f); }
-        // Turned over: narrowing to its edge and widening again face up, a flash of the glow as it turns.
-        float f = Mathf.Clamp01((t - dealSeconds) / flipSeconds);
-        var s = body.localScale; s.x *= Mathf.Max(.02f, Mathf.Abs(Mathf.Cos(f * Mathf.PI))); body.localScale = s;
-        card.FaceUp(f >= .5f);
-        if (card.glow != null) card.glow.color = WithAlpha(art.glow, f > 0f && f < 1f ? Mathf.Sin(f * Mathf.PI) * art.glow.a : 0f);
+        if (t > 0f && landed[i] == 0f) { landed[i] = 1f; Play(art.deal, .95f + i * .06f); }
+        if (card.group != null) card.group.alpha = t <= 0f ? 0f : Ease.OutCubic(Mathf.Clamp01(k / .7f));
+        body.anchoredPosition = new Vector2(0f, Mathf.Lerp(-22f, 0f, Ease.OutCubic(k)));
+        body.localRotation = Quaternion.identity;
+        float size = Mathf.LerpUnclamped(.9f, 1f, Ease.OutBack(k, 1.4f));
+        body.localScale = new Vector3(size, size, 1f);
+        if (card.glow != null) card.glow.color = WithAlpha(art.glow, 0f);
     }
 
-    // A card waiting to be picked: at rest with a slow breath, lifted and straightened toward the pointer or the keys.
+    // A panel waiting to be picked: lifted and grown a little toward the pointer or the keys, the others a shade darker.
     void PoseResting(int i, float h, float now)
     {
         var card = cards[i];
         if (card == null || card.body == null) return;
-        float breathe = Mathf.Sin(now * 1.6f + i * 1.3f) * 3f;
-        card.body.anchoredPosition = new Vector2(0f, breathe * (1f - h) + hoverLift * h);
-        card.body.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(restTilt[i], 0f, h));
+        card.body.anchoredPosition = new Vector2(0f, hoverLift * h);
+        card.body.localRotation = Quaternion.identity;
         float sc = Mathf.Lerp(1f, hoverScale, h);
         card.body.localScale = new Vector3(sc, sc, 1f);
         if (card.glow != null) card.glow.color = WithAlpha(art.glow, art.glow.a * .6f * h);
-        // The cards not pointed at darken a little (never see-through: the world would show through the card).
+        // The panels not pointed at darken a little (never see-through: the world would show through them).
         bool other = (hovered >= 0 || keyboard >= 0) && !(i == hovered || i == keyboard && hovered < 0);
         if (card.face != null)
         {
@@ -362,37 +352,35 @@ public class LevelUpCardsUI : MonoBehaviour
         }
     }
 
-    // After the pick: the picked card pops and flies up toward the level meter; the others turn face down and drop away.
+    // After the pick: the picked panel pulses once, then rises a little and fades; the others shrink a little and fade,
+    // the ones nearer the pick first.
     void PoseLeaving(int i, float t)
     {
         var card = cards[i];
         if (card == null || card.body == null) return;
         var body = card.body;
-        if (backdrop != null) backdrop.color = new Color(0f, 0f, 0f, art.dim * (1f - Mathf.Clamp01((t - leaveSeconds * .5f) / (leaveSeconds + flyUpSeconds * .5f))));
+        body.localRotation = Quaternion.identity;
+        if (backdrop != null) backdrop.color = new Color(0f, 0f, 0f, art.dim * (1f - Ease.OutCubic(Mathf.Clamp01(t / leaveSeconds))));
         if (title != null) title.alpha = 1f - Mathf.Clamp01(t / .2f);
         if (i == picked)
         {
-            // Pop: up to a bigger size and back, a flash, then away up and smaller.
-            float pop = Mathf.Clamp01(t / leaveSeconds);
-            float size = hoverScale + Mathf.Sin(pop * Mathf.PI) * .12f;
-            if (card.glow != null) card.glow.color = WithAlpha(art.glow, art.glow.a * (1f - pop * .7f));
-            float fly = Ease.InCubic(Mathf.Clamp01((t - leaveSeconds) / flyUpSeconds));
-            body.anchoredPosition = Vector2.Lerp(new Vector2(0f, hoverLift), new Vector2(-slots[i].x, 560f), fly);
-            body.localScale = Vector3.one * Mathf.Lerp(size, .25f, fly);
-            body.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, slots[i].x > 0 ? 8f : -8f, fly));
-            if (card.group != null) card.group.alpha = 1f - Mathf.Clamp01((fly - .6f) / .4f);
+            float k = Mathf.Clamp01(t / leaveSeconds);
+            float pulse = Mathf.Sin(Mathf.Clamp01(k / .35f) * Mathf.PI) * .05f;
+            float go = Ease.OutCubic(Mathf.Clamp01((k - .3f) / .7f));
+            body.anchoredPosition = new Vector2(0f, hoverLift + 30f * go);
+            float size = hoverScale * (1f + pulse);
+            body.localScale = new Vector3(size, size, 1f);
+            if (card.glow != null) card.glow.color = WithAlpha(art.glow, art.glow.a * (1f - k));
+            if (card.group != null) card.group.alpha = 1f - go;
             return;
         }
-        // Turned face down (the first part), then dropped away, the ones nearer the pick first.
-        float k = Mathf.Clamp01((t - Mathf.Abs(i - picked) * .05f) / (leaveSeconds + flyUpSeconds * .6f));
-        float turn = Mathf.Clamp01(k * 2.4f);
-        card.FaceUp(turn < .5f);
-        float fall = Mathf.Clamp01(k * 1.6f - .6f);
-        body.anchoredPosition = new Vector2(0f, Mathf.Lerp(0f, -760f, fall * fall));
-        body.localScale = new Vector3(Mathf.Max(.02f, Mathf.Abs(Mathf.Cos(turn * Mathf.PI))), 1f, 1f);
-        body.localRotation = Quaternion.Euler(0f, 0f, restTilt[i] * (1f + fall * 3f));
+        float o = Ease.OutCubic(Mathf.Clamp01((t - Mathf.Abs(i - picked) * .04f) / (leaveSeconds * .75f)));
+        body.anchoredPosition = new Vector2(0f, Mathf.Lerp(0f, -14f, o));
+        float shrink = Mathf.Lerp(1f, .94f, o);
+        body.localScale = new Vector3(shrink, shrink, 1f);
         if (card.face != null) card.face.color = Color.white;
-        if (card.group != null) card.group.alpha = Mathf.Min(card.group.alpha, 1f - Mathf.Clamp01(k * 2f - 1f));
+        if (card.glow != null) card.glow.color = WithAlpha(art.glow, 0f);
+        if (card.group != null) card.group.alpha = Mathf.Min(card.group.alpha, 1f - o);
     }
 
     static Color WithAlpha(Color c, float a) { c.a = a; return c; }
@@ -408,12 +396,7 @@ public class LevelUpCardsUI : MonoBehaviour
     {
         public static float OutCubic(float x) => 1f - Mathf.Pow(1f - x, 3f);
         public static float InCubic(float x) => x * x * x;
-        // Falls, lands, lifts a little, lands again.
-        public static float OutBounceSoft(float x)
-        {
-            if (x < .7f) { float a = x / .7f; return a * a; }
-            float b = (x - .7f) / .3f;
-            return 1f - Mathf.Sin(b * Mathf.PI) * .06f;
-        }
+        // Past 1 and back: a soft overshoot.
+        public static float OutBack(float x, float s) { float c = s + 1f; return 1f + c * Mathf.Pow(x - 1f, 3f) + s * Mathf.Pow(x - 1f, 2f); }
     }
 }

@@ -1,7 +1,6 @@
-"""Art for the level-up cards (LevelUpCardsUI): a dark tarot card edged in gold, its back the Dungeon Master's two slit
-eyes burning in the dark with faint rays. Drawn at half the card's UI size (one texel = two UI units, 150 x 230 for a
+"""Art for the level-up panels (LevelUpCardsUI): a dark tarot card edged in gold. Drawn at half the card's UI size (one texel = two UI units, 150 x 230 for a
 300 x 460 card) so it sits with the pixel UI; dirty, the colour moving texel to texel in hard-edged clusters, dark at the
-edges and lit on the rim. Writes Tarot face, back, divider and key to <out dir>.
+edges and lit on the rim. Writes Tarot face, divider and key to <out dir>.
 Run: python -I Tools/level_up_cards.py "Assets/Game/UI/Sprites/Level up cards"
 """
 import sys, os
@@ -138,26 +137,7 @@ def tarot():
     col = frame(col, m, 7, (150, 112, 50))
     col = corner_marks(col, m, 7, gold)
     face = rgba(col, m * 255)
-    back = shade((26, 22, 34), m, 33, 16, .4, 14)
-    back = frame(back, m, 3, gold, 2, gap_colour=.6)
-    back = frame(back, m, 7, (150, 112, 50))
-    back = corner_marks(back, m, 7, gold)
-    ys, xs = np.mgrid[0:H, 0:W]
-    # Rays from the middle, faint.
-    ang = np.arctan2(ys - H / 2, xs - W / 2)
-    dist = np.hypot(xs - W / 2, ys - H / 2)
-    rays = (np.abs(np.sin(ang * 8)) < .035 * 60 / np.maximum(dist, 1)) & (edge_distance(m) > 11) & (dist > 24)
-    back[rays] = back[rays] * .55 + np.array((150, 108, 48)) * .45
-    # Two slit eyes burning, as the DM's in the dark.
-    for ex in (-17, 17):
-        cx, cy = W / 2 + ex, H / 2
-        e = ((xs - cx) / 11) ** 2 + ((ys - cy) / 2.6) ** 2
-        glow = np.clip(1.6 - e, 0, 1)
-        back += (glow ** 2)[..., None] * np.array((255, 150, 40)) * .5
-        back[e <= 1] = (255, 214, 120)
-        back[(e <= 1) & (abs(xs - cx) < 1.5)] = (255, 250, 220)
     save(face, "Tarot face")
-    save(rgba(back, m * 255), "Tarot back")
     save(divider(gold, seed=35), "Tarot divider")
     save(key_frame((40, 34, 50), gold, 36), "Tarot key")
 

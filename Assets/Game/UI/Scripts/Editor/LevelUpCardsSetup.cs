@@ -83,7 +83,6 @@ public static class LevelUpCardsSetup
             card.body = b;
             card.glow = Box("Glow", b, null, new Vector2(CardW + 22f, CardH + 22f), new Color(1f, .8f, .35f, 0f), false);
             card.face = Box("Face", b, null, new Vector2(CardW, CardH), Color.white, false);
-            card.back = Box("Back", b, null, new Vector2(CardW, CardH), Color.white, false);
 
             var parts = new GameObject("Face parts", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
             parts.gameObject.layer = root.layer;
@@ -150,11 +149,10 @@ public static class LevelUpCardsSetup
         Color Rgb(int r, int g, int b, float a = 1f) => new(r / 255f, g / 255f, b / 255f, a);
         return new LevelUpCardsUI.CardArt
         {
-            face = Sprite("Tarot face"), back = Sprite("Tarot back"), divider = Sprite("Tarot divider"), keyFrame = Sprite("Tarot key"),
+            face = Sprite("Tarot face"), divider = Sprite("Tarot divider"), keyFrame = Sprite("Tarot key"),
             name = Rgb(226, 182, 92), ink = Rgb(232, 222, 204), gain = Rgb(242, 210, 130), faded = Rgb(160, 150, 160, .8f), glow = Rgb(255, 170, 70, .9f), dim = .62f,
             titleMaterial = outline, bodyMaterial = underlay,
-            deal = Sound("Tarot deal", .6f, .05f, UI + "Inventory_Whoosh_01_stereo.wav", UI + "Inventory_Whoosh_02_stereo.wav"),
-            land = Sound("Tarot land", .55f, .04f, UI + "Swap_High_01_mono.wav", UI + "Swap_High_02_mono.wav"),
+            deal = Sound("Tarot pop", .45f, .03f, UI + "Swap_High_01_mono.wav", UI + "Swap_High_02_mono.wav"),
             hover = Sound("Tarot hover", .8f, .04f, UI + "Toggle_01A_mono.wav", UI + "Toggle_02A_mono.wav"),
             pick = Sound("Tarot pick", 1f, 0f, UI + "Item_Upgrade_Success_stereo.wav"),
             leave = Sound("Tarot leave", .5f, .04f, UI + "Transition_Swish_03_mono.wav"),
