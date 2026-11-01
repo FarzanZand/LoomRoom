@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: Tarot pick
   m_EditorClassIdentifier: Assembly-CSharp::AudioData
   clips:
-  - {fileID: 8300000, guid: 30ee02bc495224f8890fe33acbe9ffd8, type: 3}
-  volume: 1
+  - {fileID: 8300000, guid: 14f4445fa3300cc46bb872ac35f0f571, type: 3}
+  - {fileID: 8300000, guid: 7bf2948708471964a984f1632784a9fe, type: 3}
+  volume: 0.8
   pitch: 1
-  pitchVariance: 0
+  pitchVariance: 0.03
   minDistance: 1
   maxDistance: 500

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Tarot pop
   m_EditorClassIdentifier: Assembly-CSharp::AudioData
   clips:
-  - {fileID: 8300000, guid: 9d3bf2ec0e2c2439fad0770b81d59f93, type: 3}
-  - {fileID: 8300000, guid: 4a5a46a93ed4a473e992b9d9e3e2b515, type: 3}
-  volume: 0.45
+  - {fileID: 8300000, guid: b0761db5acdf9804c83fddbddf968b80, type: 3}
+  - {fileID: 8300000, guid: 0ccad237438011c4ba90d547aca99331, type: 3}
+  volume: 1
   pitch: 1
-  pitchVariance: 0.03
+  pitchVariance: 0.04
   minDistance: 1
   maxDistance: 500

@@ -14,7 +14,7 @@ using UnityEngine.UI;
 public static class LevelUpCardsSetup
 {
     const string Art = "Assets/Game/UI/Sprites/Level up cards/", Sounds = "Assets/Game/Audio/Data/Level up cards/";
-    const string UI = "Assets/ThirdParty/Generic Fantasy UI/Fantasy_UI_Gen_", Lib = "Assets/ThirdParty/Sound Effects Library/";
+    const string Lib = "Assets/ThirdParty/Sound Effects Library/", Table = "Assets/Game/Cinematics/Intro/Tabletop/";
     const string PrefabPath = "Assets/Game/UI/Prefabs/Progression/Level up cards.prefab";
     const float CardW = 300f, CardH = 460f, Spacing = 330f;
     static readonly List<string> missing = new();
@@ -152,10 +152,12 @@ public static class LevelUpCardsSetup
             face = Sprite("Tarot face"), divider = Sprite("Tarot divider"), keyFrame = Sprite("Tarot key"),
             name = Rgb(226, 182, 92), ink = Rgb(232, 222, 204), gain = Rgb(242, 210, 130), faded = Rgb(160, 150, 160, .8f), glow = Rgb(255, 170, 70, .9f), dim = .62f,
             titleMaterial = outline, bodyMaterial = underlay,
-            deal = Sound("Tarot pop", .45f, .03f, UI + "Swap_High_01_mono.wav", UI + "Swap_High_02_mono.wav"),
-            hover = Sound("Tarot hover", .8f, .04f, UI + "Toggle_01A_mono.wav", UI + "Toggle_02A_mono.wav"),
-            pick = Sound("Tarot pick", 1f, 0f, UI + "Item_Upgrade_Success_stereo.wav"),
-            leave = Sound("Tarot leave", .5f, .04f, UI + "Transition_Swish_03_mono.wav"),
+            // Tabletop sounds, not chimes (the user, 2026-11-02): a sheet of paper picked up as each panel comes, a die's
+            // knock on the table on hover, a book shut on the pick, paper folding away as the others go.
+            deal = Sound("Tarot pop", 1f, .04f, Lib + "Items/Itm_Note_Up_01.wav", Lib + "Items/Itm_Note_Up_02.wav"),
+            hover = Sound("Tarot hover", .45f, .05f, Table + "Dice knock 1.wav", Table + "Dice knock 2.wav", Table + "Dice knock 3.wav"),
+            pick = Sound("Tarot pick", .8f, .03f, Lib + "Items/Itm_Book_Close_01.wav", Lib + "Items/Itm_Book_Close_02.wav"),
+            leave = Sound("Tarot leave", .9f, .04f, Lib + "Items/Itm_Note_Close_01.wav", Lib + "Items/Itm_Note_Close_02.wav"),
         };
     }
 

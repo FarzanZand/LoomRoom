@@ -254,7 +254,7 @@ public class LevelUpCardsUI : MonoBehaviour
     {
         if (phase != Phase.Choosing || i < 0 || i >= cards.Length) return;
         var p = Progress();
-        if (p == null || !p.SpendPoint(order[i])) return;
+        if (p == null || !p.SpendPoint(order[i], false)) return;
         picked = i;
         cards[i].transform.SetAsLastSibling();
         Play(art.pick, 1f);

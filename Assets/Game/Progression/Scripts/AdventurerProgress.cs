@@ -343,14 +343,15 @@ public class AdventurerProgress : MonoBehaviour
         return Score(attribute) - (track != null ? track.baseScore : 8);
     }
 
-    // Puts one of the level's points into an attribute; false when there is none to put.
-    public bool SpendPoint(MetaAttribute attribute)
+    // Puts one of the level's points into an attribute; false when there is none to put. The skill-up sound plays unless
+    // the caller has its own (the level-up panels).
+    public bool SpendPoint(MetaAttribute attribute, bool sound = true)
     {
         int i = (int)attribute;
         if (!InRun || UnspentPoints <= 0 || i < 0 || i >= AttributePoints.Length) return false;
         UnspentPoints--; AttributePoints[i]++;
         ApplyStats();
-        if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
+        if (sound && AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         return true;
     }
 

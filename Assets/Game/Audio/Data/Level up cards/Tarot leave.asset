@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Tarot leave
   m_EditorClassIdentifier: Assembly-CSharp::AudioData
   clips:
-  - {fileID: 8300000, guid: 9f966d00a5ca84d5a9472219a64a3a84, type: 3}
-  volume: 0.5
+  - {fileID: 8300000, guid: ad7f54112a8478841bfec66af2d66991, type: 3}
+  - {fileID: 8300000, guid: 0fab0a4fd0eb1894e841dd4fd2795160, type: 3}
+  volume: 0.9
   pitch: 1
   pitchVariance: 0.04
   minDistance: 1

@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: Tarot hover
   m_EditorClassIdentifier: Assembly-CSharp::AudioData
   clips:
-  - {fileID: 8300000, guid: 4e3169d1d33c141baa29abf58170df0b, type: 3}
-  - {fileID: 8300000, guid: 4431cacc493cb4e1e9a13dc1c8b62207, type: 3}
-  volume: 0.8
+  - {fileID: 8300000, guid: 86fb3724254ffa44f8bda6c38d457da9, type: 3}
+  - {fileID: 8300000, guid: 25f69a68ba5c53f4396af5a95dffe198, type: 3}
+  - {fileID: 8300000, guid: 6cce797ff44577a4485de32d4045286d, type: 3}
+  volume: 0.45
   pitch: 1
-  pitchVariance: 0.04
+  pitchVariance: 0.05
   minDistance: 1
   maxDistance: 500

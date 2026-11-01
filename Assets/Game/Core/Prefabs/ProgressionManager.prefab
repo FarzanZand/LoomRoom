@@ -347,7 +347,7 @@ MonoBehaviour:
     kind: 1
     skill: 0
     attribute: 2
-    icon: {fileID: 21300000, guid: a5558ebe72ce497498a1aace46268f90, type: 3}
+    icon: {fileID: 21300000, guid: 2e7caa46d7b68484eb13b551d0c01b1a, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
