@@ -10,8 +10,11 @@ using UnityEngine;
 // manager placed in the open scene, so editor tools can read and change its settings.
 public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
-    // Domain reload is off: each type's cached instance and failed-lookup flag are cleared at the start of every Play session.
-    static Singleton() { SingletonReset.Reset += () => { _instance = null; _lookupFailed = false; }; }
+    // Domain reload is off: each type's failed-lookup flag is cleared at the start of every Play session, and its cached
+    // instance only when that object is gone. Scene reload is off too, so the scene's managers live on into Play, and an
+    // [ExecuteAlways] one (UIManager) gets no second Awake to register again: clearing a live instance lost it until
+    // something read Instance, and HasInstance read false meanwhile.
+    static Singleton() { SingletonReset.Reset += () => { if (_instance == null) _instance = null; _lookupFailed = false; }; }
     private static T _instance;
     // Set when a Play-mode lookup finds nothing, so a missing manager is logged and searched
     // for once instead of on every access; cleared when an instance registers in Awake.
@@ -90,7 +93,7 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     }
 }
 
-// Clears every Singleton<T>'s static state at the start of a Play session (generic classes can't take
+// Resets every Singleton<T>'s static state at the start of a Play session (generic classes can't take
 // RuntimeInitializeOnLoadMethod themselves).
 static class SingletonReset
 {
