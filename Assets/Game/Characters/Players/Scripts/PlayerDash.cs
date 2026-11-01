@@ -5,11 +5,11 @@ using UnityEngine.Serialization;
 
 // The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres to the
 // side or back, the way the movement keys point at that moment (never forward; back when none are held), for a flat
-// stamina cost. It is fast at once and slows to a stop, so it reads as a burst, not a glide. It moves the player only:
+// stamina cost. An even glide that eases to a stop (the user's reference, 2026-11-01). It moves the player only:
 // hits still land while dashing. Feel: the view widens and eases back, leans into a sideways dash and nods up out of a
 // backward one, dips a little, all slight; the arms and held items trail behind and tip over against it, then spring back
-// (PlayerViewPresentation.Offset, Tilt); streaks can rush past (off by default); a whoosh on the push-off and a scuff as
-// it stops. Added to the table player by PlayerCombat.
+// (PlayerViewPresentation.Offset, Tilt); streaks can rush past (off by default); a whoosh on the push-off. Added to
+// the table player by PlayerCombat.
 // Before PlayerMotor, so the press moves the player the same frame.
 [DefaultExecutionOrder(-5)]
 public class PlayerDash : MonoBehaviour
@@ -171,7 +171,6 @@ public class PlayerDash : MonoBehaviour
         readyAt = Time.time + (t != null ? t.cooldown : .3f);
         // The feet catching: a small second dip as it stops.
         if (t != null) dipVelocity -= t.dip * t.kick * t.stopDip;
-        if (t != null && t.landAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(t.landAudio);
     }
 
     void Stop()
@@ -315,7 +314,4 @@ public class DashTuning
     [ShowIf(nameof(enabled)), FoldoutGroup("Sounds"), LabelText("Push-off sound"), InlineEditor(InlineEditorObjectFieldModes.Foldout),
      Tooltip("Played as the dash starts (Audio/Data/Dash: a gravel scuff, a low body whoosh, cloth, a thump; Tools/dash_sounds.py).")]
     public AudioData dashAudio;
-    [ShowIf(nameof(enabled)), FoldoutGroup("Sounds"), LabelText("Stop sound"), InlineEditor(InlineEditorObjectFieldModes.Foldout),
-     Tooltip("Played as the dash stops (Audio/Data/Dash stop: feet catching, a short slide, cloth settling).")]
-    public AudioData landAudio;
 }

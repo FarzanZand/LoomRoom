@@ -5,7 +5,6 @@
 
 Writes:
   Dash 1..3.wav       the push-off: a gravel scuff under the feet, a low body whoosh, cloth and gear moving, a soft thump
-  Dash stop 1..3.wav  the stop: feet catching on the floor, a short slide and cloth settling
 Needs ffmpeg on the path. 44.1 kHz mono, 16 bit.
 """
 import os
@@ -36,13 +35,6 @@ def main():
         x = mix(.7, (fade(push, .002, .15), 0, .8), (fade(air, .015, .3), .02, 1.0),
                 (fade(rustle, .01, .2), .01, .45), (thump(), 0, .35))
         write(os.path.join(out, f"Dash {i + 1}.wav"), fade(x, .001, .25), .85)
-
-    for i, (land, cloth) in enumerate([(1, 3), (2, 6), (1, 9)]):
-        catch = load(os.path.join(steps, f"Fst_Gravel_JumpDown_0{land}.wav"), 0, .35, rate=1.1 - .05 * i, lowpass=4500)
-        slide = load(os.path.join(steps, f"Fst_Gravel_Sneak_0{i + 1}.wav"), 0, .3, rate=.8, lowpass=3000)
-        settle = load(os.path.join(clothes, f"Clothes_0{cloth}.wav"), 0, .3, rate=1.1, lowpass=5000)
-        x = mix(.55, (fade(slide, .02, .15), 0, .5), (fade(catch, .002, .2), .04, 1.0), (fade(settle, .01, .2), .06, .3))
-        write(os.path.join(out, f"Dash stop {i + 1}.wav"), fade(x, .002, .2), .7)
 
 
 if __name__ == "__main__":

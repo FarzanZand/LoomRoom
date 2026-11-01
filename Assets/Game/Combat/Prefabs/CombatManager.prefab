@@ -329,7 +329,6 @@ MonoBehaviour:
     streaks: {fileID: 7664258301829467767, guid: dfa9ace42b2078d419918525be726088, type: 3}
     streakForward: 1.2
     dashAudio: {fileID: 11400000, guid: 2f2df9ad73a830c45a0ed6e3f2512076, type: 2}
-    landAudio: {fileID: 11400000, guid: 8215eff35043d0041bd28c040227505d, type: 2}
   landedCameraKick: 0.85
   hurtCameraKick: 2
   blockCameraKick: 0.8
