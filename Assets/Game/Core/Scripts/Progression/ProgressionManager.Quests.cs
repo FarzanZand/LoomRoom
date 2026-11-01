@@ -129,6 +129,7 @@ public partial class ProgressionManager
     void Start()
     {
         EnsureBuiltInQuests();
+        SpawnLevelUpCards();
         if (RunManager.HasInstance) RunManager.Instance.RunStarted += OfferQuestsForRun;
         if (InventoryManager.HasInstance) { InventoryManager.Instance.ItemPickedUp += ClassItemPickedUp; InventoryManager.Instance.ItemPickedUp += ShieldPickedUp; }
         if (PlayerManager.HasInstance)

@@ -45,6 +45,10 @@ public static class ItemEffectProcessor
         return false;
     }
 
+    // Constitution's third gain: a potion or food heals (1 + HealingItems) times more. Heals from anything else don't.
+    static float ItemHealing(EffectContext ctx, Character target) =>
+        ctx.Item != null && ctx.Item.itemType == ItemType.Consumable && target != null && target.Stats != null ? 1f + Mathf.Max(0f, target.Stats.GetFinal(StatType.HealingItems)) : 1f;
+
     public static void Apply(EffectEntry e, EffectContext ctx)
     {
         Character user   = ctx.User;
@@ -53,11 +57,11 @@ public static class ItemEffectProcessor
         switch (e.type)
         {
             case EffectType.FoodRegen:
-                target?.Stats?.EatFood(e.value,e.duration,ctx.Item);
+                target?.Stats?.EatFood(e.value * ItemHealing(ctx, target),e.duration,ctx.Item);
                 break;
 
             case EffectType.Heal:
-                target?.Stats?.Heal(e.value);
+                target?.Stats?.Heal(e.value * ItemHealing(ctx, target));
                 break;
 
             case EffectType.RestoreMana:

@@ -102,6 +102,7 @@ public partial class BossStageEncounter
             go.name = fight.backupDancer.name + " (backup)";
             if (dungeon.LevelData.ambushSpawnPuff != null) Destroy(Instantiate(dungeon.LevelData.ambushSpawnPuff, spot, Quaternion.identity, dungeon.transform), 4f);
             var brain = go.GetComponent<EnemyBrain>();
+            if (brain != null) brain.NoExperience = true;
             if (brain != null) StartCoroutine(StartDancer(brain, i));
         }
     }

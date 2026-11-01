@@ -51,6 +51,8 @@ public class EnemyBrain : MonoBehaviour
     public bool Wary { get; set; }
     // Entranced (a skeleton party's dancers): it notices nothing and stays where it is until Provoke.
     public bool Entranced { get; set; }
+    // A boss's minion (its backup dancers, an enemy its fight sets down): killing it gives no XP (RunManager).
+    public bool NoExperience { get; set; }
 
     // Out of a trance and after the player (or at least to where it happened).
     // Its next attack is this spell of its own (EnemyData.spells), ready or not: how a fight opens.

@@ -65,9 +65,9 @@ public partial class ProgressionManager
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("The score with nothing bought.")] public int baseScore = 8;
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to the attribute's first stat (AttributeStats): health, mana, damage or critical chance in percent.")] public float bonusPerPoint = 5;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat, if it has one: Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat (AttributeStats): Strength's shield bash damage, Dexterity's backstab damage in percent, Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("A third gain that isn't a stat: Intelligence's spell power in percent (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its third stat, in percent: Strength's heavy attack damage, Dexterity's attack speed, Constitution's healing from items; Intelligence's is its spell power, which is no stat (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string thirdUnit;
         [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true)] public List<Milestone> milestones = new();
     }
@@ -142,25 +142,31 @@ public partial class ProgressionManager
     // An attribute's score at the start of a run: the sheet's (its base outside the meta game, e.g. the intro's practice run).
     public int AttributeScore(MetaAttribute attribute) { var t = Track(attribute); return t == null ? 8 : MetaActive ? Value(t) : t.baseScore; }
 
-    // The stats an attribute's points above its base raise: the first by bonusPerPoint, the second by secondBonusPerPoint.
-    // The sheet, the character panel and the run's stats (AdventurerProgress.ApplyStats) all read these, so they match.
-    static readonly StatType[] ConstitutionStats = { StatType.MaxHealth, StatType.MaxStamina }, IntelligenceStats = { StatType.MaxMana, StatType.ManaRegen },
-        StrengthStats = { StatType.AttackDamage }, DexterityStats = { StatType.CriticalChance };
+    // The stats an attribute's points above its base raise: the first by bonusPerPoint, the second by secondBonusPerPoint,
+    // the third by thirdBonusPerPoint (Intelligence has no third stat: its third gain is spell power, read by
+    // AdventurerProgress.SpellPower). The sheet, the character panel, the level-up cards and the run's stats
+    // (AdventurerProgress.ApplyStats) all read these, so they match.
+    static readonly StatType[] ConstitutionStats = { StatType.MaxHealth, StatType.MaxStamina, StatType.HealingItems },
+        IntelligenceStats = { StatType.MaxMana, StatType.ManaRegen },
+        StrengthStats = { StatType.AttackDamage, StatType.ShieldBashDamage, StatType.HeavyDamage },
+        DexterityStats = { StatType.CriticalChance, StatType.BackstabDamage, StatType.AttackSpeed };
     public static StatType[] AttributeStats(MetaAttribute a) => a switch
     {
         MetaAttribute.Constitution => ConstitutionStats, MetaAttribute.Intelligence => IntelligenceStats, MetaAttribute.Dexterity => DexterityStats, _ => StrengthStats,
     };
-    // Critical chance and Strength's damage are written in percent on the track and kept as fractions in the stats;
-    // Strength's damage is a share of the player's damage (weapon included), not a flat amount.
-    public static float StatScale(MetaAttribute a, StatType stat) => stat == StatType.CriticalChance || a == MetaAttribute.Strength && stat == StatType.AttackDamage ? .01f : 1f;
-    public static ModifierType StatKind(MetaAttribute a, StatType stat) => a == MetaAttribute.Strength && stat == StatType.AttackDamage ? ModifierType.PercentAdd : ModifierType.Flat;
+    // Stats written in percent on the track and kept as fractions in the stats (attack speed is a multiplier on 1, so
+    // +3% is 0.03 added, as gear adds it).
+    public static float StatScale(MetaAttribute a, StatType stat) => stat is StatType.CriticalChance or StatType.BackstabDamage or StatType.AttackSpeed
+        or StatType.HeavyDamage or StatType.HealingItems ? .01f : 1f;
+    public static ModifierType StatKind(MetaAttribute a, StatType stat) => ModifierType.Flat;
     // What this many points above the base give, as the stats take it: (stat, amount, kind) per stat the attribute raises.
     public static IEnumerable<(StatType stat, float amount, ModifierType kind)> AttributeGains(MetaTrack t, float points)
     {
         if (t == null || points == 0) yield break;
         var stats = AttributeStats(t.attribute);
-        if (stats.Length > 0 && t.bonusPerPoint != 0) yield return (stats[0], points * t.bonusPerPoint * StatScale(t.attribute, stats[0]), StatKind(t.attribute, stats[0]));
-        if (stats.Length > 1 && t.secondBonusPerPoint != 0) yield return (stats[1], points * t.secondBonusPerPoint * StatScale(t.attribute, stats[1]), StatKind(t.attribute, stats[1]));
+        float[] perPoint = { t.bonusPerPoint, t.secondBonusPerPoint, t.thirdBonusPerPoint };
+        for (int i = 0; i < stats.Length; i++)
+            if (perPoint[i] != 0) yield return (stats[i], points * perPoint[i] * StatScale(t.attribute, stats[i]), StatKind(t.attribute, stats[i]));
     }
     // "+5 health, +5 stamina": what this many points give, in the track's own words. lineBreak puts each on its own line.
     public static string AttributeEffects(MetaTrack t, float points, bool lineBreak = false)
