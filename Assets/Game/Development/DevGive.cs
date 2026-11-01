@@ -144,6 +144,8 @@ public static class DevGive
             var spot = player.transform.position + forward * 3f + side * ((i - (count - 1) * .5f) * 1.3f);
             var facing = Quaternion.LookRotation(-forward);
             Character enemy = null;
+            // Co-op guests: the host makes it (enemies are the host's; one made here would be taken away).
+            if (Coop.IsGuest) { if (CoopWorld.DevSpawn(prefab, spot, -forward)) made++; continue; }
             if (dungeon != null) enemy = dungeon.SpawnAmbusher(prefab, spot, facing);
             else if (NavMesh.SamplePosition(spot, out var hit, 2f, NavMesh.AllAreas)) enemy = Object.Instantiate(prefab, hit.position, facing).GetComponent<Character>();
             if (enemy != null) made++;

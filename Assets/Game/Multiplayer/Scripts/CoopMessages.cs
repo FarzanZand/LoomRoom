@@ -92,11 +92,12 @@ public static class CoopMessages
 public struct SnapshotBatch : INetworkSerializable
 {
     public int floorKey;
+    public float time;                 // when the host took them (its Time.unscaledTime)
     public EnemySnapshot[] items;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
-        s.SerializeValue(ref floorKey);
+        s.SerializeValue(ref floorKey); s.SerializeValue(ref time);
         int count = items != null ? items.Length : 0;
         s.SerializeValue(ref count);
         if (s.IsReader) items = new EnemySnapshot[count];

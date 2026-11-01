@@ -85,6 +85,7 @@ public static class CoopWorld
         loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0; gathering = null;
         nextSnapshot = nextNoise = 0f;
+        hostClock = float.NaN;
     }
 
     public static int KeyFor(int runSeed, int floor) => unchecked(runSeed * 31 + floor * 7919 + 1);
@@ -419,7 +420,15 @@ public static class CoopWorld
     static int SnapshotBytes(EnemySnapshot s) => 40 + 5 * (s.states != null ? s.states.Length : 0) + 4 * (s.floats != null ? s.floats.Length : 0);
 
     static void Send(List<EnemySnapshot> batch) =>
-        CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
+        CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, time = Time.unscaledTime, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
+
+    // Guests: this clock less the host's, as the quickest snapshot showed it (a slower one only nudges it up, so a
+    // longer way round the network is followed slowly); NaN until the first.
+    static float hostClock = float.NaN;
+    // The moment of the host's clock the guests' enemies are shown at: a snapshot and a half behind the newest, so
+    // there is nearly always one on each side of it and they move at an even pace between them (CoopEnemyPuppet).
+    public static float HostTimeShown => Time.unscaledTime - (float.IsNaN(hostClock) ? 0f : hostClock) - 1.5f / Mathf.Max(1f, MultiplayerManager.Instance.snapshotRate);
+
 
     static EnemySnapshot Capture(ushort id, Character c)
     {
@@ -467,12 +476,15 @@ public static class CoopWorld
     public static void ReceiveSnapshots(ulong sender, SnapshotBatch batch)
     {
         if (!Coop.IsGuest || batch.floorKey != FloorKey || batch.items == null) return;
+        float sample = Time.unscaledTime - batch.time;
+        if (float.IsNaN(hostClock) || sample < hostClock || Mathf.Abs(sample - hostClock) > 2f) hostClock = sample;
+        else hostClock += (sample - hostClock) * .02f;
         foreach (var s in batch.items)
         {
             var c = Enemy(s.id);
             if (c == null || !c.IsAlive) continue;
             var puppet = c.GetComponent<CoopEnemyPuppet>();
-            if (puppet != null) puppet.Apply(s);
+            if (puppet != null) puppet.Apply(s, batch.time);
         }
     }
 
@@ -793,6 +805,17 @@ public static class CoopWorld
         return choices.Count > 0 ? choices[Random.Range(0, choices.Count)] : null;
     }
 
+    // A guest's spawn window (DevGive.Enemy): enemies are the host's, so the host makes it. False: not a guest, or the host
+    // doesn't know the enemy.
+    public static bool DevSpawn(GameObject prefab, Vector3 at, Vector3 facing)
+    {
+        if (!Coop.IsGuest || Floor == null || prefab == null || !prefab.TryGetComponent<Character>(out var c)) return false;
+        int index = MultiplayerManager.Instance.EnemyPrefabIndex(c);
+        if (index < 0) return false;
+        Send(new CoopEvent { kind = CoopEventKind.DevSpawn, amount = index, item = prefab.name, position = at, direction = facing });
+        return true;
+    }
+
     // Host: the stage fight's moments for the guests (BossStageEncounter).
     public static void BossStage(CoopEventKind kind, int target, int index, Vector3 position)
     {
@@ -828,7 +851,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: return;
         }
         history.Add(e);
     }
@@ -1024,6 +1047,13 @@ public static class CoopWorld
             case CoopEventKind.Noise:
                 if (Coop.IsHost) NoiseEvents.Report(e.position, e.amount / 100f, CharacterOf(e.slot));
                 break;
+            case CoopEventKind.DevSpawn:
+            {
+                // Made here, it comes to everyone as any enemy made mid-floor does.
+                var prefab = Coop.IsHost ? MultiplayerManager.Instance.EnemyPrefab(e.amount, e.item.ToString()) : null;
+                if (prefab != null && Floor != null) Floor.SpawnAmbusher(prefab, e.position, Quaternion.LookRotation(e.direction.sqrMagnitude > .001f ? e.direction : Vector3.forward));
+                break;
+            }
             case CoopEventKind.FeatureUsed:
             {
                 var features = Features();

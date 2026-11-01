@@ -289,6 +289,8 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     // What its legs walk at: its velocity without the slide a hit gives it (with the slide in, a pushed enemy's legs
     // stepped backwards at the push's speed, a moonwalk).
     public Vector3 LegVelocity => knockbackTimer > 0f ? Velocity - knockbackVelocity : Velocity;
+    // Co-op guests: a copy of the host's enemy (its motor off) moves at this pace (CoopEnemyPuppet), for its feet.
+    public void SetNetworkVelocity(Vector3 velocity) => Velocity = velocity;
 
     // A knockback is only a push: the agent keeps its path and the brain keeps deciding (and attacking)
     // while the enemy slides, so a hit jolts it without stopping it.

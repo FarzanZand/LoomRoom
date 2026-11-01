@@ -130,6 +130,7 @@ public enum CoopEventKind : byte
     WareBought = 30,    // shared loot: a ware was bought (id = the merchant on the floor, item = the ware's save id): gone for all
     BossIntroDone = 31, // a guest's boss intro (its lines and versus screen) is over: the host's fight waits for everyone's
     BossFightBegun = 32, // host: the stage fight's battle begins (every intro still showing is put away)
+    DevSpawn = 33,      // a guest's spawn window: the host makes the enemy (amount = MultiplayerManager.enemyPrefabs index, item = its name)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,
