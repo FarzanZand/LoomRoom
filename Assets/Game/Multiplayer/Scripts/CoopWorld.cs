@@ -397,16 +397,26 @@ public static class CoopWorld
         // (A time far ahead is left from an earlier Play in the editor, whose clock started again at 0.)
         if (Time.unscaledTime < nextSnapshot && nextSnapshot - Time.unscaledTime < 1f) return;
         nextSnapshot = Time.unscaledTime + 1f / Mathf.Max(1f, MultiplayerManager.Instance.snapshotRate);
+        // Batched by size, not count: an unreliable message holds at most 1264 bytes, and a humanoid's snapshot (its
+        // animator layers and float parameters) is well over 100, so twelve of them overflowed and the whole batch was
+        // dropped every time (those enemies never moved on the guests).
         var batch = new List<EnemySnapshot>(16);
+        int bytes = 0;
         for (int i = 0; i < enemies.Count; i++)
         {
             var c = enemies[i];
             if (c == null || !c.IsAlive || !c.gameObject.activeInHierarchy) continue;
-            batch.Add(Capture((ushort)i, c));
-            if (batch.Count >= 12) { Send(batch); batch.Clear(); }
+            var s = Capture((ushort)i, c);
+            int size = SnapshotBytes(s);
+            if (batch.Count > 0 && bytes + size > SnapshotBudget) { Send(batch); batch.Clear(); bytes = 0; }
+            batch.Add(s); bytes += size;
         }
         if (batch.Count > 0) Send(batch);
     }
+
+    // What a batch may hold, leaving room for the message's own header under the 1264-byte unreliable limit.
+    const int SnapshotBudget = 1000;
+    static int SnapshotBytes(EnemySnapshot s) => 40 + 5 * (s.states != null ? s.states.Length : 0) + 4 * (s.floats != null ? s.floats.Length : 0);
 
     static void Send(List<EnemySnapshot> batch) =>
         CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
