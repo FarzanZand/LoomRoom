@@ -63,6 +63,7 @@ public partial class BossStageEncounter : MonoBehaviour
     void OnDestroy()
     {
         StopDance();
+        DropShow();
         if (Current == this) Current = null;
         if (RunManager.HasInstance) RunManager.Instance.Revived -= OnRevived;
         if (boss != null) boss.Died -= OnBossDied;

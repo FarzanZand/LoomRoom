@@ -40,6 +40,10 @@ public class VersusScreenUI : MonoBehaviour
     [Tooltip("Each side's name and title: drawn over the bottom bar (the portraits draw under it), moving with its side.")]
     [SerializeField] RectTransform leftLabel, rightLabel;
     [SerializeField] Image playerPortrait;
+    [Tooltip("The frame the player's painting fills, the size and place of the boss's portrait mirrored (soft edges from its RectMask2D): the painting is fitted to its width, top first, and runs on behind the bottom bar.")]
+    [SerializeField] RectTransform playerFrame;
+    [Tooltip("Canvas units the painting's top sits below its frame's top (the eyes level with the boss's).")] public float paintingDrop = 80f;
+    [Min(.1f), Tooltip("The painting's width against its frame's (the figure as large as the boss's).")] public float paintingScale = 1.2f;
     [SerializeField] RawImage bossPortrait;
     [SerializeField] TMP_Text playerName, playerTitle, bossName, bossTitle;
 
@@ -91,6 +95,15 @@ public class VersusScreenUI : MonoBehaviour
         var cls = progress != null ? progress.selectedClass : null;
         playerPortrait.sprite = cls != null ? cls.portrait : null;
         playerPortrait.enabled = playerPortrait.sprite != null;
+        if (playerFrame != null && playerPortrait.sprite != null)
+        {
+            var art = playerPortrait.rectTransform;
+            var size = playerPortrait.sprite.rect.size;
+            float width = playerFrame.rect.width * paintingScale;
+            art.anchorMin = art.anchorMax = art.pivot = new Vector2(.5f, 1f);
+            art.sizeDelta = new Vector2(width, width * size.y / Mathf.Max(1f, size.x));
+            art.anchoredPosition = new Vector2(0f, -paintingDrop);
+        }
         var save = player != null ? player.GetComponent<AdventureSave>() : null;
         string hero = save != null ? save.Saved.characterName : "";
         playerName.text = (string.IsNullOrWhiteSpace(hero) ? "You" : hero).ToUpperInvariant();

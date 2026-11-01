@@ -181,12 +181,11 @@ public static class PortraitDialogueSetup
     // the middle with the VS medallion on it; names letter-spaced in the bottom bar under each side.
     static string BuildVersus(RectTransform parent)
     {
-        var glowSprite = ImportSprite(Sprites + "Soft glow.png", 0, smooth: true);
+        var auraSprite = ImportSprite(Sprites + "Versus aura.png", 0, smooth: true);
         var medalSprite = ImportSprite(Sprites + "Medallion.png", 0, smooth: true);
         var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
         var outline = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
         var small = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
-        var soft = SoftEdgeMaterial();
 
         var root = new GameObject("Versus screen", typeof(RectTransform), typeof(CanvasGroup), typeof(VersusScreenUI));
         root.layer = parent.gameObject.layer;
@@ -206,26 +205,36 @@ public static class PortraitDialogueSetup
             bar.pivot = new Vector2(.5f, top ? 1f : 0f); bar.sizeDelta = new Vector2(120f, 165f); bar.anchoredPosition = Vector2.zero;
             return bar;
         }
-        RectTransform Side(string name, bool left, Color glowColour, out Graphic art, out RectTransform label, out TextMeshProUGUI who, out TextMeshProUGUI what)
+        RectTransform Side(string name, bool left, Color glowColour, out Graphic art, out RectTransform frame, out RectTransform label, out TextMeshProUGUI who, out TextMeshProUGUI what)
         {
             var side = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
             side.gameObject.layer = root.layer; side.SetParent(shake, false);
             side.anchorMin = side.anchorMax = side.pivot = new Vector2(.5f, .5f); side.sizeDelta = new Vector2(700f, 1080f);
-            side.anchoredPosition = new Vector2(left ? -500f : 520f, 0f);
-            var glow = Picture("Glow", side, glowSprite, glowColour, new Vector2(left ? 1100f : 1180f, 1000f), Vector2.zero);
-            glow.anchorMin = glow.anchorMax = glow.pivot = new Vector2(.5f, .5f); glow.anchoredPosition = new Vector2(0f, 20f);
+            // The two sides mirror each other: as far from the middle, the same glow, the portraits the same size and place.
+            side.anchoredPosition = new Vector2(left ? -510f : 510f, 0f);
+            // An aura rising behind the figure from the foot of the screen (Tools/dialogue_box_sprites.py), not a round glow.
+            var glow = Picture("Glow", side, auraSprite, glowColour, new Vector2(900f, 1200f), Vector2.zero);
+            glow.anchorMin = glow.anchorMax = new Vector2(.5f, .5f); glow.pivot = new Vector2(.5f, 0f); glow.anchoredPosition = new Vector2(0f, -540f);
+            frame = null;
             if (left)
             {
+                // The painting in a frame with the boss portrait's width and top; its sides and top melt into the glow
+                // (UI Edge Fade) and its foot runs on behind the bottom bar.
+                frame = new GameObject("Portrait frame", typeof(RectTransform)).GetComponent<RectTransform>();
+                frame.gameObject.layer = root.layer; frame.SetParent(side, false);
+                frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(.5f, .5f);
+                frame.sizeDelta = new Vector2(700f, 700f); frame.anchoredPosition = new Vector2(0f, -40f);
                 var image = new GameObject("Portrait", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-                image.preserveAspect = true; image.material = soft; art = image;
+                image.material = EdgeFadeMaterial(); art = image;
             }
             else art = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
             art.gameObject.layer = root.layer; art.raycastTarget = false;
-            var artRect = art.rectTransform; artRect.SetParent(side, false);
-            artRect.anchorMin = artRect.anchorMax = artRect.pivot = new Vector2(.5f, .5f);
-            artRect.sizeDelta = left ? new Vector2(470f, 560f) : new Vector2(700f, 700f);
-            // The boss's render ends in a hard edge at its foot: that edge sits behind the bottom bar.
-            artRect.anchoredPosition = new Vector2(0f, left ? 20f : -40f);
+            var artRect = art.rectTransform; artRect.SetParent(left ? frame : side, false);
+            // The painting is fitted to the frame's width, top first (VersusScreenUI.Play); the boss's render ends in a
+            // hard edge at its foot, which sits behind the bottom bar.
+            artRect.anchorMin = artRect.anchorMax = artRect.pivot = left ? new Vector2(.5f, 1f) : new Vector2(.5f, .5f);
+            artRect.sizeDelta = new Vector2(700f, left ? 933f : 700f);
+            artRect.anchoredPosition = left ? Vector2.zero : new Vector2(0f, -40f);
             // The name and title are their own layer, drawn over the bars (VersusScreenUI moves it with the side).
             label = new GameObject(name + " label", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
             label.gameObject.layer = root.layer; label.SetParent(shake, false);
@@ -241,8 +250,8 @@ public static class PortraitDialogueSetup
             what.rectTransform.sizeDelta = new Vector2(1000f, 44f); what.rectTransform.anchoredPosition = new Vector2(0f, -490f);
             return side;
         }
-        var leftSide = Side("Player side", true, new Color(.25f, .45f, 1f, .5f), out var playerArt, out var leftLabel, out var playerName, out var playerTitle);
-        var rightSide = Side("Boss side", false, new Color(.95f, .15f, .15f, .52f), out var bossArt, out var rightLabel, out var bossName, out var bossTitle);
+        var leftSide = Side("Player side", true, new Color(.25f, .45f, 1f, .5f), out var playerArt, out var playerFrame, out var leftLabel, out var playerName, out var playerTitle);
+        var rightSide = Side("Boss side", false, new Color(.95f, .15f, .15f, .52f), out var bossArt, out _, out var rightLabel, out var bossName, out var bossTitle);
         // In drawing order: the sides (glow, portrait), the bars over them, the names over the bars.
         var topBar = Bar("Top bar", true);
         var bottomBar = Bar("Bottom bar", false);
@@ -270,6 +279,7 @@ public static class PortraitDialogueSetup
         so.FindProperty("line").objectReferenceValue = line;
         so.FindProperty("medallion").objectReferenceValue = medal;
         so.FindProperty("playerPortrait").objectReferenceValue = playerArt;
+        so.FindProperty("playerFrame").objectReferenceValue = playerFrame;
         so.FindProperty("bossPortrait").objectReferenceValue = bossArt;
         so.FindProperty("playerName").objectReferenceValue = playerName;
         so.FindProperty("playerTitle").objectReferenceValue = playerTitle;
@@ -279,12 +289,12 @@ public static class PortraitDialogueSetup
         return "the versus screen";
     }
 
-    static Material SoftEdgeMaterial()
+    static Material EdgeFadeMaterial()
     {
-        const string path = "Assets/Game/UI/Shaders/UI Soft Edge.mat";
+        const string path = "Assets/Game/UI/Shaders/UI Edge Fade.mat";
         var material = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (material != null) return material;
-        material = new Material(Shader.Find("LoomRoom/UI Soft Edge"));
+        material = new Material(Shader.Find("LoomRoom/UI Edge Fade"));
         AssetDatabase.CreateAsset(material, path);
         return material;
     }

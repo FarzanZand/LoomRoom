@@ -166,6 +166,13 @@ public partial class BossStageEncounter
         }
     }
 
+    // The floor is going: the crew's dance graphs go with it (a lost fight leaves them dancing for a revive).
+    void DropShow()
+    {
+        foreach (var (_, graph) in backup) if (graph.IsValid()) graph.Destroy();
+        backup.Clear();
+    }
+
     // The party is over (the fight won or lost): the floor and the ball go dark, and backup still standing when the boss
     // falls falls with it.
     void ShowEnd(bool won)
