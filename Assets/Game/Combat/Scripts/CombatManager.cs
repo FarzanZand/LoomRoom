@@ -258,6 +258,9 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
     [InlineEditor(InlineEditorObjectFieldModes.Boxed), Tooltip("The shield bash's tuning, effects and sounds: Blocking's ability asset (Characters/Skills/Blocking/Shield bash).")]
     public ShieldBashAbility shieldBash;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
+    [Tooltip("Blocking's Deflect ability (Characters/Skills/Blocking/Deflect, Blocking 25): once it is unlocked a raised shield sends arrows and spells back.")]
+    public SkillAbility deflect;
 
     // ── Player: Dash ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Dash"), HideLabel, InlineProperty]

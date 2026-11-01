@@ -90,7 +90,7 @@ public static class LevelUpCardsSetup
             parts.SetParent(b, false); parts.sizeDelta = new Vector2(CardW, CardH);
             var partsGroup = parts.GetComponent<CanvasGroup>(); partsGroup.blocksRaycasts = false;
             card.faceParts = partsGroup;
-            card.icon = Box("Icon", parts, null, new Vector2(84f, 84f), Color.white, false);
+            card.icon = Box("Icon", parts, null, new Vector2(96f, 96f), Color.white, false);   // 32 px icons at exactly 3x
             card.icon.rectTransform.anchoredPosition = new Vector2(0f, 138f);
             card.icon.preserveAspect = true;
             card.attributeName = Text("Name", parts, bold, 34f, Color.white, null, new Vector2(0f, 70f), "STRENGTH", 260f);

@@ -87,7 +87,8 @@ public class AdventurerProgress : MonoBehaviour
     // Blocking's second bonus: less of a blocked hit gets through.
     public float BlockedDamageMultiplier => Mathf.Clamp01(1 - Extra(AdventureSkill.Blocking));
     // Sprint (Athletics 25): this run can sprint, though the table player can't otherwise.
-    public bool SprintUnlocked => FirstMilestone(AdventureSkill.Athletics);
+    // Sprint is Athletics' second milestone (25); its first (15) is the dash (CombatManager.dash.ability).
+    public bool SprintUnlocked => ProgressionManager.HasInstance && ProgressionManager.Instance.Unlocked(AdventureSkill.Athletics, 1, Rank(AdventureSkill.Athletics));
     const float RiposteWindow = 1.5f;
     float riposteUsed = -1;
     // Legendary Blocking: a successful block takes no damage.

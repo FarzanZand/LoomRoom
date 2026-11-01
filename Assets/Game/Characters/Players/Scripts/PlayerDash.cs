@@ -42,6 +42,7 @@ public class PlayerDash : MonoBehaviour
     {
         player = GetComponent<Player>();
         motor = GetComponent<PlayerMotor>();
+        progress = GetComponent<AdventurerProgress>();
         view = GetComponentInChildren<PlayerViewPresentation>(true);
     }
 
@@ -82,7 +83,7 @@ public class PlayerDash : MonoBehaviour
     public bool TryStart(Vector2 move)
     {
         var t = Tuning;
-        if (t == null || !t.enabled || dashing || Time.time < readyAt || player == null || !player.IsActive || !player.IsAlive) return false;
+        if (t == null || !t.enabled || !Learned || dashing || Time.time < readyAt || player == null || !player.IsActive || !player.IsAlive) return false;
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return false;
         if (player.Ghost || motor == null || (t.groundedOnly && !motor.IsGrounded)) return false;
         var bash = player.GetComponent<ShieldBash>();
@@ -125,15 +126,35 @@ public class PlayerDash : MonoBehaviour
         if (t.noiseRadius > 0f) NoiseEvents.Report(transform.position, t.noiseRadius, player);
         if (t.dashAudio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(t.dashAudio);
         Dashed?.Invoke();
+        if (ProgressionManager.HasInstance) ProgressionManager.Instance.CompleteQuest(ProgressionManager.DashQuest);
         return true;
     }
 
     public event Action Dashed;
 
+    // Learned: the dash's milestone (Athletics 15, Tuning.ability) is unlocked for this run or mounted on the wall; an
+    // ability no milestone points at is there from the start. Asked twice a second, not every frame.
+    AdventurerProgress progress;
+    bool learned = true;
+    float learnedCheckedAt = -10f;
+    public bool Learned
+    {
+        get
+        {
+            if (Time.unscaledTime - learnedCheckedAt > .5f)
+            {
+                learnedCheckedAt = Time.unscaledTime;
+                var t = Tuning;
+                learned = t == null || !ProgressionManager.HasInstance || ProgressionManager.Instance.Unlocked(t.ability, progress);
+            }
+            return learned;
+        }
+    }
+
     void Update()
     {
         var t = Tuning;
-        if (motor != null) motor.SprintHoldOnly = t != null && t.enabled;
+        if (motor != null) motor.SprintHoldOnly = t != null && t.enabled && Learned;
         if ((dashing || queued) && (t == null || !player.IsActive || !player.IsAlive || (GameManager.HasInstance && !GameManager.Instance.GameplayActive)))
         {
             Stop();
@@ -264,7 +285,9 @@ public class DashTuning
 {
     [Tooltip("Sprint (Shift) pressed dashes the table player to the side or back, the way the movement keys point (never forward; back when none are held). Off: Shift only sprints, as before.")]
     public bool enabled = true;
-    [ShowIf(nameof(enabled)), Min(0f), Tooltip("Stamina one dash costs (every class starts with 40, so two from full). Refused when there isn't that much left.")]
+    [ShowIf(nameof(enabled)), Tooltip("The ability that unlocks it (Characters/Skills/Athletics/Dash, Athletics' first milestone, 15): no dash until it is unlocked for the run or mounted on the trophy wall. Empty: always there.")]
+    public SkillAbility ability;
+    [ShowIf(nameof(enabled)), Min(0f), Tooltip("Stamina one dash costs (every class starts with 20, so two from full). Refused when there isn't that much left.")]
     public float staminaCost = 10f;
     [ShowIf(nameof(enabled)), Min(.5f), FormerlySerializedAs("distance"), Tooltip("Metres a dash straight to the side covers when nothing is in the way.")]
     public float sideDistance = 2.6f;

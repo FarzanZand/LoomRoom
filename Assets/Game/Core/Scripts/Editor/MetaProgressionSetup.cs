@@ -245,7 +245,7 @@ public static partial class MetaProgressionSetup
     }
 
     static readonly string[] MetaFields = { "spoils", "enemySpoilsChance", "chestSpoilsChance", "healthPerSpoil", "bossSpoils", "firstPrice", "priceMultiplier", "tracks",
-        "lessonIntro", "lessonBlockingFirst", "lessonTopUp", "handOverOne", "handOverMany", "shieldBashMounted", "lessonDelay" };
+        "lessonIntro", "lessonSkillFirst", "lessonTopUp", "handOverOne", "handOverMany", "lessonTrophyMounted", "lessonDelay" };
 
     static CharacterData FindCharacterData(string displayName)
     {

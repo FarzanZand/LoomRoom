@@ -303,8 +303,10 @@ MonoBehaviour:
   blockStaminaCost: 10
   shieldStaminaPerSecond: 4
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
+  deflect: {fileID: 11400000, guid: e3f721e348b7cef468084c9a4d1881ce, type: 2}
   dash:
     enabled: 1
+    ability: {fileID: 11400000, guid: b9a1ebfdec0f0fb4384237b17d454fde, type: 2}
     staminaCost: 10
     sideDistance: 2.6
     backDistance: 1.82

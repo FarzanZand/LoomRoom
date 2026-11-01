@@ -153,8 +153,10 @@ public static partial class MetaProgressionSetup
             var crest = Img($"{attributes[i]} crest", p, new Vector2(-735, y), new Vector2(64, 72), MetaSprite("Crest"), Color.white);
             row.value = Text("Score", crest.transform, new Vector2(0, 6), new Vector2(64, 40), "8", bold, 32, Ink, TextAlignmentOptions.Center);
             row.unit = Text($"{attributes[i]} bonus", p, new Vector2(-520, y - 50), new Vector2(304, 24), "+0", body, 20, Faint, TextAlignmentOptions.Left);   // filled at runtime
+            FitGains(row.unit);
             row.icon = crest;
             var attrIcon = Img($"{attributes[i]} icon", p, new Vector2(-670, y + 18), new Vector2(32, 32), AttributeIcon(attributes[i]), Color.white);
+            AttributeIconFromTrack(attrIcon, attributes[i]);
             attrIcon.preserveAspect = true;
             row.title = Text($"{attributes[i]} name", p, new Vector2(-532, y + 18), new Vector2(230, 36), char.ToUpperInvariant(attributes[i][0]) + attributes[i].Substring(1), bold, 28, Ink);
             row.title.raycastTarget = true;
@@ -190,27 +192,7 @@ public static partial class MetaProgressionSetup
             row.title.raycastTarget = true;
             Text($"{id} level label", p, new Vector2(-152, y - 22), new Vector2(170, 28), "LEVEL", body, 20, Faint);
             row.value = Text($"{id} level", p, new Vector2(-48, y - 21), new Vector2(80, 30), "10", bold, 28, Ink);
-            int firstAt = order[i] == AdventureSkill.Blocking ? 15 : 25;
-            var bubbles = new List<Image>(); var icons = new List<Image>(); var marks = new List<TMP_Text>();
-            float x = 60;
-            for (int k = 0; k < 10; k++)
-            {
-                int value = (k + 1) * 5;
-                bool milestone = value == firstAt || value == 50;
-                float size = milestone ? 46 : 30;
-                var b = Img($"{id} level {k + 1}", p, new Vector2(x + size / 2, y), new Vector2(size, size), MetaSprite("Bubble outline"), Ink, Image.Type.Simple, true);
-                bubbles.Add(b);
-                if (milestone)
-                {
-                    var mark = Text("Mark", b.transform, new Vector2(0, 1), new Vector2(size, size), "?", bold, 26, Ink, TextAlignmentOptions.Center);
-                    var icon = Img("Unlock icon", b.transform, Vector2.zero, new Vector2(30, 30), null, Color.white);
-                    icon.preserveAspect = true; icon.enabled = false;
-                    Text("Value", b.transform, new Vector2(0, size / 2 + 12), new Vector2(60, 22), value.ToString(), bold, 18, Ink, TextAlignmentOptions.Center);
-                    marks.Add(mark); icons.Add(icon);
-                }
-                x += size + 12;
-            }
-            row.bubbles = bubbles.ToArray(); row.milestoneIcons = icons.ToArray(); row.milestoneMarks = marks.ToArray();
+            SkillBubbles(p, id, y, order[i], row);
             row.buy = PenButton($"{id} buy", p, new Vector2(685, y), new Vector2(150, 48), "Train 10", 28, out row.buyLabel);
             if (i < order.Length - 1) Img($"{id} rule", p, new Vector2(230, y - 43), new Vector2(1060, 2), null, new Color(Ink.r, Ink.g, Ink.b, .12f));
             rows.Add(row);
@@ -266,6 +248,89 @@ public static partial class MetaProgressionSetup
         BuildKeyItems(canvas);
         EditorSceneManager.MarkSceneDirty(holder.gameObject.scene);
         Debug.Log("Meta: character sheet built under UI/Canvas");
+    }
+
+    // A skill row's ten bubbles, the milestones' larger with a mark, an icon and their value over them, at the values the
+    // manager's milestones say (Athletics 15, 25, 50; Blocking 25, 50; the others 25, 50).
+    static void SkillBubbles(Transform p, string id, float y, AdventureSkill skill, CharacterSheetUI.Row row)
+    {
+        var meta = Object.FindAnyObjectByType<ProgressionManager>(FindObjectsInactive.Include);
+        var track = meta != null ? meta.Track(skill) : null;
+        var values = new HashSet<int>();
+        if (track != null && track.milestones != null) foreach (var m in track.milestones) if (m != null) values.Add(m.value);
+        if (values.Count == 0) { values.Add(25); values.Add(50); }
+        var bold = Font("PixelOperator-Bold");
+        var bubbles = new List<Image>(); var icons = new List<Image>(); var marks = new List<TMP_Text>();
+        float x = 60;
+        for (int k = 0; k < 10; k++)
+        {
+            int value = (k + 1) * 5;
+            bool milestone = values.Contains(value);
+            float size = milestone ? 46 : 30;
+            var b = Img($"{id} level {k + 1}", p, new Vector2(x + size / 2, y), new Vector2(size, size), MetaSprite("Bubble outline"), Ink, Image.Type.Simple, true);
+            bubbles.Add(b);
+            if (milestone)
+            {
+                var mark = Text("Mark", b.transform, new Vector2(0, 1), new Vector2(size, size), "?", bold, 26, Ink, TextAlignmentOptions.Center);
+                var icon = Img("Unlock icon", b.transform, Vector2.zero, new Vector2(30, 30), null, Color.white);
+                icon.preserveAspect = true; icon.enabled = false;
+                Text("Value", b.transform, new Vector2(0, size / 2 + 12), new Vector2(60, 22), value.ToString(), bold, 18, Ink, TextAlignmentOptions.Center);
+                marks.Add(mark); icons.Add(icon);
+            }
+            x += size + 12;
+        }
+        row.bubbles = bubbles.ToArray(); row.milestoneIcons = icons.ToArray(); row.milestoneMarks = marks.ToArray();
+    }
+
+    // The attribute's icon on the sheet is its track's (the user's pixel item icons, 2026-11-02), else the drawn one.
+    static void AttributeIconFromTrack(Image image, string id)
+    {
+        var meta = Object.FindAnyObjectByType<ProgressionManager>(FindObjectsInactive.Include);
+        var track = meta != null ? meta.tracks.Find(t => t != null && t.id == id) : null;
+        if (track != null && track.icon != null) image.sprite = track.icon;
+    }
+
+    // Three gains on one line under the bubbles: shrunk to fit its width.
+    static void FitGains(TMP_Text unit)
+    {
+        unit.enableAutoSizing = true; unit.fontSizeMin = 12; unit.fontSizeMax = 20;
+        unit.textWrappingMode = TextWrappingModes.NoWrap; unit.overflowMode = TextOverflowModes.Overflow;
+    }
+
+    // Brings the open scene's sheet up to the manager's milestones and attribute icons without rebuilding the rest (its
+    // hand-set references stay): each skill row's bubbles are made again, each attribute's icon and gain line set.
+    public static string RefreshCharacterSheet()
+    {
+        var ui = Object.FindAnyObjectByType<CharacterSheetUI>(FindObjectsInactive.Include);
+        if (ui == null) return "no character sheet in the open scene";
+        var field = typeof(CharacterSheetUI).GetField("rows", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var rows = (List<CharacterSheetUI.Row>)field.GetValue(ui);
+        Undo.RegisterFullObjectHierarchyUndo(ui.gameObject, "Refresh character sheet");
+        int skills = 0, attributes = 0;
+        foreach (var row in rows)
+        {
+            if (row == null || row.bubbles == null || row.bubbles.Length == 0 || row.bubbles[0] == null) continue;
+            var p = row.bubbles[0].transform.parent;
+            if (System.Enum.TryParse<AdventureSkill>(row.trackId, true, out var skill) && row.bubbles.Length == 10)
+            {
+                float y = ((RectTransform)row.bubbles[0].transform).anchoredPosition.y;
+                int sibling = row.bubbles[0].transform.GetSiblingIndex();
+                foreach (var b in row.bubbles) if (b != null) Object.DestroyImmediate(b.gameObject);
+                SkillBubbles(p, row.trackId, y, skill, row);
+                for (int k = 0; k < row.bubbles.Length; k++) row.bubbles[k].transform.SetSiblingIndex(sibling + k);
+                skills++;
+            }
+            else if (row.unit != null)
+            {
+                FitGains(row.unit);
+                var icon = p.Find($"{row.trackId} icon");
+                if (icon != null && icon.TryGetComponent<Image>(out var image)) AttributeIconFromTrack(image, row.trackId);
+                attributes++;
+            }
+        }
+        EditorUtility.SetDirty(ui);
+        EditorSceneManager.MarkSceneDirty(ui.gameObject.scene);
+        return $"sheet refreshed: {skills} skill rows, {attributes} attribute rows";
     }
 
     static Sprite AttributeIcon(string id) => SheetIcon(AssetDatabase.LoadAssetAtPath<Sprite>(SkillIcons + (id == "constitution" ? "102_Passive_Male_Vitality.png" : id == "intelligence" ? "157_Mastery_Staff.png" : id == "dexterity" ? "139_Critical_Male_Sword.png" : "134_Strength.png")));

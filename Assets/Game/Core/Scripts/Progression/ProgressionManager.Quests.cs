@@ -6,7 +6,7 @@ using UnityEngine;
 
 // Quests: short tasks the quest log shows (UI/Scripts/HUD/QuestLogUI.cs, under the HUD) until they are done. A quest is the
 // flag "quest.<id>" (0 not given, 1 open, 2 done), so AdventureSave keeps it with the other flags and the log follows
-// FlagChanged. The first one: once Deflect (Blocking's first milestone) is unlocked, the next run asks the player to send a shot back, and the first deflect
+// FlagChanged. The first one: once Deflect (Blocking 25) is unlocked, the next run asks the player to send a shot back, and the first deflect
 // completes it (ShieldBash). Before that, after the first death the DM's word about the sheet gives "look at the sheet",
 // done when the sheet is opened (CharacterSheetTable).
 public partial class ProgressionManager
@@ -18,12 +18,12 @@ public partial class ProgressionManager
         [TextArea, Tooltip("What the log says. {attack} and {block} are replaced by the player's own keys.")] public string text;
     }
 
-    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", SheetQuest = "checkSheet",
+    public const string QuestPrefix = "quest.", ShieldBashQuest = "shieldBash", DeflectQuest = "deflect", DashQuest = "dash", SheetQuest = "checkSheet",
         SpendQuest = "spendSpoils", TableQuest = "backToTable", TrophyQuest = "hangTrophies", InventoryQuest = "openInventory",
         RumourQuest = "buyRumour";
     public const string InventoryOpenedFlag = "story.inventoryOpened";
     // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
-    public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == RumourQuest;
+    public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == DashQuest || id == RumourQuest;
     // Quests done in the room (the sheet, the trophy wall, the table, the symbol puzzle): the log leaves them out while
     // the table player is in a dungeon, where they can't be done.
     public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest || id == DiceQuest;
@@ -37,8 +37,9 @@ public partial class ProgressionManager
         new Quest { id = SheetQuest, text = "Look at the character sheet by the wall." },
         new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
         new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
+        new Quest { id = DashQuest, text = "Dash: hold a direction, press {sprint}." },
         new Quest { id = InventoryQuest, text = "Open your inventory ({inventory} or Tab)." },   // Tab is the fixed second binding
-        new Quest { id = SpendQuest, text = "Train Blocking on the character sheet." },
+        new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
         new Quest { id = TileQuest, text = "Put the missing tile in the symbol puzzle." },
@@ -53,7 +54,7 @@ public partial class ProgressionManager
     }
 
     // The room's quests after a run, from the lesson's flags: look at the sheet (once the first run has ended), spend
-    // the spoils there (done with the first Blocking level), then back to the table (done when a run starts); and hang
+    // the spoils there (done with the lesson skill's first milestone), then back to the table (done when a run starts); and hang
     // the trophies whenever some are carried (done when none are). The trophy quest can come back after later buys.
     void UpdateSheetQuest()
     {
@@ -63,8 +64,8 @@ public partial class ProgressionManager
         else if (sheet == 1 && opened) CompleteQuest(SheetQuest);
 
         int spend = QuestState(SpendQuest);
-        if (spend == 0 && opened && HasFlag(LedgerIntroFlag) && !BlockingTaught) GiveQuest(SpendQuest);
-        else if (spend == 1 && BlockingTaught) CompleteQuest(SpendQuest);
+        if (spend == 0 && opened && HasFlag(LedgerIntroFlag) && !LessonTaught) GiveQuest(SpendQuest);
+        else if (spend == 1 && LessonTaught) CompleteQuest(SpendQuest);
 
         if (Time.frameCount % 15 != 0) return;   // the trophy count builds a list: a few times a second is plenty
         bool carrying = TrophyCount(TrophyState.Carried) > 0;
@@ -75,9 +76,9 @@ public partial class ProgressionManager
         if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0 && !carrying && TrophyCount(TrophyState.Earned) == 0) GiveQuest(TableQuest);
     }
 
-    // The lesson after the first run: no new run until Blocking is trained at the sheet, from the moment the run ends
+    // The lesson after the first run: no new run until the lesson skill (Athletics) is trained at the sheet, from the moment the run ends
     // (the sheet quest, before the sheet is even opened) until the spend-spoils quest is done (TableManager).
-    public bool LessonHoldsRuns => HasFlag(LedgerIntroFlag) && !BlockingTaught;
+    public bool LessonHoldsRuns => HasFlag(LedgerIntroFlag) && !LessonTaught;
 
     // Each quest's flag key is made once: QuestState is read every frame (Update, the sheet's table).
     static readonly Dictionary<string, string> questFlags = new();
@@ -120,6 +121,7 @@ public partial class ProgressionManager
             if (string.Equals(inventory, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", inventory);
             text = text.Replace("{inventory}", inventory);
             text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
+            text = text.Replace("{sprint}", KeyName(InputManager.Instance.BindingDisplay("Sprint")));
         }
         return text;
     }
@@ -175,6 +177,15 @@ public partial class ProgressionManager
     {
         yield return null;
         OfferShieldQuests();
+        OfferDashQuest();
+    }
+
+    // Once the dash is unlocked (Athletics' first milestone, the lesson's), runs say how until the first dash.
+    void OfferDashQuest()
+    {
+        if (!MetaActive || QuestState(DashQuest) != 0 || !CombatManager.HasInstance) return;
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (table != null && Unlocked(CombatManager.Instance.dash.ability, table.GetComponent<AdventurerProgress>())) GiveQuest(DashQuest);
     }
 
     // The shield quests (the shield bash guide, from the first run, the intro's included, until the first bash; the
@@ -193,7 +204,7 @@ public partial class ProgressionManager
         if (QuestState(ShieldBashQuest) == 0) GiveQuest(ShieldBashQuest);
         if (!MetaActive || QuestState(DeflectQuest) != 0) return;
         var progress = table.GetComponent<AdventurerProgress>();
-        if (Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) GiveQuest(DeflectQuest);
+        if (Unlocked(CombatManager.HasInstance ? CombatManager.Instance.deflect : null, progress)) GiveQuest(DeflectQuest);
     }
 
     // A shield in the bag or on the hotbar (hand items stay on the hotbar while held).
