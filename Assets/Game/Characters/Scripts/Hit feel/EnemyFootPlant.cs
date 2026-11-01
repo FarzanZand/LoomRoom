@@ -34,6 +34,8 @@ public class EnemyFootPlant : MonoBehaviour
     // (on the ground) and let go above (clearly lifted: the heel rises first while the toes still scrape); metres a pinned
     // foot may fall behind before it lets go anyway; seconds the catch-up takes, in the air.
     const float WalkingAbove = .12f, ContactOn = .02f, ContactOff = .06f, StanceReach = .3f, CatchUp = .25f;
+    // Metres from the body past which a held or stepping foot is lost (left behind by a jump of the body), let go at once.
+    const float LostReach = 2.5f;
 
     enum State { Free, Held, Stepping, Letting }
 
@@ -56,6 +58,7 @@ public class EnemyFootPlant : MonoBehaviour
     int guardLayer = -1, readFrame = -1;
     float lastGuard, lowestAnkle = float.MaxValue;
     bool locked, plantPending;
+    Vector3 lastRoot;
     readonly Foot left = new Foot { goal = AvatarIKGoal.LeftFoot }, right = new Foot { goal = AvatarIKGoal.RightFoot };
 
     static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
@@ -76,6 +79,15 @@ public class EnemyFootPlant : MonoBehaviour
         var tuning = Tuning;
         bool alive = character == null || character.IsAlive;
         bool on = tuning != null && tuning.plantFeetInKnockback && alive;
+        // A jump of the body (a warp, a co-op guest's copy put where the host has it): held feet would be left behind
+        // on the old spot, the legs stretched back to it, so everything lets go, and the feet of the frame before (the
+        // next lock plants there) are forgotten.
+        var root = motor != null ? motor.transform.position : transform.position;
+        if ((root - lastRoot).sqrMagnitude > 1f) { Free(left); Free(right); locked = false; plantPending = false; readFrame = -1; }
+        lastRoot = root;
+        // The same for a foot held far from the body by any other way (the floor moved under it as it was set on the table).
+        if (left.state != State.Free && Flat(left.at - root).magnitude > LostReach) Free(left);
+        if (right.state != State.Free && Flat(right.at - root).magnitude > LostReach) Free(right);
         // What holds the feet this frame.
         bool sliding = motor != null && motor.IsKnockedBack;
         float guard = guardLayer >= 0 ? anim.GetLayerWeight(guardLayer) : 0f;
