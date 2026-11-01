@@ -156,7 +156,7 @@ public static class LevelUpCardsSetup
             // knock on the table on hover, a book shut on the pick, paper folding away as the others go.
             deal = Sound("Tarot pop", 1f, .04f, Lib + "Items/Itm_Note_Up_01.wav", Lib + "Items/Itm_Note_Up_02.wav"),
             hover = Sound("Tarot hover", .45f, .05f, Table + "Dice knock 1.wav", Table + "Dice knock 2.wav", Table + "Dice knock 3.wav"),
-            pick = Sound("Tarot pick", .8f, .03f, Lib + "Items/Itm_Book_Close_01.wav", Lib + "Items/Itm_Book_Close_02.wav"),
+            pick = Sound("Tarot pick", 1f, .03f, Lib + "Items/Itm_Book_Close_01.wav", Lib + "Items/Itm_Book_Close_02.wav"),
             leave = Sound("Tarot leave", .9f, .04f, Lib + "Items/Itm_Note_Close_01.wav", Lib + "Items/Itm_Note_Close_02.wav"),
         };
     }
