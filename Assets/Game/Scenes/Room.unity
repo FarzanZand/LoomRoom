@@ -9922,6 +9922,7 @@ GameObject:
   - component: {fileID: 87319284}
   - component: {fileID: 87319287}
   - component: {fileID: 87319290}
+  - component: {fileID: 87319291}
   m_Layer: 0
   m_Name: Dialogue Manager
   m_TagString: Untagged
@@ -10166,6 +10167,30 @@ MonoBehaviour:
   closeCallFraction: 0.25
   remarkGap: 15
   runRemarkDelay: 1.5
+--- !u!114 &87319291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 83857682}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3d76b848299c0429a3adc47d2ce190, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TavernKeeperLines
+  welcomeLines:
+  - Welcome in! Wipe your boots. Whatever you stepped in down there, it stays outside.
+  - Ah, a customer who's still breathing. My favourite kind. They pay.
+  - Sit anywhere you like. Don't mind the smell, that's the stew. Mostly.
+  shopAnswer: Shop
+  rumourAnswer: Rumour ({Price} gold)
+  leaveAnswer: Never mind
+  noMoneyLine: A rumour is {Price} gold, friend. You've got {Gold}. I can count,
+    you know.
+  noRumourLine: That's all I know for now. Come back when the world's done something
+    interesting.
+  rumourFallbackLine: I heard of a place. That's all I'll say.
 --- !u!1 &87411797
 GameObject:
   m_ObjectHideFlags: 0
@@ -102760,39 +102785,6 @@ MonoBehaviour:
     button: {fileID: 1026858514}
     buttonLabel: {fileID: 21013409}
     hover: {fileID: 2079819124}
-  rumourCards:
-  - root: {fileID: 458430750}
-    icon: {fileID: 1920966390}
-    name: {fileID: 487885646}
-    info: {fileID: 2051233118}
-    note: {fileID: 2061397571}
-    price: {fileID: 1226097178}
-    coin: {fileID: 184400297}
-    button: {fileID: 848712050}
-    buttonLabel: {fileID: 1356625081}
-    hover: {fileID: 458430752}
-  - root: {fileID: 1266578857}
-    icon: {fileID: 231239204}
-    name: {fileID: 1516366886}
-    info: {fileID: 821362873}
-    note: {fileID: 1501622297}
-    price: {fileID: 1795661631}
-    coin: {fileID: 1008393369}
-    button: {fileID: 1944276970}
-    buttonLabel: {fileID: 1607319327}
-    hover: {fileID: 1266578859}
-  - root: {fileID: 808448825}
-    icon: {fileID: 1592104105}
-    name: {fileID: 1761523309}
-    info: {fileID: 567937341}
-    note: {fileID: 1740570898}
-    price: {fileID: 1861950147}
-    coin: {fileID: 202944173}
-    button: {fileID: 89685886}
-    buttonLabel: {fileID: 382985159}
-    hover: {fileID: 808448827}
-  rumourEmpty: {fileID: 1481257063}
-  rumourIcon: {fileID: 21300000, guid: dd9c81d329313eb4d8c4a99e0ff70d55, type: 3}
   gold: {r: 1, g: 0.851, b: 0.4, a: 1}
   good: {r: 0.62, g: 0.82, b: 0.49, a: 1}
   dim: {r: 0.72, g: 0.68, b: 0.6, a: 1}

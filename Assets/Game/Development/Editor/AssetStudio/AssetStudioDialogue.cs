@@ -60,7 +60,7 @@ public static class AssetStudioDialogue
                 if (f.IsNotSerialized || !f.IsPublic && f.GetCustomAttribute<SerializeField>() == null) continue;
                 var ft = Elem(f.FieldType);
                 if (ft == typeof(DungeonMaster.Line)) return true;
-                if (ft == typeof(string) && LineName(f.Name)) return true;
+                if (ft == typeof(string) && (LineName(f.Name) || f.GetCustomAttribute<DialogueTextAttribute>() != null)) return true;
                 if (ft.IsClass && ft != typeof(string) && !typeof(UnityEngine.Object).IsAssignableFrom(ft) && ft.GetCustomAttribute<SerializableAttribute>() != null && Holds(ft, depth + 1)) return true;
             }
         return false;
@@ -134,8 +134,10 @@ public static class AssetStudioDialogue
         {
             enter = true;
             bool rich = p.propertyType == SerializedPropertyType.Generic && p.type == "Line" && p.FindPropertyRelative("text") != null;
-            bool plain = p.propertyType == SerializedPropertyType.String && (LineName(FieldName(p.propertyPath)) || owner is HouseRule && p.propertyPath == "text");
+            var marked = p.propertyType == SerializedPropertyType.String ? FieldAt(owner.GetType(), p.propertyPath)?.GetCustomAttribute<DialogueTextAttribute>() : null;
+            bool plain = p.propertyType == SerializedPropertyType.String && (LineName(FieldName(p.propertyPath)) || owner is HouseRule && p.propertyPath == "text" || marked != null);
             if (!rich && !plain) continue;
+            if (!string.IsNullOrEmpty(marked?.onlyIf) && so.FindProperty(marked.onlyIf) is { propertyType: SerializedPropertyType.Boolean, boolValue: false }) continue;
             if (copy && !p.prefabOverride) { if (rich) enter = false; continue; }
             var line = new Line { owner = owner, source = source, ownerName = ownerName, path = p.propertyPath, rich = rich, order = order++ };
             var m = Element.Match(p.propertyPath);
@@ -143,7 +145,7 @@ public static class AssetStudioDialogue
             line.field = ObjectNames.NicifyVariableName(FieldName(p.propertyPath));
             line.context = Context(so, p.propertyPath);
             line.when = Tooltip(owner.GetType(), p.propertyPath);
-            line.category = Category(owner);
+            line.category = !string.IsNullOrEmpty(marked?.category) ? marked.category : Category(owner);
             Read(line, p);
             into.Add(line);
             if (rich) enter = false;
@@ -189,7 +191,10 @@ public static class AssetStudioDialogue
     }
 
     // The [Tooltip] on the field a property path ends in, found through nested serializable classes.
-    static string Tooltip(Type type, string path)
+    static string Tooltip(Type type, string path) => FieldAt(type, path)?.GetCustomAttribute<TooltipAttribute>()?.tooltip;
+
+    // The field a property path ends in.
+    static FieldInfo FieldAt(Type type, string path)
     {
         FieldInfo last = null;
         foreach (var part in path.Split('.'))
@@ -200,7 +205,7 @@ public static class AssetStudioDialogue
             if (f == null) break;
             last = f; type = f.FieldType;
         }
-        return last?.GetCustomAttribute<TooltipAttribute>()?.tooltip;
+        return last;
     }
 
     static string OwnerName(UnityEngine.Object o)
@@ -224,12 +229,13 @@ public static class AssetStudioDialogue
         ["HouseRule"] = "House rules", ["RuleManager"] = "House rules",
         ["TableLevelData"] = "Dungeons", ["DungeonBiome"] = "Dungeons", ["DungeonRoomTemplate"] = "Dungeons", ["ArenaFight"] = "Dungeons",
         ["SkeletonParty"] = "Dungeons", ["PortalArch"] = "Dungeons", ["TableLevelLoader"] = "Dungeons",
+        ["TavernKeeperLines"] = "Tavern", ["TavernRoom"] = "Tavern", ["TavernKeeper"] = "Tavern",
         ["BossFight"] = "Boss fights", ["BossStageEncounter"] = "Boss fights",
         ["ProvokableNpc"] = "Characters", ["WeepingEnemy"] = "Characters",
         ["RunRecapUI"] = "Runs",
     };
     public static string Category(UnityEngine.Object o) => Categories.TryGetValue(o.GetType().Name, out var c) ? c : "Other";
-    public static readonly string[] CategoryOrder = { "Intro", "Room and table", "Sheet and trophies", "House rules", "Campaign", "Dungeons", "Boss fights", "Characters", "Runs", "Other" };
+    public static readonly string[] CategoryOrder = { "Intro", "Room and table", "Sheet and trophies", "House rules", "Campaign", "Dungeons", "Tavern", "Boss fights", "Characters", "Runs", "Other" };
 
     // ── Writing back ──
 

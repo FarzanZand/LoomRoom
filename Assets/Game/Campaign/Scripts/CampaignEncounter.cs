@@ -33,9 +33,9 @@ public class CampaignEncounter : ScriptableObject
 
     [Title("Rumour", HorizontalLine = false), Tooltip("Off the map until the player buys the tavern keeper's rumour about it; then it rises into view (with Opened Line) as soon as they are back in the room. A save that has played it already keeps it.")]
     public bool rumoured;
-    [ShowIf(nameof(rumoured)), TextArea(2, 3), Tooltip("A cryptic line about it, never its name (the keeper says it when Rumour Told is empty).")]
+    [ShowIf(nameof(rumoured)), TextArea(2, 3), DialogueText("Tavern", nameof(rumoured)), Tooltip("A cryptic line about it, never its name (the keeper says it when Rumour Told is empty).")]
     public string rumour;
-    [ShowIf(nameof(rumoured)), TextArea(2, 3), Tooltip("What the tavern keeper tells you when you buy his rumour (Rumour, 20 gold, in his dialogue); the place then joins the map.")]
+    [ShowIf(nameof(rumoured)), TextArea(2, 3), DialogueText("Tavern", nameof(rumoured)), Tooltip("What the tavern keeper tells you when you buy his rumour (Rumour, 20 gold, in his dialogue); the place then joins the map.")]
     public string rumourTold;
     // Off the map until something opens it: deaths elsewhere, or a rumour.
     public bool Hidden => Locked || rumoured;
