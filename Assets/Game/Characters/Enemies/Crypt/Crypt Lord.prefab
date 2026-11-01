@@ -3643,7 +3643,7 @@ MonoBehaviour:
     maxRange: 14
     cooldown: 25.375
     animatorTrigger: CastSpell
-    releaseTime: 1.35
+    releaseTime: 0.8
     aimTrackSpeed: 0
     maxHeightDifference: 4
     damageMultiplier: 0.42000002

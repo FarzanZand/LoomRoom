@@ -91,6 +91,8 @@ MonoBehaviour:
     hold: 1.6
     throwOut: 0.3
     shake: 18
+    heroAura: {r: 0.88, g: 0.64, b: 0.29, a: 0.5}
+    bossAura: {r: 0.18, g: 0.71, b: 0.68, a: 0.52}
     bandWhoosh:
     - {fileID: 8300000, guid: 66c075aeb2dcb4076bdbf11d1776836d, type: 3}
     bandLand:
@@ -114,6 +116,7 @@ MonoBehaviour:
   paintingLight: 0
   paintingLightColor: {r: 1, g: 0.9, b: 0.75, a: 1}
   wakeDelay: 1.1
+  openWithSpell: 1
   fightLine:
     text: Begin.
     voice: {fileID: 0}
@@ -157,6 +160,7 @@ MonoBehaviour:
   backupCount: 2
   backupAtHealth: 0.45
   backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
+  backupOneHit: 1
   backupHealth: 1
   backupBossLine: Boys! Get in here!
   backupBrokenLine: Hey! That was my crew!

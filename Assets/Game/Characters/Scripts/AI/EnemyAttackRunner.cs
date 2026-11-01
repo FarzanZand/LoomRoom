@@ -78,13 +78,46 @@ public class EnemyAttackRunner
         while (cooldowns.Count < count) cooldowns.Add(0f);
     }
 
+    // A volley's cast holds its hands up until the last ball is out: the CastSpell state's speed (CastSpeed) is 0 until
+    // then (the clip itself is untouched).
+    float castHoldUntil = -1f;
+    static readonly int CastSpeed = Animator.StringToHash("CastSpeed");
+    void HoldCast(float seconds)
+    {
+        if (Character == null || Character.Animator == null || !Character.HasParameter(Character.Animator, "CastSpeed", AnimatorControllerParameterType.Float)) return;
+        Character.Animator.SetFloat(CastSpeed, 0f);
+        castHoldUntil = Time.time + seconds;
+    }
+    // A volley's cast clip has played to its release time (seconds into the Attack state on any layer).
+    bool VolleyClipReached()
+    {
+        if (current == null || !current.IsSpell || !current.spellCast.volley) return false;
+        var anim = Character != null ? Character.Animator : null;
+        if (anim == null || Time.time - attackStartedAt < MinWindup) return false;
+        for (int l = 0; l < anim.layerCount; l++)
+        {
+            if (anim.IsInTransition(l)) continue;
+            var st = anim.GetCurrentAnimatorStateInfo(l);
+            if (st.tagHash == AttackTag && st.normalizedTime * st.length >= current.spellCast.releaseTime) return true;
+        }
+        return false;
+    }
+
+    void LetCastGo()
+    {
+        if (castHoldUntil < 0f) return;
+        castHoldUntil = -1f;
+        if (Character != null && Character.Animator != null) Character.Animator.SetFloat(CastSpeed, 1f);
+    }
+
     // Once per frame, before the state handler.
     public void Tick()
     {
+        if (castHoldUntil >= 0f && Time.time >= castHoldUntil) LetCastGo();
         EnsureCooldowns();
         for (int i = 0; i < cooldowns.Count; i++) cooldowns[i] -= Time.deltaTime;
 
-        if (fallbackHitPending && Time.time >= fallbackHitAt) DealFallbackHit();
+        if (fallbackHitPending && (Time.time >= fallbackHitAt || VolleyClipReached())) DealFallbackHit();
 
         if (hitboxOpenPending && PastMinWindup)
         {
@@ -114,6 +147,7 @@ public class EnemyAttackRunner
 
     public void Cancel()
     {
+        LetCastGo();
         if (Character != null && Character.Animator != null)
             foreach (var attack in Attacks)
                 if (attack != null) AnimatorHelper.ResetTrigger(Character.Animator, attack.animatorTrigger);
@@ -232,7 +266,9 @@ public class EnemyAttackRunner
         {
             var cast = attack.spellCast;
             fallbackHitPending = true;
-            fallbackHitAt = Time.time + Mathf.Max(cast.releaseTime, MinWindup);
+            // A volley goes when the cast clip itself reaches its release time (the hand at the top: the state starts a moment
+            // after the attack is picked), with the clock as a late fallback.
+            fallbackHitAt = Time.time + Mathf.Max(cast.releaseTime, MinWindup) + (cast.volley ? 1f : 0f);
             var hand = Hand();
             var effect = cast.handEffect != null ? cast.handEffect : cast.spell.heldVisual;
             if (effect != null && hand != null)
@@ -508,6 +544,9 @@ public class EnemyAttackRunner
             var from = hand; var body = brain.transform; var last = body.position + Vector3.up * 1.8f;
             // The caster can be gone before every ball is out (killed, or its floor unloaded): the last place it was.
             FireballVolley.Cast(spell, Character, () => from != null ? last = from.position : body != null ? last = body.position + Vector3.up * 1.8f : last, target, damage, cast.volleySettings);
+            // Hands up until every ball has come out of them.
+            var vs = cast.volleySettings;
+            if (vs != null) HoldCast((vs.count - 1) * vs.spawnInterval + .15f);
             return;
         }
         Vector3 aim = AimPoint(target);

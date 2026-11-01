@@ -242,9 +242,21 @@ public partial class BossStageEncounter : MonoBehaviour
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (intro) BossBlessing.Announce();
         if (stageLights != null) stageLights.Follow(boss.transform);
-        if (brain != null) { brain.enabled = true; brain.Alert(); if (fight != null && !fight.openWithSpell) brain.HoldSpells(); }
+        if (brain != null) { brain.enabled = true; brain.Alert(); if (fight != null) OpenFight(brain, fight.openWithSpell); }
         if (hand != null) hand.Watch(player.transform.position, false);
         fightStart = Time.time;
+    }
+
+    // How the boss opens: with a spell (its volley if it has one, else its first spell, whatever its cooldown), or with
+    // every spell waiting its full cooldown so it comes in close first (BossFight.openWithSpell).
+    static void OpenFight(EnemyBrain brain, bool withSpell)
+    {
+        if (!withSpell) { brain.HoldSpells(); return; }
+        EnemySpell first = null;
+        if (brain.Data != null && brain.Data.spells != null)
+            foreach (var s in brain.Data.spells)
+                if (s != null && s.spell != null && (first == null || s.volley && !first.volley)) first = s;
+        if (first != null) brain.OpenWith(first);
     }
 
     // The intro (BossFight > Intro), the boss set down and idle in the quiet: a moment, the spotlight snaps on over it
