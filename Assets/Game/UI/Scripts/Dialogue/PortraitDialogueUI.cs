@@ -50,6 +50,8 @@ public class PortraitDialogueUI : MonoBehaviour
     public bool Barking { get; private set; }
     // While it is up the hotbar and vitals step aside (HudCanvas.BehindMenu); not for a bark.
     public static bool Covers => Current != null && Current.Open && !Current.Barking;
+    // The box is on screen (a bark or a conversation; not while it has stepped aside for the Dungeon Master's own line).
+    public bool Showing => Open && group != null && group.alpha > .01f;
 
     RectTransform box;
     Vector2 boxHome;
