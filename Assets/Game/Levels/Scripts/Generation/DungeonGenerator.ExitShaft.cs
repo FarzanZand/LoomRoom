@@ -133,7 +133,8 @@ public partial class DungeonGenerator
             // Posts either side of the mouth, a torch on each.
             Part("Post", new Vector3(x * (half + thick * .5f), .8f, -half - thick * .5f), new Vector3(thick + .1f, 1.6f, thick + .1f), walls);
             Part("Post cap", new Vector3(x * (half + thick * .5f), 1.65f, -half - thick * .5f), new Vector3(thick + .2f, .1f, thick + .2f), trim);
-            var torch = WallLights != null && WallLights.Length > 0 && WallLights[0] != null ? WallLights[0].prefab : null;
+            // Not on a boss stage: out in the open its two torches hung in the air over the posts (the user, 2026-11-01).
+            var torch = cell != stageShaftCell && WallLights != null && WallLights.Length > 0 && WallLights[0] != null ? WallLights[0].prefab : null;
             if (torch != null)
             {
                 var t = Instantiate(torch, root.TransformPoint(new Vector3(x * (half + thick * .5f), 1.2f, -half - thick - .12f)), root.rotation * Quaternion.Euler(0, 180f, 0), root);
