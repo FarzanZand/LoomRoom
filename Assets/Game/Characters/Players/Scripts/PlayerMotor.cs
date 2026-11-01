@@ -68,6 +68,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         lungeUntil = Time.time + seconds;
     }
     public bool Dashing => DashVelocity.sqrMagnitude > .01f;
+    // The dash (PlayerDash): replaces walking while set, but enemies still block it like walls (personal space). Walking
+    // takes over from its speed, so the stop eases out instead of snapping. Zero = walk as usual.
+    public Vector3 EvadeVelocity { get; set; }
+    // Sprint only while held (the dash takes the press): set by PlayerDash while it is switched on.
+    public bool SprintHoldOnly { get; set; }
 
     public float AirborneTime { get; private set; }
     public MoveState State   { get; private set; }
@@ -142,6 +147,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         input.CrouchPressed -= OnCrouchPressed;
         knockbackVelocity = Vector3.zero;
         DashVelocity = Vector3.zero;
+        EvadeVelocity = Vector3.zero;
     }
 
     void OnJump()          { if (IsControllable && (player == null || player.PlayerData == null || player.PlayerData.canJump)) jumpQueued = true; }
@@ -192,7 +198,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         }
 
         // SPRINT
-        if (holdToSprint)
+        if (holdToSprint || SprintHoldOnly)
         {
             IsSprinting = sprintHeld;
         }
@@ -254,7 +260,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
             (player == null || player.settings == null || player.settings.enableLean);
 
         // Athletics 25 lets a table player sprint who otherwise can't.
-        sprintApplied = (p.canSprint || (adventurer != null && adventurer.SprintUnlocked)) && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching;
+        sprintApplied = (p.canSprint || (adventurer != null && adventurer.SprintUnlocked)) && IsSprinting && moveDir.z > 0f && !leanBlocksSprint && !IsCrouching && EvadeVelocity.sqrMagnitude < .0001f;
 
         Speed = p.walkSpeed;
         if (sprintApplied && player != null && player.Stats != null &&
@@ -279,9 +285,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         Vector3 target = (forward * moveDir.z * back + right * moveDir.x) * Speed;
         float ramp = target.sqrMagnitude >= walkVelocity.sqrMagnitude ? p.accelerationTime : p.stopTime;
         walkVelocity = ramp > 0f ? Vector3.MoveTowards(walkVelocity, target, Mathf.Max(Speed, p.walkSpeed) / ramp * Time.deltaTime) : target;
+        bool evading = EvadeVelocity.sqrMagnitude > .0001f;
+        if (evading) walkVelocity = EvadeVelocity;
         movement = walkVelocity;
         // A swing's lunge steps into the blow (PlayerCombat.OnStrike); personal space below still stops it at an enemy.
-        if (Time.time < lungeUntil) movement += lungeVelocity;
+        if (Time.time < lungeUntil && !evading) movement += lungeVelocity;
         movement.y = yVel;
         if (Dashing) { movement.x = DashVelocity.x; movement.z = DashVelocity.z; }
         else KeepPersonalSpace();

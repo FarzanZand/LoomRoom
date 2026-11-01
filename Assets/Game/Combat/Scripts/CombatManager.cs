@@ -259,6 +259,10 @@ public class CombatManager : Singleton<CombatManager>
     [InlineEditor(InlineEditorObjectFieldModes.Boxed), Tooltip("The shield bash's tuning, effects and sounds: Blocking's ability asset (Characters/Skills/Blocking/Shield bash).")]
     public ShieldBashAbility shieldBash;
 
+    // ── Player: Dash ──
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Dash"), HideLabel, InlineProperty]
+    public DashTuning dash = new();
+
     // ── Player: Getting hit ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Getting hit")]
     [Range(0,4)] public float landedCameraKick = .65f;

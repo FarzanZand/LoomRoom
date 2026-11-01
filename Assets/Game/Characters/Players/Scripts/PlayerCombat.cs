@@ -207,6 +207,8 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         spells = GetComponent<PlayerSpellcasting>();
         progress = GetComponent<AdventurerProgress>();
         bash = GetComponent<ShieldBash>();
+        // The dash (CombatManager > Player > Dash) goes with fighting.
+        if (GetComponent<PlayerDash>() == null) gameObject.AddComponent<PlayerDash>();
         relay = GetComponentInChildren<WeaponAnimationRelay>(true);
         if (armsAnimator == null && relay != null) armsAnimator = relay.GetComponent<Animator>();
         attackHash           = AnimatorHelper.TagHash(attackTag);

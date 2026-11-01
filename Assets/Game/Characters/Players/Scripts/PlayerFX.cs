@@ -20,11 +20,13 @@ public class PlayerFX : CharacterFX
 
     Coroutine hurtFlashRoutine;
     Player player;
+    PlayerDash dash;
 
     void Start()
     {
         player = GetComponentInParent<Player>();
         if (player == null) return;
+        dash = player.GetComponent<PlayerDash>();
         if (player.Combat != null) player.Combat.ChargeReady += OnChargeReady;
     }
 
@@ -39,7 +41,7 @@ public class PlayerFX : CharacterFX
         if (player == null || player.CameraRig == null || player.Combat == null) return;
         float charge = player.Combat.CameraCharge;
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
-        player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * player.Combat.CameraZoomCharge;
+        player.CameraRig.FovOffset      = -(tuning != null ? tuning.chargeFovPull : 4f) * player.Combat.CameraZoomCharge + (dash != null ? dash.FovKick : 0f);
         player.CameraRig.ExtraAmplitude =  (tuning != null ? tuning.chargeShake   : .45f) * charge;
     }
 
