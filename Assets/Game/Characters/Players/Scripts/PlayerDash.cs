@@ -312,8 +312,10 @@ public class DashTuning
     public GameObject streaks;
     [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Range(0f, 3f), Tooltip("How far a sideways dash's streaks are turned back toward the view's front (0 = straight from the side, out of sight).")]
     public float streakForward = 1.2f;
-    [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Tooltip("The push-off.")]
+    [ShowIf(nameof(enabled)), FoldoutGroup("Sounds"), LabelText("Push-off sound"), InlineEditor(InlineEditorObjectFieldModes.Foldout),
+     Tooltip("Played as the dash starts (Audio/Data/Dash: a gravel scuff, a low body whoosh, cloth, a thump; Tools/dash_sounds.py).")]
     public AudioData dashAudio;
-    [ShowIf(nameof(enabled)), FoldoutGroup("Feel"), Tooltip("The stop.")]
+    [ShowIf(nameof(enabled)), FoldoutGroup("Sounds"), LabelText("Stop sound"), InlineEditor(InlineEditorObjectFieldModes.Foldout),
+     Tooltip("Played as the dash stops (Audio/Data/Dash stop: feet catching, a short slide, cloth settling).")]
     public AudioData landAudio;
 }
