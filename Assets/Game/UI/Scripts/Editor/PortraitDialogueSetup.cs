@@ -177,7 +177,7 @@ public static class PortraitDialogueSetup
     }
 
     // The cinematic versus screen: black bars top and bottom over a darkened screen; at the left the player's class
-    // painting melting into a blue glow, at the right the boss's live portrait in a red glow; a thin gold line across
+    // painting melting into a lamplight aura, at the right the boss's live portrait in a teal aura (colours from the fight); a thin gold line across
     // the middle with the VS medallion on it; names letter-spaced in the bottom bar under each side.
     static string BuildVersus(RectTransform parent)
     {
@@ -250,8 +250,8 @@ public static class PortraitDialogueSetup
             what.rectTransform.sizeDelta = new Vector2(1000f, 44f); what.rectTransform.anchoredPosition = new Vector2(0f, -490f);
             return side;
         }
-        var leftSide = Side("Player side", true, new Color(.25f, .45f, 1f, .5f), out var playerArt, out var playerFrame, out var leftLabel, out var playerName, out var playerTitle);
-        var rightSide = Side("Boss side", false, new Color(.95f, .15f, .15f, .52f), out var bossArt, out _, out var rightLabel, out var bossName, out var bossTitle);
+        var leftSide = Side("Player side", true, new VersusSettings().heroAura, out var playerArt, out var playerFrame, out var leftLabel, out var playerName, out var playerTitle);
+        var rightSide = Side("Boss side", false, new VersusSettings().bossAura, out var bossArt, out _, out var rightLabel, out var bossName, out var bossTitle);
         // In drawing order: the sides (glow, portrait), the bars over them, the names over the bars.
         var topBar = Bar("Top bar", true);
         var bottomBar = Bar("Bottom bar", false);
@@ -281,6 +281,8 @@ public static class PortraitDialogueSetup
         so.FindProperty("playerPortrait").objectReferenceValue = playerArt;
         so.FindProperty("playerFrame").objectReferenceValue = playerFrame;
         so.FindProperty("bossPortrait").objectReferenceValue = bossArt;
+        so.FindProperty("playerGlow").objectReferenceValue = leftSide.Find("Glow").GetComponent<Image>();
+        so.FindProperty("bossGlow").objectReferenceValue = rightSide.Find("Glow").GetComponent<Image>();
         so.FindProperty("playerName").objectReferenceValue = playerName;
         so.FindProperty("playerTitle").objectReferenceValue = playerTitle;
         so.FindProperty("bossName").objectReferenceValue = bossName;

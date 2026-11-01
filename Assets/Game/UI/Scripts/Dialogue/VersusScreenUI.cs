@@ -16,6 +16,8 @@ public class VersusSettings
     [FoldoutGroup("Versus timing"), Min(0), Tooltip("Seconds it holds after the slam.")] public float hold = 1.6f;
     [FoldoutGroup("Versus timing"), Min(.05f), Tooltip("Seconds everything takes to clear.")] public float throwOut = .3f;
     [FoldoutGroup("Versus timing"), Tooltip("Canvas units the screen shakes at the slam (a side landing shakes it 40% as much).")] public float shake = 18f;
+    [FoldoutGroup("Versus look"), Tooltip("The aura rising behind the player's side: lamplight, the warm half of the game's colour split.")] public Color heroAura = new Color(.88f, .64f, .29f, .5f);
+    [FoldoutGroup("Versus look"), Tooltip("The aura rising behind the boss: the dungeon's teal dark by default; a boss can have its own.")] public Color bossAura = new Color(.18f, .71f, .68f, .52f);
     [FoldoutGroup("Versus sounds"), Tooltip("As each side sets off.")] public AudioClip[] bandWhoosh = new AudioClip[0];
     [FoldoutGroup("Versus sounds"), Tooltip("As each side lands.")] public AudioClip[] bandLand = new AudioClip[0];
     [FoldoutGroup("Versus sounds"), Tooltip("As the VS medallion slams in (all played together).")] public AudioClip[] slam = new AudioClip[0];
@@ -24,8 +26,8 @@ public class VersusSettings
 }
 
 // The you-versus-the-boss screen before a boss fight (BossFight > Intro), cinematic: black bars close in from the top
-// and bottom and the screen darkens; the player's side (their class painting melting into a blue glow, their name
-// and class in the bottom bar) comes in from the left, then the boss's (its live idling portrait in a red glow, its
+// and bottom and the screen darkens; the player's side (their class painting melting into a lamplight aura, their name
+// and class in the bottom bar) comes in from the left, then the boss's (its live idling portrait in a teal aura, its
 // name and title) from the right, each landing with a thud and a jolt; a thin gold line draws out between them and the
 // VS medallion slams down on it with a flash and a shake; a beat to read it, then it all clears. On real time. Its
 // timing and sounds come from the fight (VersusSettings); its look is this prefab's (Dialogue/UI/Boss dialogue, under
@@ -45,6 +47,8 @@ public class VersusScreenUI : MonoBehaviour
     [Tooltip("Canvas units the painting's top sits below its frame's top (the eyes level with the boss's).")] public float paintingDrop = 80f;
     [Min(.1f), Tooltip("The painting's width against its frame's (the figure as large as the boss's).")] public float paintingScale = 1.2f;
     [SerializeField] RawImage bossPortrait;
+    [Tooltip("The auras behind each side, tinted from the fight's Versus look.")]
+    [SerializeField] Image playerGlow, bossGlow;
     [SerializeField] TMP_Text playerName, playerTitle, bossName, bossTitle;
 
     [Header("Look")]
@@ -93,6 +97,8 @@ public class VersusScreenUI : MonoBehaviour
         // Fill it.
         var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         var cls = progress != null ? progress.selectedClass : null;
+        if (playerGlow != null) playerGlow.color = s.heroAura;
+        if (bossGlow != null) bossGlow.color = s.bossAura;
         playerPortrait.sprite = cls != null ? cls.portrait : null;
         playerPortrait.enabled = playerPortrait.sprite != null;
         if (playerFrame != null && playerPortrait.sprite != null)

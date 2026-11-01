@@ -133,7 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.95, g: 0.15, b: 0.15, a: 0.52}
+  m_Color: {r: 0.18, g: 0.71, b: 0.68, a: 0.52}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -492,6 +492,8 @@ MonoBehaviour:
   paintingDrop: 80
   paintingScale: 1.2
   bossPortrait: {fileID: 2886997229762903123}
+  playerGlow: {fileID: 315375534413983144}
+  bossGlow: {fileID: 3684139361724263588}
   playerName: {fileID: 8610173433419443284}
   playerTitle: {fileID: 6599249819470444955}
   bossName: {fileID: 6585731805017278214}
@@ -1288,7 +1290,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.25, g: 0.45, b: 1, a: 0.5}
+  m_Color: {r: 0.88, g: 0.64, b: 0.29, a: 0.5}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
