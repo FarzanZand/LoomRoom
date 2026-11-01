@@ -24603,6 +24603,7 @@ MonoBehaviour:
   phaseTwoMoon: {r: 1, g: 0.12, b: 0.1, a: 1}
   phaseTwoSeconds: 2.5
   phaseTwoFlare: 2.5
+  discoBlend: 0.12
 --- !u!1 &7139799891633929829
 GameObject:
   m_ObjectHideFlags: 0
@@ -29973,6 +29974,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 777743989373505596, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: b9bcc97058e4519449cda99e6f26f69a, type: 2}
     - target: {fileID: 2669233999789963234, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Range
       value: 7
@@ -29989,6 +29994,10 @@ PrefabInstance:
       propertyPath: m_Shadows.m_Type
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3256081916068979958, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 314b980a012962e48907050bd68bb0db, type: 2}
     - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Name
       value: Brazier
@@ -30136,6 +30145,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2960366295929165134, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5555556
+      objectReference: {fileID: 0}
+    - target: {fileID: 2960366295929165134, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.5555556
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592436137190864265, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: a5faf452a00a1dd4a895a2500a55820c, type: 2}
+    - target: {fileID: 4402031078995550306, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 97b43e43c8632a14abf7a0d2b90ead43, type: 2}
     - target: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
       propertyPath: m_Name
       value: Cover pillar R
@@ -30214,6 +30239,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 777743989373505596, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: b9bcc97058e4519449cda99e6f26f69a, type: 2}
     - target: {fileID: 2669233999789963234, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Range
       value: 7
@@ -30230,6 +30259,10 @@ PrefabInstance:
       propertyPath: m_Shadows.m_Type
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3256081916068979958, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 314b980a012962e48907050bd68bb0db, type: 2}
     - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Name
       value: Brazier
@@ -30381,6 +30414,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 777743989373505596, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: b9bcc97058e4519449cda99e6f26f69a, type: 2}
     - target: {fileID: 2669233999789963234, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Range
       value: 7
@@ -30397,6 +30434,10 @@ PrefabInstance:
       propertyPath: m_Shadows.m_Type
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3256081916068979958, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 314b980a012962e48907050bd68bb0db, type: 2}
     - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Name
       value: Brazier
@@ -30548,6 +30589,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 777743989373505596, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: b9bcc97058e4519449cda99e6f26f69a, type: 2}
     - target: {fileID: 2669233999789963234, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Range
       value: 7
@@ -30564,6 +30609,10 @@ PrefabInstance:
       propertyPath: m_Shadows.m_Type
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3256081916068979958, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 314b980a012962e48907050bd68bb0db, type: 2}
     - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_Name
       value: Brazier
@@ -30711,6 +30760,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2960366295929165134, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5555556
+      objectReference: {fileID: 0}
+    - target: {fileID: 2960366295929165134, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.5555556
+      objectReference: {fileID: 0}
+    - target: {fileID: 3592436137190864265, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: a5faf452a00a1dd4a895a2500a55820c, type: 2}
+    - target: {fileID: 4402031078995550306, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 97b43e43c8632a14abf7a0d2b90ead43, type: 2}
     - target: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
       propertyPath: m_Name
       value: Cover pillar L
