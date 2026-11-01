@@ -306,7 +306,8 @@ MonoBehaviour:
   dash:
     enabled: 1
     staminaCost: 20
-    distance: 3.6
+    sideDistance: 2.6
+    backDistance: 1.82
     duration: 0.45
     falloff: 0.7
     cooldown: 0.2

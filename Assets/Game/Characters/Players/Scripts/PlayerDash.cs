@@ -1,6 +1,7 @@
 using System;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 // The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres to the
 // side or back, the way the movement keys point at that moment (never forward; back when none are held), for a flat
@@ -159,7 +160,7 @@ public class PlayerDash : MonoBehaviour
         float dt = Mathf.Max(1e-4f, Time.deltaTime);
         float next = Mathf.Min(1f, covered + dt / Mathf.Max(.05f, t.duration));
         float power = t.falloff + 1f;
-        lastStep = t.distance * (Mathf.Pow(1f - covered, power) - Mathf.Pow(1f - next, power));
+        lastStep = Distance(t) * (Mathf.Pow(1f - covered, power) - Mathf.Pow(1f - next, power));
         covered = next;
         motor.EvadeVelocity = direction * (lastStep / dt);
     }
@@ -215,6 +216,9 @@ public class PlayerDash : MonoBehaviour
     // lags) and forward out of a backward one.
     Vector3 Tilted(DashTuning t) => new Vector3(-viewDirection.z * t.armsTilt * .5f, -viewDirection.x * t.armsTilt * .35f, viewDirection.x * t.armsTilt);
 
+    // Sideways the side distance, straight back the back distance, a diagonal in between by how far back it points.
+    float Distance(DashTuning t) => Mathf.Lerp(t.sideDistance, t.backDistance, Mathf.Clamp01(-viewDirection.z));
+
     static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
 
     static void Spring(ref Vector3 x, ref Vector3 v, Vector3 target, float hz, float damping, float dt)
@@ -263,8 +267,10 @@ public class DashTuning
     public bool enabled = true;
     [ShowIf(nameof(enabled)), Min(0f), Tooltip("Stamina one dash costs (every class starts with 40, so two from full). Refused when there isn't that much left.")]
     public float staminaCost = 20f;
-    [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash covers when nothing is in the way.")]
-    public float distance = 3.6f;
+    [ShowIf(nameof(enabled)), Min(.5f), FormerlySerializedAs("distance"), Tooltip("Metres a dash straight to the side covers when nothing is in the way.")]
+    public float sideDistance = 2.6f;
+    [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash straight back covers when nothing is in the way (a diagonal is in between).")]
+    public float backDistance = 1.82f;
     [ShowIf(nameof(enabled)), Min(.05f), Tooltip("Seconds a dash takes.")]
     public float duration = .45f;
     [ShowIf(nameof(enabled)), Range(0f, 4f), Tooltip("How front-loaded it is: speed falls off as (1 - t)^this. 0 = even speed, higher = a harder burst and a softer stop.")]
