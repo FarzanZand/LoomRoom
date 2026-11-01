@@ -26,8 +26,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Min(.1f), Tooltip("A trophy's longest side, in room units (the room is ~22 units to the metre).")] public float trophySize = 7f;
     [Tooltip("Long trophies (swords, maces, knives) hang at this angle.")] public float longTilt = 45f;
     [Tooltip("How far in front of the mount's face (its backing) a trophy's back rests.")] public float restGap = .3f;
-    [Tooltip("Boots (worn boots, and any trophy named boots: the Winged boots) hang turned round once more about the upright, so they show the side the user picked (2026-11-02).")]
-    public bool turnBootsRound = true;
+    [Tooltip("Boots (worn boots, and any trophy named boots: the Winged boots) stand upright with their toes pointing out of the wall at the player (the user, 2026-11-02), instead of being laid flat like the rest.")]
+    public bool bootsToesOut = true;
     [Tooltip("SFX Library key played as the trophies go up.")] public string hangKey = "trophyHang";
     public AudioClip hangClip;
     [Tooltip("UI Library key played for each trophy as it goes up, one after another.")] public string trophyKey = "equipItem";
@@ -140,12 +140,14 @@ public class TrophyWall : MonoBehaviour, IInteractable
         // centred on the anchor.
         // Hung flat: its thinnest side goes into the wall, so a ring shows its hole and a blade its flat.
         var size = bounds.Value.size;
-        if (size.x < size.z && size.x <= size.y) { go.transform.localRotation = Quaternion.Euler(0, 90, 0) * go.transform.localRotation; bounds = Measure(renderers); }
+        if (bootsToesOut && anchor.parent != null && Boots(item) && ToesOut(go, renderers, anchor)) bounds = Measure(renderers);
+        else if (size.x < size.z && size.x <= size.y) { go.transform.localRotation = Quaternion.Euler(0, 90, 0) * go.transform.localRotation; bounds = Measure(renderers); }
         else if (size.y < size.z && size.y < size.x) { go.transform.localRotation = Quaternion.Euler(90, 0, 0) * go.transform.localRotation; bounds = Measure(renderers); }
         // The wall runs along x: what shows is the width (x) and the height (y).
         size = bounds.Value.size;
         float wide = size.x, tall = size.y;
-        if (Mathf.Max(wide, tall) / Mathf.Max(.0001f, Mathf.Min(wide, tall)) > 2.5f)
+        bool toesOut = bootsToesOut && Boots(item);
+        if (!toesOut && Mathf.Max(wide, tall) / Mathf.Max(.0001f, Mathf.Min(wide, tall)) > 2.5f)
         {
             go.transform.localRotation = Quaternion.Euler(0, 0, longTilt) * go.transform.localRotation;
             bounds = Measure(renderers);
@@ -153,12 +155,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
         // Its front to the room: a shield's handle or a buckle's strap is on its back, sparse and reaching further
         // than the face, so the bulk of its surface lies toward the front. Turned round when that is the wall's side
         // (a shield hung showing its handle).
-        if (anchor.parent != null && FrontAway(renderers, bounds.Value.center, anchor.parent.forward))
-        {
-            go.transform.RotateAround(bounds.Value.center, anchor.parent.up, 180f);
-            bounds = Measure(renderers);
-        }
-        if (turnBootsRound && anchor.parent != null && Boots(item))
+        if (!toesOut && anchor.parent != null && FrontAway(renderers, bounds.Value.center, anchor.parent.forward))
         {
             go.transform.RotateAround(bounds.Value.center, anchor.parent.up, 180f);
             bounds = Measure(renderers);
@@ -182,6 +179,47 @@ public class TrophyWall : MonoBehaviour, IInteractable
     }
 
     // True when the area-weighted middle of the model's surface lies behind its bounds' middle, along `outward`.
+    // Standing boots: the toes are where the foot sticks out furthest past the shaft (the lowest quarter against the
+    // top 40%, along the model's own four sides: a pair side by side is as wide low as high, the heel barely sticks out).
+    // Turned about the upright so that way points out of the wall. False (left to the usual hanging) when no mesh can
+    // be read.
+    static bool ToesOut(GameObject go, Renderer[] renderers, Transform anchor)
+    {
+        var points = new List<Vector3>();
+        var baked = new Mesh();
+        foreach (var r in renderers)
+        {
+            Mesh mesh = null;
+            if (r is SkinnedMeshRenderer skinned && skinned.sharedMesh != null && skinned.sharedMesh.isReadable) { skinned.BakeMesh(baked, true); mesh = baked; }
+            else if (r is MeshRenderer && r.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh != null && filter.sharedMesh.isReadable) mesh = filter.sharedMesh;
+            if (mesh == null) continue;
+            foreach (var v in mesh.vertices) points.Add(anchor.InverseTransformPoint(r.transform.TransformPoint(v)));
+        }
+        Destroy(baked);
+        if (points.Count < 8) return false;
+        float low = float.MaxValue, high = float.MinValue;
+        foreach (var p in points) { low = Mathf.Min(low, p.y); high = Mathf.Max(high, p.y); }
+        float h = high - low;
+        Vector3 toes = Vector3.zero; float most = float.MinValue;
+        foreach (var side in new[] { Vector3.forward, Vector3.back, Vector3.right, Vector3.left })
+        {
+            float foot = float.MinValue, shaft = float.MinValue;
+            foreach (var p in points)
+            {
+                float reach = Vector3.Dot(p, side);
+                if (p.y < low + h * .25f) foot = Mathf.Max(foot, reach);
+                else if (p.y > low + h * .6f) shaft = Mathf.Max(shaft, reach);
+            }
+            if (foot == float.MinValue || shaft == float.MinValue) continue;
+            if (foot - shaft > most) { most = foot - shaft; toes = side; }
+        }
+        if (toes == Vector3.zero) return false;
+        // Out of the wall is the plaque's forward (the anchor itself may be turned any way), in the anchor's own frame.
+        var outward = anchor.InverseTransformDirection(anchor.parent.forward); outward.y = 0f;
+        go.transform.localRotation = Quaternion.AngleAxis(Vector3.SignedAngle(toes, outward, Vector3.up), Vector3.up) * go.transform.localRotation;
+        return true;
+    }
+
     static bool Boots(ItemData item) => item.equipSlot == EquipmentSlot.Boots || item.itemName.IndexOf("boots", System.StringComparison.OrdinalIgnoreCase) >= 0;
 
     static bool FrontAway(Renderer[] renderers, Vector3 centre, Vector3 outward)
