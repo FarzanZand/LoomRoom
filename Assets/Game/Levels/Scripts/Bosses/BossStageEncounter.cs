@@ -242,7 +242,7 @@ public partial class BossStageEncounter : MonoBehaviour
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (intro) BossBlessing.Announce();
         if (stageLights != null) stageLights.Follow(boss.transform);
-        if (brain != null) { brain.enabled = true; brain.Alert(); }
+        if (brain != null) { brain.enabled = true; brain.Alert(); if (fight != null && !fight.openWithSpell) brain.HoldSpells(); }
         if (hand != null) hand.Watch(player.transform.position, false);
         fightStart = Time.time;
     }

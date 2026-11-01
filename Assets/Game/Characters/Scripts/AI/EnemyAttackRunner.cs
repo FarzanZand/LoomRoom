@@ -62,6 +62,15 @@ public class EnemyAttackRunner
         EnsureCooldowns();
     }
 
+    // Every spell on its full cooldown from now (a boss that must not open its fight with one, BossFight.openWithSpell).
+    public void HoldSpells()
+    {
+        EnsureCooldowns();
+        for (int i = 0; i < Attacks.Count && i < cooldowns.Count; i++)
+            if (Attacks[i] != null && Attacks[i].IsSpell)
+                cooldowns[i] = Mathf.Max(cooldowns[i], Attacks[i].cooldown * (Tuning != null ? Tuning.enemyCooldownMultiplier : 1f));
+    }
+
     // The attack list can grow after Awake (data edited live, archer switched on): new attacks start ready.
     void EnsureCooldowns()
     {

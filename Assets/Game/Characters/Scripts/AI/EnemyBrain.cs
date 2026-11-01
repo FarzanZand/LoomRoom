@@ -184,6 +184,13 @@ public class EnemyBrain : MonoBehaviour
         if (Profile.stepBackAfterSwing > 0f) stepBackUntil = Time.time + Mathf.Min(Profile.stepBackAfterSwing, seconds);
     }
 
+    // Its spells wait their full cooldown from now (BossStageEncounter as a fight begins, BossFight.openWithSpell off).
+    public void HoldSpells()
+    {
+        attackRunner ??= new EnemyAttackRunner(this);
+        attackRunner.HoldSpells();
+    }
+
     // A shield bash: the swing in progress is dropped (it still counts as used) and the enemy stands stunned, then
     // can't be staggered again for CombatManager.enemyStaggerImmunity.
     public void Stun(float seconds)

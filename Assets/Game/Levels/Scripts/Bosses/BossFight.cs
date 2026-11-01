@@ -94,6 +94,8 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Room"), ShowIf("@paintingLight > 0")] public Color paintingLightColor = new(1f, .9f, .75f);
     [TabGroup(Tabs, "Opening"), Min(0), Tooltip("Seconds the boss stands still after it is set down, before it attacks.")]
     public float wakeDelay = 1.1f;
+    [TabGroup(Tabs, "Opening"), Tooltip("The boss may open the fight with a spell. Off (the user, 2026-11-01): its spells start the fight on their full cooldown, so it opens in close.")]
+    public bool openWithSpell;
     [TabGroup(Tabs, "Opening"), Tooltip("Said when the boss is down and the fight begins.")]
     public DungeonMaster.Line fightLine = new() { text = "Begin." };
 
