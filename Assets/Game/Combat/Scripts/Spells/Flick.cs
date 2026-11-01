@@ -465,9 +465,11 @@ public class Flick : MonoBehaviour
 
     class Held { public Character who; public EnemyBrain brain; public Light mark; public SpellVisual effect; }
 
-    Held Hold(Character c)
+    // Marks it and, with freeze, holds it still until the die lands (his hand reaching for it); the portal's cast leaves it
+    // free to move, and the die steers onto it wherever it goes.
+    Held Hold(Character c, bool freeze = true)
     {
-        var held = new Held { who = c, brain = c.GetComponent<EnemyBrain>() };
+        var held = new Held { who = c, brain = freeze ? c.GetComponent<EnemyBrain>() : null };
         if (settings.mark != null) held.effect = Instantiate(settings.mark, c.transform.position + Vector3.up * .05f, Quaternion.identity, c.transform);
         if (held.brain != null) { held.brain.enabled = false; held.brain.Motor?.Stop(); }
         if (settings.markLight > 0f)
@@ -530,8 +532,11 @@ public class Flick : MonoBehaviour
             float left = t - u;
             if (target != null && left > Time.deltaTime)
             {
+                // The rest of the arc from here to its chest now: level speed to cover the gap in the time left, and the
+                // climb that comes down onto it under the same pull.
                 var now = SpellEffects.Chest(target) - die.position;
                 v.x = now.x / left; v.z = now.z / left;
+                v.y = now.y / left + .5f * g * left;
             }
             v.y -= g * Time.deltaTime;
             die.position += v * Time.deltaTime;
@@ -624,7 +629,8 @@ public class Flick : MonoBehaviour
     // and knocks it across the room, and the portal closes behind it. The Dungeon Master never leaves his chair.
     IEnumerator RunPortal()
     {
-        var held = Hold(target);
+        // Not held: the enemy fights on while the portal opens (the user, 2026-11-01); the die finds it where it is.
+        var held = Hold(target, false);
         if (settings.lines != null && settings.lines.Length > 0) DungeonMaster.Say(settings.lines[UnityEngine.Random.Range(0, settings.lines.Length)]);
         PortalSpot(target, out var at, out var facing, out float radius);
         var portal = MakePortal(at, facing, radius, out var vortex, out var glow);
@@ -675,7 +681,8 @@ public class Flick : MonoBehaviour
         if (looseDie != null) Destroy(looseDie.gameObject);
     }
 
-    // Straight and fast out of the portal onto the enemy's chest (steered onto where it is now), a slight drop on the way.
+    // Straight and fast out of the portal onto the enemy's chest, steered every frame onto where it is now (it may be walking
+    // or swinging), level and in height, so it lands on it wherever it has gone; a slight drop on the way.
     IEnumerator DieShoot(Transform die, Held held, Vector3 size)
     {
         flying = true;
