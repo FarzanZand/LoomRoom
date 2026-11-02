@@ -319,10 +319,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         // Blocking's second bonus: less of a blocked hit gets through.
         else if (info.Blocked && adventurer != null) actual *= adventurer.BlockedDamageMultiplier;
         if (DiesInOneHit && actual > 0f) actual = Mathf.Max(actual, CurrentHealth);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         // The cheats' 999 damage attacks: every hit the table player lands on someone else does 999.
         if (DevCheats.MightyBlows && info.Source is Player && Character is not Player) actual = Mathf.Max(actual, DevCheats.MightyDamage);
-#endif
         info.Amount   = actual;
 
         if (!spared) CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);

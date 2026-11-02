@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -216,4 +215,3 @@ public partial class DevSpawner
 
     static string F(float v) => v.ToString("0.###", CultureInfo.InvariantCulture);
 }
-#endif

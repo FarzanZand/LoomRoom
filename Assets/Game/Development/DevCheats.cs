@@ -1,7 +1,6 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
 
-// Switches for the cheats in the spawn window's Cheats (F6 opens that list on its own), Editor and development builds only.
+// Switches for the cheats in the spawn window's Cheats (F6 opens that list on its own), in every build.
 public static class DevCheats
 {
     // Every hit the table player lands does 999 damage (CharacterStats.TakeDamage).
@@ -12,4 +11,3 @@ public static class DevCheats
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => MightyBlows = false;
 }
-#endif

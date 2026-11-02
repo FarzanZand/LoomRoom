@@ -13,7 +13,7 @@ public class DevGodMode : MonoBehaviour
     {
         On = false;
         CharacterStats.Invulnerable = null;
-        if (!Debug.isDebugBuild) return;
+        // In every build: the cheats (F6) switch it on in release builds too; F8 is development only (the Dev input map).
         var go = new GameObject("Dev god mode") { hideFlags = HideFlags.HideInHierarchy };
         DontDestroyOnLoad(go);
         go.AddComponent<DevGodMode>();

@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -9,4 +8,3 @@ public class DevSpawnerCell : MonoBehaviour, IPointerClickHandler
     public System.Action<PointerEventData.InputButton, int> clicked;   // the button and the click count (2: a double-click)
     public void OnPointerClick(PointerEventData data) => clicked?.Invoke(data.button, data.clickCount);
 }
-#endif

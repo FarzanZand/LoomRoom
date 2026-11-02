@@ -1,4 +1,3 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -7,8 +6,9 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// F7, Editor and development builds only: the spawn window (F6 opens it on Cheats alone, the other kinds hidden, so
-// the cheats can be used without the loot and the rest), laid out like Asset Studio in the inventory's look. Left:
+// F7, Editor and development builds only: the spawn window. F6 opens it on Cheats alone, the other kinds hidden, so
+// the cheats can be used without the loot and the rest, in every build, release builds too (the user, 2026-11-02:
+// there only the Cheats are compiled in; Items, Spells, Room items, Enemies and Rooms are development only). The window: laid out like Asset Studio in the inventory's look. Left:
 // the kinds (Items, Spells, Room items, Enemies, Rooms, Cheats, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
@@ -91,7 +91,8 @@ public partial class DevSpawner : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Launch()
     {
-        if (!Debug.isDebugBuild || FindAnyObjectByType<DevSpawner>() != null) return;
+        // In every build: a release build has the cheats (F6) and nothing else.
+        if (FindAnyObjectByType<DevSpawner>() != null) return;
         var prefab = Resources.Load<GameObject>("Dev Spawner");
         if (prefab == null) { Debug.LogWarning("[DevSpawner] Development/Resources/Dev Spawner.prefab is missing."); return; }
         var go = Instantiate(prefab);
@@ -131,9 +132,10 @@ public partial class DevSpawner : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
-        if (keyboard.f7Key.wasPressedThisFrame || keyboard.f6Key.wasPressedThisFrame)
+        bool full = Debug.isDebugBuild && keyboard.f7Key.wasPressedThisFrame;
+        if (full || keyboard.f6Key.wasPressedThisFrame)
         {
-            bool cheats = keyboard.f6Key.wasPressedThisFrame;
+            bool cheats = !full;
             bool same = open && cheatsOnly == cheats;
             if (open) Close();
             if (!same) Open(cheats);
@@ -158,6 +160,7 @@ public partial class DevSpawner : MonoBehaviour
 
     void Open(bool cheats = false)
     {
+        if (!Debug.isDebugBuild) cheats = true;
         open = true;
         cheatsOnly = cheats;
         openedFrame = Time.frameCount;
@@ -515,6 +518,7 @@ public partial class DevSpawner : MonoBehaviour
     {
         switch (k)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             case Kind.Items:
                 foreach (var item in DevGive.CatalogItems(false).Where(i => i.spell == null).OrderBy(i => ItemGroupOrder(i)).ThenBy(i => i.tier).ThenBy(i => i.itemName))
                 {
@@ -575,6 +579,7 @@ public partial class DevSpawner : MonoBehaviour
                     };
                 }
                 break;
+#endif
             case Kind.Cheats:
                 // Shortcuts through a run (the user's F9 request, 2026-10-30).
                 yield return new Entry
@@ -652,6 +657,7 @@ public partial class DevSpawner : MonoBehaviour
             case Kind.Audio:
                 foreach (var e in AudioEntries()) yield return e;
                 break;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             case Kind.Rooms:
                 foreach (var (prefab, g) in Rooms())
                 {
@@ -666,6 +672,7 @@ public partial class DevSpawner : MonoBehaviour
                     };
                 }
                 break;
+#endif
         }
     }
 
@@ -698,6 +705,7 @@ public partial class DevSpawner : MonoBehaviour
         return string.Join("\n\n", lines);
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     static string RoomText(GameObject prefab)
     {
         var lines = new List<string>();
@@ -709,6 +717,7 @@ public partial class DevSpawner : MonoBehaviour
         lines.Add($"Starts a new run{(level != null ? $" of {level.displayName}" : "")} with you standing in this room; the rest of the floor is built round it.");
         return string.Join("\n\n", lines);
     }
+#endif
 
     // ── What is listed ───────────────────────────────────────────────
 
@@ -778,4 +787,3 @@ public partial class DevSpawner : MonoBehaviour
     }
 #endif
 }
-#endif
