@@ -144285,7 +144285,7 @@ MonoBehaviour:
   hotbarCells: 6
   bagItemTemplate: {fileID: 116210967}
   iconPadding: 4
-  tavern: {fileID: 0}
+  tavern: {fileID: 884563216}
   tooDearColor: {r: 0.69, g: 0.353, b: 0.306, a: 1}
 --- !u!1 &1138478271
 GameObject:
