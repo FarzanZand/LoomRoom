@@ -110,6 +110,8 @@ public class LevelUpCardsUI : MonoBehaviour
         // Never during a boss fight on the stage: they wait for it to end.
         if (BossStageEncounter.Current != null && BossStageEncounter.Current.Fighting) return false;
         if (!ProgressionManager.CardsAutoPopup) return true;
+        // Co-op guests: the host's enemies are copies here with no sight of their own; their snapshots say whom they see.
+        if (CoopWorld.LocalSeen()) return false;
         foreach (var brain in EnemyBrain.Active)
             if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player) return false;
         return true;
@@ -169,7 +171,8 @@ public class LevelUpCardsUI : MonoBehaviour
         {
             Open = true;
             if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
-            paused = ProgressionManager.CardsAutoPopup;
+            // In co-op the world goes on while one player picks (time is everyone's on the host).
+            paused = ProgressionManager.CardsAutoPopup && !Coop.Running;
             timeScaleBefore = Time.timeScale;
             if (paused) Time.timeScale = HeldTimeScale;
             // He deals them: one of his lines as they come, shown over the cards (the feed hides behind menus otherwise).
