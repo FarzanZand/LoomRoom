@@ -17,7 +17,7 @@ public partial class DungeonGenerator
         void Strip(Vector3 at, Vector3 scale) => ArchitectureBox("Skylight frame", at, scale, ceilingMaterial, ceiling);
         void Lip(Vector3 at, Vector3 scale)
         {
-            var lipBox = Box("Skylight trim", at, scale, trim, ceiling);
+            var lipBox = ArchitectureBox("Skylight trim", at, scale, trim, ceiling);
             DestroyImmediate(lipBox.GetComponent<Collider>());   // also in Edit-mode builds; before the NavMesh bake
         }
         if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
@@ -48,7 +48,7 @@ public partial class DungeonGenerator
         if (sill > .01f) { var (c, s) = WallPiece(cell, dir, 0, 0, sill, sill * .5f); Piece("Window sill wall", c, s, lower); }
         { var (c, s) = WallPiece(cell, dir, height - lintel, 0, lintel, height - lintel * .5f); Piece("Window lintel", c, s, upper); }
         var (ledgeCenter, ledgeScale) = WallPiece(cell, dir, sill, TrimDepth * 3, .1f, sill + .05f);
-        var ledge = Box("Window ledge", ledgeCenter, ledgeScale, trim, geometry);
+        var ledge = ArchitectureBox("Window ledge", ledgeCenter, ledgeScale, trim, geometry);
         DestroyImmediate(ledge.GetComponent<Collider>());
         // Jambs where the neighbouring cell along the wall has no window facing the same way.
         var end = dir.x != 0 ? Vector2Int.up : Vector2Int.right;
