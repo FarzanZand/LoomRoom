@@ -213,13 +213,14 @@ public struct EnemySpawn : INetworkSerializable
     public byte side;                // a summon on the players' side (Raise the Fallen): 1 + its summoner's slot; 0 an enemy
     public sbyte elite;              // the host's elite's EliteTrait, -1 a plain one
     public float eliteFloors;
+    public bool minion;              // a boss's minion: killing it gives no experience (EnemyBrain.NoExperience)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref floorKey); s.SerializeValue(ref id); s.SerializeValue(ref prefab); s.SerializeValue(ref prefabName);
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
         s.SerializeValue(ref health); s.SerializeValue(ref maxHealth); s.SerializeValue(ref side);
-        s.SerializeValue(ref elite); s.SerializeValue(ref eliteFloors);
+        s.SerializeValue(ref elite); s.SerializeValue(ref eliteFloors); s.SerializeValue(ref minion);
     }
 }
 

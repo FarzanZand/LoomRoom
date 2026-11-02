@@ -510,6 +510,7 @@ public static class CoopWorld
             lootSeed = drop != null ? drop.seed : 0,
             health = c.Stats != null ? c.Stats.CurrentHealth : 0, maxHealth = c.Stats != null ? c.Stats.MaxHealth : 0,
             elite = c.TryGetComponent<EliteEnemy>(out var el) ? (sbyte)el.trait : (sbyte)-1, eliteFloors = el != null ? el.extraFloors : 0f,
+            minion = c.TryGetComponent<EnemyBrain>(out var minionBrain) && minionBrain.NoExperience,
             side = c.TryGetComponent<Summon>(out var summon) && summon.Summoner != null && summon.Summoner.Faction == Faction.Player ? (byte)(1 + Mathf.Clamp(SlotOf(summon.Summoner), 0, 250)) : (byte)0,
         };
         spawnHistory.Add(spawn);
@@ -531,6 +532,7 @@ public static class CoopWorld
         if (c.Stats != null && spawn.maxHealth > 0 && c.Stats.MaxHealth > 0 && Mathf.Abs(c.Stats.MaxHealth - spawn.maxHealth) > .01f)
             c.Stats.AddModifier(new StatModifier(StatType.MaxHealth, spawn.maxHealth / c.Stats.MaxHealth - 1f, ModifierType.PercentMultiply, Coop.PartySource));
         pendingHealth[c] = spawn.health;
+        if (spawn.minion && go.TryGetComponent<EnemyBrain>(out var minionBrain)) minionBrain.NoExperience = true;
         // Raised for a player (Raise the Fallen): on the players' side here too, with its aura, so it isn't fought.
         if (spawn.side > 0)
         {
