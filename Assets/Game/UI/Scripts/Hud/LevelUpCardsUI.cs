@@ -11,9 +11,8 @@ using UnityEngine.UI;
 // (ProgressionManager.AttributeEffects, so the panels say what the sheet and the character panel say). They pop up one
 // after another (a fade, a small rise and a soft overshoot in size; no turning or spinning, the user, 2026-11-02) while
 // he says one of his deal lines. With
-// ProgressionManager's Auto Popup they come by themselves once no enemy is after the player, and the game waits
-// meanwhile (Menu state, time stopped); while one is, a prompt says "Press R to level up" and R brings them up (still
-// paused). Without Auto Popup the prompt shows whenever a point waits, and R brings them up while the game goes on
+// ProgressionManager's Auto Popup they come by themselves once no enemy close by is after the player (or after
+// autoWaitMost on a fight), with no prompt, and the game waits meanwhile (Menu state, time stopped). Without Auto Popup the prompt shows whenever a point waits, and R brings them up while the game goes on
 // (Menu state for the cursor, time running; Esc puts them away, the point kept). Pick one with the mouse, 1-4, or the arrows and Enter; it
 // takes the point with a small pulse and fades away rising, while the others shrink a little and fade. With two points
 // left they come up again. A prefab (UI/Prefabs/Progression/Level up cards, made by LevelUpCardsSetup.Build())
@@ -46,6 +45,8 @@ public class LevelUpCardsUI : MonoBehaviour
     public List<DungeonMaster.Line> dealLines = new();
 
     [FoldoutGroup("Timing"), Min(0f), Tooltip("Seconds after the point is earned before the cards come (the LEVEL UP banner lands first).")] public float afterLevelUp = .9f;
+    [FoldoutGroup("Timing"), Min(0f), Tooltip("With Auto Popup: an enemy after the player farther than this (metres) doesn't hold the cards back.")] public float calmDistance = 12f;
+    [FoldoutGroup("Timing"), Min(0f), Tooltip("With Auto Popup: seconds a point may wait on a fight before the cards come anyway (an enemy that can't reach the player never holds it back for good).")] public float autoWaitMost = 20f;
     [FoldoutGroup("Timing"), Min(.05f), Tooltip("Seconds each panel takes to pop up, and between one panel and the next.")] public float dealSeconds = .32f, dealGap = .07f;
     [FoldoutGroup("Timing"), Min(0f), Tooltip("Seconds after the last card is in before a pick counts, so a click meant for a swing doesn't take one.")] public float pickDelay = .25f;
     [FoldoutGroup("Timing"), Min(.05f), Tooltip("Seconds the panels take to go once one is picked.")] public float leaveSeconds = .45f;
@@ -99,8 +100,8 @@ public class LevelUpCardsUI : MonoBehaviour
     }
 
     // A point waiting, the table player exploring, no boss on the stage (from the walk-in to the end of the fight) and the
-    // Dungeon Master's hand not reaching in. Calm: no enemy is after the player (Auto Popup deals only then; while one is,
-    // "Press R" shows instead, since one that can't reach the player could hold the point back for good).
+    // Dungeon Master's hand not reaching in. Calm: no enemy within Calm Distance is after the player (Auto Popup deals only
+    // then, or once the point has waited Auto Wait Most on a fight; with Auto Popup off, "Press R" shows instead).
     bool Ready(out bool calm)
     {
         calm = true;
@@ -113,7 +114,8 @@ public class LevelUpCardsUI : MonoBehaviour
         // Never on the boss stage while it runs (the DM sets the boss down before the fight starts) or while his hand reaches in.
         if (BossStageEncounter.Current != null && BossStageEncounter.Current.Busy || DungeonMasterReach.Reaching) return false;
         foreach (var brain in EnemyBrain.Active)
-            if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player) { calm = false; break; }
+            if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player
+                && (brain.transform.position - player.transform.position).sqrMagnitude < calmDistance * calmDistance) { calm = false; break; }
         return true;
     }
 
@@ -126,10 +128,18 @@ public class LevelUpCardsUI : MonoBehaviour
             else if (pointSince < 0f) pointSince = Time.unscaledTime;
             bool waited = ready && Time.unscaledTime - pointSince >= afterLevelUp;
             bool auto = ProgressionManager.CardsAutoPopup;
-            // R brings them up whenever they don't come by themselves: Auto Popup off, or an enemy after the player.
-            bool byKey = !auto || !calm;
-            ShowPrompt(waited && byKey);
-            if (waited && (auto && calm || byKey && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)) Deal();
+            // Auto Popup: no prompt; the cards come once no enemy close by is after the player, or after Auto Wait Most.
+            // Off: "Press R to level up" while a point waits, and R brings them up.
+            if (auto)
+            {
+                ShowPrompt(false);
+                if (waited && (calm || Time.unscaledTime - pointSince >= afterLevelUp + autoWaitMost)) Deal();
+            }
+            else
+            {
+                ShowPrompt(waited);
+                if (waited && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame) Deal();
+            }
             return;
         }
         ShowPrompt(false);
