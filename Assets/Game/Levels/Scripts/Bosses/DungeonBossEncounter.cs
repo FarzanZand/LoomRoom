@@ -9,6 +9,7 @@ public class DungeonBossEncounter : MonoBehaviour
     DungeonGenerator dungeon;
     DungeonMilestone milestone;
     Character boss;
+    public Character Boss => boss;
     EnemyBrain brain;
     int room;
     DungeonExit exit;

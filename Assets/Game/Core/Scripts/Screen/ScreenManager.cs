@@ -40,7 +40,7 @@ public class ScreenManager : Singleton<ScreenManager>
     public ScreenFilterLook[] cycleLooks = new ScreenFilterLook[0];
 
     [FoldoutGroup("Pixel lighting"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLighting))]
-    [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F6 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
+    [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F3 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
     public bool pixelLighting = true;
     [FoldoutGroup("Pixel lighting"), LabelText("Pixel size"), Range(1f, 8f)]
     [Tooltip("How many times larger every texel is drawn on pixel-lit materials: 1 = as painted, 2 = twice as large (half the resolution), any value in between. Live in and out of Play mode. Smooth lighting ignores it.")]
@@ -216,7 +216,7 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         base.OnDestroy();
         if (InputManager.HasInstance) { InputManager.Instance.DebugPixelLightingToggled -= TogglePixelLighting; InputManager.Instance.DebugScreenFilterCycled -= CycleFilter; }
-        // F6 switches the material assets themselves: put them back as the scene has it when Play ends.
+        // F3 switches the material assets themselves: put them back as the scene has it when Play ends.
         if (Application.isPlaying && pixelLighting != pixelLightingAtStart && pixelLookLibrary != null) pixelLookLibrary.SetPixelLighting(pixelLightingAtStart);
     }
 
@@ -300,7 +300,7 @@ public class ScreenManager : Singleton<ScreenManager>
     {
         pixelLighting = !pixelLighting;
         ApplyPixelLighting();
-        AnnouncementUI.Show(pixelLighting ? "Pixel lighting" : "Smooth lighting", "F6");
+        AnnouncementUI.Show(pixelLighting ? "Pixel lighting" : "Smooth lighting", "F3");
     }
 
     // ── Rendering effects ─────────────────────────────────────────────

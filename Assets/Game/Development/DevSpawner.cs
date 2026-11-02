@@ -7,7 +7,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
-// F7, Editor and development builds only: the spawn window, laid out like Asset Studio in the inventory's look. Left:
+// F7, Editor and development builds only: the spawn window (F6 opens it on Cheats alone, the other kinds hidden, so
+// the cheats can be used without the loot and the rest), laid out like Asset Studio in the inventory's look. Left:
 // the kinds (Items, Spells, Room items, Enemies, Rooms, Cheats, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
@@ -82,7 +83,8 @@ public partial class DevSpawner : MonoBehaviour
     readonly string[] group = { All, All, All, All, All, All, All };
     Entry picked;
     int count = 1, rarity;
-    bool open, openedOnce;
+    bool open, openedOnce, cheatsOnly;
+    Kind fullKind = Kind.Items;   // where F7's full window was left (F6's cheats-only window doesn't move it)
     int openedFrame = -10;
     float nextPreviewCheck;
 
@@ -129,7 +131,14 @@ public partial class DevSpawner : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
-        if (keyboard.f7Key.wasPressedThisFrame) { if (open) Close(); else Open(); return; }
+        if (keyboard.f7Key.wasPressedThisFrame || keyboard.f6Key.wasPressedThisFrame)
+        {
+            bool cheats = keyboard.f6Key.wasPressedThisFrame;
+            bool same = open && cheatsOnly == cheats;
+            if (open) Close();
+            if (!same) Open(cheats);
+            return;
+        }
         if (!open) return;
         if (keyboard.escapeKey.wasPressedThisFrame)
         {
@@ -147,16 +156,19 @@ public partial class DevSpawner : MonoBehaviour
         if (Time.unscaledTime > nextPreviewCheck) { nextPreviewCheck = Time.unscaledTime + .3f; FillPreviews(); }
     }
 
-    void Open()
+    void Open(bool cheats = false)
     {
         open = true;
+        cheatsOnly = cheats;
         openedFrame = Time.frameCount;
         panel.SetActive(true);
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
+        for (int i = 0; i < kindButtons.Length; i++) if (kindButtons[i] != null) kindButtons[i].gameObject.SetActive(!cheats || i == (int)Kind.Cheats);
+        if (cheats) { SetKind(Kind.Cheats); return; }
         // The first time: room items in the room, items in a run. After that, where it was left.
-        if (!openedOnce) kind = InRun ? Kind.Items : Kind.RoomItems;
+        if (!openedOnce) fullKind = InRun ? Kind.Items : Kind.RoomItems;
         openedOnce = true;
-        SetKind(kind);
+        SetKind(fullKind);
     }
 
     void Close()
@@ -177,9 +189,93 @@ public partial class DevSpawner : MonoBehaviour
 
     static bool InRun => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
 
+    // ── Cheats ───────────────────────────────────────────────────────
+
+    const float KillReach = 20f;
+
+    static AdventurerProgress TableProgress()
+    {
+        var table = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        return table != null ? table.GetComponent<AdventurerProgress>() : null;
+    }
+
+    static int KillNearby()
+    {
+        var player = PlayerManager.Instance.Active;
+        var victims = new List<Character>();
+        foreach (var brain in EnemyBrain.Active)
+            if (brain != null && brain.Character != null && brain.Character.IsAlive && (brain.transform.position - player.transform.position).sqrMagnitude < KillReach * KillReach)
+                victims.Add(brain.Character);
+        foreach (var victim in victims)
+        {
+            var dir = victim.transform.position - player.transform.position; dir.y = 0f;
+            victim.Stats.TakeDamage(new DamageInfo { Amount = victim.Stats.CurrentHealth + 1000f, Source = player, Quiet = true, HitPoint = victim.transform.position + Vector3.up, Direction = dir.normalized });
+        }
+        return victims.Count;
+    }
+
+    // The floor of the run's next boss still standing: this one while its boss waits or lives, else the next boss floor down; -1: none.
+    static int NextBossFloor(TableLevelLoader loader)
+    {
+        for (int f = loader.FloorNumber; f <= loader.Current.FloorCount; f++)
+        {
+            if (loader.Current.Milestone(f) == null) continue;
+            if (f > loader.FloorNumber) return f;
+            var boss = BossOnFloor(loader.Dungeon);
+            var stage = BossStageEncounter.Current;
+            bool stageWaiting = loader.Dungeon.Stage != null && (stage == null || !stage.Started || stage.Busy);   // not over yet
+            if (stageWaiting || boss != null && boss.IsAlive) return f;
+        }
+        return -1;
+    }
+
+    static Character BossOnFloor(DungeonGenerator floor)
+    {
+        var encounter = floor != null ? floor.GetComponentInChildren<DungeonBossEncounter>(true) : null;
+        return encounter != null ? encounter.Boss : BossStageEncounter.Current != null ? BossStageEncounter.Current.Boss : null;
+    }
+
+    string GoToBoss()
+    {
+        var loader = TableManager.Loader;
+        int floor = NextBossFloor(loader);
+        Close();
+        if (floor == loader.FloorNumber) return WarpToBoss(loader);
+        loader.DescendTo(floor);
+        StartCoroutine(WarpWhenBuilt(loader, floor));
+        return $"Down to floor {floor}.";
+    }
+
+    System.Collections.IEnumerator WarpWhenBuilt(TableLevelLoader loader, int floor)
+    {
+        // Until the floor is built and the player stands on it (the build happens behind the black).
+        for (float t = 0f; t < 60f && (loader.Busy || loader.FloorNumber != floor || loader.Dungeon == null); t += Time.unscaledDeltaTime) yield return null;
+        yield return new WaitForSecondsRealtime(.3f);
+        if (loader.FloorNumber == floor) WarpToBoss(loader);
+    }
+
+    // On a stage: its middle, where the fight begins. Otherwise a few metres in front of the boss, on walkable floor, facing it.
+    static string WarpToBoss(TableLevelLoader loader)
+    {
+        var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
+        var floor = loader.Dungeon;
+        if (player == null || floor == null) return "No floor.";
+        if (floor.Stage != null) { player.Warp(floor.StageCentre); return "On the boss's stage."; }
+        var boss = BossOnFloor(floor);
+        if (boss == null) return "No boss on this floor.";
+        var away = player.transform.position - boss.transform.position; away.y = 0f;
+        var to = boss.transform.position + (away.sqrMagnitude > .01f ? away.normalized : -boss.transform.forward) * 4f;
+        if (UnityEngine.AI.NavMesh.SamplePosition(to, out var hit, 3f, UnityEngine.AI.NavMesh.AllAreas)) to = hit.position;
+        var look = boss.transform.position - to; look.y = 0f;
+        player.Warp(to, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : player.transform.rotation);
+        return "In front of " + boss.TheName + ".";
+    }
+
     void SetKind(Kind k)
     {
+        if (cheatsOnly && k != Kind.Cheats) return;
         kind = k;
+        if (!cheatsOnly) fullKind = k;
         entries.Clear();
         entries.AddRange(Build(k));
         search.SetTextWithoutNotify("");
@@ -495,6 +591,61 @@ public partial class DevSpawner : MonoBehaviour
                     about = () => "The whole floor on the minimap at once: every room and passage, the tavern and the stairs.",
                     primaryLabel = "Show the whole map",
                     primary = () => { int n = 0; foreach (var hud in FindObjectsByType<DungeonHud>()) { hud.RevealAll(); n++; } return n == 0 ? "No map here." : "The whole floor is on the map."; },
+                    blocked = () => !InRun ? "Only on a floor of a run." : null,
+                };
+                // More shortcuts (the user, 2026-11-02).
+                yield return new Entry
+                {
+                    key = "levelUp", name = "Level up", kind = "Cheat",
+                    about = () => { var p = TableProgress(); return "Straight to the next character level, with its attribute point (the level-up cards come up once this window is closed)." + (p != null && p.InRun ? $" Level {p.Level} now." : ""); },
+                    primaryLabel = "Level up",
+                    primary = () => { var p = TableProgress(); p.GainExperience(p.NextLevelXp - p.Experience + .01f); Close(); return $"Level {p.Level}."; },
+                    blocked = () => TableProgress() is { InRun: true } ? null : "Only in a run.",
+                };
+                yield return new Entry
+                {
+                    key = "goToBoss", name = "Go to boss", kind = "Cheat",
+                    about = () => "To the run's next boss: down to its floor if it is further on (the floors between skipped), then set down in front of it; on a stage, in its middle, where the fight begins.",
+                    primaryLabel = "Go to the boss",
+                    primary = GoToBoss,
+                    blocked = () => { var l = TableManager.Loader; return !InRun || l == null || l.Current == null || l.Dungeon == null ? "Only on a floor of a run." : l.Busy ? "A floor is being built. A moment." : NextBossFloor(l) < 0 ? "No boss on this floor or further down." : null; },
+                };
+                yield return new Entry
+                {
+                    key = "mightyBlows", name = "999 damage attacks", kind = "Cheat",
+                    about = () => "Every hit you land does 999 damage: swings, the shield bash, spells. " + (DevCheats.MightyBlows ? "On now." : "Off now."),
+                    primaryLabel = "Switch on or off",
+                    primary = () => { DevCheats.MightyBlows = !DevCheats.MightyBlows; return DevCheats.MightyBlows ? "Your hits do 999 damage." : "Your hits do their own damage again."; },
+                };
+                yield return new Entry
+                {
+                    key = "godMode", name = "God mode", kind = "Cheat",
+                    about = () => "Both players kept at full health, stamina and mana (F8 does the same). " + (DevGodMode.On ? "On now." : "Off now."),
+                    primaryLabel = "Switch on or off",
+                    primary = () => { DevGodMode.Set(!DevGodMode.On); return DevGodMode.On ? "God mode on." : "God mode off."; },
+                };
+                yield return new Entry
+                {
+                    key = "heal", name = "Full health, mana and stamina", kind = "Cheat",
+                    about = () => "The player you are playing back to full health, mana and stamina.",
+                    primaryLabel = "Fill up",
+                    primary = () => { var p = PlayerManager.Instance.Active; p.Stats.Heal(99999f); p.Stats.RestoreMana(99999f); p.Stats.RestoreStamina(99999f); return "Full health, mana and stamina."; },
+                    blocked = () => PlayerManager.HasInstance && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.IsAlive ? null : "No living player.",
+                };
+                yield return new Entry
+                {
+                    key = "gold", name = "+500 gold", kind = "Cheat",
+                    about = () => "500 gold into the purse of the player you are playing.",
+                    primaryLabel = "Add 500 gold",
+                    primary = () => { var w = PlayerManager.Instance.Active.Wallet; w.Add(500); return $"{w.Gold} gold."; },
+                    blocked = () => PlayerManager.HasInstance && PlayerManager.Instance.Active != null && PlayerManager.Instance.Active.Wallet != null ? null : "No purse here.",
+                };
+                yield return new Entry
+                {
+                    key = "killNear", name = "Kill enemies nearby", kind = "Cheat",
+                    about = () => $"Every enemy within {KillReach:0} m of you dies at once, as if you had struck it down (XP, loot and spoils as usual).",
+                    primaryLabel = "Kill them",
+                    primary = () => { int n = KillNearby(); return n == 0 ? "No enemy close by." : $"{n} enem{(n == 1 ? "y" : "ies")} killed."; },
                     blocked = () => !InRun ? "Only on a floor of a run." : null,
                 };
                 break;

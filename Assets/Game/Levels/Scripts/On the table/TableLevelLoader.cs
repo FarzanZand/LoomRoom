@@ -152,6 +152,13 @@ public class TableLevelLoader : MonoBehaviour
         if(AudioManager.HasInstance && AudioManager.Instance.HasUI(DescendKey))AudioManager.Instance.PlayUI(DescendKey);
         StartCoroutine(LoadRoutine(Current,true));
     }
+    // Straight down to a later floor, the ones between skipped (the cheats' Go to boss).
+    public void DescendTo(int floor)
+    {
+        if(Busy || Current==null || floor<=FloorNumber || floor>Current.FloorCount || player==null || !player.IsAlive)return;
+        FloorNumber=floor-1;
+        Descend();
+    }
     public const string DescendKey="descendStairs";
     IEnumerator LoadRoutine(TableLevelData level, bool descending=false, bool skipReveal=false)
     {

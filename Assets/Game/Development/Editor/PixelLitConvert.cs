@@ -4,7 +4,7 @@ using UnityEngine;
 
 // Pixel lighting (LoomRoom/Pixel Lit: light evaluated per texture texel and stepped into bands) for the game's own
 // materials, with no Pixelator swap or camera filter. Register sets each material's Pixel Lit values once and lists it
-// on the Pixel Look library with its own shader, so ScreenManager > Pixel lighting (F6 in Play mode) can flip it
+// on the Pixel Look library with its own shader, so ScreenManager > Pixel lighting (F3 in Play mode) can flip it
 // between the two in place. Covers the game's opaque lit materials (Assets/Game); glass, water, glows, text, UI and
 // special shaders are left alone, and so are store assets (Synty and other packs). Run it again after adding materials.
 public static class PixelLitConvert
