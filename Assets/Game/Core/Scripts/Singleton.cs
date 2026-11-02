@@ -75,7 +75,9 @@ public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         _lookupFailed = false;
         if (_instance == null)
             _instance = this as T;
-        else if (_instance != this)
+        // Outside Play a second one is left alone: an [ExecuteAlways] manager's prefab opened in Prefab Mode wakes beside
+        // the scene's, and Destroy isn't allowed in edit mode (it logged an error and would have taken the stage's root).
+        else if (_instance != this && Application.isPlaying)
             Destroy(gameObject);
     }
 

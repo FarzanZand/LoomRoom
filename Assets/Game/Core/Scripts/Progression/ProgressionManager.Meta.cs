@@ -435,12 +435,22 @@ public partial class ProgressionManager
     {
         if (!Application.isPlaying) return;
         // Once, after the save is read: a save left in the lesson with too few spoils to buy its skill is put right.
-        if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() > 0) MetaChanged?.Invoke(); }
+        if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() + HandOverMovedTrophies() > 0) MetaChanged?.Invoke(); }
         UpdateSheetQuest();
         UpdatePosterQuest();
         UpdateDiceQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
+    }
+    // Once, after the save is read: a milestone moved onto a rank already bought (the dash at Athletics 15, Deflect at
+    // Blocking 25, 2026-11-01) never earned its trophy, since trophies are earned when buying. It is handed over quietly,
+    // ready to hang. Returns how many.
+    int HandOverMovedTrophies()
+    {
+        int count = 0;
+        foreach (var (t, m) in AllMilestones())
+            if (Reached(t, m) && Trophy(t, m) == TrophyState.None) { SetTrophy(t, m, TrophyState.Carried); count++; }
+        return count;
     }
     IEnumerator SayLesson()
     {
