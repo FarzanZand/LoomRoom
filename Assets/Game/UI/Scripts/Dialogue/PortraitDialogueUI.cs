@@ -243,7 +243,8 @@ public class PortraitDialogueUI : MonoBehaviour
         yield return null;
     }
 
-    // The answers as buttons: a click takes one; up and down (or Tab) move, and Submit takes the one lit.
+    // The answers as buttons: a click takes one; the mouse moving over one, up and down (or Tab) light it (so after the keys
+    // moved the light, a nudge of the mouse takes it back), and Submit takes the one lit.
     IEnumerator Choose(List<PortraitChoice> choices)
     {
         picked = -1; selected = 0;
@@ -265,9 +266,16 @@ public class PortraitDialogueUI : MonoBehaviour
         void Step() { navigated = true; }
         if (InputManager.HasInstance) InputManager.Instance.NavigatePressed += Step;
         yield return null;
+        Vector2 pointer = InputManager.HasInstance ? InputManager.Instance.PointerPosition : Vector2.zero;
         while (picked < 0)
         {
             if (navigated && InputManager.HasInstance) { navigated = false; Light((selected + InputManager.Instance.NavigateStep + choiceButtons.Count) % choiceButtons.Count); }
+            if (InputManager.HasInstance && InputManager.Instance.PointerPosition != pointer)
+            {
+                pointer = InputManager.Instance.PointerPosition;
+                int over = Under(pointer);
+                if (over >= 0 && over != selected) Light(over);
+            }
             if (KeyPressed()) picked = selected;
             yield return null;
         }
@@ -277,6 +285,16 @@ public class PortraitDialogueUI : MonoBehaviour
         choiceButtons.Clear();
         if (UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
         yield return null;
+    }
+
+    // The answer under a screen point, -1 for none.
+    int Under(Vector2 point)
+    {
+        var canvas = choiceColumn.GetComponentInParent<Canvas>();
+        var cam = canvas == null || canvas.rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.rootCanvas.worldCamera;
+        for (int i = 0; i < choiceButtons.Count; i++)
+            if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)choiceButtons[i].transform, point, cam)) return i;
+        return -1;
     }
 
     void Light(int index)
