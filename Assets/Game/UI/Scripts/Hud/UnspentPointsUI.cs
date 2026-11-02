@@ -3,7 +3,8 @@ using UnityEngine;
 
 // A yellow "+" at the bottom left of the HUD, over the health bar, while the table player has attribute points to spend
 // in a run (AdventurerProgress.UnspentPoints; each character level gives one, spent on the character panel's
-// Attributes). It breathes gently so it is seen without nagging. Built on the HUD canvas by UnspentPointsSetup.Build().
+// Attributes). It breathes gently so it is seen without nagging. Not with the level-up cards (ProgressionManager's Level
+// up Reward on Cards): their own prompt says "Press R to level up" while a point waits. Built on the HUD canvas by UnspentPointsSetup.Build().
 public class UnspentPointsUI : MonoBehaviour
 {
     public TMP_Text label;
@@ -28,7 +29,7 @@ public class UnspentPointsUI : MonoBehaviour
             if (table != null) progress = table.GetComponent<AdventurerProgress>();
         }
         // Only while exploring: in a menu (the inventory shows its own +, the spawn window) it would sit on top.
-        bool show = players != null && players.ActiveKind == PlayerKind.Table && progress != null && progress.InRun && progress.UnspentPoints > 0
+        bool show = players != null && players.ActiveKind == PlayerKind.Table && progress != null && progress.InRun && progress.UnspentPoints > 0 && !ProgressionManager.CardsOnLevelUp
             && GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
         if (label != null && show) label.text = progress.UnspentPoints > 1 ? "+" + progress.UnspentPoints : "+";
         if (group == null) return;

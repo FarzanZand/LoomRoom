@@ -36,7 +36,7 @@ public class EquipmentPanelUI : MonoBehaviour
                 return true;
             case StatTooltipUI.Kind.Stamina:
                 title="Stamina";subtitle=$"{Mathf.CeilToInt(s.CurrentStamina)} / {s.MaxStamina:0}";
-                body="Used by heavy swings, blocks and the shield bash.";
+                body="Used by dashes, blocks, heavy swings and the shield bash.";
                 return true;
             case StatTooltipUI.Kind.Mana:
                 title="Mana";subtitle=$"{Mathf.CeilToInt(s.CurrentMana)} / {s.MaxMana:0}";
@@ -122,7 +122,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if(skills!=null && progress!=null)foreach(var row in skills)if(row!=null)row.Refresh(progress,default);
         if(levelProgress!=null && progress!=null){UIBar.Set(levelProgress,progress.NextLevelXp>0?progress.Experience/progress.NextLevelXp:0);levelProgress.color=UIManager.HasInstance?Color.Lerp(UIManager.Instance.experience,Color.white,.35f):levelProgress.color;}
         if(attributeCells!=null)foreach(var cell in attributeCells)if(cell!=null)cell.Refresh(progress);
-        if(attributesTitle!=null){int left=progress!=null && progress.InRun && !ProgressionManager.CardsOnLevelUp?progress.UnspentPoints:0;attributesTitle.text="ATTRIBUTES"+(left>0?$"<pos=55%><size=80%><color=#F2C75C>{left} POINT{(left>1?"S":"")} TO SPEND</color></size>":"");}
+        if(attributesTitle!=null){int left=progress!=null && progress.InRun?progress.UnspentPoints:0;bool cards=ProgressionManager.CardsOnLevelUp;attributesTitle.text="ATTRIBUTES"+(left>0?$"<pos=55%><size=80%><color=#F2C75C>{left} {(cards?"LEVEL UP":"POINT")}{(left>1?"S":"")} {(cards?"WAITING":"TO SPEND")}</color></size>":"");}
         if(food!=null)food.text=s.FoodRemaining>0?$"NOURISHED   +{s.FoodHealingPerSecond:0.#} HP/s\n{s.FoodRemaining:0}s remaining":"";
     }
 }
