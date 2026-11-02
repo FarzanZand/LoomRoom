@@ -28,6 +28,8 @@ public class DungeonLootProfile : LootSource
     public float upgradeChance = .1f;
     [Range(0, 1), Tooltip("Gold amounts grow by this fraction per floor beyond the first.")]
     public float goldGrowthPerFloor = .15f;
+    [Tooltip("Spell tomes join the gear roll. Off: none drop from this profile (the intro's practice run, Intro loot).")]
+    public bool spellTomes = true;
 
     [Title("Sources")]
     [Tooltip("Off: enemy kills, breakables and chests drop by InventoryManager > Drops by source, the same in every biome. On: this profile's own chances below (a boss's reward).")]
@@ -66,8 +68,8 @@ public class DungeonLootProfile : LootSource
             // Spell tomes are part of the same roll, weighted like any other piece (they have no better versions,
             // so a tome can come up at its own tier or any above it).
             var top = TopTiers();
-            var gear = Pick(random, i => IsGear(i) && FitsTier(i, tier, top) || IsTome(i) && i.tier <= tier)
-                ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || IsTome(i) && i.tier <= highest);
+            var gear = Pick(random, i => IsGear(i) && FitsTier(i, tier, top) || spellTomes && IsTome(i) && i.tier <= tier)
+                ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || spellTomes && IsTome(i) && i.tier <= highest);
             if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
             if (gear != null) gear = RollRarity(gear, random, floor, InventoryManager.RaritySourceScale(source));
             if (gear != null) drops.Add(new Drop(gear, 1));

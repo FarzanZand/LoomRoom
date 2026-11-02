@@ -13,6 +13,42 @@ MonoBehaviour:
   m_Name: IntroDungeon base
   m_EditorClassIdentifier: Assembly-CSharp::DungeonBiome
   displayName: Intro cellar
+  kind: 0
+  boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
   entryMessage: 
   roomStyles:
   - style: {fileID: 11400000, guid: 5e6a07315aa79734498dcba82c591e34, type: 2}
@@ -91,9 +127,15 @@ MonoBehaviour:
   destructibles: []
   lighting: 100
   litThroughout: 0
+  fog: {x: 0, y: 0}
   lightBoard: 0
   roomTemplates: []
   templateChance: 0.7
+  roomCount: 0
+  roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
+  noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -108,6 +150,11 @@ MonoBehaviour:
     sleepingPacks: 1
     sleepChance: 0.2
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -147,8 +194,12 @@ MonoBehaviour:
   encounterChance: {x: 1, y: 1}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 1
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0
+  eliteFloors: 3
   features: []
-  loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+  loot: {fileID: 11400000, guid: f87f4ac7c58bc7748a44d26eea2024bc, type: 2}
   merchantChance: 0
   guardian:
     enabled: 0
@@ -194,6 +245,7 @@ MonoBehaviour:
   boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
   boardGridMaterial: {fileID: 2100000, guid: acc03c58dc02a3f41a0780fa30b8e880, type: 2}
   boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
   boardVerticality: 5
   boardTileTaps:
   - {fileID: 8300000, guid: 426c8cc8b2a4e1c4f8d100f1b194662f, type: 3}
@@ -203,6 +255,8 @@ MonoBehaviour:
   boardMoundProps: []
   boardLightColor: {r: 1, g: 0.86, b: 0.68, a: 1}
   boardLightIntensity: 2600
+  boardLightAngle: 0
+  boardLightFrom: 220
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -226,12 +280,16 @@ MonoBehaviour:
   balance: {fileID: 11400000, guid: 3e63dea2b23d7494aa25af43ad1ca3ff, type: 2}
   gearByFloor: []
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  eventRoomsPerFloor: {x: 0, y: 1}
+  startingChest: 1
   startingChestConsumable: {fileID: 0}
   startingChestItems: []
   fixedSeed: 1211
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
   roomLighting: 2
+  roomBrightness: 0.5
+  roomTint: {r: 1, g: 1, b: 1, a: 1}
   mood: {fileID: 11400000, guid: c57eb3515be34c2db8d01313ff16347b, type: 2}
   layoutMode: 2
   width: 30
@@ -349,12 +407,12 @@ MonoBehaviour:
     prefab: {fileID: 6875970287467484622, guid: 1e54529ebe8f4c94698c1cd84d62be69, type: 3}
     item: {fileID: 0}
     count: 1
-    loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+    loot: {fileID: 11400000, guid: f87f4ac7c58bc7748a44d26eea2024bc, type: 2}
   - key: k
     prefab: {fileID: 3676609536429769752, guid: 74294ce93f890d0479859cebe2ea259e, type: 3}
     item: {fileID: 0}
     count: 1
-    loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
+    loot: {fileID: 11400000, guid: f87f4ac7c58bc7748a44d26eea2024bc, type: 2}
   - key: p
     prefab: {fileID: 0}
     item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
