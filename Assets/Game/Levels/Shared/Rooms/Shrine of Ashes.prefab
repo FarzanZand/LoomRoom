@@ -552,7 +552,7 @@ PrefabInstance:
     - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
+      objectReference: {fileID: 4300000, guid: b49378d564323f246adfdfde8f49ebe8, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -612,7 +612,7 @@ PrefabInstance:
     - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
+      objectReference: {fileID: 2100000, guid: 817ad46f2e6684e40962e2e1b33a3ad6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -652,14 +652,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 731934983, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: f9bbb263b6c7e594e98259e8f2e5a168, type: 2}
     - target: {fileID: 5246684761535434065, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: c91c38432aa0ceb40a94897d3a6c6c6f, type: 2}
+      objectReference: {fileID: 4300000, guid: f9bbb263b6c7e594e98259e8f2e5a168, type: 2}
     - target: {fileID: 8010497152379173275, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 9ee67a3adc9a19c4aa12001304c95dc5, type: 2}
+      objectReference: {fileID: 2100000, guid: 98f8d18d4a42fa84fa3bcdebb113c385, type: 2}
     - target: {fileID: 8371062267507710030, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Brazier_01
@@ -743,6 +747,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 549202797, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 106994f5ba1bfcd40bd9b7acb2cd6570, type: 2}
     - target: {fileID: 29432052435139033, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.8
@@ -802,11 +810,11 @@ PrefabInstance:
     - target: {fileID: 1162980485961859766, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: d9bcd0781b7350847b24cc88f346c968, type: 2}
+      objectReference: {fileID: 2100000, guid: b92cd06f656f3f04f8c0f8e5d7f52094, type: 2}
     - target: {fileID: 4019264613339575932, guid: 280934b61cbba8d4b9782ee17576943c, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 406bc5daec0fc8249bcc965f17e73d33, type: 2}
+      objectReference: {fileID: 4300000, guid: 106994f5ba1bfcd40bd9b7acb2cd6570, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -849,7 +857,7 @@ PrefabInstance:
     - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
+      objectReference: {fileID: 4300000, guid: b49378d564323f246adfdfde8f49ebe8, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -909,7 +917,7 @@ PrefabInstance:
     - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
+      objectReference: {fileID: 2100000, guid: 817ad46f2e6684e40962e2e1b33a3ad6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -949,6 +957,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 1457215392, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: ce18ea55935b1f54fba426858e1937b2, type: 2}
     - target: {fileID: 5150163699762866208, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Bone_Pile_01
@@ -1008,11 +1020,11 @@ PrefabInstance:
     - target: {fileID: 6663624206578977269, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: ad90a0c0c132dc2478c99e55c1b5b547, type: 2}
+      objectReference: {fileID: 2100000, guid: d20da0b2c87a6214e8a7867b2b3432e2, type: 2}
     - target: {fileID: 8907281827052748095, guid: 4bb66d8760dcffd419ba3643aa704d4b, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: ece5e37e1ca40504581d282846b895c8, type: 2}
+      objectReference: {fileID: 4300000, guid: ce18ea55935b1f54fba426858e1937b2, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1055,7 +1067,7 @@ PrefabInstance:
     - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
+      objectReference: {fileID: 4300000, guid: b49378d564323f246adfdfde8f49ebe8, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -1115,7 +1127,7 @@ PrefabInstance:
     - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
+      objectReference: {fileID: 2100000, guid: 817ad46f2e6684e40962e2e1b33a3ad6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1155,14 +1167,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8129503558607904697}
     m_Modifications:
+    - target: {fileID: 731934983, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: f9bbb263b6c7e594e98259e8f2e5a168, type: 2}
     - target: {fileID: 5246684761535434065, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: c91c38432aa0ceb40a94897d3a6c6c6f, type: 2}
+      objectReference: {fileID: 4300000, guid: f9bbb263b6c7e594e98259e8f2e5a168, type: 2}
     - target: {fileID: 8010497152379173275, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 9ee67a3adc9a19c4aa12001304c95dc5, type: 2}
+      objectReference: {fileID: 2100000, guid: 98f8d18d4a42fa84fa3bcdebb113c385, type: 2}
     - target: {fileID: 8371062267507710030, guid: 887ca6f05d8eb0940be8f3d4916be6b1, type: 3}
       propertyPath: m_Name
       value: SM_Prop_Brazier_01
@@ -1249,7 +1265,7 @@ PrefabInstance:
     - target: {fileID: 6477297528340513122, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 0e91c0045704ecc46ac86f47572217dd, type: 2}
+      objectReference: {fileID: 4300000, guid: b49378d564323f246adfdfde8f49ebe8, type: 2}
     - target: {fileID: 7280052242525181053, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: m_Name
       value: SM_Bld_Pillar_01
@@ -1309,7 +1325,7 @@ PrefabInstance:
     - target: {fileID: 9081240922935555496, guid: 661fcd1d838bb624788365beb2d34869, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 412b2826088c3764982b84a95f48ef6c, type: 2}
+      objectReference: {fileID: 2100000, guid: 817ad46f2e6684e40962e2e1b33a3ad6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
