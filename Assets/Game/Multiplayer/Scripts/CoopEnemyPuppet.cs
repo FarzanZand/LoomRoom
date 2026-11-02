@@ -18,6 +18,8 @@ public class CoopEnemyPuppet : MonoBehaviour
     readonly List<(float time, Vector3 position, float yaw)> snapshots = new(8);
     // The player the host's enemy has in sight (Coop.NoSlot: nobody).
     public byte Sees { get; private set; } = Coop.NoSlot;
+    // When it last had this machine's player in sight (a snapshot can drop the target for a moment mid-chase).
+    public float SawLocalAt { get; private set; } = -100f;
 
     void Awake()
     {
@@ -32,6 +34,7 @@ public class CoopEnemyPuppet : MonoBehaviour
     public void Apply(EnemySnapshot s, float hostTime)
     {
         Sees = s.sees;
+        if (Sees == Coop.LocalSlot) SawLocalAt = Time.unscaledTime;
         float yaw = s.yaw / 50f;
         if (snapshots.Count > 0 && hostTime <= snapshots[snapshots.Count - 1].time) return;   // late or repeated
         if (snapshots.Count == 0 || (s.position - snapshots[snapshots.Count - 1].position).sqrMagnitude > JumpMetres * JumpMetres)

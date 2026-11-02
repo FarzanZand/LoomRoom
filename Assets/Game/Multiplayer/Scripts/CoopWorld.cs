@@ -226,13 +226,15 @@ public static class CoopWorld
         return p != null ? p.Proxy : null;
     }
 
-    // Guest: an enemy of the host's has this player in sight right now (its snapshots say whom it sees), within metres of them.
-    public static bool LocalSeen(float within = float.PositiveInfinity)
+    // Guest: an enemy of the host's has this player in sight right now (its snapshots say whom it sees), within metres of them;
+    // with a grace, one that saw them in the last that many seconds counts too.
+    public static bool LocalSeen(float within = float.PositiveInfinity, float grace = 0f)
     {
         if (!Coop.IsGuest) return false;
         var me = CharacterOf(Coop.LocalSlot);
         foreach (var e in enemies)
-            if (e != null && e.IsAlive && e.TryGetComponent<CoopEnemyPuppet>(out var puppet) && puppet.Sees == Coop.LocalSlot
+            if (e != null && e.IsAlive && e.TryGetComponent<CoopEnemyPuppet>(out var puppet)
+                && (puppet.Sees == Coop.LocalSlot || Time.unscaledTime - puppet.SawLocalAt < grace)
                 && (me == null || (e.transform.position - me.transform.position).sqrMagnitude < within * within)) return true;
         return false;
     }

@@ -113,8 +113,9 @@ public class LevelUpCardsUI : MonoBehaviour
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return false;
         // Never on the boss stage while it runs (the DM sets the boss down before the fight starts) or while his hand reaches in.
         if (BossStageEncounter.Current != null && BossStageEncounter.Current.Busy || DungeonMasterReach.Reaching) return false;
-        // Co-op guests: the host's enemies are copies here with no sight of their own; their snapshots say whom they see.
-        if (CoopWorld.LocalSeen(calmDistance)) { calm = false; return true; }
+        // Co-op guests: the host's enemies are copies here with no sight of their own; their snapshots say whom they see (one
+        // that dropped its target for a snapshot mid-chase still counts for a moment).
+        if (CoopWorld.LocalSeen(calmDistance, 1.5f)) { calm = false; return true; }
         foreach (var brain in EnemyBrain.Active)
             if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player
                 && (brain.transform.position - player.transform.position).sqrMagnitude < calmDistance * calmDistance) { calm = false; break; }
