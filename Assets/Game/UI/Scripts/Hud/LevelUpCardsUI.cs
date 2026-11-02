@@ -24,6 +24,11 @@ public class LevelUpCardsUI : MonoBehaviour
     public class CardArt
     {
         public Sprite face, divider, keyFrame;
+        [Tooltip("How the face is drawn: Tiled for the inventory's stone frame (its border kept, the middle tiled), Simple for a whole picture.")]
+        public Image.Type faceType = Image.Type.Simple;
+        public Color faceTint = Color.white;
+        [Tooltip("The divider's colour when it has no sprite (a plain line, like the character panel's).")]
+        public Color dividerColor = new(1f, 1f, 1f, 0f);
         public Color name = Color.white, ink = Color.white, gain = Color.white, faded = new(1f, 1f, 1f, .6f), glow = new(1f, .85f, .4f, .8f);
         public Material titleMaterial, bodyMaterial;
         [Range(0f, 1f), Tooltip("How dark the screen goes behind the cards.")] public float dim = .6f;
@@ -205,12 +210,21 @@ public class LevelUpCardsUI : MonoBehaviour
     {
         if (card == null) return;
         var track = meta != null ? meta.Track(attribute) : null;
-        if (card.face != null) { card.face.sprite = art.face; card.face.color = Color.white; }
+        if (card.face != null) { card.face.sprite = art.face; card.face.type = art.faceType; card.face.color = art.faceTint; }
         if (card.back != null) card.back.enabled = false;
-        if (card.divider != null) { card.divider.sprite = art.divider; card.divider.enabled = art.divider != null; }
-        if (card.keyFrame != null) { card.keyFrame.sprite = art.keyFrame; card.keyFrame.enabled = art.keyFrame != null; }
+        if (card.divider != null)
+        {
+            card.divider.sprite = art.divider;
+            if (art.divider == null) card.divider.color = art.dividerColor;
+            card.divider.enabled = art.divider != null || art.dividerColor.a > 0f;
+        }
+        if (card.keyFrame != null)
+        {
+            card.keyFrame.sprite = art.keyFrame; card.keyFrame.enabled = art.keyFrame != null;
+            card.keyFrame.type = art.keyFrame != null && art.keyFrame.border != Vector4.zero ? Image.Type.Sliced : Image.Type.Simple;
+        }
         // The glow is the card's own shape a little larger, in the glow colour.
-        if (card.glow != null) { card.glow.sprite = art.face; card.glow.color = WithAlpha(art.glow, 0f); }
+        if (card.glow != null) { card.glow.sprite = art.face; card.glow.type = art.faceType; card.glow.color = WithAlpha(art.glow, 0f); }
         if (card.icon != null) { card.icon.sprite = track != null ? track.icon : null; card.icon.enabled = card.icon.sprite != null; }
         int now = p != null ? p.Score(attribute) : 8;
         if (card.attributeName != null)

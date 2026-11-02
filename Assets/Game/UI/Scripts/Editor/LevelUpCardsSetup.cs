@@ -7,12 +7,14 @@ using UnityEngine.UI;
 // Makes the level-up cards (LevelUpCardsUI) as a prefab, UI/Prefabs/Progression/Level up cards, which ProgressionManager
 // puts on the HUD canvas (ProgressionManager.levelUpCards, set here on the manager's prefab and the scene's): a dark backdrop that takes the clicks
 // and four cards in a row (each a pointer target, a body that moves, a gold glow behind it, face and back,
-// and on the face the attribute's icon, name, score, a divider, its gains and its key). Fills in the tarot art from
-// UI/Sprites/Level up cards (Tools/level_up_cards.py), makes the sounds as AudioData in Audio/Data/Level up cards from
+// and on the face the attribute's icon in a slot, name, score, a divider, its gains and its key). Dresses them in the
+// inventory's grey stone frames and slots (PlainArt; the older tarot art in UI/Sprites/Level up cards, from
+// Tools/level_up_cards.py, is unused), makes the sounds as AudioData in Audio/Data/Level up cards from
 // the sound libraries, and gives the Dungeon Master his deal lines. Safe to run again: the prefab is made again. Run from an eval:
 // LevelUpCardsSetup.Build().
 public static class LevelUpCardsSetup
 {
+    const string Inventory = "Assets/Game/UI/Sprites/Inventory/";
     const string Art = "Assets/Game/UI/Sprites/Level up cards/", Sounds = "Assets/Game/Audio/Data/Level up cards/";
     const string Lib = "Assets/ThirdParty/Sound Effects Library/", Table = "Assets/Game/Cinematics/Intro/Tabletop/";
     const string PrefabPath = "Assets/Game/UI/Prefabs/Progression/Level up cards.prefab";
@@ -32,7 +34,6 @@ public static class LevelUpCardsSetup
         var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
         var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
         var outline = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
-        var underlay = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator Underlay.mat");
 
         var root = new GameObject("Level up cards", typeof(RectTransform), typeof(LevelUpCardsUI));
         Undo.RegisterCreatedObjectUndo(root, "Build level up cards");
@@ -83,19 +84,26 @@ public static class LevelUpCardsSetup
             card.body = b;
             card.glow = Box("Glow", b, null, new Vector2(CardW + 22f, CardH + 22f), new Color(1f, .8f, .35f, 0f), false);
             card.face = Box("Face", b, null, new Vector2(CardW, CardH), Color.white, false);
+            // The inventory panel's grime laid inside the frame, as on every HUD panel.
+            var grunge = Box("Grunge", b, AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/UI/Sprites/Panel/Panel grunge.png"), new Vector2(CardW - 28f, CardH - 28f), Color.white, false);
+            grunge.type = Image.Type.Tiled;
 
             var parts = new GameObject("Face parts", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
             parts.gameObject.layer = root.layer;
             parts.SetParent(b, false); parts.sizeDelta = new Vector2(CardW, CardH);
             var partsGroup = parts.GetComponent<CanvasGroup>(); partsGroup.blocksRaycasts = false;
             card.faceParts = partsGroup;
+            // The icon sits in one of the inventory's grey slots.
+            var iconSlot = Box("Icon slot", parts, AssetDatabase.LoadAssetAtPath<Sprite>(Inventory + "Plain slot grey.png"), new Vector2(116f, 116f), Color.white, false);
+            iconSlot.type = Image.Type.Sliced;
+            iconSlot.rectTransform.anchoredPosition = new Vector2(0f, 138f);
             card.icon = Box("Icon", parts, null, new Vector2(96f, 96f), Color.white, false);   // 32 px icons at exactly 3x
             card.icon.rectTransform.anchoredPosition = new Vector2(0f, 138f);
             card.icon.preserveAspect = true;
-            card.attributeName = Text("Name", parts, bold, 34f, Color.white, null, new Vector2(0f, 70f), "STRENGTH", 260f);
+            card.attributeName = Text("Name", parts, bold, 30f, Color.white, null, new Vector2(0f, 70f), "STRENGTH", 260f);
             card.attributeName.characterSpacing = 3f;
             card.score = Text("Score", parts, bold, 28f, Color.white, null, new Vector2(0f, 34f), "10  >  11", 260f);
-            card.divider = Box("Divider", parts, null, new Vector2(220f, 10f), Color.white, false);
+            card.divider = Box("Divider", parts, null, new Vector2(220f, 2f), Color.white, false);   // a thin line like the character panel's
             card.divider.rectTransform.anchoredPosition = new Vector2(0f, 6f);
             card.effects = Text("Effects", parts, body, 24f, Color.white, null, new Vector2(0f, -68f), "+1 damage\n+2 shield bash damage\n+10% heavy attack damage", 260f);
             card.effects.rectTransform.sizeDelta = new Vector2(260f, 130f);
@@ -118,7 +126,7 @@ public static class LevelUpCardsSetup
         list.arraySize = 4;
         for (int i = 0; i < 4; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = cards[i];
         so.ApplyModifiedPropertiesWithoutUndo();
-        ui.art = TarotArt(outline, underlay);
+        ui.art = PlainArt();
         ui.dealLines = new List<DungeonMaster.Line>
         {
             new() { text = "Choose." },
@@ -144,14 +152,21 @@ public static class LevelUpCardsSetup
         return "made the level up cards prefab" + (missing.Count > 0 ? "; missing: " + string.Join(", ", missing) : "");
     }
 
-    static LevelUpCardsUI.CardArt TarotArt(Material outline, Material underlay)
+    // The inventory's and the shop's look (the user, 2026-11-02: the tarot cards didn't match the rest of the UI): each
+    // card a panel of the plain grey stone frame, tiled with the panels' warm tint; the icon in a grey slot; the name in
+    // the panels' gold, the gains in their off-white, the score's old number in their dim brown; a faint line between, as the character panel's;
+    // the key in a small slot; lit in gold on hover like the hotbar's equipped frame.
+    static LevelUpCardsUI.CardArt PlainArt()
     {
-        Color Rgb(int r, int g, int b, float a = 1f) => new(r / 255f, g / 255f, b / 255f, a);
+        var frame = AssetDatabase.LoadAssetAtPath<Sprite>(Inventory + "Plain frame grey.png");
+        var slot = AssetDatabase.LoadAssetAtPath<Sprite>(Inventory + "Plain slot grey.png");
+        if (frame == null) missing.Add("Plain frame grey"); if (slot == null) missing.Add("Plain slot grey");
         return new LevelUpCardsUI.CardArt
         {
-            face = Sprite("Tarot face"), divider = Sprite("Tarot divider"), keyFrame = Sprite("Tarot key"),
-            name = Rgb(226, 182, 92), ink = Rgb(232, 222, 204), gain = Rgb(242, 210, 130), faded = Rgb(160, 150, 160, .8f), glow = Rgb(255, 170, 70, .9f), dim = .62f,
-            titleMaterial = outline, bodyMaterial = underlay,
+            face = frame, faceType = Image.Type.Tiled, faceTint = new Color(1f, .839f, .827f), keyFrame = slot,
+            divider = null, dividerColor = new Color(1f, 1f, 1f, .1f),
+            name = new Color(.86f, .7f, .38f), ink = new Color(.75f, .73f, .69f), gain = new Color(.84f, .84f, .82f), faded = new Color(.55f, .51f, .45f), glow = new Color(.95f, .76f, .36f, .85f), dim = .55f,
+            titleMaterial = null, bodyMaterial = null,
             // Tabletop sounds, not chimes (the user, 2026-11-02): a sheet of paper picked up as each panel comes, a die's
             // knock on the table on hover, a book shut on the pick, paper folding away as the others go.
             deal = Sound("Tarot pop", 1f, .04f, Lib + "Items/Itm_Note_Up_01.wav", Lib + "Items/Itm_Note_Up_02.wav"),
