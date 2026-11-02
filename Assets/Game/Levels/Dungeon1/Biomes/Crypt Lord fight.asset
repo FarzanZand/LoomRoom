@@ -71,7 +71,7 @@ MonoBehaviour:
     model: {fileID: 0}
     text: You heard the king. Dance.
     choices: []
-  introCard: 2
+  introCard: 1
   title:
     lettersPerSecond: 11
     subtitleFade: 0.4
