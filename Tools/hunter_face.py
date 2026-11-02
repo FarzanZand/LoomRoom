@@ -21,6 +21,9 @@ cl=rng.uniform(.86,1.12,(130,130))
 blob=rng.normal(0,1,(256,256))
 for _ in range(3): blob=(blob+np.roll(blob,1,0)+np.roll(blob,-1,0)+np.roll(blob,1,1)+np.roll(blob,-1,1))/5   # soft, uneven
 blob=blob/blob.std()
+grain=rng.normal(0,1,(256,256))   # a finer uneven field for the cloth and the hair's edge (no regular rhythm)
+for _ in range(2): grain=(grain+np.roll(grain,1,0)+np.roll(grain,-1,0)+np.roll(grain,1,1)+np.roll(grain,-1,1))/5
+grain=grain/grain.std()
 
 out=src.copy()
 def paint(mask,base,calm=1.0):
@@ -29,7 +32,7 @@ def paint(mask,base,calm=1.0):
         k=1+(cl[y//2,x//2]*rng.uniform(.93,1.06)-1)*(calm if calm>0 else .35)
         out[y,x,:3]=np.clip(np.array(base)*k,0,255)
 # hair
-hair=head&((h>.71)|((h>.42)&(fw<-.3))|((h>.6)&(fw<.45)&(np.abs(nx)>.45)))&~eyes
+hair=head&((h>.71)|((h>.42)&(fw<-.3))|((h+.03*grain>.6)&(fw<.45)&(np.abs(nx)>.45)))&~eyes   # the side's lower edge ragged, not a staircase
 skinlike=(rgb[:,:,0]>140)&(rgb[:,:,0]>rgb[:,:,2]+15)
 for _ in range(4):   # fill the texels between triangles at the crop's edge (the islands' pale rims)
     grow=np.zeros_like(hair)
@@ -51,11 +54,12 @@ for y,x in zip(ys,xs):
 ys,xs=np.nonzero(mask)
 for y,x in zip(ys,xs):
     f=out[y,x,:3]
-    weave=1+.04*(((y+(x//3))%2)*2-1)+rng.normal(0,.035)   # threads: rows shifted every third texel, uneven
+    weave=1+.05*grain[y,x]+rng.normal(0,.03)   # uneven cloth grain (a regular weave read as a dot grid on the slanted sides, Samus)
     f*=weave
     band=(h[y,x]*14+np.sin(xf[y,x]*7)*.25)%1
-    if band<.22: f*=.74
-    elif band<.32: f*=1.08          # the lit top of each fold          # folds of the cloth
+    side=abs(nx[y,x])>.4   # on the sides the folds fell every few texels of the small islands: a dot grid (Samus); folds only on the front
+    if not side and band<.22: f*=.74
+    elif not side and band<.32: f*=1.08          # the lit top of each fold          # folds of the cloth
     if abs(xf[y,x]-.5)<.05 and h[y,x]>eyeH-.2 and fw[y,x]>.55: f*=1.12   # the nose under the cloth
     elif .05<=abs(xf[y,x]-.5)<.1 and h[y,x]>eyeH-.2 and fw[y,x]>.4: f*=.84
     if h[y,x]>eyeH-.045: f*=.7   # the seam at its top edge, under the eyes
