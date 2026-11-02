@@ -36,6 +36,8 @@ public enum StatType
     MacesSkill = 32,
     BlockingSkill = 33,
     FireCircleOnHit = 34,    // chance a melee hit casts Fire Circle under the target (CombatManager.fireCircleOnHit)
+    HeavyDamage = 35,        // charged heavy attacks deal (1 + this) times more (Strength's third gain)
+    HealingItems = 36,       // potions and food heal (1 + this) times more (Constitution's third gain)
 }
 
 public enum ModifierType
@@ -92,6 +94,8 @@ public class StatModifierEntry
                 case StatType.SwordsSkill: return $"{sign}{value:0} Swords";
                 case StatType.MacesSkill: return $"{sign}{value:0} Maces";
                 case StatType.BlockingSkill: return $"{sign}{value:0} Blocking";
+                case StatType.HeavyDamage: return $"{sign}{value * 100f:0.#}% heavy attack damage";
+                case StatType.HealingItems: return $"{sign}{value * 100f:0.#}% healing from items";
                 case StatType.FireCircleOnHit: return $"{value * 100f:0.#}% Fire Circle on hit";
                 case StatType.MoveSpeed: return $"{sign}{value * 100f:0.#}% move speed";
                 case StatType.AttackSpeed: return $"Swings {Mathf.Abs(value) * 100f:0}% {(value < 0 ? "slower" : "faster")}";

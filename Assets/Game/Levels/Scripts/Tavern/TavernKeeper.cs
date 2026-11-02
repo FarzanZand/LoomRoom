@@ -1,10 +1,12 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The merchant as the tavern's keeper (on the Dungeon merchant prefab, next to Merchant): besides his wares he serves
-// dishes (TavernDish: eaten once a run, they last it) and sells rumours (places off the campaign map that a rumour
-// opens, CampaignEncounter.rumoured). Both are tabs of the shop screen (ShopUI, TavernTabsUI); the Rumours tab is only
-// there while a rumour is left to sell. Edit the dishes and the price here, the rumours on their places.
+// The merchant as the tavern's keeper (on the Dungeon merchant prefab, next to Merchant). Talking to him opens the
+// dialogue box (PortraitDialogueUI) with one of his welcomes and three answers: Shop opens the shop screen (his wares and
+// dishes, TavernTabsUI; a dish is eaten once a run and lasts it), Rumour tells of a place off the campaign map
+// (CampaignEncounter.rumoured) for its price and puts it on the map, Never mind walks away. His words are on the Dialogue Manager
+// (TavernKeeperLines, also in Asset Studio's Dialogue view), the dishes and price here, the rumours on their places.
 public class TavernKeeper : MonoBehaviour
 {
     [Tooltip("What he serves, in the order the Food tab lists them.")]
@@ -13,8 +15,6 @@ public class TavernKeeper : MonoBehaviour
     public int rumourPrice = 20;
     [Tooltip("Posted to the feed when a dish is eaten. {Dish} is its name.")]
     public string ateMessage = "You eat the {Dish}.";
-    [Tooltip("Posted when a rumour is bought. {Place} is the place's name.")]
-    public string rumourMessage = "{Place} is on your campaign map now.";
 
     public enum Result { Done, NoMoney, AlreadyEaten, Nothing }
 
@@ -38,9 +38,82 @@ public class TavernKeeper : MonoBehaviour
     {
         if (place == null || player == null || !CampaignManager.HasInstance) return Result.Nothing;
         if (player.Wallet == null || !player.Wallet.TrySpend(rumourPrice)) return Result.NoMoney;
+        // Its New place card says the rest (CampaignManager.BuyRumour).
         CampaignManager.Instance.BuyRumour(place);
-        MessageLog.Post(rumourMessage.Replace("{Place}", place.displayName), MessageKind.Info);
         if (AudioManager.HasInstance) AudioManager.Instance.PlayUI(Merchant.ShopTradeKey);
         return Result.Done;
+    }
+
+    // ── Talk ──
+
+    Coroutine talk;
+    bool pushed;
+
+    // Merchant.Interact asks first: true while he talks (the shop opens from here when Shop is picked).
+    public bool Talk(Merchant merchant, Player player)
+    {
+        if (talk != null) return true;
+        var box = PortraitDialogueUI.Current;
+        var words = TavernKeeperLines.HasInstance ? TavernKeeperLines.Instance : null;
+        if (box == null || box.Open || words == null || words.welcomeLines == null || words.welcomeLines.Length == 0) return false;
+        talk = StartCoroutine(Talking(merchant, player, box, words));
+        return true;
+    }
+
+    IEnumerator Talking(Merchant merchant, Player player, PortraitDialogueUI box, TavernKeeperLines words)
+    {
+        if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); pushed = true; }
+        var body = Body;
+        if (player.Look != null && body != null) StartCoroutine(CameraEase.LookAt(player.Look, Head(body), .4f));
+
+        // The rumour is weighed now: the reply to that answer is the rumour itself, the price, or that none is left.
+        // Co-op: a rumour puts a place on the campaign map, which is the host's; a guest's keeper keeps them to himself.
+        var place = HasRumours && !Coop.IsGuest ? Rumours[0] : null;
+        int gold = player.Wallet != null ? player.Wallet.Gold : 0;
+        bool sells = place != null && gold >= rumourPrice;
+        string rumourReply = place == null ? words.noRumourLine
+            : !sells ? words.noMoneyLine.Replace("{Price}", rumourPrice.ToString()).Replace("{Gold}", gold.ToString())
+            : !string.IsNullOrWhiteSpace(place.rumourTold) ? place.rumourTold
+            : !string.IsNullOrWhiteSpace(place.rumour) ? place.rumour : words.rumourFallbackLine;
+
+        string who = merchant != null ? merchant.merchantName : "Tavern keeper";
+        var model = body != null ? body.gameObject : gameObject;
+        var welcome = new PortraitLine { speaker = PortraitSpeaker.Other, name = who, model = model, text = words.welcomeLines[Random.Range(0, words.welcomeLines.Length)] };
+        welcome.choices.Add(new PortraitChoice { label = words.shopAnswer });
+        var rumour = new PortraitChoice { label = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString()) };
+        rumour.reply.Add(new PortraitReply { speaker = PortraitSpeaker.Other, name = who, model = model, text = rumourReply });
+        welcome.choices.Add(rumour);
+        welcome.choices.Add(new PortraitChoice { label = words.leaveAnswer });
+
+        yield return box.Play(new[] { welcome }, null, who);
+        int picked = box.Picked;
+        EndTalk();
+        if (picked == 0 && merchant != null) merchant.OpenShop(player);
+        else if (picked == 1 && sells) BuyRumour(place, player);
+    }
+
+    void EndTalk()
+    {
+        talk = null;
+        if (pushed && GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        pushed = false;
+    }
+
+    // The floor went mid-talk: the box is put away and the state given back (a stopped coroutine runs no finally).
+    void OnDisable()
+    {
+        if (talk == null) return;
+        StopCoroutine(talk);
+        if (PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Abort();
+        EndTalk();
+    }
+
+    Character Body => GetComponentInParent<Character>();
+
+    static Vector3 Head(Character body)
+    {
+        var animator = body.GetComponentInChildren<Animator>();
+        var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
+        return head != null ? head.position : body.transform.position + Vector3.up * 1.6f;
     }
 }

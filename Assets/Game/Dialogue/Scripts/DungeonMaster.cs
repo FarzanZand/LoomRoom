@@ -355,16 +355,19 @@ public class DungeonMaster : Singleton<DungeonMaster>
         label.fontSize = pixelGrid * multiple / scale;
     }
 
-    // While a boss's line shows in the portrait box mid-fight (PortraitDialogueUI.Bark) the box covers the lines' place:
+    // While the portrait dialogue box shows (a conversation, or a boss's line mid-fight) it covers the lines' place:
     // they rise above it (barkLift), and come back down after.
-    [SerializeField, Min(0), Tooltip("How far the lines rise while a portrait box line is up mid-fight, in 1920 x 1080 canvas units.")] float barkLift = 150f;
+    [SerializeField, Min(0), Tooltip("How far the lines rise while the portrait dialogue box shows (a conversation, or a line mid-fight, which rises by its own raise too), in 1920 x 1080 canvas units.")] float barkLift = 150f;
     float lifted;
 
     void LiftOverBark()
     {
-        if (placement != Placement.LowerMiddle || tiktokMode) return;
-        bool bark = PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Barking;
-        float to = bark ? barkLift + PortraitDialogueUI.Current.barkRaise : 0f;
+        // TikTok mode's lines sit at the same foot, so they rise too.
+        if (placement != Placement.LowerMiddle && !tiktokMode) return;
+        // Over the dialogue box while it shows: a line said meanwhile (the tavern's off-the-record remark as the keeper
+        // talks) sits clear of its name plate; higher still over a bark's raised box.
+        var box = PortraitDialogueUI.Current;
+        float to = box != null && box.Showing ? barkLift + (box.Barking ? box.barkRaise : 0f) : 0f;
         if (Mathf.Approximately(lifted, to)) return;
         lifted = Mathf.MoveTowards(lifted, to, Mathf.Max(barkLift, to) * 8f * Time.unscaledDeltaTime);
         label.rectTransform.anchoredPosition = new Vector2(label.rectTransform.anchoredPosition.x, 250 + lifted);

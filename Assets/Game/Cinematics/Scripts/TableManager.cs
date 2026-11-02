@@ -25,8 +25,8 @@ public class TableManager : Singleton<TableManager>, IInteractable
     [SerializeField] string prompt = "Play";
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
     DungeonMaster.Line endingLine = new() { text = "The door's open. Go and get some air." };
-    [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (Blocking first).")]
-    DungeonMaster.Line learnFirstLine = new() { text = "Train Blocking at the sheet first." };
+    [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (the lesson skill first, Athletics).")]
+    DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Learn to dash at the sheet first." };
     [SerializeField, Tooltip("Said instead while the lesson holds runs and the sheet has not been opened yet.")]
     DungeonMaster.Line lookFirstLine = new() { text = "Have a look at the sheet first." };
 
@@ -72,7 +72,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
     public string Prompt => IntroController.WaitingForSeat ? "Sit down"
         : ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns
-            ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? "Train Blocking at the sheet first" : "Look at the character sheet first") : prompt;
+            ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? $"Train {ProgressionManager.Instance.LessonSkillName} at the sheet first" : "Look at the character sheet first") : prompt;
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
@@ -112,7 +112,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
         }
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
-        // The lesson: no run until Blocking is trained at the sheet (the spend-spoils quest).
+        // The lesson: no run until the lesson skill is trained at the sheet (the spend-spoils quest).
         if (ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         {
             SayLessonLine();
@@ -126,7 +126,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     }
     public void EnterTable() => Play();
 
-    // The lesson's refusal: look at the sheet until it has been opened, then train Blocking there.
+    // The lesson's refusal: look at the sheet until it has been opened, then train the lesson skill there.
     void SayLessonLine()
     {
         bool opened = ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag);
@@ -140,7 +140,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public bool Play(TableLevelData level = null, AdventurerClass only = null, DungeonMaster.Line prompt = null, bool showCard = true)
     {
         if (loader == null || !PlayerManager.HasInstance || EndingRunning || !CanInteract(PlayerManager.Instance.Active)) return false;
-        // "Let's play." in the DM's conversation comes here too: Blocking first.
+        // "Let's play." in the DM's conversation comes here too: the lesson skill first.
         if (ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         {
             SayLessonLine();

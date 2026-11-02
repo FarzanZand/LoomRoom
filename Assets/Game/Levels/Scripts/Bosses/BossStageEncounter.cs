@@ -598,6 +598,7 @@ public partial class BossStageEncounter : MonoBehaviour
             var spot = dungeon.StageCentre + Random.insideUnitSphere.normalized * dungeon.LevelData.cellSize * 2f; spot.y = dungeon.StageCentre.y;
             if (NavMesh.SamplePosition(spot, out var hit, 2f, NavMesh.AllAreas)) spot = hit.position;
             var go = Instantiate(prefab, spot, Quaternion.identity, dungeon.transform);
+            if (go.TryGetComponent<EnemyBrain>(out var minion)) minion.NoExperience = true;
             var added = go.GetComponent<Character>();
             if (added != null) yield return Carry(added, spot, fight.placeSeconds * .7f);
         }

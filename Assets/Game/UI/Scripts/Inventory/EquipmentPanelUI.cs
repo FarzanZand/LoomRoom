@@ -80,7 +80,7 @@ public class EquipmentPanelUI : MonoBehaviour
         title=t.displayName;subtitle=fromRun>0?$"{score}  ({score-fromRun} from the sheet, +{fromRun} this run)":score.ToString();
         body=$"{ProgressionManager.AttributeEffects(t,1)} per point above {t.baseScore}.";
         if(above!=0)body+=$"\n\n<color={dim}>Now</color><pos=30%><color={good}>{ProgressionManager.AttributeEffects(t,above)}</color>";
-        if(progress!=null && progress.UnspentPoints>0)body+=$"\n\n<color={dim}>Click + to put a point here.</color>";
+        if(progress!=null && progress.UnspentPoints>0 && !ProgressionManager.CardsOnLevelUp)body+=$"\n\n<color={dim}>Click + to put a point here.</color>";
         return true;
     }
 
@@ -122,7 +122,7 @@ public class EquipmentPanelUI : MonoBehaviour
         if(skills!=null && progress!=null)foreach(var row in skills)if(row!=null)row.Refresh(progress,default);
         if(levelProgress!=null && progress!=null){UIBar.Set(levelProgress,progress.NextLevelXp>0?progress.Experience/progress.NextLevelXp:0);levelProgress.color=UIManager.HasInstance?Color.Lerp(UIManager.Instance.experience,Color.white,.35f):levelProgress.color;}
         if(attributeCells!=null)foreach(var cell in attributeCells)if(cell!=null)cell.Refresh(progress);
-        if(attributesTitle!=null){int left=progress!=null && progress.InRun?progress.UnspentPoints:0;attributesTitle.text="ATTRIBUTES"+(left>0?$"<pos=55%><size=80%><color=#F2C75C>{left} POINT{(left>1?"S":"")} TO SPEND</color></size>":"");}
+        if(attributesTitle!=null){int left=progress!=null && progress.InRun && !ProgressionManager.CardsOnLevelUp?progress.UnspentPoints:0;attributesTitle.text="ATTRIBUTES"+(left>0?$"<pos=55%><size=80%><color=#F2C75C>{left} POINT{(left>1?"S":"")} TO SPEND</color></size>":"");}
         if(food!=null)food.text=s.FoodRemaining>0?$"NOURISHED   +{s.FoodHealingPerSecond:0.#} HP/s\n{s.FoodRemaining:0}s remaining":"";
     }
 }

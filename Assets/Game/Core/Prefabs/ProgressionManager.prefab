@@ -46,6 +46,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
   enemyBaseDamage: 1.15
   enemyBaseHealth: 1
+  diceSet: {fileID: 0}
+  diceTradingBonus: 5
+  levelUpReward: 1
+  levelUpCards: {fileID: 8521092963870624208, guid: 736dff4a568c7344dac413913cda3f7a, type: 3}
+  autoPopup: 1
   spoils:
   - item: {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
     worth: 1
@@ -86,7 +91,7 @@ MonoBehaviour:
     thirdBonusPerPoint: 0
     thirdUnit: 
     milestones:
-    - value: 15
+    - value: 25
       ability: {fileID: 11400000, guid: e3f721e348b7cef468084c9a4d1881ce, type: 2}
       unlock: '?'
       description: 
@@ -233,17 +238,17 @@ MonoBehaviour:
     thirdBonusPerPoint: 0
     thirdUnit: 
     milestones:
-    - value: 25
+    - value: 15
+      ability: {fileID: 11400000, guid: b9a1ebfdec0f0fb4384237b17d454fde, type: 2}
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
+      trophy: {fileID: 11400000, guid: 498efce1b955ab844942a82518711287, type: 2}
+    - value: 50
       ability: {fileID: 0}
       unlock: Sprint
       description: You can sprint.
       icon: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
-      trophy: {fileID: 11400000, guid: 0fa67589586481d43b0d3147311b842c, type: 2}
-    - value: 50
-      ability: {fileID: 0}
-      unlock: '?'
-      description: 
-      icon: {fileID: 0}
       trophy: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
   - id: stealth
     displayName: Stealth
@@ -308,7 +313,7 @@ MonoBehaviour:
     kind: 1
     skill: 0
     attribute: 0
-    icon: {fileID: 21300000, guid: 56f594a20781aab4c95fc3c10a1525e1, type: 3}
+    icon: {fileID: 21300000, guid: 29c2d580423d1ad489683b1aee46626f, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
@@ -317,67 +322,68 @@ MonoBehaviour:
     unit: health
     secondBonusPerPoint: 5
     secondUnit: stamina
-    thirdBonusPerPoint: 0
-    thirdUnit: 
+    thirdBonusPerPoint: 10
+    thirdUnit: '% healing from items'
     milestones: []
   - id: intelligence
     displayName: Intelligence
     kind: 1
     skill: 0
     attribute: 1
-    icon: {fileID: 21300000, guid: 1cee42a3175c13d4c9b79d366987cc2f, type: 3}
+    icon: {fileID: 21300000, guid: f4b1749ee1b2d624e8daa594bc10c287, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
     baseScore: 8
     bonusPerPoint: 5
     unit: mana
-    secondBonusPerPoint: 0.05
+    secondBonusPerPoint: 0.2
     secondUnit: mana/s
-    thirdBonusPerPoint: 3.5
-    thirdUnit: '% spell power'
+    thirdBonusPerPoint: 10
+    thirdUnit: '% spell damage'
     milestones: []
   - id: strength
     displayName: Strength
     kind: 1
     skill: 0
     attribute: 2
-    icon: {fileID: 21300000, guid: 032124d0b9881ae49b2a61e9fb84cf64, type: 3}
+    icon: {fileID: 21300000, guid: a5558ebe72ce497498a1aace46268f90, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
     baseScore: 8
-    bonusPerPoint: 5
-    unit: '% damage'
-    secondBonusPerPoint: 0
-    secondUnit: 
-    thirdBonusPerPoint: 0
-    thirdUnit: 
+    bonusPerPoint: 1
+    unit: damage
+    secondBonusPerPoint: 2
+    secondUnit: shield bash damage
+    thirdBonusPerPoint: 10
+    thirdUnit: '% heavy attack damage'
     milestones: []
   - id: dexterity
     displayName: Dexterity
     kind: 1
     skill: 0
     attribute: 3
-    icon: {fileID: 21300000, guid: 0f582b2186aa8b840a27267502e06b25, type: 3}
+    icon: {fileID: 21300000, guid: 3ebe3e58ba3ac8940b227f30a3c336c7, type: 3}
     givenLevels: 0
     levels: 8
     perLevel: 5
     baseScore: 8
     bonusPerPoint: 5
     unit: '% critical chance'
-    secondBonusPerPoint: 0
-    secondUnit: 
-    thirdBonusPerPoint: 0
-    thirdUnit: 
+    secondBonusPerPoint: 10
+    secondUnit: '% backstab damage'
+    thirdBonusPerPoint: 3
+    thirdUnit: '% attack speed'
     milestones: []
   lessonIntro:
     text: There's a sheet on the little table by the wall. Have a look.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  lessonBlockingFirst:
-    text: Blocking first. Trust me.
+  lessonSkill: 5
+  lessonSkillFirst:
+    text: Athletics first. Trust me.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -396,9 +402,8 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  shieldBashMounted:
-    text: Hold your shield up against arrows and fire now. They go back where they
-      came from.
+  lessonTrophyMounted:
+    text: You can dash now. Shift and a direction, sideways or back.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -408,6 +413,8 @@ MonoBehaviour:
   quests:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
+  - id: dash
+    text: 'Dash: hold a direction, press {sprint}.'
   missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   startingPlayer: 1
   skipWakeUp: 1

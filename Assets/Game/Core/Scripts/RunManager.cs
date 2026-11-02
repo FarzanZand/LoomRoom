@@ -375,6 +375,8 @@ public class RunManager : Singleton<RunManager>
     {
         var progress = player != null ? player.GetComponent<AdventurerProgress>() : null;
         if (progress == null || progress.rules == null) return;
+        // A boss's minions give none.
+        if (c.GetComponent<EnemyBrain>().NoExperience) return;
         // Tougher enemies are worth more: an authored value, or one scaled from maximum health.
         var data = c.GetComponent<EnemyBrain>().Data;
         float xp = data != null && data.experience > 0 ? data.experience

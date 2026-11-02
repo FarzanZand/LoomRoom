@@ -65,9 +65,9 @@ public partial class ProgressionManager
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("The score with nothing bought.")] public int baseScore = 8;
         [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to the attribute's first stat (AttributeStats): health, mana, damage or critical chance in percent.")] public float bonusPerPoint = 5;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat, if it has one: Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat (AttributeStats): Strength's shield bash damage, Dexterity's backstab damage in percent, Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("A third gain that isn't a stat: Intelligence's spell power in percent (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
+        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its third stat, in percent: Strength's heavy attack damage, Dexterity's attack speed, Constitution's healing from items; Intelligence's is its spell power, which is no stat (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public string thirdUnit;
         [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true)] public List<Milestone> milestones = new();
     }
@@ -90,16 +90,20 @@ public partial class ProgressionManager
 
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Back in the room after the first run that ends in a real dungeon.")]
     public DungeonMaster.Line lessonIntro = new() { text = "There's a sheet on the little table by the wall. Have a look." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but Blocking before the first Blocking level.")]
-    public DungeonMaster.Line lessonBlockingFirst = new() { text = "Blocking first. Trust me." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("When the first tally can't pay for Blocking's next level, the DM adds the rest.")]
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("The skill the lesson teaches first (Athletics since 2026-11-01, the dash at 15; Blocking before): until its first milestone is bought nothing else on the sheet can be, and no run starts.")]
+    public AdventureSkill lessonSkill = AdventureSkill.Athletics;
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but the lesson's skill before its first milestone.")]
+    [UnityEngine.Serialization.FormerlySerializedAs("lessonBlockingFirst")]
+    public DungeonMaster.Line lessonSkillFirst = new() { text = "Athletics first. Trust me." };
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("When the first tally can't pay for the lesson skill's next level, the DM adds the rest.")]
     public DungeonMaster.Line lessonTopUp = new() { text = "Have a bit extra. Don't tell anyone." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over one trophy.")]
     public DungeonMaster.Line handOverOne = new() { text = "This one goes on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
     public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After Blocking's first trophy (Deflect) is mounted for the first time.")]
-    public DungeonMaster.Line shieldBashMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After the lesson skill's first trophy (the dash) is mounted for the first time.")]
+    [UnityEngine.Serialization.FormerlySerializedAs("shieldBashMounted")]
+    public DungeonMaster.Line lessonTrophyMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
     [TabGroup("Meta progression/Tabs", "Sheet"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
     public bool colourSheetPortraits;
@@ -108,7 +112,7 @@ public partial class ProgressionManager
     public Sprite SheetPortrait(AdventurerClass c) => c == null ? null : colourSheetPortraits && c.sheetPortraitColour != null ? c.sheetPortraitColour : c.sheetPortrait;
 
     // Story flags of the lesson; meta.* flags hold the state.
-    public const string LedgerIntroFlag = "story.ledgerIntro", LedgerSaidFlag = "story.ledgerSaid", BlockingTaughtFlag = "story.blockingTaught", BashMountedFlag = "story.bashMounted";
+    public const string LedgerIntroFlag = "story.ledgerIntro", LedgerSaidFlag = "story.ledgerSaid", LessonTaughtFlag = "story.blockingTaught", LessonTrophyFlag = "story.bashMounted";
     public const string SpoilsFlag = "meta.spoils", BoughtPrefix = "meta.bought.", TrophyPrefix = "meta.trophy.", PortraitFlag = "meta.portrait";
     // A trophy's state, kept in meta.trophy.<track>.<value>.
     public enum TrophyState { None = 0, Earned = 1, Carried = 2, Mounted = 3 }
@@ -120,7 +124,9 @@ public partial class ProgressionManager
     public int Spoils => GetFlag(SpoilsFlag);
     public void AddSpoils(int amount) { if (amount == 0) return; SetFlag(SpoilsFlag, Mathf.Max(0, Spoils + amount)); TopUpForLesson(); MetaChanged?.Invoke(); }
     public int PortraitIndex { get => GetFlag(PortraitFlag); set { SetFlag(PortraitFlag, value); MetaChanged?.Invoke(); } }
-    public bool BlockingTaught => HasFlag(BlockingTaughtFlag);
+    // The lesson is done once its skill's first milestone is bought (the flag's key is from when Blocking was taught).
+    public bool LessonTaught => HasFlag(LessonTaughtFlag);
+    public string LessonSkillName => Track(lessonSkill)?.displayName ?? lessonSkill.ToString();
 
     public MetaTrack Track(string id) => tracks.Find(t => t != null && t.id == id);
     public MetaTrack Track(AdventureSkill skill) => tracks.Find(t => t != null && t.kind == MetaTrackKind.Skill && t.skill == skill);
@@ -142,25 +148,31 @@ public partial class ProgressionManager
     // An attribute's score at the start of a run: the sheet's (its base outside the meta game, e.g. the intro's practice run).
     public int AttributeScore(MetaAttribute attribute) { var t = Track(attribute); return t == null ? 8 : MetaActive ? Value(t) : t.baseScore; }
 
-    // The stats an attribute's points above its base raise: the first by bonusPerPoint, the second by secondBonusPerPoint.
-    // The sheet, the character panel and the run's stats (AdventurerProgress.ApplyStats) all read these, so they match.
-    static readonly StatType[] ConstitutionStats = { StatType.MaxHealth, StatType.MaxStamina }, IntelligenceStats = { StatType.MaxMana, StatType.ManaRegen },
-        StrengthStats = { StatType.AttackDamage }, DexterityStats = { StatType.CriticalChance };
+    // The stats an attribute's points above its base raise: the first by bonusPerPoint, the second by secondBonusPerPoint,
+    // the third by thirdBonusPerPoint (Intelligence has no third stat: its third gain is spell power, read by
+    // AdventurerProgress.SpellPower). The sheet, the character panel, the level-up cards and the run's stats
+    // (AdventurerProgress.ApplyStats) all read these, so they match.
+    static readonly StatType[] ConstitutionStats = { StatType.MaxHealth, StatType.MaxStamina, StatType.HealingItems },
+        IntelligenceStats = { StatType.MaxMana, StatType.ManaRegen },
+        StrengthStats = { StatType.AttackDamage, StatType.ShieldBashDamage, StatType.HeavyDamage },
+        DexterityStats = { StatType.CriticalChance, StatType.BackstabDamage, StatType.AttackSpeed };
     public static StatType[] AttributeStats(MetaAttribute a) => a switch
     {
         MetaAttribute.Constitution => ConstitutionStats, MetaAttribute.Intelligence => IntelligenceStats, MetaAttribute.Dexterity => DexterityStats, _ => StrengthStats,
     };
-    // Critical chance and Strength's damage are written in percent on the track and kept as fractions in the stats;
-    // Strength's damage is a share of the player's damage (weapon included), not a flat amount.
-    public static float StatScale(MetaAttribute a, StatType stat) => stat == StatType.CriticalChance || a == MetaAttribute.Strength && stat == StatType.AttackDamage ? .01f : 1f;
-    public static ModifierType StatKind(MetaAttribute a, StatType stat) => a == MetaAttribute.Strength && stat == StatType.AttackDamage ? ModifierType.PercentAdd : ModifierType.Flat;
+    // Stats written in percent on the track and kept as fractions in the stats (attack speed is a multiplier on 1, so
+    // +3% is 0.03 added, as gear adds it).
+    public static float StatScale(MetaAttribute a, StatType stat) => stat is StatType.CriticalChance or StatType.BackstabDamage or StatType.AttackSpeed
+        or StatType.HeavyDamage or StatType.HealingItems ? .01f : 1f;
+    public static ModifierType StatKind(MetaAttribute a, StatType stat) => ModifierType.Flat;
     // What this many points above the base give, as the stats take it: (stat, amount, kind) per stat the attribute raises.
     public static IEnumerable<(StatType stat, float amount, ModifierType kind)> AttributeGains(MetaTrack t, float points)
     {
         if (t == null || points == 0) yield break;
         var stats = AttributeStats(t.attribute);
-        if (stats.Length > 0 && t.bonusPerPoint != 0) yield return (stats[0], points * t.bonusPerPoint * StatScale(t.attribute, stats[0]), StatKind(t.attribute, stats[0]));
-        if (stats.Length > 1 && t.secondBonusPerPoint != 0) yield return (stats[1], points * t.secondBonusPerPoint * StatScale(t.attribute, stats[1]), StatKind(t.attribute, stats[1]));
+        float[] perPoint = { t.bonusPerPoint, t.secondBonusPerPoint, t.thirdBonusPerPoint };
+        for (int i = 0; i < stats.Length; i++)
+            if (perPoint[i] != 0) yield return (stats[i], points * perPoint[i] * StatScale(t.attribute, stats[i]), StatKind(t.attribute, stats[i]));
     }
     // "+5 health, +5 stamina": what this many points give, in the track's own words. lineBreak puts each on its own line.
     public static string AttributeEffects(MetaTrack t, float points, bool lineBreak = false)
@@ -214,14 +226,14 @@ public partial class ProgressionManager
         return count;
     }
 
-    // An unlock is yours in this run when its trophy is mounted, or (after the first Blocking lesson) when this run's
-    // rank reaches it (bought base + class + training).
+    // An unlock is yours in this run when its trophy is mounted, or (after the lesson) when this run's rank reaches it
+    // (bought base + class + training).
     public bool Unlocked(MetaTrack t, Milestone m, int runRank)
     {
         if (t == null || m == null) return true;
         if (Trophy(t, m) == TrophyState.Mounted) return true;
         // The editor's Debug, Dungeon and Boss sessions skip the lesson, so the run's own ranks count there.
-        return (BlockingTaught || DebugDungeonSession.Active) && runRank >= m.value;
+        return (LessonTaught || DebugDungeonSession.Active) && runRank >= m.value;
     }
     public bool Unlocked(AdventureSkill skill, int milestoneIndex, int runRank)
     {
@@ -229,12 +241,21 @@ public partial class ProgressionManager
         if (t == null || t.milestones == null || milestoneIndex >= t.milestones.Count) return true;
         return Unlocked(t, t.milestones[milestoneIndex], runRank);
     }
+    // An ability's unlock: the milestone that points at it, at the run's rank in its skill (an ability no milestone
+    // points at is there from the start, as the shield bash is).
+    public bool Unlocked(SkillAbility ability, AdventurerProgress progress)
+    {
+        if (ability == null) return true;
+        foreach (var (t, m) in AllMilestones())
+            if (m.ability == ability) return Unlocked(t, m, progress != null ? progress.Rank(t.skill) : 0);
+        return true;
+    }
 
     // ── Buying ────────────────────────────────────────────────────────
 
     public enum BuyResult { Bought, Locked, Poor, Max }
-    // Before the first Blocking level only Blocking can be bought (the lesson).
-    public bool LockedByLesson(MetaTrack t) => !BlockingTaught && (t == null || t.kind != MetaTrackKind.Skill || t.skill != AdventureSkill.Blocking);
+    // Before the lesson skill's first milestone only that skill can be bought (the lesson).
+    public bool LockedByLesson(MetaTrack t) => !LessonTaught && (t == null || t.kind != MetaTrackKind.Skill || t.skill != lessonSkill);
 
     public BuyResult Buy(MetaTrack t)
     {
@@ -247,9 +268,9 @@ public partial class ProgressionManager
         if (t.milestones != null)
             foreach (var m in t.milestones)
                 if (m != null && Reached(t, m) && Trophy(t, m) == TrophyState.None) SetTrophy(t, m, TrophyState.Earned);
-        if (t.kind == MetaTrackKind.Skill && t.skill == AdventureSkill.Blocking && !BlockingTaught && t.milestones != null && t.milestones.Count > 0 && Reached(t, t.milestones[0]))
-            SetFlag(BlockingTaughtFlag);
-        // A Blocking level that doesn't reach the first milestone yet leaves the lesson on: the next one stays affordable.
+        if (t.kind == MetaTrackKind.Skill && t.skill == lessonSkill && !LessonTaught && t.milestones != null && t.milestones.Count > 0 && Reached(t, t.milestones[0]))
+            SetFlag(LessonTaughtFlag);
+        // A level that doesn't reach the first milestone yet leaves the lesson on: the next one stays affordable.
         TopUpForLesson();
         MetaChanged?.Invoke();
         return BuyResult.Bought;
@@ -284,14 +305,14 @@ public partial class ProgressionManager
     public int MountCarried()
     {
         var carried = TrophiesIn(TrophyState.Carried);
-        bool bash = false;
+        bool lesson = false;
         foreach (var (t, m) in carried)
         {
             SetTrophy(t, m, TrophyState.Mounted);
-            if (t.skill == AdventureSkill.Blocking && t.milestones.IndexOf(m) == 0) bash = true;
+            if (t.skill == lessonSkill && t.milestones.IndexOf(m) == 0) lesson = true;
         }
         if (carried.Count > 0) MetaChanged?.Invoke();
-        if (bash && !HasFlag(BashMountedFlag)) { SetFlag(BashMountedFlag); DungeonMaster.Say(shieldBashMounted); }
+        if (lesson && !HasFlag(LessonTrophyFlag)) { SetFlag(LessonTrophyFlag); DungeonMaster.Say(lessonTrophyMounted); }
         return carried.Count;
     }
 
@@ -343,7 +364,7 @@ public partial class ProgressionManager
     }
 
     // The run's end: the spoils carried out plus 1 per Health Per Spoil of the kills, into the bank. On the first death
-    // in a real dungeon the lesson starts, and the DM tops the bank up to Blocking's next price.
+    // in a real dungeon the lesson starts, and the DM tops the bank up to the lesson skill's next price.
     // sharedTotal: co-op with shared loot, this player's share of the party's pooled spoils (the host works it out), in
     // place of their own; sharedWith is how many shared them.
     public Tally Settle(Player player, int kills, int healthSlain, bool victory, int sharedTotal = -1, int sharedWith = 1)
@@ -374,7 +395,7 @@ public partial class ProgressionManager
         // The puzzle's missing tile, if found, comes home too.
         CarryTileHome(player);
         // The first run that ends (normally a death, sometimes a win) starts the lesson: the DM points to the sheet back
-        // in the room and tops the spoils up to Blocking's price, since no run starts until Blocking is bought.
+        // in the room and tops the spoils up to the lesson skill's price, since no run starts until it is bought.
         if (!HasFlag(LedgerIntroFlag))
         {
             SetFlag(LedgerIntroFlag);
@@ -387,12 +408,12 @@ public partial class ProgressionManager
         return tally;
     }
 
-    // While the lesson holds runs (LessonHoldsRuns: Blocking first), the bank never stays below Blocking's next price,
+    // While the lesson holds runs (LessonHoldsRuns: its skill first), the bank never stays below that skill's next price,
     // or no run could ever start again. Returns the spoils the DM added.
     int TopUpForLesson()
     {
         if (!LessonHoldsRuns) return 0;
-        int price = NextPrice(Track(AdventureSkill.Blocking));
+        int price = NextPrice(Track(lessonSkill));
         if (price <= 0 || Spoils >= price) return 0;
         int added = price - Spoils;
         SetFlag(SpoilsFlag, price);
@@ -406,7 +427,7 @@ public partial class ProgressionManager
     void Update()
     {
         if (!Application.isPlaying) return;
-        // Once, after the save is read: a save left in the lesson with too few spoils to buy Blocking is put right.
+        // Once, after the save is read: a save left in the lesson with too few spoils to buy its skill is put right.
         if (!lessonBankChecked) { lessonBankChecked = true; if (TopUpForLesson() > 0) MetaChanged?.Invoke(); }
         UpdateSheetQuest();
         UpdatePosterQuest();
@@ -430,13 +451,13 @@ public partial class ProgressionManager
 
     [TabGroup("Meta progression/Tabs", "Debug"), ShowInInspector, ReadOnly, LabelText("Spoils to spend")] int DebugSpoils => Application.isPlaying ? Spoils : 0;
     [TabGroup("Meta progression/Tabs", "Debug"), Button("Add 100 spoils"), EnableIf("@UnityEngine.Application.isPlaying")] void DebugAddSpoils() => AddSpoils(100);
-    [TabGroup("Meta progression/Tabs", "Debug"), Button("Teach Blocking (skip the lesson)"), EnableIf("@UnityEngine.Application.isPlaying")]
-    void DebugTeach() { SetFlag(LedgerIntroFlag); SetFlag(LedgerSaidFlag); SetFlag(BlockingTaughtFlag); MetaChanged?.Invoke(); }
+    [TabGroup("Meta progression/Tabs", "Debug"), Button("Teach the lesson skill (skip the lesson)"), EnableIf("@UnityEngine.Application.isPlaying")]
+    void DebugTeach() { SetFlag(LedgerIntroFlag); SetFlag(LedgerSaidFlag); SetFlag(LessonTaughtFlag); MetaChanged?.Invoke(); }
     [TabGroup("Meta progression/Tabs", "Debug"), Button("Reset meta progression"), EnableIf("@UnityEngine.Application.isPlaying")]
     void DebugReset()
     {
         foreach (var key in new List<string>(flags.Keys))
-            if (key.StartsWith("meta.") || key == LedgerIntroFlag || key == LedgerSaidFlag || key == BlockingTaughtFlag || key == BashMountedFlag) SetFlag(key, 0);
+            if (key.StartsWith("meta.") || key == LedgerIntroFlag || key == LedgerSaidFlag || key == LessonTaughtFlag || key == LessonTrophyFlag) SetFlag(key, 0);
         // The lesson's quests and the sheet's first look too, or the lesson can't be played again.
         foreach (var quest in new[] { SheetQuest, SpendQuest, TableQuest, TrophyQuest }) SetFlag(QuestPrefix + quest, 0);
         SetFlag(CharacterSheetTable.OpenedFlag, 0);

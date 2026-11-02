@@ -13,6 +13,8 @@ public class PortraitStage : MonoBehaviour
     [Tooltip("Degrees the model is turned from facing the camera (a three-quarter view).")] public float turn = 22f;
     [Tooltip("How much of the body shows below the head, in head-to-chest lengths.")] public float bodyBelow = 1.9f;
     [Tooltip("Room above the head, in head-to-chest lengths.")] public float roomAbove = .55f;
+    [Tooltip("A head-to-chest length as a share of the head's height above the feet. Taken from the height, not the bones, since rigs put the chest bone at very different heights (the merchant's at 15% of it, the Crypt Lord's at 27%): every speaker is framed alike.")]
+    public float headToChest = .267f;
     public Color keyColor = new(1f, .93f, .82f), rimColor = new(.55f, .7f, 1f);
 
     static readonly Vector3 Where = new(0f, -3000f, 0f);
@@ -142,8 +144,7 @@ public class PortraitStage : MonoBehaviour
         if (animator != null && animator.isHuman && animator.GetBoneTransform(HumanBodyBones.Head) != null)
         {
             head = animator.GetBoneTransform(HumanBodyBones.Head).position;
-            var c = animator.GetBoneTransform(HumanBodyBones.UpperChest) ?? animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine);
-            chest = c != null ? c.position : head - Vector3.up * .4f;
+            chest = head - Vector3.up * (head.y - copy.transform.position.y) * headToChest;
         }
         else
         {
@@ -163,7 +164,7 @@ public class PortraitStage : MonoBehaviour
             var b = r.bounds;
             if (Mathf.Abs(b.center.x - head.x) < unit * 2f && Mathf.Abs(b.center.z - head.z) < unit * 2f) crown = Mathf.Max(crown, b.max.y);
         }
-        crown = Mathf.Min(crown, head.y + unit * 1.05f);
+        crown = Mathf.Min(crown, head.y + unit * 1.2f);
         float top = Mathf.Max(head.y + unit * roomAbove, crown + unit * .12f), bottom = top - span;
         var centre = new Vector3(head.x, (top + bottom) * .5f, head.z);
         float distance = span * .5f / Mathf.Tan(fieldOfView * .5f * Mathf.Deg2Rad);

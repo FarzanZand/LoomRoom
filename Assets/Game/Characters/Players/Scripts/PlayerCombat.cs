@@ -150,12 +150,12 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     }
     float cancelSetAt = -10f;
     bool heldThroughCancel;   // the attack button still down from the cancelled swing: it starts nothing until pressed anew
-    // Deflect (Blocking's first milestone): a raised shield facing a shot sends an arrow or a spell back the way it came.
+    // Deflect (Blocking 25, CombatManager.deflect): a raised shield facing a shot sends an arrow or a spell back the way it came.
     public bool Deflects(Vector3 travel)
     {
         if (!IsGuarding || !ProgressionManager.HasInstance || DeflectCooldownLeft > 0f) return false;
         var progress = GetComponent<AdventurerProgress>();
-        if (!ProgressionManager.Instance.Unlocked(AdventureSkill.Blocking, 0, progress != null ? progress.Rank(AdventureSkill.Blocking) : 0)) return false;
+        if (!ProgressionManager.Instance.Unlocked(CombatManager.HasInstance ? CombatManager.Instance.deflect : null, progress)) return false;
         Vector3 facing = player.Look != null ? player.Look.YawTransform.forward : transform.forward;
         facing.y = 0f; travel.y = 0f;
         return facing.sqrMagnitude > .001f && travel.sqrMagnitude > .001f && Vector3.Dot(facing.normalized, -travel.normalized) > .3f;

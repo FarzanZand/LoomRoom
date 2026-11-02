@@ -89,11 +89,12 @@ public static partial class MetaProgressionSetup
             // Seen from the room the wall's +x is on the left: Blocking first, reading left to right.
             float x = 56f - c * 16f;
             string id = order[c].ToString().ToLowerInvariant();
-            int first = order[c] == AdventureSkill.Blocking ? 15 : 25;
-            int[] values = { first, 50 };
-            for (int r = 0; r < 2; r++)
+            // One mount per milestone, the first at the bottom: Athletics 15 (the dash) and 50 (sprint), the rest 25 and 50.
+            // Rows 13.5 apart so the third stays clear of the ceiling.
+            int[] values = order[c] == AdventureSkill.Athletics ? new[] { 15, 50 } : new[] { 25, 50 };
+            for (int r = 0; r < values.Length; r++)
             {
-                float y = 30f + r * 15f;
+                float y = 28.5f + r * 13.5f;
                 var mount = new GameObject($"{order[c]} {values[r]}");
                 mount.transform.SetParent(root.transform, false);
                 mount.transform.localPosition = new Vector3(x, y, 0);
@@ -106,12 +107,12 @@ public static partial class MetaProgressionSetup
                 wall.mounts.Add(new TrophyWall.Mount { trackId = id, value = values[r], anchor = anchor });
             }
             // The skill's brass name plate under its column.
-            var plate = Box($"{order[c]} name plate", root.transform, new Vector3(x, 21.6f, .3f), new Vector3(13f, 3f, .6f), brass);
+            var plate = Box($"{order[c]} name plate", root.transform, new Vector3(x, 20.5f, .3f), new Vector3(13f, 3f, .6f), brass);
             if (font != null)
             {
                 var label = new GameObject("Name", typeof(RectTransform));
                 label.transform.SetParent(root.transform, false);
-                label.transform.localPosition = new Vector3(x, 21.6f, .65f);
+                label.transform.localPosition = new Vector3(x, 20.5f, .65f);
                 label.transform.localRotation = Quaternion.Euler(0, 180, 0);
                 var t = label.AddComponent<TextMeshPro>();
                 t.text = order[c].ToString().ToUpperInvariant(); t.font = font; t.fontSize = 15; t.color = new Color(.96f, .86f, .62f);
@@ -132,8 +133,8 @@ public static partial class MetaProgressionSetup
         // Using the wall: a trigger box over the plaques.
         var interaction = new GameObject("Interaction");
         interaction.transform.SetParent(root.transform, false);
-        interaction.transform.localPosition = new Vector3(0, 36f, 3f);
-        var box = interaction.AddComponent<BoxCollider>(); box.isTrigger = true; box.size = new Vector3(135f, 36f, 6f);
+        interaction.transform.localPosition = new Vector3(0, 40f, 3f);
+        var box = interaction.AddComponent<BoxCollider>(); box.isTrigger = true; box.size = new Vector3(135f, 46f, 6f);
         interaction.AddComponent<InteractableTrigger>();
         EditorUtility.SetDirty(wall);
     }

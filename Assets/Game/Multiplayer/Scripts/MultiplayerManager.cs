@@ -817,7 +817,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // never sent to anyone, kept as it is when leaving someone's game and written to the player's own save at once.
     // Each player sees their own sheet and their own trophies on the same wall.
     public static bool PersonalFlag(string key) => key.StartsWith("meta.") || key == ProgressionManager.LedgerIntroFlag || key == ProgressionManager.LedgerSaidFlag
-        || key == ProgressionManager.BlockingTaughtFlag || key == ProgressionManager.BashMountedFlag;
+        || key == ProgressionManager.LessonTaughtFlag || key == ProgressionManager.LessonTrophyFlag;
 
     FlagSet HostFlags()
     {

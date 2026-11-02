@@ -219,7 +219,9 @@ public class Hitbox : MonoBehaviour
         {
             // The combo's finisher has its own multiplier (CombatManager.comboFinisherDamage); a charged heavy attack keeps the heavy one.
             bool finisher = owner is Player striker && striker.Combat != null && striker.Combat.ComboFinisher;
-            baseDamage *= finisher ? CombatManager.Instance.comboFinisherDamage : CombatManager.Instance.heavyDamageMultiplier;
+            // Strength adds to a charged heavy attack (StatType.HeavyDamage), not to the combo's finisher.
+            float heavyBonus = owner != null && owner.Stats != null ? Mathf.Max(0f, owner.Stats.GetFinal(StatType.HeavyDamage)) : 0f;
+            baseDamage *= finisher ? CombatManager.Instance.comboFinisherDamage : CombatManager.Instance.heavyDamageMultiplier * (1f + heavyBonus);
             force *= CombatManager.Instance.heavyKnockbackMultiplier;
         }
         var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;

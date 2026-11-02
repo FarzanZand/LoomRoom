@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 // A dialogue box at the foot of the screen with the speaker's head and shoulders idling at its left, their name on a
 // plate above it and the line typed out with a soft blip a letter (an alternative to the Dialogue System's
-// conversations, for the boss and the dungeon's people: BossFight > Intro). The Dungeon Master never speaks in it:
+// conversations, for the boss and the dungeon's people: BossFight > Intro, the tavern keeper). The Dungeon Master never speaks in it:
 // his lines among them go to his own feed as always. A click, Space, Enter or a pad's South
 // finishes the typing, then moves on; a line with answers shows them as buttons (keys and pad move between them).
 // Its look is the Boss dialogue prefab (Dialogue/UI, under the Dialogue Manager); code only fills it.
@@ -44,10 +44,14 @@ public class PortraitDialogueUI : MonoBehaviour
     int picked = -1, selected;
 
     public bool Open { get; private set; }
+    // The answer taken in the last Play (its index among that line's choices), -1 for none.
+    public int Picked => picked;
     // A line said in the middle of play (Bark): no state pushed, nothing to press, the HUD stays.
     public bool Barking { get; private set; }
     // While it is up the hotbar and vitals step aside (HudCanvas.BehindMenu); not for a bark.
     public static bool Covers => Current != null && Current.Open && !Current.Barking;
+    // The box is on screen (a bark or a conversation; not while it has stepped aside for the Dungeon Master's own line).
+    public bool Showing => Open && group != null && group.alpha > .01f;
 
     RectTransform box;
     Vector2 boxHome;
@@ -78,6 +82,7 @@ public class PortraitDialogueUI : MonoBehaviour
     // runs as the first box appears. Push the Dialogue state around it (BossStageEncounter does).
     public IEnumerator Play(IReadOnlyList<PortraitLine> lines, Character boss, string bossName, Action firstShown = null)
     {
+        picked = -1;
         if (lines == null || lines.Count == 0) yield break;
         Open = true;
         Raise(false);

@@ -3,7 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // One attribute on the character panel (EquipmentPanelUI.attributeCells): its icon, name and score (the character
-// sheet's plus this run's points), and a "+" that puts a level's point into it while any are left. Hovering it explains
+// sheet's plus this run's points), and a "+" that puts a level's point into it while any are left (only with
+// ProgressionManager's Level up Reward on Points; with Cards the level-up cards take the point). Hovering it explains
 // what it gives (StatTooltipUI on the same object). Laid out by CharacterPanelLayout.
 public class AttributeCellUI : MonoBehaviour
 {
@@ -33,6 +34,6 @@ public class AttributeCellUI : MonoBehaviour
         int score = owner != null ? owner.Score(attribute) : meta != null ? meta.AttributeScore(attribute) : 8;
         bool raised = owner != null && (int)attribute < owner.AttributePoints.Length && owner.AttributePoints[(int)attribute] > 0;
         if (value != null) value.text = raised ? $"<color={ItemData.GoodColor}>{score}</color>" : score.ToString();
-        if (plus != null) plus.gameObject.SetActive(owner != null && owner.InRun && owner.UnspentPoints > 0);
+        if (plus != null) plus.gameObject.SetActive(owner != null && owner.InRun && owner.UnspentPoints > 0 && !ProgressionManager.CardsOnLevelUp);
     }
 }

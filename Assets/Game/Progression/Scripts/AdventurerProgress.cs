@@ -87,7 +87,8 @@ public class AdventurerProgress : MonoBehaviour
     // Blocking's second bonus: less of a blocked hit gets through.
     public float BlockedDamageMultiplier => Mathf.Clamp01(1 - Extra(AdventureSkill.Blocking));
     // Sprint (Athletics 25): this run can sprint, though the table player can't otherwise.
-    public bool SprintUnlocked => FirstMilestone(AdventureSkill.Athletics);
+    // Sprint is Athletics' second milestone (25); its first (15) is the dash (CombatManager.dash.ability).
+    public bool SprintUnlocked => ProgressionManager.HasInstance && ProgressionManager.Instance.Unlocked(AdventureSkill.Athletics, 1, Rank(AdventureSkill.Athletics));
     const float RiposteWindow = 1.5f;
     float riposteUsed = -1;
     // Legendary Blocking: a successful block takes no damage.
@@ -237,8 +238,9 @@ public class AdventurerProgress : MonoBehaviour
         stats.RemoveAllFromSource(source);
         void Add(StatType stat, float value, ModifierType kind = ModifierType.Flat) => stats.AddModifier(new StatModifier(stat, value, kind, source));
         // The class's own attribute points are in Score below, with the sheet's (AdventurerClass.strength and the rest).
-        // The class's pools, and a little more of each every character level past the first.
-        int levels = InRun ? Mathf.Max(0, Level - 1) : 0;
+        // The class's pools, and a little more of each every character level past the first (not with the level-up cards:
+        // there a level gives only the card picked, ProgressionManager.levelUpReward).
+        int levels = InRun && !ProgressionManager.CardsOnLevelUp ? Mathf.Max(0, Level - 1) : 0;
         Add(StatType.MaxHealth, selectedClass.health - stats.GetBase(StatType.MaxHealth) + selectedClass.healthPerLevel * levels);
         Add(StatType.MaxMana, selectedClass.mana - stats.GetBase(StatType.MaxMana) + selectedClass.manaPerLevel * levels);
         // Legendary Athletics: a deeper well of stamina.
@@ -306,7 +308,8 @@ public class AdventurerProgress : MonoBehaviour
         while (Experience >= NextLevelXp && Level < 100)
         {
             Experience -= NextLevelXp; Level++;
-            // Each level gives one attribute point, put where the player likes on the character panel.
+            // Each level gives one attribute point, put where the player likes: on the character panel, or by picking one
+            // of the level-up cards (ProgressionManager.levelUpReward).
             UnspentPoints++;
             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
             // The level-up panel (LeveledUp) says it; the feed doesn't say it again.
@@ -315,10 +318,10 @@ public class AdventurerProgress : MonoBehaviour
             if (selectedClass != null && player != null && player.Stats != null)
             {
                 ApplyStats();
-                if (selectedClass.healthPerLevel > 0) { player.Stats.Heal(selectedClass.healthPerLevel); gains.Add($"+{selectedClass.healthPerLevel:0.#} health"); }
-                if (selectedClass.manaPerLevel > 0) { player.Stats.RestoreMana(selectedClass.manaPerLevel); gains.Add($"+{selectedClass.manaPerLevel:0.#} mana"); }
+                if (!ProgressionManager.CardsOnLevelUp && selectedClass.healthPerLevel > 0) { player.Stats.Heal(selectedClass.healthPerLevel); gains.Add($"+{selectedClass.healthPerLevel:0.#} health"); }
+                if (!ProgressionManager.CardsOnLevelUp && selectedClass.manaPerLevel > 0) { player.Stats.RestoreMana(selectedClass.manaPerLevel); gains.Add($"+{selectedClass.manaPerLevel:0.#} mana"); }
             }
-            gains.Add("+1 attribute point");
+            if (!ProgressionManager.CardsOnLevelUp) gains.Add("+1 attribute point");
             LeveledUp?.Invoke(Level, gains);
         }
         Changed?.Invoke();
@@ -340,14 +343,15 @@ public class AdventurerProgress : MonoBehaviour
         return Score(attribute) - (track != null ? track.baseScore : 8);
     }
 
-    // Puts one of the level's points into an attribute; false when there is none to put.
-    public bool SpendPoint(MetaAttribute attribute)
+    // Puts one of the level's points into an attribute; false when there is none to put. The skill-up sound plays unless
+    // the caller has its own (the level-up panels).
+    public bool SpendPoint(MetaAttribute attribute, bool sound = true)
     {
         int i = (int)attribute;
         if (!InRun || UnspentPoints <= 0 || i < 0 || i >= AttributePoints.Length) return false;
         UnspentPoints--; AttributePoints[i]++;
         ApplyStats();
-        if (AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
+        if (sound && AudioManager.HasInstance) AudioManager.Instance.PlaySkillUp();
         return true;
     }
 

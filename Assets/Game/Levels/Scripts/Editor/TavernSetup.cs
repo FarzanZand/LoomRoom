@@ -16,10 +16,11 @@ using UnityEngine.UI;
 // - the tavern room (Levels/Shared/Rooms/Scripted/Tavern.prefab, a copy of the Merchant shop): the bar and the keeper,
 //   a fire pit to rest by (TavernHearth), tables and stools, its music (RoomMusic), the Dungeon Master's off-the-record
 //   lines (TavernRoom) and its door on every way in (DungeonRoomTemplate.wayInDoor);
-// - the keeper: the Dungeon merchant prefab with a TavernKeeper (his dishes, the rumour price) and its name;
+// - the keeper: the Dungeon merchant prefab with a TavernKeeper (his dishes, his welcomes, the rumour he tells and its
+//   price) and its name;
 // - every walled dungeon level's shop room set to the tavern, and every floor of every level a merchant (chance 1);
 // - the Arena as the first rumour (CampaignEncounter.rumoured);
-// - the tavern's tabs on the shop screen in Room.unity (TavernTabsUI);
+// - the tavern's tabs on the shop screen in Room.unity (TavernTabsUI: Wares and Food);
 // - a tavern behind a door in the Debug arena.
 // Everything it makes is edited by hand after (in the Asset Studio: Rooms, Props, Items > Dish, Campaign).
 public static class TavernSetup
@@ -345,7 +346,7 @@ public static class TavernSetup
         log.Append("arena rumour; ");
     }
 
-    // ── The screen (Room.unity): Wares, Food and Rumours ──
+    // ── The screen (Room.unity): Wares and Food ──
 
     static void Ui(System.Text.StringBuilder log)
     {
@@ -379,7 +380,7 @@ public static class TavernSetup
             var frame = b.transform.Find("Frame");
             return new TavernTabsUI.Tab { button = b.GetComponent<Button>(), label = text, picked = frame != null ? frame.gameObject : null };
         }
-        var wares = Tab("Wares", -130); var food = Tab("Food", 0); var rumours = Tab("Rumours", 130);
+        var wares = Tab("Wares", -130); var food = Tab("Food", 0);
 
         // Food: two dish cards in the wares' column.
         var foodPanel = UI.New("Food", group, new Vector2(-340, 30), new Vector2(600, 560));
@@ -387,17 +388,10 @@ public static class TavernSetup
         Note("Eat once each run. It lasts until the run ends.", foodPanel, new Vector2(0, 232), infoStyle);
         var dishCards = new List<TavernTabsUI.Card>();
         for (int i = 0; i < 2; i++) dishCards.Add(Card($"Dish {i + 1}", foodPanel, new Vector2(0, 136 - i * 160), slotSprite, coinSprite, nameStyle, infoStyle, priceStyle, closeTemplate));
-        // Rumours: three cards.
-        var rumourPanel = UI.New("Rumours", group, new Vector2(-340, 30), new Vector2(600, 560));
-        Header("RUMOURS", rumourPanel, new Vector2(-150, 266), header);
-        Note("Places you haven't found. Pay to hear where.", rumourPanel, new Vector2(0, 232), infoStyle);
-        var rumourCards = new List<TavernTabsUI.Card>();
-        for (int i = 0; i < 3; i++) rumourCards.Add(Card($"Rumour {i + 1}", rumourPanel, new Vector2(0, 136 - i * 160), slotSprite, coinSprite, nameStyle, infoStyle, priceStyle, closeTemplate));
-        var empty = Note("No more rumours for now. Come back when more of the map is open.", rumourPanel, new Vector2(0, 30), infoStyle);
 
         var so = new SerializedObject(ui);
         so.FindProperty("tabRow").objectReferenceValue = tabs.gameObject;
-        SetTab(so.FindProperty("wares"), wares); SetTab(so.FindProperty("food"), food); SetTab(so.FindProperty("rumours"), rumours);
+        SetTab(so.FindProperty("wares"), wares); SetTab(so.FindProperty("food"), food); SetTab(so.FindProperty("rumours"), new TavernTabsUI.Tab());
         var parts = new List<GameObject>();
         foreach (Transform t in panel)
             if (t.name.StartsWith("Supply row") || t.name.StartsWith("Equipment row") || t.name == "Supplies" || t.name == "Equipment" || t.name == "Price header" || t.name.EndsWith("sold out"))
@@ -405,17 +399,14 @@ public static class TavernSetup
         var partsProp = so.FindProperty("waresParts"); partsProp.arraySize = parts.Count;
         for (int i = 0; i < parts.Count; i++) partsProp.GetArrayElementAtIndex(i).objectReferenceValue = parts[i];
         so.FindProperty("foodPanel").objectReferenceValue = foodPanel.gameObject;
-        so.FindProperty("rumourPanel").objectReferenceValue = rumourPanel.gameObject;
-        SetCards(so.FindProperty("dishCards"), dishCards); SetCards(so.FindProperty("rumourCards"), rumourCards);
-        so.FindProperty("rumourEmpty").objectReferenceValue = empty;
-        var scroll = AssetDatabase.LoadAllAssetsAtPath("Assets/ThirdParty/Pixel Items/Librarium/Singles/43_Scroll_Arcane.png").OfType<Sprite>().FirstOrDefault();
-        so.FindProperty("rumourIcon").objectReferenceValue = scroll;
+        so.FindProperty("rumourPanel").objectReferenceValue = null;
+        SetCards(so.FindProperty("dishCards"), dishCards);
         so.ApplyModifiedPropertiesWithoutUndo();
-        foodPanel.gameObject.SetActive(false); rumourPanel.gameObject.SetActive(false);
+        foodPanel.gameObject.SetActive(false);
         var shopSo = new SerializedObject(shop); shopSo.FindProperty("tavern").objectReferenceValue = ui; shopSo.ApplyModifiedPropertiesWithoutUndo();
         EditorSceneManager.MarkSceneDirty(shop.gameObject.scene);
         EditorSceneManager.SaveScene(shop.gameObject.scene);
-        log.Append(scroll == null ? "ui (no scroll icon); " : "ui; ");
+        log.Append("ui; ");
     }
 
     static TavernTabsUI.Card Card(string name, RectTransform parent, Vector2 at, Sprite slot, Sprite coin, TMP_Text nameStyle, TMP_Text infoStyle, TMP_Text priceStyle, GameObject buttonTemplate)

@@ -235,7 +235,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (t.milestones != null) foreach (var m in t.milestones) if (meta.Reached(t, m)) before.Add(m);
         switch (meta.Buy(t))
         {
-            case ProgressionManager.BuyResult.Locked: DungeonMaster.Say(meta.lessonBlockingFirst); ShowFeedback($"\"{meta.lessonBlockingFirst.text}\""); Shake(r); break;
+            case ProgressionManager.BuyResult.Locked: DungeonMaster.Say(meta.lessonSkillFirst); ShowFeedback($"\"{meta.lessonSkillFirst.text}\""); Shake(r); break;
             case ProgressionManager.BuyResult.Poor: ShowFeedback($"Not enough spoils. {t.displayName} needs {price}."); Shake(r); break;
             case ProgressionManager.BuyResult.Max: break;
             case ProgressionManager.BuyResult.Bought:
@@ -307,15 +307,15 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         RefreshQuest(meta);
     }
 
-    // The spend-spoils quest (ProgressionManager.SpendQuest): its line at the foot of the paper, the Blocking row's name
+    // The spend-spoils quest (ProgressionManager.SpendQuest): its line at the foot of the paper, the lesson skill's row name
     // in pen and a pen ring round its Train button, until it is done.
     Row questRow;
     void RefreshQuest(ProgressionManager meta)
     {
-        var blocking = meta.Track(AdventureSkill.Blocking);
-        // Done on the page as soon as Blocking is trained (the quest itself closes when the sheet is put down).
-        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1 && meta.Bought(blocking) == 0;
-        questRow = open && blocking != null ? rows.Find(r => r.trackId == blocking.id) : null;
+        var lesson = meta.Track(meta.lessonSkill);
+        // Done on the page as soon as the lesson skill is trained (the quest itself closes when the sheet is put down).
+        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1 && meta.Bought(lesson) == 0;
+        questRow = open && lesson != null ? rows.Find(r => r.trackId == lesson.id) : null;
         if (questNote != null)
         {
             questNote.gameObject.SetActive(questRow != null);
@@ -376,8 +376,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (r.buy != null) r.buy.interactable = price >= 0;
         if (r.buyLabel != null)
         {
-            // Before the Blocking lesson every other row says so on its button.
-            r.buyLabel.text = price < 0 ? "MAX" : locked ? "Blocking" + "\n" + "first" : $"Train {price}";
+            // Before the lesson every other row says which skill comes first on its button.
+            r.buyLabel.text = price < 0 ? "MAX" : locked ? meta.LessonSkillName + "\n" + "first" : $"Train {price}";
             // The lesson text is two short lines, sized to fit inside the tag (the small attribute tags most of all).
             if (r.buyLabelSize <= 0f) { r.buyLabelSize = r.buyLabel.fontSize; r.buyLabelSpacing = r.buyLabel.lineSpacing; }
             r.buyLabel.enableAutoSizing = locked;
