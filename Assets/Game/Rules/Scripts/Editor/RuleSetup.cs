@@ -33,10 +33,10 @@ public static class RuleSetup
     // The rules, in order: id (saved, never change), text, the line he gives it with, the quote, on the sheet from the start.
     static readonly (string id, string text, string given, string quote, bool pinned)[] Table =
     {
-        ("rule1", "Nobody leaves the table until I say so.", "*The first rule.* Nobody leaves the table until I say so.", "*Rule one.*", true),
-        ("rule2", "Do not attack the help. It will hurt you more than them.", "*New rule added:* Do not attack the help. It will hurt you more than them.", "*Rule two.*", false),
+        ("rule1", "Nobody leaves the table until I say so.", "*The first rule.* Nobody leaves the table until I say so.", "*Rule {number}.*", true),
+        ("rule2", "Do not attack the help. It will hurt you more than them.", "*New rule added:* Do not attack the help. It will hurt you more than them.", "*Rule {number}.*", false),
         // Given when a duel is broken (DuelEvent, the Duel bridge).
-        ("rule3", "A duel is fought face to face.", "*New rule added:* A duel is fought face to face.", "*Rule three.*", false),
+        ("rule3", "A duel is fought face to face.", "*New rule added:* A duel is fought face to face.", "*Rule {number}.*", false),
     };
 
     // Each rule's asset (Rules/Data/Rule N), made when missing; made ones are kept as they are (edit them freely).

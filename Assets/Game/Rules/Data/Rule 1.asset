@@ -20,7 +20,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 1
   quote:
-    text: '*Rule one.*'
+    text: '*Rule {number}.*'
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

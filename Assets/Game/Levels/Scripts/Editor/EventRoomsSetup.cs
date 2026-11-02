@@ -181,7 +181,7 @@ public static class EventRoomsSetup
             rule.id = "rule3";
             rule.text = "A duel is fought face to face.";
             rule.given = new DungeonMaster.Line { text = "*New rule added:* A duel is fought face to face.", mumble = true };
-            rule.quote = new DungeonMaster.Line { text = "*Rule three.*", mumble = true };
+            rule.quote = new DungeonMaster.Line { text = "*Rule {number}.*", mumble = true };
             AssetDatabase.CreateAsset(rule, path);
             log.Append("rule 3; ");
         }
