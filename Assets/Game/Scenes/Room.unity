@@ -110209,7 +110209,7 @@ MonoBehaviour:
   trophySize: 9.5
   longTilt: 45
   restGap: 0.3
-  turnBootsRound: 1
+  bootsToesOut: 1
   hangKey: trophyHang
   hangClip: {fileID: 0}
   trophyKey: equipItem
