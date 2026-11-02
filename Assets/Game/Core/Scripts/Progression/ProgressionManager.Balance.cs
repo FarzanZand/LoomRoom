@@ -5,9 +5,10 @@ using UnityEngine;
 // level's DungeonBalance (which applies them, DungeonBalance.Apply). 1 = as authored.
 public partial class ProgressionManager
 {
-    [FoldoutGroup("Balance"), Min(0), Tooltip("Every enemy's starting damage, times this (the boss too). 1 = as authored.")]
+    [FoldoutGroup("Enemy balance"), PropertyOrder(60), LabelText("Enemy damage x"), Min(0), Tooltip("Every enemy's starting damage, times this (the boss too). 1 = as authored.")]
+    [InfoBox("Every enemy at once, the bosses too, on top of each level's own balance. 1 = as made.")]
     public float enemyBaseDamage = 1f;
-    [FoldoutGroup("Balance"), Min(0), Tooltip("Every enemy's starting health, times this (the boss too). 1 = as authored.")]
+    [FoldoutGroup("Enemy balance"), PropertyOrder(60), LabelText("Enemy health x"), Min(0), Tooltip("Every enemy's starting health, times this (the boss too). 1 = as authored.")]
     public float enemyBaseHealth = 1f;
 
     // The two multipliers on an enemy, as their own modifiers (source: this manager).

@@ -10,7 +10,7 @@ public partial class ProgressionManager
 {
     public const string PosterPrefix = "poster.", PosterQuest = "hangPoster";
 
-    [FoldoutGroup("Class posters"), Tooltip("The game's classes (their order is the key items' order). Each has a poster on the wall by the bed.")]
+    [FoldoutGroup("Bedroom key items"), PropertyOrder(40), LabelText("Classes (for the posters)"), Tooltip("The game's classes (their order is the key items' order). Each has a poster on the wall by the bed.")]
     public AdventureRules classRules;
 
     public static string PosterFlag(AdventurerClass c) => PosterPrefix + (string.IsNullOrEmpty(c.id) ? c.name : c.id);

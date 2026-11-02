@@ -9,7 +9,7 @@ public partial class ProgressionManager
 {
     public const string TileFlag = "puzzle.tile", TileQuest = "placeTile";
 
-    [FoldoutGroup("Missing tile"), Tooltip("The tile (a Key item, purple) the dungeon hides. Empty: the puzzle has no missing piece.")]
+    [FoldoutGroup("Bedroom key items"), PropertyOrder(40), LabelText("Puzzle's missing tile (item)"), Tooltip("The tile (a Key item, purple) the dungeon hides. Empty: the puzzle has no missing piece.")]
     public ItemData missingTile;
 
     public int TileState => GetFlag(TileFlag);

@@ -9,9 +9,9 @@ public partial class ProgressionManager
 {
     public const string DiceFlag = "room.dice", DiceQuest = "placeDice";
 
-    [FoldoutGroup("Table dice"), Tooltip("The key item the symbol puzzle gives (its name and icon in the key items row).")]
+    [FoldoutGroup("Bedroom key items"), PropertyOrder(40), LabelText("Set of dice (item)"), Tooltip("The key item the symbol puzzle gives (its name and icon in the key items row).")]
     public ItemData diceSet;
-    [FoldoutGroup("Table dice"), Min(0), Tooltip("Trading ranks added while the dice lie on the table's border.")]
+    [FoldoutGroup("Bedroom key items"), PropertyOrder(40), LabelText("Trading ranks while the dice lie out"), Min(0), Tooltip("Trading ranks added while the dice lie on the table's border.")]
     public int diceTradingBonus = 5;
 
     public int DiceState => GetFlag(DiceFlag);

@@ -23,19 +23,18 @@ public partial class ProgressionManager : Singleton<ProgressionManager>
         public int    value = 1;
     }
 
-    [Header("Start")]
+    [FoldoutGroup("Starting the game"), PropertyOrder(0), LabelText("Start as"), Tooltip("Which player you are when Play starts: the Room player (the bedroom) or the Table player (the dungeons).")]
+    [InfoBox("Where Play starts, and the story flags: plain name = number pairs that say what has happened in this save (story.intro = 1 once the intro is played). The save keeps them; Start At jumps the story ahead in the editor.")]
     public PlayerKind startingPlayer = PlayerKind.Room;
-    [Tooltip("Skip the wake-up cutscene when entering play mode.")]
+    [FoldoutGroup("Starting the game"), PropertyOrder(0), LabelText("Skip the wake-up"), Tooltip("Skip the wake-up cutscene when entering play mode.")]
     public bool skipWakeUp = false;
-    [Tooltip("Editor only: fast-forward the story by setting the flags that point leaves behind (on top of any save).")]
+    [FoldoutGroup("Starting the game"), PropertyOrder(0), LabelText("Start at (editor)"), Tooltip("Editor only: fast-forward the story by setting the flags that point leaves behind (on top of any save).")]
     public ProgressionStart startAt = ProgressionStart.NewGame;
-
-    [Header("Flags")]
-    [Tooltip("Flags set before play starts. Runtime changes go to the dictionary, not this list.")]
+    [FoldoutGroup("Starting the game"), PropertyOrder(0), LabelText("Story flags set at start"), Tooltip("Flags set before play starts. Runtime changes go to the list below, not this one.")]
     [ListDrawerSettings(ShowFoldout = true)]
     [SerializeField] List<FlagEntry> initialFlags = new();
 
-    [ShowInInspector, ReadOnly]
+    [FoldoutGroup("Starting the game"), PropertyOrder(0), LabelText("Story flags now"), ShowInInspector, ReadOnly]
     readonly Dictionary<string, int> flags = new();
 
     public event Action<string, int> FlagChanged;
