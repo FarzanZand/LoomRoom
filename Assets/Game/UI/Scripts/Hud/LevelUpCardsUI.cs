@@ -275,12 +275,20 @@ public class LevelUpCardsUI : MonoBehaviour
         else if (k.digit2Key.wasPressedThisFrame || k.numpad2Key.wasPressedThisFrame) Pick(1);
         else if (k.digit3Key.wasPressedThisFrame || k.numpad3Key.wasPressedThisFrame) Pick(2);
         else if (k.digit4Key.wasPressedThisFrame || k.numpad4Key.wasPressedThisFrame) Pick(3);
+        // UI Navigate is up, down and Tab only; the panels lie in a row, so left and right move along it as well.
+        var pad = Gamepad.current;
+        if (k.leftArrowKey.wasPressedThisFrame || pad != null && (pad.dpad.left.wasPressedThisFrame || pad.leftStick.left.wasPressedThisFrame)) Step(-1);
+        else if (k.rightArrowKey.wasPressedThisFrame || pad != null && (pad.dpad.right.wasPressedThisFrame || pad.leftStick.right.wasPressedThisFrame)) Step(1);
     }
 
     void Navigate()
     {
         if (phase != Phase.Choosing) return;
-        int step = InputManager.Instance.NavigateStep;
+        Step(InputManager.Instance.NavigateStep);
+    }
+
+    void Step(int step)
+    {
         keyboard = keyboard < 0 ? (step < 0 ? cards.Length - 1 : 0) : (keyboard + step + cards.Length) % cards.Length;
         hovered = -1;
         Play(art.hover, 1f);

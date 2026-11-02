@@ -25,6 +25,12 @@ public class BossBarkUI : Singleton<BossBarkUI>
     Character speaker;
     BossBarkStyle style;
     public bool Saying { get; private set; }
+    float subtitleWidth = -1f, subtitleBottom, subtitleTop;
+
+    // The foot and top of the Subtitle line on its 1920 x 1080 canvas while it shows (top 0 when it doesn't): the
+    // Dungeon Master's lines rise above it when they would run into it (a wrapped line, TikTok mode).
+    public static float SubtitleBottom => HasInstance ? Instance.subtitleBottom : 0f;
+    public static float SubtitleTop => HasInstance && Instance.Saying ? Instance.subtitleTop : 0f;
 
     protected override void Awake()
     {
@@ -48,10 +54,16 @@ public class BossBarkUI : Singleton<BossBarkUI>
             speaker = who;
             var (group, label) = Parts(style);
             if (group == null || label == null) break;
-            label.text = style == BossBarkStyle.Subtitle && !string.IsNullOrWhiteSpace(name)
-                ? $"<color=#{ColorUtility.ToHtmlStringRGB(nameColour)}>{name}:</color> {text}" : text;
+            bool named = style == BossBarkStyle.Subtitle && !string.IsNullOrWhiteSpace(name);
+            if (style == BossBarkStyle.Subtitle) FitSubtitle();
+            label.text = named ? $"<color=#{ColorUtility.ToHtmlStringRGB(nameColour)}>{name}:</color> {text}" : text;
             label.ForceMeshUpdate();
-            int total = label.textInfo.characterCount, from = style == BossBarkStyle.Subtitle ? name.Length + 2 : 0;
+            if (style == BossBarkStyle.Subtitle)
+            {
+                subtitleBottom = ((RectTransform)label.transform).anchoredPosition.y;
+                subtitleTop = subtitleBottom + label.preferredHeight;
+            }
+            int total = label.textInfo.characterCount, from = named ? name.Length + 2 : 0;
             label.maxVisibleCharacters = from;
             Follow();
             for (float a = group.alpha; a < 1f; a += Time.unscaledDeltaTime / fadeIn) { group.alpha = a; Follow(); yield return null; }
@@ -70,7 +82,19 @@ public class BossBarkUI : Singleton<BossBarkUI>
             break;
         }
         speaker = null;
+        subtitleTop = 0f;
         Saying = false;
+    }
+
+    // The Subtitle line wraps inside its width (in TikTok mode the Dungeon Master's narrow width, so it stays inside a
+    // 9:16 crop), its first line at its foot and the rest above: a long line ran off both sides of the screen.
+    void FitSubtitle()
+    {
+        var r = (RectTransform)subtitleText.transform;
+        if (subtitleWidth < 0f) subtitleWidth = r.sizeDelta.x;
+        r.sizeDelta = new Vector2(DungeonMaster.TikTokMode ? DungeonMaster.TikTokWidth : subtitleWidth, r.sizeDelta.y);
+        subtitleText.textWrappingMode = TextWrappingModes.Normal;
+        subtitleText.verticalAlignment = VerticalAlignmentOptions.Bottom;
     }
 
     (CanvasGroup, TMP_Text) Parts(BossBarkStyle how) => how switch
