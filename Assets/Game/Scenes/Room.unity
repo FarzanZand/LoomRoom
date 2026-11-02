@@ -379287,7 +379287,7 @@ MonoBehaviour:
   enemyBaseHealth: 1
   diceSet: {fileID: 11400000, guid: 7f937215e668f0449bc166ee46693245, type: 2}
   diceTradingBonus: 5
-  levelUpReward: 1
+  levelUpReward: 0
   levelUpCards: {fileID: 8521092963870624208, guid: 736dff4a568c7344dac413913cda3f7a, type: 3}
   autoPopup: 1
   spoils:
