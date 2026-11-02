@@ -10392,7 +10392,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TavernKeeperLines
   welcomeLines:
-  - Welcome in! Wipe your boots. Whatever you stepped in down there, it stays outside.
+  - Welcome in! Wipe your boots. Whatever you stepped in out there, it stays outside.
   - Ah, a customer who's still breathing. My favourite kind. They pay.
   - Sit anywhere you like. Don't mind the smell, that's the stew. Mostly.
   shopAnswer: Shop
@@ -244305,17 +244305,17 @@ MonoBehaviour:
     scale: 1.3
     homing: 1
   afterPractice:
-  - text: When a figure dies, it stays dead. That's the one rule I never bend.
+  - text: When a figure dies, it stays dead.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   diedAtEnd:
-    text: That one's done. I'll put it with the others.
+    text: That one's done.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
   diedEarly:
-    text: Killed by {killer}. I'll put it with the others anyway.
+    text: Killed by {killer}. That one's done.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
@@ -319332,6 +319332,8 @@ MonoBehaviour:
   nearClip: 0.1
   farClip: 5000
   viewModelFieldOfView: 70
+  conversationDrop: 1.2
+  conversationDropSeconds: 0.3
 --- !u!4 &2085928759932143434
 Transform:
   m_ObjectHideFlags: 0
@@ -379484,7 +379486,7 @@ MonoBehaviour:
     - value: 50
       ability: {fileID: 0}
       unlock: Sprint
-      description: You can sprint.
+      description: Hold the sprint key while moving forward to run.
       icon: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
       trophy: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
   - id: stealth
@@ -379614,7 +379616,7 @@ MonoBehaviour:
     thirdUnit: '% attack speed'
     milestones: []
   lessonIntro:
-    text: There's a sheet on the little table by the wall. Have a look.
+    text: There's a sheet on the hobby table by the trophy wall. Have a look.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -379640,7 +379642,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can dash now. Shift and a direction, sideways or back.
+    text: You can dash now. {sprint} and a direction, sideways or back.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -379651,7 +379653,7 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
-    text: 'Dash: hold a direction, press {sprint}.'
+    text: 'Dash: press {sprint}, holding left, right or back.'
   missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   startingPlayer: 0
   skipWakeUp: 0
@@ -392714,6 +392716,8 @@ MonoBehaviour:
   nearClip: 0.1
   farClip: 5000
   viewModelFieldOfView: 70
+  conversationDrop: 1.2
+  conversationDropSeconds: 0.3
 --- !u!1 &7816225916298513372
 GameObject:
   m_ObjectHideFlags: 0
