@@ -326,7 +326,7 @@ public static class PortraitDialogueSetup
         fight.versus.bandLand = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Notification_Impact_02_mono.wav");
         fight.versus.slam = Load("Assets/Game/Audio/Clips/Reveal/Entrance slam.wav", Magic + "Mgc_Fire_Impact_01.wav", Ui + "Fantasy_UI_Gen_Notification_Impact_01_mono.wav");
         fight.versus.throwOff = Load(Ui + "Fantasy_UI_Gen_Inventory_Whoosh_02_stereo.wav");
-        fight.bossName = "Edgar the disco king";
+        fight.bossName = "Edgar the Disco King";
         fight.introLines = new List<PortraitLine>
         {
             new() { speaker = PortraitSpeaker.Boss, text = "Well, well. Someone found my dance floor." },

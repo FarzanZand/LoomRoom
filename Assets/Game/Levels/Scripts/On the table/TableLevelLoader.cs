@@ -296,7 +296,7 @@ public class TableLevelLoader : MonoBehaviour
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
             else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
-            if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post("A merchant has set up shop on this floor.", MessageKind.Info);
+            if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post(Dungeon.Merchant.GetComponentInParent<TavernKeeper>()!=null || Dungeon.Merchant.GetComponent<TavernKeeper>()!=null ? "There's a tavern on this floor." : "A merchant has set up shop on this floor.", MessageKind.Info);
         }
     }
     void FailedFromMap()

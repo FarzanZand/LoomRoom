@@ -37,7 +37,7 @@ public partial class ProgressionManager
         new Quest { id = SheetQuest, text = "Look at the character sheet by the wall." },
         new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
         new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
-        new Quest { id = DashQuest, text = "Dash: hold a direction, press {sprint}." },
+        new Quest { id = DashQuest, text = "Dash: press {sprint}, holding left, right or back." },
         new Quest { id = InventoryQuest, text = "Open your inventory ({inventory} or Tab)." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },
@@ -108,10 +108,12 @@ public partial class ProgressionManager
     }
 
     // The quest's text with the player's keys put in.
-    public string QuestText(Quest q)
+    public string QuestText(Quest q) => q == null ? "" : KeysIn(q.text);
+
+    // {attack}, {block}, {inventory}, {crouch} and {sprint} replaced by the player's own keys (quests, the lesson's lines).
+    public static string KeysIn(string text)
     {
-        if (q == null) return "";
-        string text = q.text ?? "";
+        text ??= "";
         if (InputManager.HasInstance)
         {
             text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
@@ -167,6 +169,8 @@ public partial class ProgressionManager
     void OfferQuestsForRun()
     {
         CompleteQuest(TableQuest);
+        // Sat down before the trophies were hung (the quest not given yet): it never comes up after the run is played.
+        if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0) SetFlag(QuestFlag(TableQuest), 2);
         // Until the player has opened the inventory once, every run starts by saying how (the intro's included).
         if (!HasFlag(InventoryOpenedFlag) && QuestState(InventoryQuest) == 0) GiveQuest(InventoryQuest);
         if (isActiveAndEnabled) StartCoroutine(OfferWhenRunReady());

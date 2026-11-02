@@ -36,7 +36,8 @@ public class TavernKeeper : MonoBehaviour
 
     public Result BuyRumour(CampaignEncounter place, Player player)
     {
-        if (place == null || player == null || !CampaignManager.HasInstance) return Result.Nothing;
+        // Never during the intro's practice run (its board has no tavern, but nothing of the meta counts there).
+        if (place == null || player == null || !CampaignManager.HasInstance || !ProgressionManager.MetaActive) return Result.Nothing;
         if (player.Wallet == null || !player.Wallet.TrySpend(rumourPrice)) return Result.NoMoney;
         // Its New place card says the rest (CampaignManager.BuyRumour).
         CampaignManager.Instance.BuyRumour(place);

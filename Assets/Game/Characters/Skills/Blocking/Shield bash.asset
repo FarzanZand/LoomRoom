@@ -15,7 +15,7 @@ MonoBehaviour:
   skill: 2
   displayName: Shield bash
   icon: {fileID: 21300000, guid: 4345c96bd34f64546ae95654d1130956, type: 3}
-  description: 'With a shield up, press attack: dash into the first enemy ahead,
+  description: 'Hold block and press attack: you lunge into the first enemy ahead,
     hit it with holy damage and stun it.'
   enabled: 1
   cooldown: 5

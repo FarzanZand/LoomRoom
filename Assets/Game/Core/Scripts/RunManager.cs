@@ -54,6 +54,15 @@ public class RunManager : Singleton<RunManager>
         return ("aeiouAEIOU".IndexOf(killer[0]) >= 0 ? "an " : "a ") + (lowerName ? killer.ToLower() : killer);
     }
 
+    // A line about the killer: "the {killer}" and "The {killer}" lose their "the" for a proper name (a boss's stage name,
+    // Not a witch), and a bare {killer} is the name as it is.
+    public static string FillKiller(string text, string killer)
+    {
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(killer)) return text;
+        bool proper = Character.ProperNames.Contains(killer);
+        return text.Replace("The {killer}", proper ? killer : "The " + killer).Replace("the {killer}", proper ? killer : "the " + killer).Replace("{killer}", killer);
+    }
+
     public event Action RunStarted;
     public event Action<bool> RunEnded; // victory
     // The run goes on after a death (RevivePlayer), raised once the player stands again. The argument is whether the

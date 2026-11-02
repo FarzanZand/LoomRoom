@@ -89,7 +89,7 @@ public partial class ProgressionManager
     public List<MetaTrack> tracks = new();
 
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Back in the room after the first run that ends in a real dungeon.")]
-    public DungeonMaster.Line lessonIntro = new() { text = "There's a sheet on the little table by the wall. Have a look." };
+    public DungeonMaster.Line lessonIntro = new() { text = "There's a sheet on the hobby table by the trophy wall. Have a look." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("The skill the lesson teaches first (Athletics since 2026-11-01, the dash at 15; Blocking before): until its first milestone is bought nothing else on the sheet can be, and no run starts.")]
     public AdventureSkill lessonSkill = AdventureSkill.Athletics;
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but the lesson's skill before its first milestone.")]
@@ -101,9 +101,9 @@ public partial class ProgressionManager
     public DungeonMaster.Line handOverOne = new() { text = "This one goes on the wall." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
     public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("After the lesson skill's first trophy (the dash) is mounted for the first time.")]
+    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Said once, as the sheet is put down after the lesson skill's first milestone (the dash) is bought. {sprint} and the other keys are the player's own.")]
     [UnityEngine.Serialization.FormerlySerializedAs("shieldBashMounted")]
-    public DungeonMaster.Line lessonTrophyMounted = new() { text = "Hold your shield up against arrows and fire now. They go back where they came from." };
+    public DungeonMaster.Line lessonTrophyMounted = new() { text = "You can dash now. {sprint} and a direction, sideways or back." };
     [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
     [TabGroup("Meta progression/Tabs", "Sheet"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
     public bool colourSheetPortraits;
@@ -254,8 +254,9 @@ public partial class ProgressionManager
     // ── Buying ────────────────────────────────────────────────────────
 
     public enum BuyResult { Bought, Locked, Poor, Max }
-    // Before the lesson skill's first milestone only that skill can be bought (the lesson).
-    public bool LockedByLesson(MetaTrack t) => !LessonTaught && (t == null || t.kind != MetaTrackKind.Skill || t.skill != lessonSkill);
+    // Once the lesson has begun (the first run ended), only its skill can be bought until its first milestone is; before
+    // that nothing is locked, so the sheet doesn't say "Athletics first" on the first morning with no spoils at all.
+    public bool LockedByLesson(MetaTrack t) => !LessonTaught && HasFlag(LedgerIntroFlag) && (t == null || t.kind != MetaTrackKind.Skill || t.skill != lessonSkill);
 
     public BuyResult Buy(MetaTrack t)
     {
@@ -298,6 +299,9 @@ public partial class ProgressionManager
             DungeonMaster.Say(earned.Count == 1 ? handOverOne : handOverMany);
             MetaChanged?.Invoke();
         }
+        // The lesson's ability works from the moment it is bought: he says so as the sheet goes down, not once its
+        // trophy is on the wall (that could be long after, or never).
+        SayLessonLearned();
         return earned.Count;
     }
 
@@ -312,8 +316,16 @@ public partial class ProgressionManager
             if (t.skill == lessonSkill && t.milestones.IndexOf(m) == 0) lesson = true;
         }
         if (carried.Count > 0) MetaChanged?.Invoke();
-        if (lesson && !HasFlag(LessonTrophyFlag)) { SetFlag(LessonTrophyFlag); DungeonMaster.Say(lessonTrophyMounted); }
+        if (lesson) SayLessonLearned();
         return carried.Count;
+    }
+
+    // "You can dash now", once (the flag's key is from when the lesson ended with the shield bash's trophy).
+    void SayLessonLearned()
+    {
+        if (!LessonTaught || HasFlag(LessonTrophyFlag)) return;
+        SetFlag(LessonTrophyFlag);
+        DungeonMaster.Say(lessonTrophyMounted.With(KeysIn(lessonTrophyMounted.text)));
     }
 
     // ── Spoils drops and the tally ────────────────────────────────────
@@ -435,7 +447,8 @@ public partial class ProgressionManager
         float until = Time.time + lessonDelay;
         while (Time.time < until) { if (!RoomPlayerFree) { lessonRoutine = null; yield break; } yield return null; }
         SetFlag(LedgerSaidFlag);
-        DungeonMaster.Say(lessonIntro);
+        // The player went to the sheet before he got to it: nothing to point at.
+        if (!LessonTaught && !HasFlag(CharacterSheetTable.OpenedFlag)) DungeonMaster.Say(lessonIntro);
         lessonRoutine = null;
     }
     // Not during the win ending either: the DM points at the door then, not at the sheet.

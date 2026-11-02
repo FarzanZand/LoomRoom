@@ -37,7 +37,7 @@ MonoBehaviour:
   spotlightFadeOut: 0.8
   dialogueDelay: 2
   introDialogue: 1
-  bossName: Edgar the disco king
+  bossName: Edgar the Disco King
   introLines:
   - speaker: 0
     name: 
