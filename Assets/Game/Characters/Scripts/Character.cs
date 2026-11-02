@@ -27,7 +27,10 @@ public class Character : MonoBehaviour
     [System.NonSerialized] public string namePrefix;
     // A name this one character goes by in place of its data's (a boss's stage name, BossFight.bossName), said as a
     // proper name. Empty: the data's.
-    [System.NonSerialized] public string nameOverride;
+    // A name given for the moment (a boss's stage name): said as it is, never with "the" or "a" in front (ProperNames, read
+    // by the death screen and the Dungeon Master's remarks about the killer).
+    [System.NonSerialized] string nameOverrideValue;
+    public string nameOverride { get => nameOverrideValue; set { nameOverrideValue = value; if (!string.IsNullOrEmpty(value)) ProperNames.Add(value); } }
     public string DisplayName => (string.IsNullOrEmpty(namePrefix) ? "" : namePrefix + " ") + (!string.IsNullOrEmpty(nameOverride) ? nameOverride : data != null && !string.IsNullOrEmpty(data.characterName) ? data.characterName : name);
     bool ProperName => !string.IsNullOrEmpty(nameOverride) || data != null && data.properName;
     // The name as a sentence uses it: "the Crypt Rat", or a proper name as it is (CharacterData.properName).

@@ -15,4 +15,5 @@ MonoBehaviour:
   skill: 5
   displayName: Dash
   icon: {fileID: 21300000, guid: 49b2306901838ed47b7e94652a64959a, type: 3}
-  description: 'Shift and a direction: a quick step sideways or back, for 10 stamina.'
+  description: 'Tap the sprint key with a direction: a quick step sideways or back,
+    for 10 stamina.'

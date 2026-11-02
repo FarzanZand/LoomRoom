@@ -13,7 +13,7 @@ public class HudCanvas : MonoBehaviour
     public static float HideUntil;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ClearHide() => HideUntil = 0f;
     public static bool BehindMenu => GameManager.HasInstance && GameManager.Instance.State == GameState.Menu || PauseMenuUI.OverCutscene
-        || PortraitDialogueUI.Covers || BossTitleUI.Covers || VersusScreenUI.Covers;
+        || PortraitDialogueUI.Covers || BossTitleUI.Covers;
 
     void Awake()
     {

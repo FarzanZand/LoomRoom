@@ -62,7 +62,7 @@ public partial class AudioManager : Singleton<AudioManager>
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool"), Sirenix.OdinInspector.LabelText("UI Pool Size")]
     [SerializeField, Min(2)]  private int uiPoolSize  = 8;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool"), Sirenix.OdinInspector.LabelText("UI Pool Most")]
-    [SerializeField, Min(2), Tooltip("A full UI pool grows up to this many sources instead of cutting one: menu and screen sounds are layered on purpose (a versus screen's whoosh under its stingers, letter clicks and voice blips), and a cut one is heard.")]
+    [SerializeField, Min(2), Tooltip("A full UI pool grows up to this many sources instead of cutting one: menu and screen sounds are layered on purpose (a boss title's letter thuds under the music's start, letter clicks and voice blips), and a cut one is heard.")]
     private int uiPoolMost = 20;
     [Sirenix.OdinInspector.FoldoutGroup(Tabs + "/" + SettingsTab + "/Pool")]
     [SerializeField, Min(1), Tooltip("Copies of one clip that can play at once (five footsteps or whooshes in a frame would fill the pool).")]

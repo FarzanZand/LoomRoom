@@ -164,6 +164,8 @@ public class TavernTabsUI : MonoBehaviour
             _ => "",
         });
         Refresh();
+        if (InputManager.PadConnected && (UnityEngine.EventSystems.EventSystem.current == null || UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject == null
+            || !UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.activeInHierarchy)) SelectFirst(dishCards);
     }
 
     static void Say(string message) { if (ShopUI.HasInstance && !string.IsNullOrEmpty(message)) ShopUI.Instance.Feedback(message); }

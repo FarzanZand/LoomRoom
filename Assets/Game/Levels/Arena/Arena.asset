@@ -15,6 +15,40 @@ MonoBehaviour:
   displayName: The Arena
   kind: 1
   boardReveal: 0
+  ownBoardPieces: 0
+  ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
+  wilds:
+    enabled: 0
+    roofed: 0
+    depth: 5
+    height: {x: 1.6, y: 3.6}
+    top: {fileID: 0}
+    side: {fileID: 0}
+    trees: []
+    treeChance: 0.45
+    treeScale: {x: 0.8, y: 1.25}
+    undergrowth: []
+    undergrowthPerCell: 1
+    foot: []
+    footChance: 0.45
+    edges: 1
+    faces: []
+    faceChance: 0.3
+    faceStandOut: 0.5
+    lip: []
+    lipChance: 0.6
+    glows: []
+    glowEvery: 9
+    hangings: []
+    hangChance: 0.25
+    pondChance: 0.35
+    pondSize: {x: 2, y: 3}
+    pondGlow: {r: 0.35, g: 0.85, b: 1, a: 1}
+    pondGlowStrength: 2.5
+    pondEdge: []
   entryMessage: You step into the arena.
   roomStyles:
   - style: {fileID: 11400000, guid: b7beb5b39fafcdb4ba654624e3576450, type: 2}
@@ -119,9 +153,15 @@ MonoBehaviour:
   destructibles: []
   lighting: 2
   litThroughout: 0
+  fog: {x: 0, y: 0}
   lightBoard: 0
   roomTemplates: []
   templateChance: 0
+  roomCount: 0
+  roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
+  noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
     shrineBargains: 1
@@ -136,6 +176,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -187,6 +232,10 @@ MonoBehaviour:
   encounterChance: {x: 0.75, y: 0.8}
   minEnemiesPerRoom: 2
   maxEnemiesPerRoom: 3
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0
+  eliteFloors: 3
   features: []
   loot: {fileID: 11400000, guid: ffdd6a7e14f6a1444835819f8303f35b, type: 2}
   merchantChance: 0
@@ -240,12 +289,15 @@ MonoBehaviour:
   boardEdgeMaterial: {fileID: 2100000, guid: b9c4c0e160db0d6449dad9e7fafa73d9, type: 2}
   boardGridMaterial: {fileID: 0}
   boardPitMaterial: {fileID: 0}
+  boardPitWater: {fileID: 0}
   boardVerticality: 1
   boardTileTaps: []
   boardDoorPosts: []
   boardMoundProps: []
   boardLightColor: {r: 1, g: 1, b: 1, a: 1}
   boardLightIntensity: 1560.0001
+  boardLightAngle: 0
+  boardLightFrom: 220
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,7 +312,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: The Arena
   description: One fight, in the sand.
-  cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
+  cardArt: {fileID: 21300000, guid: e17a2b942e42b284cad9ffc71009c6d1, type: 3}
   kind: 1
   stages: []
   floors: 1
@@ -272,26 +324,59 @@ MonoBehaviour:
     tier2: 0
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 2
     tier1: 50
     tier2: 50
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 3
     tier1: 25
     tier2: 75
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 4
     tier1: 0
     tier2: 100
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  eventRoomsPerFloor: {x: 0, y: 1}
   startingChest: 0
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems: []

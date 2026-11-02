@@ -6,14 +6,15 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // The level-up cards (ProgressionManager > Level up Reward on Cards): while the table player has an attribute point
-// left in a run (AdventurerProgress.UnspentPoints), no enemy is chasing or attacking them and no boss fight is on, the
+// left in a run (AdventurerProgress.UnspentPoints), outside the boss stage's sequence and the Dungeon Master's reach, the
 // Dungeon Master puts up four panels, one per attribute, each with its score now and after and what a point there gives
 // (ProgressionManager.AttributeEffects, so the panels say what the sheet and the character panel say). They pop up one
 // after another (a fade, a small rise and a soft overshoot in size; no turning or spinning, the user, 2026-11-02) while
 // he says one of his deal lines. With
-// ProgressionManager's Auto Popup they come by themselves and the game waits meanwhile (Menu state, time stopped);
-// without it a prompt says "Press R to level up" and R brings them up while the game goes on (Menu state for the
-// cursor, time running; Esc puts them away, the point kept). Pick one with the mouse, 1-4, or the arrows and Enter; it
+// ProgressionManager's Auto Popup they come by themselves once no enemy is after the player, and the game waits
+// meanwhile (Menu state, time stopped); while one is, a prompt says "Press R to level up" and R brings them up (still
+// paused). Without Auto Popup the prompt shows whenever a point waits, and R brings them up while the game goes on
+// (Menu state for the cursor, time running; Esc puts them away, the point kept). Pick one with the mouse, 1-4, or the arrows and Enter; it
 // takes the point with a small pulse and fades away rising, while the others shrink a little and fade. With two points
 // left they come up again. A prefab (UI/Prefabs/Progression/Level up cards, made by LevelUpCardsSetup.Build())
 // that ProgressionManager puts on the HUD canvas (ProgressionManager.levelUpCards).
@@ -97,23 +98,24 @@ public class LevelUpCardsUI : MonoBehaviour
         return progress;
     }
 
-    // A point waiting, the table player exploring and no boss fight on; with Auto Popup also no enemy after them (on R
-    // the player decides when).
-    bool Ready()
+    // A point waiting, the table player exploring, no boss on the stage (from the walk-in to the end of the fight) and the
+    // Dungeon Master's hand not reaching in. Calm: no enemy is after the player (Auto Popup deals only then; while one is,
+    // "Press R" shows instead, since one that can't reach the player could hold the point back for good).
+    bool Ready(out bool calm)
     {
+        calm = true;
         var p = Progress();
         if (p == null || !p.InRun || p.UnspentPoints <= 0 || !ProgressionManager.CardsOnLevelUp) return false;
         if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return false;
         var player = PlayerManager.Instance.Active;
         if (player == null || !player.IsAlive) return false;
         if (GameManager.HasInstance && !GameManager.Instance.GameplayActive) return false;
-        // Never during a boss fight on the stage: they wait for it to end.
-        if (BossStageEncounter.Current != null && BossStageEncounter.Current.Fighting) return false;
-        if (!ProgressionManager.CardsAutoPopup) return true;
+        // Never on the boss stage while it runs (the DM sets the boss down before the fight starts) or while his hand reaches in.
+        if (BossStageEncounter.Current != null && BossStageEncounter.Current.Busy || DungeonMasterReach.Reaching) return false;
         // Co-op guests: the host's enemies are copies here with no sight of their own; their snapshots say whom they see.
-        if (CoopWorld.LocalSeen()) return false;
+        if (CoopWorld.LocalSeen()) { calm = false; return true; }
         foreach (var brain in EnemyBrain.Active)
-            if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player) return false;
+            if (brain != null && brain.Character != null && brain.Character.IsAlive && brain.IsAlerted && brain.Perception != null && brain.Perception.Target == player) { calm = false; break; }
         return true;
     }
 
@@ -121,13 +123,15 @@ public class LevelUpCardsUI : MonoBehaviour
     {
         if (phase == Phase.Closed)
         {
-            bool ready = Ready();
+            bool ready = Ready(out bool calm);
             if (!ready) pointSince = -1f;
             else if (pointSince < 0f) pointSince = Time.unscaledTime;
             bool waited = ready && Time.unscaledTime - pointSince >= afterLevelUp;
             bool auto = ProgressionManager.CardsAutoPopup;
-            ShowPrompt(waited && !auto);
-            if (waited && (auto || Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)) Deal();
+            // R brings them up whenever they don't come by themselves: Auto Popup off, or an enemy after the player.
+            bool byKey = !auto || !calm;
+            ShowPrompt(waited && byKey);
+            if (waited && (auto && calm || byKey && Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)) Deal();
             return;
         }
         ShowPrompt(false);
@@ -274,12 +278,20 @@ public class LevelUpCardsUI : MonoBehaviour
         else if (k.digit2Key.wasPressedThisFrame || k.numpad2Key.wasPressedThisFrame) Pick(1);
         else if (k.digit3Key.wasPressedThisFrame || k.numpad3Key.wasPressedThisFrame) Pick(2);
         else if (k.digit4Key.wasPressedThisFrame || k.numpad4Key.wasPressedThisFrame) Pick(3);
+        // UI Navigate is up, down and Tab only; the panels lie in a row, so left and right move along it as well.
+        var pad = Gamepad.current;
+        if (k.leftArrowKey.wasPressedThisFrame || pad != null && (pad.dpad.left.wasPressedThisFrame || pad.leftStick.left.wasPressedThisFrame)) Step(-1);
+        else if (k.rightArrowKey.wasPressedThisFrame || pad != null && (pad.dpad.right.wasPressedThisFrame || pad.leftStick.right.wasPressedThisFrame)) Step(1);
     }
 
     void Navigate()
     {
         if (phase != Phase.Choosing) return;
-        int step = InputManager.Instance.NavigateStep;
+        Step(InputManager.Instance.NavigateStep);
+    }
+
+    void Step(int step)
+    {
         keyboard = keyboard < 0 ? (step < 0 ? cards.Length - 1 : 0) : (keyboard + step + cards.Length) % cards.Length;
         hovered = -1;
         Play(art.hover, 1f);

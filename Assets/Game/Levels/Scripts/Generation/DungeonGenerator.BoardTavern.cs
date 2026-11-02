@@ -58,9 +58,9 @@ public partial class DungeonGenerator
             MiterDiagonalEnds(wallTop, cell, dir, height - .1f, 0, true);
             if (style != null && style.hideTrims) continue;
             var (corniceCentre, corniceScale) = WallPiece(cell, dir, height - .6f, TrimDepth, .15f, floor + height - .55f);
-            MiterDiagonalEnds(Box("Stone cornice", corniceCentre, corniceScale, trim, boardRegions[room]), cell, dir, height - .6f, TrimDepth, false);
+            MiterDiagonalEnds(ArchitectureBox("Stone cornice", corniceCentre, corniceScale, trim, boardRegions[room]), cell, dir, height - .6f, TrimDepth, true);
             var (footCentre, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, floor + .12f);
-            MiterDiagonalEnds(Box("Stone footing", footCentre, footScale, trim, boardRegions[room]), cell, dir, 0, TrimDepth, false);
+            MiterDiagonalEnds(ArchitectureBox("Stone footing", footCentre, footScale, trim, boardRegions[room]), cell, dir, 0, TrimDepth, true);
         }
     }
 }

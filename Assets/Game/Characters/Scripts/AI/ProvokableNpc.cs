@@ -42,7 +42,7 @@ public class ProvokableNpc : MonoBehaviour
     [Min(0), Tooltip("Seconds it reels from a blow before it turns to glare at whoever struck it.")]
     public float staggerSeconds = .45f;
 
-    const int MerchantRule = 2;   // RuleManager's rule two, given on the first blow
+    const int MerchantRule = 2;   // the second rule on RuleManager, given on the first blow (its number on the sheet is the order given)
 
     public int Hits { get; private set; }
     public bool Turned { get; private set; }
@@ -79,8 +79,8 @@ public class ProvokableNpc : MonoBehaviour
         {
             firstHitAt = Time.time;
             Post(provokedMessage);
-            // House rule two, given on the first blow (pinned to the sheet from then on); once given, the first blow quotes it
-            // ("Rule two.") and every blow before the last gets a warning.
+            // The rule about the help (listed second), given on the first blow (pinned to the sheet from then on); once given, the first blow quotes it
+            // ("Rule two.", or whatever number it was given as) and every blow before the last gets a warning.
             if (Hits == 1 && GiveRule()) return;
             if (Hits == 1) RuleManager.QuoteRule(MerchantRule);
             Say(provokedLines);

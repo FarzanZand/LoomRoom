@@ -290,7 +290,9 @@ public class AdventurerProgress : MonoBehaviour
                 foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) + c.Attribute((MetaAttribute)a) - track.baseScore))
                     if (kind == ModifierType.Flat) Add(stat, amount);
             }
-            int athletics = (ProgressionManager.MetaActive ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
+            // The intro's practice run starts without the sheet's ranks (Begin), and its card is shown before that run is going.
+            bool sheet = ProgressionManager.MetaActive && !IntroController.Seated;
+            int athletics = (sheet ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
             stamina += Definition(AdventureSkill.Athletics)?.ExtraAt(Mathf.Clamp(athletics, 0, 100)) ?? 0;
         }
         if (c.equipment != null)

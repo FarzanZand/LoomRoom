@@ -676,7 +676,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: You pick one of the figures, and I take it down, one floor at a time.
+        value: You pick a hero and a place, and I take it down, one floor at a time.
         type: 0
         typeString: 
       - title: Sequence
@@ -847,7 +847,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: You wake up in that bed, and we start over.
+        value: Then you stand up, and we start over.
         type: 0
         typeString: 
       - title: Sequence
@@ -957,7 +957,7 @@ MonoBehaviour:
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: And when they die, you wake up in that bed and we start over.
+        value: And when they die, you stand up and we start over.
         type: 0
         typeString: 
       - title: Sequence
@@ -1719,11 +1719,11 @@ MonoBehaviour:
         type: 5
         typeString: CustomFieldType_Actor
       - title: Menu Text
-        value: The tiles on the little table?
+        value: The tiles on the low table by the painting?
         type: 0
         typeString: 
       - title: Dialogue Text
-        value: The tiles on the little table?
+        value: The tiles on the low table by the painting?
         type: 0
         typeString: 
       - title: Sequence

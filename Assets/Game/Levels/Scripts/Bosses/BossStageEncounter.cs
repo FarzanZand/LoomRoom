@@ -40,6 +40,8 @@ public partial class BossStageEncounter : MonoBehaviour
     public Character Boss => boss;
     public bool Started => started;
     public bool Fighting => fightStart >= 0f && !finished;
+    // From the walk-in (the DM coming to the table and setting the boss down) to the end of the fight.
+    public bool Busy => started && !finished;
     public float FightTime => fightStart >= 0f ? Time.time - fightStart : 0f;
     // Beats of the fight's music since its first beat (from when the music started).
     public float Beat => musicStart >= 0f && fight != null ? (Time.time - musicStart - fight.firstBeat) / fight.SecondsPerBeat : 0f;
@@ -193,8 +195,7 @@ public partial class BossStageEncounter : MonoBehaviour
         // the fight's starts with the name; without one the fight's music starts now.
         bool talk = fight != null && fight.HasIntroDialogue && PortraitDialogueUI.Current != null;
         var card = fight == null ? BossIntroCard.None
-            : fight.introCard == BossIntroCard.BossTitle && BossTitleUI.Current != null ? BossIntroCard.BossTitle
-            : fight.introCard == BossIntroCard.Versus && VersusScreenUI.Current != null ? BossIntroCard.Versus : BossIntroCard.None;
+            : fight.introCard == BossIntroCard.BossTitle && BossTitleUI.Current != null ? BossIntroCard.BossTitle : BossIntroCard.None;
         bool intro = talk || card != BossIntroCard.None;
         if (intro && AudioManager.HasInstance) AudioManager.Instance.StopMusic(fight.enterMusicFade);
         if (!intro && fight != null && fight.music != null && AudioManager.HasInstance)
@@ -245,7 +246,7 @@ public partial class BossStageEncounter : MonoBehaviour
         if (Coop.IsHost) yield return CoopBegin(intro);
         if (boss == null || !boss.IsAlive) yield break;
         if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
-        // An intro has already named the boss (its dialogue, title or versus screen): no line in the feed on top.
+        // An intro has already named the boss (its dialogue or title): no line in the feed on top.
         if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (intro) BossBlessing.Announce();
@@ -268,8 +269,8 @@ public partial class BossStageEncounter : MonoBehaviour
     }
 
     // The intro (BossFight > Intro), the boss set down and idle in the quiet: a moment, the spotlight snaps on over it
-    // with its sound, a moment more, the dialogue, then the card (the boss's name typed out as the fight's music starts,
-    // or the versus screen, the music starting as it clears), and the battle begins. The player stands still and looks
+    // with its sound, a moment more, the dialogue, then the card (the boss's name typed out as the fight's music starts),
+    // and the battle begins. The player stands still and looks
     // at the boss throughout.
     IEnumerator Intro(Player player, bool talk, BossIntroCard card)
     {
@@ -292,11 +293,7 @@ public partial class BossStageEncounter : MonoBehaviour
             if (boss == null || !boss.IsAlive) yield break;
             string shownName = !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap;
             if (card == BossIntroCard.BossTitle) yield return BossTitleUI.Current.Play(shownName, milestone.title, fight.title, StartFightMusic);
-            else
-            {
-                if (card == BossIntroCard.Versus) yield return VersusScreenUI.Current.Play(player, boss, shownName, milestone.title, fight.versus);
-                StartFightMusic();
-            }
+            else StartFightMusic();
         }
         finally
         {
@@ -316,7 +313,6 @@ public partial class BossStageEncounter : MonoBehaviour
         introPushed = false;
         if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
         if (BossTitleUI.Current != null) BossTitleUI.Current.Abort();
-        if (VersusScreenUI.Current != null) VersusScreenUI.Current.Abort();
     }
 
     void StartFightMusic()

@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 // timeline (seconds, beats or the boss's health) and what he says while it lasts. One asset per fight.
 // What plays just before the battle begins, after the intro's dialogue (BossFight > Intro). Serialized by number:
 // append only.
-public enum BossIntroCard { None = 0, BossTitle = 1, Versus = 2 }
+public enum BossIntroCard { None = 0, BossTitle = 1 }   // 2, the versus screen, is retired (removed 2026-11-02): read back as None
 
 [CreateAssetMenu(menuName = "LoomRoom/Boss Fight")]
 public class BossFight : ScriptableObject
@@ -40,7 +40,7 @@ public class BossFight : ScriptableObject
     // ── Intro ─────────────────────────────────────────────────────────
     // With dialogue or a card on, the fight opens with an intro, in this order: the floor's music fades as the player
     // steps onto the stage; the DM sets the boss down and it stands idle; the spotlight snaps on over it; the dialogue;
-    // the card (the boss's name typed out, or the versus screen); then the battle begins with the fight's music.
+    // the card (the boss's name typed out); then the battle begins with the fight's music.
     // Without either, the fight opens as before (the music at once, his opening and fight lines in the feed).
     [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the floor's music takes to fade out as the player steps onto the stage.")]
     public float enterMusicFade = 2f;
@@ -67,12 +67,10 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), ListDrawerSettings(ShowFoldout = true)]
     public List<PortraitLine> introLines = new();
     public bool HasIntroDialogue => introDialogue && introLines != null && introLines.Count > 0;
-    [TabGroup(Tabs, "Intro"), Tooltip("Just before the battle, after the dialogue. Boss Title: the boss's name typed out large in the upper half of the screen (BossTitleUI), its title fading in beneath, the fight's music starting with the first letter. Versus: the cinematic you-versus-the-boss screen (VersusScreenUI), the music starting as it clears. None: straight into the battle.")]
+    [TabGroup(Tabs, "Intro"), Tooltip("Just before the battle, after the dialogue. Boss Title: the boss's name typed out large in the upper half of the screen (BossTitleUI), its title fading in beneath, the fight's music starting with the first letter. None: straight into the battle.")]
     public BossIntroCard introCard = BossIntroCard.None;
     [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.BossTitle"), InlineProperty, HideLabel]
     public BossTitleSettings title = new();
-    [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.Versus"), InlineProperty, HideLabel]
-    public VersusSettings versus = new();
     [TabGroup(Tabs, "Intro"), Min(0), Tooltip("Seconds the fight's music takes to come in.")]
     public float fightMusicFade = .25f;
 

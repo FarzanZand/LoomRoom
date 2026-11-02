@@ -23,7 +23,7 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a death.")] public List<DungeonMaster.Line> again = new();
     [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a death deeper than any before.")] public List<DungeonMaster.Line> further = new();
-    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name.")] public List<DungeonMaster.Line> sameKiller = new();
+    [TabGroup(Tabs, "Table"), Tooltip("Sitting down after two deaths to the same enemy. {killer} is its name; \"the {killer}\" drops its \"the\" for a proper name (a boss's stage name).")] public List<DungeonMaster.Line> sameKiller = new();
     [TabGroup(Tabs, "Table"), Tooltip("Sitting down the first time after the ending.")] public List<DungeonMaster.Line> afterTheEnd = new();
     [TabGroup(Tabs, "Table"), Tooltip("Sitting down after a class was unlocked (its figure is picked first).")] public List<DungeonMaster.Line> newFigure = new();
 
@@ -173,7 +173,7 @@ public class DungeonMasterRemarks : MonoBehaviour
         {
             string killer = LastTwoKiller();
             if (beatRecord) Say(further);
-            else if (killer != null && Pick(sameKiller) is DungeonMaster.Line kill) DungeonMaster.Say(kill.With(kill.text.Replace("{killer}", killer)));
+            else if (killer != null && Pick(sameKiller) is DungeonMaster.Line kill) DungeonMaster.Say(kill.With(RunManager.FillKiller(kill.text, killer)));
             else Say(again);
         }
         died = won = beatRecord = false;

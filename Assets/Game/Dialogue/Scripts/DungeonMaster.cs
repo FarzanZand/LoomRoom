@@ -45,6 +45,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(200), Tooltip("Width of the lines in TikTok mode, in the 1920 x 1080 canvas: a 9:16 crop of it is 607 wide.")]
     float tiktokWidth = 560f;
     public static bool TikTokMode => HasInstance && Instance.tiktokMode;
+    public static float TikTokWidth => HasInstance ? Instance.tiktokWidth : 560f;
     [SerializeField, Tooltip("With the bag open the lines keep to the gap between the character panel and the bag (1920 x 1080 canvas): their width there and how far left of the middle the gap's middle is.")]
     Vector2 bagOpenWidthAndShift = new(440f, -79f);
 
@@ -368,6 +369,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
         // talks) sits clear of its name plate; higher still over a bark's raised box.
         var box = PortraitDialogueUI.Current;
         float to = box != null && box.Showing ? barkLift + (box.Barking ? box.barkRaise : 0f) : 0f;
+        // Over a boss's subtitle line too, when the lines would reach it.
+        float sub = BossBarkUI.SubtitleTop;
+        if (sub > 0f && label.textInfo.lineCount > 0 && 250f + label.textBounds.size.y + 12f > BossBarkUI.SubtitleBottom) to = Mathf.Max(to, sub + 12f - 250f);
         if (Mathf.Approximately(lifted, to)) return;
         lifted = Mathf.MoveTowards(lifted, to, Mathf.Max(barkLift, to) * 8f * Time.unscaledDeltaTime);
         label.rectTransform.anchoredPosition = new Vector2(label.rectTransform.anchoredPosition.x, 250 + lifted);
@@ -393,9 +397,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
             if (!blanked) { label.text = ""; blanked = true; }
             return;
         }
-        // The boss's versus screen and title card cover the screen: the lines from before are left behind (the last line
-        // of a boss's intro showed through the versus screen's dim and came back after it).
-        if (VersusScreenUI.Covers || BossTitleUI.Covers)
+        // The boss's title card covers the screen: the lines from before are left behind (the last line of a boss's
+        // intro showed through it and came back after it).
+        if (BossTitleUI.Covers)
         {
             if (lines.Count > 0) lines.Clear();
             if (!blanked) { label.text = ""; blanked = true; }

@@ -435,14 +435,16 @@ public partial class DungeonGenerator : MonoBehaviour
                 {
                     var trim = DungeonRoomStyle.Resolve(style != null ? style.trim : null, level.trimMaterial);
                     var (corniceCenter, corniceScale) = WallPiece(cell, dir, height-.6f, TrimDepth, .15f, height-.55f);
-                    var cornice = Box("Stone cornice", corniceCenter, corniceScale, trim, geometry);
-                    MiterDiagonalEnds(cornice, cell, dir, height-.6f, TrimDepth, false);
+                    // Trims take the walls' world-scale tile UVs, so a 15 cm strip shows 15 cm of the trim texture at the walls'
+                    // texel size (a plain cube squeezed the whole texture into it: about 740 texels a metre against 128).
+                    var cornice = ArchitectureBox("Stone cornice", corniceCenter, corniceScale, trim, geometry);
+                    MiterDiagonalEnds(cornice, cell, dir, height-.6f, TrimDepth, true);
                     cornice.GetComponent<Renderer>().enabled = visible || window;
                     if (!neighbor)
                     {
                         var (footCenter, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, .12f);
-                        var footing = Box("Stone footing", footCenter, footScale, trim, geometry);
-                        MiterDiagonalEnds(footing, cell, dir, 0, TrimDepth, false);
+                        var footing = ArchitectureBox("Stone footing", footCenter, footScale, trim, geometry);
+                        MiterDiagonalEnds(footing, cell, dir, 0, TrimDepth, true);
                         footing.GetComponent<Renderer>().enabled = visible || window;
                     }
                 }

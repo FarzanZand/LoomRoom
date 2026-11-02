@@ -4526,3 +4526,21 @@ MonoBehaviour:
     pixelQueue: -1
     texelsPerUnit: 0
     baseTexels: 0
+  - material: {fileID: 2100000, guid: 817ad46f2e6684e40962e2e1b33a3ad6, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: b92cd06f656f3f04f8c0f8e5d7f52094, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0
+  - material: {fileID: 2100000, guid: d20da0b2c87a6214e8a7867b2b3432e2, type: 2}
+    original: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
+    originalQueue: -1
+    pixelQueue: -1
+    texelsPerUnit: 0
+    baseTexels: 0

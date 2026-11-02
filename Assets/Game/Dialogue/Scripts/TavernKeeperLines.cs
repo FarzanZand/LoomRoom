@@ -9,7 +9,7 @@ public class TavernKeeperLines : Singleton<TavernKeeperLines>
     [TextArea(1, 3), Tooltip("He says one of these as you walk up to the bar, picked at random.")]
     public string[] welcomeLines =
     {
-        "Welcome in! Wipe your boots. Whatever you stepped in down there, it stays outside.",
+        "Welcome in! Wipe your boots. Whatever you stepped in out there, it stays outside.",
         "Ah, a customer who's still breathing. My favourite kind. They pay.",
         "Sit anywhere you like. Don't mind the smell, that's the stew. Mostly.",
     };

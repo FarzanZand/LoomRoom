@@ -113,7 +113,9 @@ public partial class CampaignMap : MonoBehaviour
 
     // ── Editor: roads clear the scatter under them ──
 
+#if UNITY_EDITOR
     [System.NonSerialized] double clearAt = -1;
+#endif
     // Asked for by places and roads as they are edited: done once the editing has paused (a slider dragged would
     // otherwise test every scatter piece against every road each frame).
     public void ScatterNeedsClearing()

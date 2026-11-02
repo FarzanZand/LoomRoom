@@ -18,6 +18,10 @@ public class PlayerViewPresentation : MonoBehaviour
     // (the dash's trail and tilt, PlayerDash).
     public Vector3 Offset { get; set; }
     public Vector3 Tilt { get; set; }
+    [Tooltip("Metres the arms and held items sink out of view while a portrait dialogue is open (the tavern keeper, a boss's intro; not a line said mid-fight), so the weapon doesn't cover the speaker.")]
+    [Min(0)] public float conversationDrop = 1.2f;
+    [Min(.01f), Tooltip("Seconds the arms take to sink and to come back up.")] public float conversationDropSeconds = .3f;
+    float talking;
 
     void Awake()
     {
@@ -61,7 +65,8 @@ public class PlayerViewPresentation : MonoBehaviour
         if (player == null || !player.IsActive || brain.OutputCamera == null ||
             !PlayerManager.HasInstance || brain.OutputCamera != PlayerManager.Instance.OutputCamera) return;
         var view = brain.OutputCamera.transform;
-        var offset = Offset + Vector3.down * LowerBy;
+        talking = Mathf.MoveTowards(talking, PortraitDialogueUI.Covers ? 1f : 0f, Time.unscaledDeltaTime / conversationDropSeconds);
+        var offset = Offset + Vector3.down * (LowerBy + conversationDrop * Mathf.SmoothStep(0f, 1f, talking));
         var rotation = Tilt != Vector3.zero ? view.rotation * Quaternion.Euler(Tilt) : view.rotation;
         transform.SetPositionAndRotation(offset != Vector3.zero ? view.TransformPoint(offset) : view.position, rotation);
         FitViewModel(brain.OutputCamera);

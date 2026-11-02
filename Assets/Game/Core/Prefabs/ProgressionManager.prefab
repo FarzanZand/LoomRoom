@@ -247,7 +247,7 @@ MonoBehaviour:
     - value: 50
       ability: {fileID: 0}
       unlock: Sprint
-      description: You can sprint.
+      description: Hold the sprint key while moving forward to run.
       icon: {fileID: 21300000, guid: e36d67b393157c94a945587edffbb3dd, type: 3}
       trophy: {fileID: 11400000, guid: e23a2bb6edba93146bdad2eb243d9f2f, type: 2}
   - id: stealth
@@ -377,7 +377,7 @@ MonoBehaviour:
     thirdUnit: '% attack speed'
     milestones: []
   lessonIntro:
-    text: There's a sheet on the little table by the wall. Have a look.
+    text: There's a sheet on the hobby table by the trophy wall. Have a look.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -403,7 +403,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can dash now. Shift and a direction, sideways or back.
+    text: You can dash now. {sprint} and a direction, sideways or back.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -414,7 +414,7 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
-    text: 'Dash: hold a direction, press {sprint}.'
+    text: 'Dash: press {sprint}, holding left, right or back.'
   missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   startingPlayer: 1
   skipWakeUp: 1
