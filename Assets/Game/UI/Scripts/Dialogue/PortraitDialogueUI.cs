@@ -87,7 +87,7 @@ public class PortraitDialogueUI : MonoBehaviour
         Open = true;
         Raise(false);
         // The Dungeon Master's lines among them keep the conversation's pace (his feed's reading pause held the next
-        // line, and a boss's versus screen, a few seconds on a line already read). Put back by the end or Abort (a
+        // line a few seconds on a line already read). Put back by the end or Abort (a
         // coroutine stopped from outside never runs its finally).
         SlowReading(true);
         stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();

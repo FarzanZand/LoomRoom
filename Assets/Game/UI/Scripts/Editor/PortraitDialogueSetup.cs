@@ -5,8 +5,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Builds the boss dialogue prefab (Assets/Game/Dialogue/UI/Boss dialogue.prefab): its own canvas holding the portrait
-// dialogue box (PortraitDialogueUI), the boss title (BossTitleUI) and the versus screen (VersusScreenUI; the fight's
-// Intro Card picks which plays), placed as a child of the Dialogue Manager
+// dialogue box (PortraitDialogueUI), and the boss title (BossTitleUI; the fight's
+// Intro Card says whether it plays), placed as a child of the Dialogue Manager
 // in the open scene. Build it once, then edit the prefab by hand (looks, sizes, typing, sounds, timing); running
 // Build() again makes it anew and loses those edits. The box: a wide warm dark box with a thin gold line at the foot of the screen, the speaker's head and
 // shoulders standing large over its left end, their name in gold capitals above it, the line typed out in cream, a
@@ -37,13 +37,13 @@ public static class PortraitDialogueSetup
         var scaler = holder.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f); scaler.matchWidthOrHeight = .5f;
-        string box = BuildBox((RectTransform)holder.transform), title = BuildTitle((RectTransform)holder.transform), versus = BuildVersus((RectTransform)holder.transform);
+        string box = BuildBox((RectTransform)holder.transform), title = BuildTitle((RectTransform)holder.transform);
 
         System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(PrefabPath));
         PrefabUtility.SaveAsPrefabAssetAndConnect(holder, PrefabPath, InteractionMode.AutomatedAction);
         Undo.RegisterCreatedObjectUndo(holder, "Build boss dialogue");
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(holder.scene);
-        return $"{box}; {title}; {versus}; saved {PrefabPath} under the Dialogue Manager";
+        return $"{box}; {title}; saved {PrefabPath} under the Dialogue Manager";
     }
 
     static string BuildBox(RectTransform parent)
@@ -176,131 +176,6 @@ public static class PortraitDialogueSetup
         return "the boss title";
     }
 
-    // The cinematic versus screen: black bars top and bottom over a darkened screen; at the left the player's class
-    // painting melting into a lamplight aura, at the right the boss's live portrait in a teal aura (colours from the fight); a thin gold line across
-    // the middle with the VS medallion on it; names letter-spaced in the bottom bar under each side.
-    static string BuildVersus(RectTransform parent)
-    {
-        var auraSprite = ImportSprite(Sprites + "Versus aura.png", 0, smooth: true);
-        var medalSprite = ImportSprite(Sprites + "Medallion.png", 0, smooth: true);
-        var bold = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
-        var outline = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
-        var small = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
-
-        var root = new GameObject("Versus screen", typeof(RectTransform), typeof(CanvasGroup), typeof(VersusScreenUI));
-        root.layer = parent.gameObject.layer;
-        var rect = (RectTransform)root.transform;
-        rect.SetParent(parent, false);
-        Stretch(rect, 0f, 0f, 0f, 0f);
-        var group = root.GetComponent<CanvasGroup>(); group.alpha = 0f; group.blocksRaycasts = false;
-
-        var shake = new GameObject("Shake", typeof(RectTransform)).GetComponent<RectTransform>();
-        shake.gameObject.layer = root.layer; shake.SetParent(rect, false); Stretch(shake, 0f, 0f, 0f, 0f);
-        var dim = Picture("Dim", shake, null, new Color(0f, 0f, 0f, 0f), Vector2.zero, Vector2.zero); Stretch(dim, -60f, -60f, -60f, -60f);
-
-        RectTransform Bar(string name, bool top)
-        {
-            var bar = Picture(name, shake, null, Color.black, Vector2.zero, Vector2.zero);
-            bar.anchorMin = new Vector2(0f, top ? 1f : 0f); bar.anchorMax = new Vector2(1f, top ? 1f : 0f);
-            bar.pivot = new Vector2(.5f, top ? 1f : 0f); bar.sizeDelta = new Vector2(120f, 165f); bar.anchoredPosition = Vector2.zero;
-            return bar;
-        }
-        RectTransform Side(string name, bool left, Color glowColour, out Graphic art, out RectTransform frame, out RectTransform label, out TextMeshProUGUI who, out TextMeshProUGUI what)
-        {
-            var side = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
-            side.gameObject.layer = root.layer; side.SetParent(shake, false);
-            side.anchorMin = side.anchorMax = side.pivot = new Vector2(.5f, .5f); side.sizeDelta = new Vector2(700f, 1080f);
-            // The two sides mirror each other: as far from the middle, the same glow, the portraits the same size and place.
-            side.anchoredPosition = new Vector2(left ? -510f : 510f, 0f);
-            // An aura rising behind the figure from the foot of the screen (Tools/dialogue_box_sprites.py), not a round glow.
-            var glow = Picture("Glow", side, auraSprite, glowColour, new Vector2(900f, 1200f), Vector2.zero);
-            glow.anchorMin = glow.anchorMax = new Vector2(.5f, .5f); glow.pivot = new Vector2(.5f, 0f); glow.anchoredPosition = new Vector2(0f, -540f);
-            frame = null;
-            if (left)
-            {
-                // The painting in a frame with the boss portrait's width and top; its sides and top melt into the glow
-                // (UI Edge Fade) and its foot runs on behind the bottom bar.
-                frame = new GameObject("Portrait frame", typeof(RectTransform)).GetComponent<RectTransform>();
-                frame.gameObject.layer = root.layer; frame.SetParent(side, false);
-                frame.anchorMin = frame.anchorMax = frame.pivot = new Vector2(.5f, .5f);
-                frame.sizeDelta = new Vector2(700f, 700f); frame.anchoredPosition = new Vector2(0f, -40f);
-                var image = new GameObject("Portrait", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-                image.material = EdgeFadeMaterial(); art = image;
-            }
-            else art = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage)).GetComponent<RawImage>();
-            art.gameObject.layer = root.layer; art.raycastTarget = false;
-            var artRect = art.rectTransform; artRect.SetParent(left ? frame : side, false);
-            // The painting is fitted to the frame's width, top first (VersusScreenUI.Play); the boss's render ends in a
-            // hard edge at its foot, which sits behind the bottom bar.
-            artRect.anchorMin = artRect.anchorMax = artRect.pivot = left ? new Vector2(.5f, 1f) : new Vector2(.5f, .5f);
-            artRect.sizeDelta = new Vector2(700f, left ? 933f : 700f);
-            artRect.anchoredPosition = left ? Vector2.zero : new Vector2(0f, -40f);
-            // The name and title are their own layer, drawn over the bars (VersusScreenUI moves it with the side).
-            label = new GameObject(name + " label", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
-            label.gameObject.layer = root.layer; label.SetParent(shake, false);
-            label.anchorMin = label.anchorMax = label.pivot = new Vector2(.5f, .5f); label.sizeDelta = side.sizeDelta;
-            label.anchoredPosition = side.anchoredPosition;
-            who = Text("Name", label, bold, 64f, Color.white, outline, left ? "YOU" : "EDGAR THE DISCO KING");
-            who.rectTransform.anchorMin = who.rectTransform.anchorMax = who.rectTransform.pivot = new Vector2(.5f, .5f);
-            // Fitted to the side's width (a long name gets smaller, never runs off the screen).
-            who.rectTransform.sizeDelta = new Vector2(780f, 90f); who.rectTransform.anchoredPosition = new Vector2(0f, -432f);
-            who.characterSpacing = 4f; who.enableAutoSizing = true; who.fontSizeMin = 32f; who.fontSizeMax = 64f;
-            what = Text("Title", label, small, 40f, new Color(.88f, .86f, .82f), null, left ? "Level 1 Warrior" : "Lord of the Crypt");
-            what.rectTransform.anchorMin = what.rectTransform.anchorMax = what.rectTransform.pivot = new Vector2(.5f, .5f);
-            what.rectTransform.sizeDelta = new Vector2(1000f, 44f); what.rectTransform.anchoredPosition = new Vector2(0f, -490f);
-            return side;
-        }
-        var leftSide = Side("Player side", true, new VersusSettings().heroAura, out var playerArt, out var playerFrame, out var leftLabel, out var playerName, out var playerTitle);
-        var rightSide = Side("Boss side", false, new VersusSettings().bossAura, out var bossArt, out _, out var rightLabel, out var bossName, out var bossTitle);
-        // In drawing order: the sides (glow, portrait), the bars over them, the names over the bars.
-        var topBar = Bar("Top bar", true);
-        var bottomBar = Bar("Bottom bar", false);
-        leftLabel.SetAsLastSibling(); rightLabel.SetAsLastSibling();
-
-        var line = Picture("Gold line", shake, null, Gold, new Vector2(1560f, 3f), Vector2.zero);
-        line.anchorMin = line.anchorMax = line.pivot = new Vector2(.5f, .5f); line.anchoredPosition = Vector2.zero;
-        var medal = Picture("Medallion", shake, medalSprite, Color.white, new Vector2(184f, 184f), Vector2.zero);
-        medal.anchorMin = medal.anchorMax = medal.pivot = new Vector2(.5f, .5f); medal.anchoredPosition = Vector2.zero;
-        var vs = Text("VS", medal, bold, 96f, Gold, outline, "VS");
-        Stretch(vs.rectTransform, 0f, 0f, 0f, -6f);
-        var flash = Picture("Flash", rect, null, new Color(1f, 1f, 1f, 0f), Vector2.zero, Vector2.zero); Stretch(flash, 0f, 0f, 0f, 0f);
-
-        var so = new SerializedObject(root.GetComponent<VersusScreenUI>());
-        so.FindProperty("group").objectReferenceValue = group;
-        so.FindProperty("dim").objectReferenceValue = dim.GetComponent<Image>();
-        so.FindProperty("flash").objectReferenceValue = flash.GetComponent<Image>();
-        so.FindProperty("shake").objectReferenceValue = shake;
-        so.FindProperty("topBar").objectReferenceValue = topBar;
-        so.FindProperty("bottomBar").objectReferenceValue = bottomBar;
-        so.FindProperty("leftSide").objectReferenceValue = leftSide;
-        so.FindProperty("rightSide").objectReferenceValue = rightSide;
-        so.FindProperty("leftLabel").objectReferenceValue = leftLabel;
-        so.FindProperty("rightLabel").objectReferenceValue = rightLabel;
-        so.FindProperty("line").objectReferenceValue = line;
-        so.FindProperty("medallion").objectReferenceValue = medal;
-        so.FindProperty("playerPortrait").objectReferenceValue = playerArt;
-        so.FindProperty("playerFrame").objectReferenceValue = playerFrame;
-        so.FindProperty("bossPortrait").objectReferenceValue = bossArt;
-        so.FindProperty("playerGlow").objectReferenceValue = leftSide.Find("Glow").GetComponent<Image>();
-        so.FindProperty("bossGlow").objectReferenceValue = rightSide.Find("Glow").GetComponent<Image>();
-        so.FindProperty("playerName").objectReferenceValue = playerName;
-        so.FindProperty("playerTitle").objectReferenceValue = playerTitle;
-        so.FindProperty("bossName").objectReferenceValue = bossName;
-        so.FindProperty("bossTitle").objectReferenceValue = bossTitle;
-        so.ApplyModifiedPropertiesWithoutUndo();
-        return "the versus screen";
-    }
-
-    static Material EdgeFadeMaterial()
-    {
-        const string path = "Assets/Game/UI/Shaders/UI Edge Fade.mat";
-        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
-        if (material != null) return material;
-        material = new Material(Shader.Find("LoomRoom/UI Edge Fade"));
-        AssetDatabase.CreateAsset(material, path);
-        return material;
-    }
-
     // The test dialogue for the Crypt Lord fight: the boss as Edgar the disco king, who asks on his third box whether
     // the player wants to party; each answer has its own reply, and the Dungeon Master's word closes it.
     public static string Example()
@@ -309,23 +184,17 @@ public static class PortraitDialogueSetup
         if (fight == null) return "no Crypt Lord fight asset";
         Undo.RecordObject(fight, "Intro dialogue");
         fight.introDialogue = true;
-        fight.introCard = BossIntroCard.Versus;
+        fight.introCard = BossIntroCard.BossTitle;
         // The intro around it: the theatre spotlight (the forest's warm moonbeam: a spot, a shaft and dust from high
-        // above) with its switch-on clunk (Tools/boss_intro_sounds.py, as is the boss's landing), a heavy thud for each letter of the boss's name, and the versus screen's
-        // whooshes, thuds and slam for when the card is switched to it.
+        // above) with its switch-on clunk (Tools/boss_intro_sounds.py, as is the boss's landing), and a heavy thud for each letter of the boss's name.
         fight.enterMusicFade = 2f; fight.spotlightDelay = 1f; fight.dialogueDelay = 2f; fight.spotlightFadeOut = .8f; fight.fightMusicFade = .25f;
         fight.spotlight = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Dungeon1/Forest/Props/Moonbeam warm.prefab");
         fight.spotlightSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/Dialogue/Spotlight clunk.wav");
         fight.landSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Game/Audio/Clips/Dialogue/Boss landing.wav");
         fight.spotlightVolume = .9f; fight.landVolume = 1f;
-        const string Ui = "Assets/ThirdParty/Generic Fantasy UI/", Magic = "Assets/ThirdParty/Sound Effects Library/Magic/";
+        const string Ui = "Assets/ThirdParty/Generic Fantasy UI/";
         fight.title ??= new BossTitleSettings();
         fight.title.letterSound = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Discard_Thud_02_mono.wav");
-        fight.versus ??= new VersusSettings();
-        fight.versus.bandWhoosh = Load(Ui + "Fantasy_UI_Gen_Inventory_Whoosh_01_stereo.wav");
-        fight.versus.bandLand = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Notification_Impact_02_mono.wav");
-        fight.versus.slam = Load("Assets/Game/Audio/Clips/Reveal/Entrance slam.wav", Magic + "Mgc_Fire_Impact_01.wav", Ui + "Fantasy_UI_Gen_Notification_Impact_01_mono.wav");
-        fight.versus.throwOff = Load(Ui + "Fantasy_UI_Gen_Inventory_Whoosh_02_stereo.wav");
         fight.bossName = "Edgar the Disco King";
         fight.introLines = new List<PortraitLine>
         {

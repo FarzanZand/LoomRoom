@@ -397,9 +397,9 @@ public class DungeonMaster : Singleton<DungeonMaster>
             if (!blanked) { label.text = ""; blanked = true; }
             return;
         }
-        // The boss's versus screen and title card cover the screen: the lines from before are left behind (the last line
-        // of a boss's intro showed through the versus screen's dim and came back after it).
-        if (VersusScreenUI.Covers || BossTitleUI.Covers)
+        // The boss's title card covers the screen: the lines from before are left behind (the last line of a boss's
+        // intro showed through it and came back after it).
+        if (BossTitleUI.Covers)
         {
             if (lines.Count > 0) lines.Clear();
             if (!blanked) { label.text = ""; blanked = true; }
