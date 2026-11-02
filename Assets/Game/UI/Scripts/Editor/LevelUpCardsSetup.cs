@@ -73,7 +73,7 @@ public static class LevelUpCardsSetup
             var s = (RectTransform)slot.transform;
             s.SetParent(rect, false);
             s.sizeDelta = new Vector2(CardW, CardH);
-            s.anchoredPosition = new Vector2((i - 1.5f) * Spacing, -22f);
+            s.anchoredPosition = new Vector2((i - 1.5f) * Spacing, 24f);   // high enough that his deal line under them is clear of their edge
             var hit = slot.GetComponent<Image>(); hit.color = new Color(1f, 1f, 1f, 0f); hit.raycastTarget = true;
             var card = slot.GetComponent<LevelUpCardUI>();
             card.group = slot.GetComponent<CanvasGroup>();
