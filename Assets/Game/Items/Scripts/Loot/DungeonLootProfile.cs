@@ -65,12 +65,15 @@ public class DungeonLootProfile : LootSource
             int lowest = row != null ? row.LowestTier : gearTiers.x, highest = row != null ? row.HighestTier : gearTiers.y;
             int tier = row != null ? row.Roll(random) : RollTier(random, floor);
             if (random.NextDouble() < (row != null ? row.upgradeChance : upgradeChance)) tier++;
-            // Spell tomes are part of the same roll, weighted like any other piece (they have no better versions,
-            // so a tome can come up at its own tier or any above it).
+            // A spell tome takes InventoryManager > Tome Share of the gear rolls, however many spells there are (weighted
+            // one by one, twelve tomes outweighed a whole tier of gear). A tome can come up at its own tier or any above
+            // it, as they have no better versions; with none left to give the roll is gear after all.
             var top = TopTiers();
-            var gear = Pick(random, i => IsGear(i) && FitsTier(i, tier, top) || spellTomes && IsTome(i) && i.tier <= tier)
-                ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest || spellTomes && IsTome(i) && i.tier <= highest);
-            if (gear != null && IsTome(gear)) { drops.Add(new Drop(gear, 1)); gear = null; }
+            var tome = spellTomes && random.NextDouble() < InventoryManager.TomeShare
+                ? Pick(random, i => IsTome(i) && i.tier <= Mathf.Max(tier, highest)) : null;
+            if (tome != null) drops.Add(new Drop(tome, 1));
+            var gear = tome != null ? null : Pick(random, i => IsGear(i) && FitsTier(i, tier, top))
+                ?? Pick(random, i => IsGear(i) && i.tier >= lowest && i.tier <= highest);
             if (gear != null) gear = RollRarity(gear, random, floor, InventoryManager.RaritySourceScale(source));
             if (gear != null) drops.Add(new Drop(gear, 1));
         }

@@ -975,7 +975,7 @@ public partial class AssetStudioWindow
         {
             Section("EVERY DUNGEON: DROPS AND RARITY");
             GUILayout.Label("InventoryManager: what each kind of source drops, the rarity steps and the whole-game multipliers.", dim);
-            Fields(inv, "dropChanceMultiplier", "enemyDropMultiplier", "rarityChanceMultiplier", "goldMultiplier", "merchantRarity", "enemyDrops", "breakableDrops", "chestDrops", "rarities");
+            Fields(inv, "dropChanceMultiplier", "enemyDropMultiplier", "rarityChanceMultiplier", "goldMultiplier", "tomeShare", "merchantRarity", "enemyDrops", "breakableDrops", "chestDrops", "rarities");
         }
     }
 

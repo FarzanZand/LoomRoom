@@ -169,10 +169,13 @@ public class InventoryManager : Singleton<InventoryManager>
     public float enemyDropMultiplier = 1f;
     [Min(0), Tooltip("Times every amount of gold any loot gives. 1 = as set on each table.")]
     public float goldMultiplier = 1f;
+    [Range(0, 1), Tooltip("Share of gear drops that are a spell tome (loot profiles with Spell Tomes on; merchants' wares too, which always hold one anyway). One share for all tomes, so adding spells doesn't make tomes more common.")]
+    public float tomeShare = .1f;
 
     // The whole-game multipliers, safe to read with no manager (1 then).
     public static float RarityChanceScale => HasInstance ? Instance.rarityChanceMultiplier : 1f;
     public static float DropChanceScale => HasInstance ? Instance.dropChanceMultiplier : 1f;
+    public static float TomeShare => HasInstance ? Instance.tomeShare : .1f;
     // The drop multiplier for one loot source: the whole-game one, times the enemy one for kills.
     // Drop Chance Multiplier reaches what enemies and breakables drop; chests (the boss's reward too) keep their own chances.
     public static float DropChanceFor(DungeonLootSource source) =>
