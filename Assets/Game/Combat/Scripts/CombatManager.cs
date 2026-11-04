@@ -310,6 +310,9 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(0f), Tooltip("Seconds before an enemy's blow lands that it stops turning to follow the target, whatever the Commit Time says: the window a sideways dash has to get out of the swing (it was 0, so the swing followed a dodge to the end). 0: only Commit Time.")]
     public float enemyCommitBeforeHit = .25f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Range(0f, 1.5f), Tooltip("How far ahead an enemy's swing leads a moving target: it turns toward, and commits to, where the target will be when the blow lands, from how it is moving (1: all the way). A steady walk or strafe round it is then hit; a dash started after the commit still gets out. 0: it aims where the target is (holding a strafe dodged most swings).")]
+    public float enemyAimLead = 1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
     [Min(0)] public float enemyRecoveryTime = .18f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
@@ -328,8 +331,11 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell)), Tooltip("Optional sound at the start of every enemy attack.")]
     public AudioData enemyTellAudio;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
-    [Tooltip("Degrees either side of where an enemy committed its swing that its blow still lands (when it lands, not when it starts): narrow enough that a sideways dash after the commit dodges it, wide enough that walking aside doesn't.")]
-    [Range(10,100)] public float enemyHitFacingAngle = 45f;
+    [Tooltip("Degrees either side of where an enemy committed its swing that its blow can still land (the front of the swing; Swing Half Width decides how far aside).")]
+    [Range(10,100)] public float enemyHitFacingAngle = 80f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(.2f), Tooltip("Metres either side of an enemy's committed swing line that its blow lands: a strafe (well under a metre aside before the blow) is hit, a dash after the commit (about two) gets out.")]
+    public float enemySwingHalfWidth = 1f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;

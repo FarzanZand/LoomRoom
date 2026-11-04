@@ -41,6 +41,10 @@ public class EnemyAttackRunner
     public static float MinWindup => Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
     static float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
     static float CommitLead   => Tuning != null ? Tuning.enemyCommitBeforeHit : .25f;
+    static float AimLead      => Tuning != null ? Tuning.enemyAimLead : 1f;
+    // The most the committed aim may differ from where the body faces (a swing doesn't land far off its own line).
+    const float LeadMostDegrees = 60f;
+    const float LeadMostSpeed = 3.5f;   // about the player's walk (3.24 m/s)
     static float RecoveryTime => Tuning != null ? Tuning.enemyRecoveryTime : 0.18f;
 
     public bool IsSwinging => current != null;
@@ -311,7 +315,7 @@ public class EnemyAttackRunner
         // The aim locks CommitLead before the blow lands (HitAt), so a dodge in that window gets out of the swing.
         else if (!directionCommitted && sinceStart < CommitTime && !(HitAt > 0f && Time.time >= HitAt - CommitLead) && brain.Profile.windupTrackSpeed > 0f && Perception.TargetVisible)
         {
-            Motor.LookAt(target.transform.position, brain.Profile.windupTrackSpeed);
+            Motor.LookAt(Predicted(target), brain.Profile.windupTrackSpeed);
         }
         else CommitDirection();
 
@@ -346,7 +350,28 @@ public class EnemyAttackRunner
         if (current == null || directionCommitted) return;
         directionCommitted = true;
         committedForward = brain.transform.forward;
+        // A melee swing commits to where the target will be when it lands (Predicted), kept near the body's own line.
+        var target = Perception.Target;
+        if (!current.IsRanged && AimLead > 0f && target != null && Perception.TargetVisible)
+        {
+            Vector3 to = Predicted(target) - brain.transform.position; to.y = 0f;
+            if (to.sqrMagnitude > .0001f)
+                committedForward = Vector3.RotateTowards(brain.transform.forward, to.normalized, LeadMostDegrees * Mathf.Deg2Rad, 0f);
+        }
         Motor.ClearLookTarget();
+    }
+
+    // Where the target will be when the blow lands, from how it is moving now (AimLead of the way): a steady walk or
+    // strafe is led, a dash that starts after the commit is not.
+    Vector3 Predicted(Character target)
+    {
+        Vector3 at = target.transform.position;
+        if (current == null || current.IsRanged || AimLead <= 0f) return at;
+        float until = HitAt > 0f ? Mathf.Clamp(HitAt - Time.time, 0f, .8f) : CommitLead;
+        var mover = target.GetComponent<CharacterController>();
+        // At most a walk's speed is led, so a dash that has just begun doesn't drag the aim after it.
+        if (mover != null) { Vector3 v = mover.velocity; v.y = 0f; at += Vector3.ClampMagnitude(v, LeadMostSpeed) * until * AimLead; }
+        return at;
     }
 
     // The whoosh plays when the windup commits, just before the hit event.
@@ -444,10 +469,14 @@ public class EnemyAttackRunner
         float dist = Perception.HorizontalDist(self, target.transform.position);
         if (dist > current.EffectiveMaxRange * 1.1f || Mathf.Abs(target.transform.position.y - self.y) > 1f) return;
         Vector3 toward = target.transform.position - self; toward.y = 0f;
-        // Only the committed swing's own wedge: a sideways dash after the commit takes the player out of it. (It was
-        // widened by meleeWidthMultiplier, the player's hitbox thickness, to 106 degrees each side, so dodges never worked.)
-        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle) : 45f;
+        // The swing's own band: in front of the committed aim (within enemyHitFacingAngle) and no farther to its side than
+        // enemySwingHalfWidth. A strafe moves the target well under a metre aside before the blow and is hit at any range;
+        // a dash after the commit moves it about two and gets out. (A plain angle was either too narrow up close, where a
+        // strafe sweeps 60-70 degrees round the enemy, or too wide farther out.)
+        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle) : 90f;
+        float halfWidth = Tuning != null ? Tuning.enemySwingHalfWidth : 1f;
         if (Vector3.Angle(committedForward, toward) > arc) return;
+        if (Vector3.Cross(committedForward.normalized, toward).magnitude > halfWidth) return;
 
         Vector3 dir = toward.sqrMagnitude > 0.0001f ? toward.normalized : brain.transform.forward;
 

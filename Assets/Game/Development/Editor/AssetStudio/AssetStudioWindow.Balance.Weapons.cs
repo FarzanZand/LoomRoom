@@ -136,9 +136,22 @@ public partial class AssetStudioWindow
 
     // How many light hits a weapon needs, on average, to bring down that much health behind that much armour: each hit
     // rolled as Hitbox rolls it and taken as the enemy takes it (CharacterStats.AfterArmor).
+    // Kept until the next edit on the page or half a minute: the page draws several times a second, and 300 fights for
+    // each of its ~200 cells on every draw held the editor's main thread for minutes (2026-11-04).
+    static readonly Dictionary<(ItemData, float, float, int, float, float, int), float> hitsToKillCache = new();
+    static int hitsToKillVersion = -1;
+    static double hitsToKillAt;
     static float HitsToKill(Fighter f, ItemData weapon, float health, float armour, int floor, System.Random random, int fights = 300)
     {
         if (weapon == null || health <= 0f) return 0f;
+        if (hitsToKillVersion != balanceVersion || EditorApplication.timeSinceStartup - hitsToKillAt > 30) { hitsToKillCache.Clear(); hitsToKillVersion = balanceVersion; hitsToKillAt = EditorApplication.timeSinceStartup; }
+        var key = (weapon, health, armour, floor, f.baseDamage + f.strengthDamage, f.critChance, fights);
+        if (hitsToKillCache.TryGetValue(key, out var known)) return known;
+        return hitsToKillCache[key] = SimulateHitsToKill(f, weapon, health, armour, floor, random, fights);
+    }
+
+    static float SimulateHitsToKill(Fighter f, ItemData weapon, float health, float armour, int floor, System.Random random, int fights)
+    {
         float attack = f.baseDamage + f.strengthDamage + Modifier(weapon, StatType.AttackDamage);
         float bonus = weapon.weaponCategory == WeaponCategory.Mace ? f.macesBonus : f.swordsBonus;
         float crit = Mathf.Min(f.critCap, f.critChance + Modifier(weapon, StatType.CriticalChance));
