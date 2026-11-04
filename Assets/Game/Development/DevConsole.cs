@@ -249,7 +249,7 @@ public class DevConsole : MonoBehaviour
                 Print("die: the table player dies at once (god mode goes off)");
                 Print("loadtemplate <name>: a new run opening in that room template (Tab completes the name)");
                 Print("event [name] [face]: a new run starting at the way into a scripted event room; event alone lists them; event dice 6 lands the die on 6; event cheats: a run where the Dungeon Master meddles at the first chance");
-                Print("meddle add|steal: the Dungeon Master adds an enemy in front of you or takes the nearest chest, now");
+                Print("meddle add|steal: the Dungeon Master adds an enemy in front of you or takes the nearest chest, now (only within his reach: a room near his side of the table, not the starting room)");
                 Print("learnspells: a tome of every spell into the table player's pack");
                 Print("additem <name> [count] [rarity]: an item into the table player's pack; gear can be uncommon, rare, unique or legendary (Tab completes the name)");
                 Print("addspell <name>|all: that spell's tome into the table player's pack (Tab completes the name)");
