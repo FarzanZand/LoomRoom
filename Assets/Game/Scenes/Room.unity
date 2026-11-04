@@ -405552,6 +405552,7 @@ MonoBehaviour:
   playerKnockbackSpeedLimit: 2.5
   playerKnockbackDecay: 12
   enemyAttackCommitTime: 0.65
+  enemyCommitBeforeHit: 0.25
   enemyRecoveryTime: 0.12
   enemyCooldownMultiplier: 0.8
   enemyMinimumWindup: 0.45
@@ -405559,7 +405560,7 @@ MonoBehaviour:
   enemyTellColor: {r: 1.8, g: 1.15, b: 0.6, a: 1}
   enemyTellDuration: 0.14
   enemyTellAudio: {fileID: 0}
-  enemyHitFacingAngle: 85
+  enemyHitFacingAngle: 45
   enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3

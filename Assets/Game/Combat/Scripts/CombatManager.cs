@@ -307,6 +307,9 @@ public partial class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
     [Min(.1f)] public float enemyAttackCommitTime = .4f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(0f), Tooltip("Seconds before an enemy's blow lands that it stops turning to follow the target, whatever the Commit Time says: the window a sideways dash has to get out of the swing (it was 0, so the swing followed a dodge to the end). 0: only Commit Time.")]
+    public float enemyCommitBeforeHit = .25f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
     [Min(0)] public float enemyRecoveryTime = .18f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
@@ -325,8 +328,8 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell)), Tooltip("Optional sound at the start of every enemy attack.")]
     public AudioData enemyTellAudio;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
-    [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
-    [Range(10,100)] public float enemyHitFacingAngle = 60f;
+    [Tooltip("Degrees either side of where an enemy committed its swing that its blow still lands (when it lands, not when it starts): narrow enough that a sideways dash after the commit dodges it, wide enough that walking aside doesn't.")]
+    [Range(10,100)] public float enemyHitFacingAngle = 45f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
@@ -383,7 +386,7 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(1f), Tooltip("Reach multiplier for player/enemy melee queries and enemy attack selection.")]
     public float meleeReachMultiplier = 1.2f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
-    [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
+    [Min(1f), Tooltip("Thickness multiplier for the player's melee hit queries.")]
     public float meleeWidthMultiplier = 1.25f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
     [Min(0f), Tooltip("Player swings: every swing also hits anything out to this far from the player's chest, in the direction the blade is sweeping, so every swing and every weapon reaches the same distance. 0 = only where the blade goes.")]

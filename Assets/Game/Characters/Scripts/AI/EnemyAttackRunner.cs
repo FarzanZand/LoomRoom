@@ -40,6 +40,7 @@ public class EnemyAttackRunner
     static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
     public static float MinWindup => Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
     static float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
+    static float CommitLead   => Tuning != null ? Tuning.enemyCommitBeforeHit : .25f;
     static float RecoveryTime => Tuning != null ? Tuning.enemyRecoveryTime : 0.18f;
 
     public bool IsSwinging => current != null;
@@ -307,7 +308,8 @@ public class EnemyAttackRunner
             else CommitDirection();
         }
         // Only a target it can see is tracked (a veiled player who slips aside is swung past).
-        else if (!directionCommitted && sinceStart < CommitTime && brain.Profile.windupTrackSpeed > 0f && Perception.TargetVisible)
+        // The aim locks CommitLead before the blow lands (HitAt), so a dodge in that window gets out of the swing.
+        else if (!directionCommitted && sinceStart < CommitTime && !(HitAt > 0f && Time.time >= HitAt - CommitLead) && brain.Profile.windupTrackSpeed > 0f && Perception.TargetVisible)
         {
             Motor.LookAt(target.transform.position, brain.Profile.windupTrackSpeed);
         }
@@ -442,7 +444,9 @@ public class EnemyAttackRunner
         float dist = Perception.HorizontalDist(self, target.transform.position);
         if (dist > current.EffectiveMaxRange * 1.1f || Mathf.Abs(target.transform.position.y - self.y) > 1f) return;
         Vector3 toward = target.transform.position - self; toward.y = 0f;
-        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle * Tuning.meleeWidthMultiplier) : 60f;
+        // Only the committed swing's own wedge: a sideways dash after the commit takes the player out of it. (It was
+        // widened by meleeWidthMultiplier, the player's hitbox thickness, to 106 degrees each side, so dodges never worked.)
+        float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle) : 45f;
         if (Vector3.Angle(committedForward, toward) > arc) return;
 
         Vector3 dir = toward.sqrMagnitude > 0.0001f ? toward.normalized : brain.transform.forward;
