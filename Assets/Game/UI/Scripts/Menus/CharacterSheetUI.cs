@@ -396,9 +396,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         string body;
         if (t.kind == MetaTrackKind.Attribute)
         {
-            body = $"{ProgressionManager.AttributeEffects(t, 1)} per point above {t.baseScore}.";
-            if (meta.Levels(t) > 0) body += $"\nNow: {ProgressionManager.AttributeEffects(t, meta.Levels(t))}.";
-            body += "\nEach level in a dungeon gives a point to add on top.";
+            string label = ColorUtility.ToHtmlStringRGB(faint);
+            body = $"<color=#{label}>Each point</color>\n{ProgressionManager.AttributeEffects(t, 1, true)}";
+            if (meta.Levels(t) > 0) body += $"\n<color=#{label}>Now</color>\n{ProgressionManager.AttributeEffects(t, meta.Levels(t), true)}";
         }
         else body = SkillBonus(t, meta.Value(t));
         ShowCard($"{t.displayName}  <color=#{ColorUtility.ToHtmlStringRGB(pen)}>{meta.Value(t)}</color>", body, near);

@@ -22,31 +22,57 @@ public class EquipmentPanelUI : MonoBehaviour
     // The held weapon's spread makes damage a range (5-9).
     string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"{dmg:0.#}";}
 
-    // What a stat line means, with the player's own numbers, for its hover tooltip (StatTooltipUI).
+    // A stat line's hover tooltip (StatTooltipUI): the player's own numbers, one a line, the name dim and the number in
+    // colour. No sentences on how things work.
     public bool Explain(StatTooltipUI.Kind kind,out string title,out string subtitle,out string body)
     {
         title=subtitle=body="";
         if(player==null || player.Stats==null)return false;
-        var s=player.Stats;string good=ItemData.GoodColor,dim=ItemData.DimColor;
+        var s=player.Stats;
         switch(kind)
         {
             case StatTooltipUI.Kind.Health:
+            {
                 title="Health";subtitle=$"{Mathf.CeilToInt(s.CurrentHealth)} / {s.MaxHealth:0}";
-                body="At 0 the run ends."+(s.FoodRemaining>0?$"\n\n<color={dim}>Food</color><pos=50%><color={good}>+{s.FoodHealingPerSecond:0.#}/s</color> <color={dim}>for {s.FoodRemaining:0}s</color>":"");
+                var b=new System.Text.StringBuilder();
+                float killHeal=s.GetFinal(StatType.KillHeal);
+                if(killHeal>0)Row(b,"Per kill",$"+{killHeal:0.#}");
+                if(s.FoodRemaining>0)Row(b,$"Food, {s.FoodRemaining:0}s",$"+{s.FoodHealingPerSecond:0.#}/s");
+                body=b.ToString();
                 return true;
+            }
             case StatTooltipUI.Kind.Stamina:
+            {
                 title="Stamina";subtitle=$"{Mathf.CeilToInt(s.CurrentStamina)} / {s.MaxStamina:0}";
-                body="Used by dashes, blocks, heavy swings and the shield bash.";
+                var b=new System.Text.StringBuilder();
+                Row(b,"Regeneration",$"+{s.GetFinal(StatType.StaminaRegen):0.#}/s");
+                if(CombatManager.HasInstance)
+                {
+                    var cm=CombatManager.Instance;
+                    if(cm.dash!=null && cm.dash.enabled && (!ProgressionManager.HasInstance || ProgressionManager.Instance.Unlocked(cm.dash.ability,player.GetComponent<AdventurerProgress>())))Row(b,"Dash",$"-{cm.dash.staminaCost:0.#}",ItemData.BadColor);
+                    Row(b,"Blocked hit",$"-{cm.blockStaminaCost:0.#}",ItemData.BadColor);
+                }
+                body=b.ToString();
                 return true;
+            }
             case StatTooltipUI.Kind.Mana:
+            {
                 title="Mana";subtitle=$"{Mathf.CeilToInt(s.CurrentMana)} / {s.MaxMana:0}";
-                body="Used by spells.";
+                var b=new System.Text.StringBuilder();
+                Row(b,"Regeneration",$"+{(s.HasStat(StatType.ManaRegen)?s.GetFinal(StatType.ManaRegen):0f):0.#}/s");
+                body=b.ToString();
                 return true;
+            }
             case StatTooltipUI.Kind.Damage:
             {
                 float crit=Mathf.Min(CombatManager.HasInstance?CombatManager.Instance.critChanceCap:.6f,(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance));
                 title="Damage";subtitle=DamageText(s);
-                body=$"Before the enemy's armour.\n\n<color={dim}>Critical chance</color><pos=60%><color={good}>{crit*100f:0.#}%</color>";
+                var b=new System.Text.StringBuilder();
+                Row(b,"Critical chance",$"{crit*100f:0.#}%");
+                float backstab=s.GetFinal(StatType.BackstabDamage),heavy=s.GetFinal(StatType.HeavyDamage);
+                if(backstab>0)Row(b,"Backstab damage",$"+{backstab*100f:0.#}%");
+                if(heavy>0)Row(b,"Heavy attack damage",$"+{heavy*100f:0.#}%");
+                body=b.ToString();
                 return true;
             }
             case StatTooltipUI.Kind.Strength: return ExplainAttribute(MetaAttribute.Strength,out title,out subtitle,out body);
@@ -55,19 +81,28 @@ public class EquipmentPanelUI : MonoBehaviour
             case StatTooltipUI.Kind.Intelligence: return ExplainAttribute(MetaAttribute.Intelligence,out title,out subtitle,out body);
             case StatTooltipUI.Kind.Armor:
             {
-                float per=CombatManager.ArmorPerPoint,share=CombatManager.HasInstance?CombatManager.Instance.armorEffectiveness:.65f;
+                float per=CombatManager.ArmorPerPoint;
                 float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
                 title="Armour";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
-                body=$"<color={dim}>Per hit</color><pos=60%><color={good}>-{armorNow*per:0.#}</color>";
-                if(block>0)body+=$"\n<color={dim}>Per blocked hit</color><pos=60%><color={good}>-{(armorNow+block)*per:0.#}</color>";
-                body+=$"\n\n<color={dim}>{(1f-share)*100f:0}% of a hit always lands, unless blocked.</color>";
+                var b=new System.Text.StringBuilder();
+                Row(b,"Per hit",$"-{armorNow*per:0.#}");
+                if(block>0)Row(b,"Blocked hit",$"-{(armorNow+block)*per:0.#}");
+                body=b.ToString();
                 return true;
             }
         }
         return false;
     }
 
-    // An attribute: what each point above the base gives, and what the score gives now (same words as the sheet).
+    // One tooltip line: the name dim on the left, the number in colour in a column.
+    static void Row(System.Text.StringBuilder b,string label,string number,string colour=ItemData.GoodColor)
+    {
+        if(b.Length>0)b.Append('\n');
+        b.Append($"<color={ItemData.DimColor}>{label}</color><pos=62%><color={colour}>{number}</color>");
+    }
+
+    // An attribute: each of its gains on a line, what one point gives and what the score gives now (from the track,
+    // as the sheet and the level-up cards say it).
     bool ExplainAttribute(MetaAttribute a,out string title,out string subtitle,out string body)
     {
         title=subtitle=body="";
@@ -76,12 +111,31 @@ public class EquipmentPanelUI : MonoBehaviour
         var progress=player.GetComponent<AdventurerProgress>();
         int score=progress!=null?progress.Score(a):meta.AttributeScore(a),above=score-t.baseScore;
         int fromRun=progress!=null && (int)a<progress.AttributePoints.Length?progress.AttributePoints[(int)a]:0;
-        string good=ItemData.GoodColor,dim=ItemData.DimColor;
-        title=t.displayName;subtitle=fromRun>0?$"{score}  ({score-fromRun} from the sheet, +{fromRun} this run)":score.ToString();
-        body=$"{ProgressionManager.AttributeEffects(t,1)} per point above {t.baseScore}.";
-        if(above!=0)body+=$"\n\n<color={dim}>Now</color><pos=30%><color={good}>{ProgressionManager.AttributeEffects(t,above)}</color>";
-        if(progress!=null && progress.UnspentPoints>0 && !ProgressionManager.CardsOnLevelUp)body+=$"\n\n<color={dim}>Click + to put a point here.</color>";
+        title=t.displayName;subtitle=fromRun>0?$"{score}  (+{fromRun} this run)":score.ToString();
+        string dim=ItemData.DimColor;
+        var b=new System.Text.StringBuilder($"<color={dim}><pos=62%>Point<pos=84%>Now</color>");
+        void Gain(float per,string unit)
+        {
+            if(per==0 || string.IsNullOrEmpty(unit))return;
+            unit=unit.Trim();bool percent=unit.StartsWith("%"),perSecond=unit.EndsWith("/s");
+            string name=unit.TrimStart('%').Trim();
+            if(perSecond)name=name.Substring(0,name.Length-2)+" regeneration";
+            if(name.Length==0)return;
+            string suffix=percent?"%":perSecond?"/s":"";
+            b.Append('\n').Append($"<color={dim}>{char.ToUpperInvariant(name[0])}{name.Substring(1)}</color>")
+             .Append($"<pos=62%>{Amount(per,suffix)}<pos=84%>{Amount(per*above,suffix)}");
+        }
+        Gain(t.bonusPerPoint,t.unit);Gain(t.secondBonusPerPoint,t.secondUnit);Gain(t.thirdBonusPerPoint,t.thirdUnit);
+        body=b.ToString();
         return true;
+    }
+
+    // A gain in colour: green above nothing, red below, dim at nothing.
+    static string Amount(float v,string suffix)
+    {
+        if(Mathf.Abs(v)<.001f)return $"<color={ItemData.DimColor}>0</color>";
+        string n=Mathf.Approximately(v,Mathf.Round(v))?Mathf.Abs(Mathf.RoundToInt(v)).ToString():Mathf.Abs(v).ToString("0.##");
+        return v>0?$"<color={ItemData.GoodColor}>+{n}{suffix}</color>":$"<color={ItemData.BadColor}>-{n}{suffix}</color>";
     }
 
     public void Bind(Player value){player=value;foreach(var slot in slots)if(slot!=null)slot.Bind(player);Refresh();}

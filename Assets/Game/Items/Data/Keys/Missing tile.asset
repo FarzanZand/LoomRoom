@@ -18,8 +18,7 @@ MonoBehaviour:
   spell: {fileID: 0}
   unlocksClass: {fileID: 0}
   rarity: 5
-  description: Key item. A stone tile with a symbol on it. It belongs in the puzzle
-    in the room.
+  description: Key item. A stone tile with a symbol on it.
   icon: {fileID: 21300000, guid: 07cf60f38dffb7d4b81fc7642be64ed3, type: 3}
   iconSource:
     custom: 0

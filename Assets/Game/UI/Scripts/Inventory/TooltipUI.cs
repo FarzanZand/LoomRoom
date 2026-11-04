@@ -24,7 +24,7 @@ public class TooltipUI : Singleton<TooltipUI>
     [SerializeField, Tooltip("The bars' parent: off for tooltips without them, so they leave no gap.")] GameObject compareBars;
     [SerializeField, Tooltip("The main number (damage, armour) against what is worn.")] CompareBar mainBar = new();
     [SerializeField, Tooltip("A weapon's swing speed against the held weapon's.")] CompareBar speedBar = new();
-    [SerializeField, Tooltip("Under the bars: what grey stands for (\"Grey: your Iron Sword\").")] TextMeshProUGUI compareNote;
+    [SerializeField, Tooltip("Under the bars, only when nothing is worn in that slot.")] TextMeshProUGUI compareNote;
     [SerializeField] Color lineDefault = new(.3f, .3f, .33f);
     [Header("Stone plate: footer and the equipped panel's header")]
     [SerializeField, Tooltip("The footer row (left note, coin and price); hidden for text-only tooltips.")] GameObject footer;
@@ -131,8 +131,11 @@ public class TooltipUI : Singleton<TooltipUI>
         }
         if (compareNote != null)
         {
-            compareNote.gameObject.SetActive(true);
-            compareNote.text = thisCopy ? "Equipped" : wearing ? $"Grey: your {item.itemName}" : equipped != null ? $"Grey: your {equipped.itemName}" : "Nothing worn there";
+            // Only when there is nothing to compare with: the panel beside it shows what is worn, and the item's own
+            // lines say Equipped.
+            bool nothingWorn = !thisCopy && !wearing && equipped == null;
+            compareNote.gameObject.SetActive(nothingWorn);
+            compareNote.text = nothingWorn ? "Nothing worn there" : "";
         }
     }
 
@@ -205,6 +208,8 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         anchor = null;
         ShowLines(title, subtitle, description);
+        // A text tooltip with no body (a stat with nothing to list) is its title alone, no line under it.
+        if (rarityLine != null && string.IsNullOrEmpty(description)) rarityLine.gameObject.SetActive(false);
     }
 
     void ShowLines(string title, string subtitle, string description)
@@ -214,7 +219,9 @@ public class TooltipUI : Singleton<TooltipUI>
         HideItemParts();
         if (nameText != null) nameText.text = title;
         if (typeText != null) typeText.text = subtitle;
-        if (descriptionText != null) descriptionText.text = description;
+        // No body (a stat with nothing to list): no empty box under the title.
+        if (descriptionText != null) { descriptionText.text = description; descriptionText.gameObject.SetActive(!string.IsNullOrEmpty(description)); }
+        if (rarityLine != null) rarityLine.gameObject.SetActive(true);
         panel.SetActive(true);
         // Unity can reset overrideSorting while an authored nested canvas is inactive.
         var overlay=panel.GetComponent<Canvas>();if(overlay!=null)overlay.overrideSorting=true;

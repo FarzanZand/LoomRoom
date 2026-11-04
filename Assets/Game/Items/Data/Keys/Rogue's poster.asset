@@ -18,8 +18,7 @@ MonoBehaviour:
   spell: {fileID: 0}
   unlocksClass: {fileID: 11400000, guid: 44669be9e4d991d49a58e4866c2edc8a, type: 2}
   rarity: 5
-  description: Key item. The Rogue's poster, rolled up. Put it up on the wall by
-    the bed and she joins your heroes.
+  description: Key item. The Rogue's poster, rolled up.
   icon: {fileID: 21300000, guid: 91e842b5d9149c54eb026f0fa306e321, type: 3}
   iconSource:
     custom: 0
