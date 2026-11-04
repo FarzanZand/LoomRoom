@@ -24,7 +24,9 @@ public partial class AssetStudioWindow
     struct Fighter
     {
         public float baseDamage, strengthDamage, critChance, critMultiplier, critCap;
-        public float swordsBonus, macesBonus;   // the skills' damage bonus at the class's starting ranks (0.3 = +30%)
+        public float swordsBonus, macesBonus;   // the skills' damage bonus (0.3 = +30%): at the class's starting ranks, or a floor's (AtFloor)
+        public int swordsStart, macesStart;     // the starting ranks
+        public AdventureSkillData swords, maces;
         public float health, healthPerLevel;
         public string about;
     }
@@ -75,6 +77,10 @@ public partial class AssetStudioWindow
             return rank * .01f * (data != null ? data.bonusAt100 : 0f);
         }
         f.swordsBonus = Bonus(AdventureSkill.Swords); f.macesBonus = Bonus(AdventureSkill.Maces);
+        f.swordsStart = Mathf.Clamp(pm.BaseRank(AdventureSkill.Swords) + warrior.StartingRank(AdventureSkill.Swords), 0, 100);
+        f.macesStart = Mathf.Clamp(pm.BaseRank(AdventureSkill.Maces) + warrior.StartingRank(AdventureSkill.Maces), 0, 100);
+        f.swords = rules.skills?.FirstOrDefault(s => s != null && s.skill == AdventureSkill.Swords);
+        f.maces = rules.skills?.FirstOrDefault(s => s != null && s.skill == AdventureSkill.Maces);
         var progress = UnityEngine.Object.FindAnyObjectByType<AdventurerProgress>(FindObjectsInactive.Include);
         f.health = progress != null ? progress.StartingPools(warrior).health : warrior.health;
         f.healthPerLevel = warrior.healthPerLevel;
@@ -82,6 +88,27 @@ public partial class AssetStudioWindow
         f.about = $"You: {warrior.displayName}, sheet unbought, level points unspent. STR {Score(MetaAttribute.Strength)}, DEX {Score(MetaAttribute.Dexterity)}, CON {Score(MetaAttribute.Constitution)}. " +
                   $"Swords +{f.swordsBonus * 100f:0}%, Maces +{f.macesBonus * 100f:0}%. Crit {Mathf.Min(f.critCap, f.critChance) * 100f:0}% x{f.critMultiplier:0.##}. Light hits.";
         return f;
+    }
+
+    // The weapon skills rise as you fight (AdventurerProgress.Practise: each hit and kill gives the skill's XP): the fighter
+    // with each weapon skill's rank in the middle of a floor, if every kill there took HitsPerKill hits with that weapon
+    // (the user, 2026-11-04: keep in mind the weapon skill levels up per floor). Swords 30 at the start is about 34 on
+    // floor 1 and 91 on floor 9 at 20 kills a floor.
+    const float HitsPerKill = 4.5f;
+    static Fighter AtFloor(Fighter f, int floor, int kills)
+    {
+        f.swordsBonus = SkillBonus(f.swords, RankOnFloor(f.swords, f.swordsStart, floor, kills));
+        f.macesBonus = SkillBonus(f.maces, RankOnFloor(f.maces, f.macesStart, floor, kills));
+        return f;
+    }
+    static float SkillBonus(AdventureSkillData data, int rank) => rank * .01f * (data != null ? data.bonusAt100 : 0f);
+    public static int RankOnFloor(AdventureSkillData data, int start, int floor, int kills)
+    {
+        if (data == null) return start;
+        float perFloor = kills * (HitsPerKill * data.ExperienceFor(SkillAction.Hit) + data.ExperienceFor(SkillAction.Kill));
+        int rank = start; float xp = perFloor * (Mathf.Max(1, floor) - .5f);
+        while (rank < 100 && xp >= data.ExperienceRequired(rank)) { xp -= data.ExperienceRequired(rank); rank++; }
+        return rank;
     }
 
     // The level a run usually has as it reaches each floor: Kills a floor of the floor's enemies (by weight), each worth its
@@ -146,14 +173,14 @@ public partial class AssetStudioWindow
     // rolled as Hitbox rolls it and taken as the enemy takes it (CharacterStats.AfterArmor).
     // Kept until the next edit on the page or half a minute: the page draws several times a second, and 300 fights for
     // each of its ~200 cells on every draw held the editor's main thread for minutes (2026-11-04).
-    static readonly Dictionary<(ItemData, float, float, int, float, float, int), float> hitsToKillCache = new();
+    static readonly Dictionary<(ItemData, float, float, int, float, float, int, float, float), float> hitsToKillCache = new();
     static int hitsToKillVersion = -1;
     static double hitsToKillAt;
     static float HitsToKill(Fighter f, ItemData weapon, float health, float armour, int floor, System.Random random, int fights = 300)
     {
         if (weapon == null || health <= 0f) return 0f;
         if (hitsToKillVersion != balanceVersion || EditorApplication.timeSinceStartup - hitsToKillAt > 30) { hitsToKillCache.Clear(); hitsToKillVersion = balanceVersion; hitsToKillAt = EditorApplication.timeSinceStartup; }
-        var key = (weapon, health, armour, floor, f.baseDamage + f.strengthDamage, f.critChance, fights);
+        var key = (weapon, health, armour, floor, f.baseDamage + f.strengthDamage, f.critChance, fights, f.swordsBonus, f.macesBonus);
         if (hitsToKillCache.TryGetValue(key, out var known)) return known;
         return hitsToKillCache[key] = SimulateHitsToKill(f, weapon, health, armour, floor, random, fights);
     }
@@ -287,7 +314,7 @@ public partial class AssetStudioWindow
         {
             int last = d.FloorCount;
             var lastTier = UsualTier(d, last);
-            Headline($"Floor 1: a Common sword hits <b>{AverageHit(fighter, WeaponAt(items, GearKind.Sword, UsualTier(d, 1), ItemRarity.Common, 1)):0.#}</b>.   Floor {last}: a Rare sword <b>{AverageHit(fighter, WeaponAt(items, GearKind.Sword, lastTier, ItemRarity.Rare, last)):0.#}</b>.");
+            Headline($"Floor 1: a Common sword hits <b>{AverageHit(AtFloor(fighter, 1, fightKills), WeaponAt(items, GearKind.Sword, UsualTier(d, 1), ItemRarity.Common, 1)):0.#}</b>.   Floor {last}: a Rare sword <b>{AverageHit(AtFloor(fighter, last, fightKills), WeaponAt(items, GearKind.Sword, lastTier, ItemRarity.Rare, last)):0.#}</b>.");
             GUILayout.Label("AVERAGE HIT, A WEAPON OF THE FLOOR'S MOST COMMON TIER", gold);
             foreach (var kind in new[] { GearKind.Sword, GearKind.Mace })
             {
@@ -301,11 +328,12 @@ public partial class AssetStudioWindow
                     int tier = UsualTier(d, f);
                     GUILayout.BeginHorizontal(GUILayout.Height(20));
                     Out($"w{kind}{f}f", f.ToString(), 40); Out($"w{kind}{f}t", LootFloorTiers.Names[tier - 1], 70);
-                    foreach (var rar in GearRarities) Out($"w{kind}{f}{rar}", AverageHit(fighter, WeaponAt(items, kind, tier, rar, f)).ToString("0.#"), 82);
+                    var onFloor = AtFloor(fighter, f, fightKills);
+                    foreach (var rar in GearRarities) Out($"w{kind}{f}{rar}", AverageHit(onFloor, WeaponAt(items, kind, tier, rar, f)).ToString("0.#"), 82);
                     GUILayout.EndHorizontal();
                 }
             }
-            GUILayout.Label("Per light hit, before the enemy's armour, criticals counted at their chance.", dim);
+            GUILayout.Label($"Per light hit, before the enemy's armour, criticals counted at their chance, with the weapon skill of the middle of the floor ({fightKills} kills a floor, Enemies tab).", dim);
         });
         GUILayout.Space(8);
         WeaponSimulator(d, im, fighter, items);
@@ -337,7 +365,7 @@ public partial class AssetStudioWindow
         {
             var random = new System.Random(unchecked(simSeed++ * 486187739 + simWeaponFloor * 7));
             var hits = new List<float>();
-            for (int n = 0; n < 1000; n++) hits.Add(AverageHit(fighter, RollPiece(d, im, items, Pick(random), simWeaponFloor, random)));
+            for (int n = 0; n < 1000; n++) hits.Add(AverageHit(AtFloor(fighter, simWeaponFloor, fightKills), RollPiece(d, im, items, Pick(random), simWeaponFloor, random)));
             hits.Sort();
             simWeaponMany = $"1000 weapons, floor {simWeaponFloor}: average hit {hits[100]:0.#}-{hits[900]:0.#} (middle 80%). Middle {hits[500]:0.#}, best {hits[999]:0.#}.";
         }
@@ -348,7 +376,7 @@ public partial class AssetStudioWindow
             int spread = weapon.damageSpread;
             float crit = Mathf.Min(fighter.critCap, fighter.critChance + Modifier(weapon, StatType.CriticalChance));
             GUILayout.Space(4);
-            Headline($"<color=#{RarityHex(weapon.rarity)}>{weapon.DisplayName}</color>: hits <b>{AverageHit(fighter, weapon):0.#}</b> on average  <color=#a9a49a>({Mathf.Max(1f, attack - spread):0}-{attack + spread:0}, crit {crit * 100f:0}%)</color>");
+            Headline($"<color=#{RarityHex(weapon.rarity)}>{weapon.DisplayName}</color>: hits <b>{AverageHit(AtFloor(fighter, simWeaponFloor, fightKills), weapon):0.#}</b> on average  <color=#a9a49a>({Mathf.Max(1f, attack - spread):0}-{attack + spread:0}, crit {crit * 100f:0}%)</color>");
             var rolled = weapon.statModifiers?.Skip(weapon.BaseModifierCount).Where(m => m != null).Select(m => m.Describe()).ToList();
             if (rolled != null && rolled.Count > 0) GUILayout.Label("Rolled: " + string.Join(", ", rolled), dim);
             GUILayout.BeginHorizontal();
@@ -361,7 +389,7 @@ public partial class AssetStudioWindow
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 GUILayout.Label(enemy.name, StudioSkin.Label, GUILayout.Width(150));
                 Out($"ws{enemy.name}h", n.health.ToString("0"), 60); Out($"ws{enemy.name}a", n.armor.ToString("0.#"), 60);
-                Out($"ws{enemy.name}k", HitsToKill(fighter, weapon, n.health, n.armor, simWeaponFloor, random).ToString("0.#"), 90, true);
+                Out($"ws{enemy.name}k", HitsToKill(AtFloor(fighter, simWeaponFloor, fightKills), weapon, n.health, n.armor, simWeaponFloor, random).ToString("0.#"), 90, true);
                 GUILayout.EndHorizontal();
             }
         }
@@ -447,7 +475,7 @@ public partial class AssetStudioWindow
         GUILayout.Label("Kills a floor", GUILayout.Width(90));
         fightKills = Mathf.Clamp(EditorGUILayout.IntField(fightKills, GUILayout.Width(40)), 1, 500);
         GUILayout.EndHorizontal();
-        GUILayout.Label(fighter.about + " Level: as you reach the floor. A Rare set of the floor's usual gear. Weapons of its most common tier. No blocks.", Wrapped, GUILayout.Width(pageWidth - 24));
+        GUILayout.Label(fighter.about + $" Weapon skills rise as you fight: at {fightKills} kills a floor of {HitsPerKill} hits, Swords {RankOnFloor(fighter.swords, fighter.swordsStart, 1, fightKills)} on floor 1 and {RankOnFloor(fighter.swords, fighter.swordsStart, d.FloorCount, fightKills)} on floor {d.FloorCount} (the middle of each floor). Level: as you reach the floor. A Rare set of the floor's usual gear. Weapons of its most common tier. No blocks.", Wrapped, GUILayout.Width(pageWidth - 24));
         GUILayout.BeginHorizontal();
         Head("Floor", 40); Head("Level", 44); Head("Your HP", 60); Head("Set", 50);
         GUILayout.Label("", GUILayout.Width(10));
@@ -481,10 +509,11 @@ public partial class AssetStudioWindow
                 string k = $"x{f}{enemy.name}";
                 GUILayout.Label(enemy.name, StudioSkin.Label, GUILayout.Width(150));
                 Out(k + "h", n.health.ToString("0"), 50); Out(k + "a", n.armor.ToString("0.#"), 54); Out(k + "d", n.damage.ToString("0.#"), 54);
-                Out(k + "1", HitsToKill(fighter, sword, n.health, n.armor, f, random).ToString("0.#"), 60, true);
-                Out(k + "2", HitsToKill(fighter, rareSword, n.health, n.armor, f, random).ToString("0.#"), 80, true);
-                Out(k + "3", HitsToKill(fighter, mace, n.health, n.armor, f, random).ToString("0.#"), 60, true);
-                Out(k + "4", HitsToKill(fighter, rareMace, n.health, n.armor, f, random).ToString("0.#"), 80, true);
+                var atFloor = AtFloor(fighter, f, fightKills);
+                Out(k + "1", HitsToKill(atFloor, sword, n.health, n.armor, f, random).ToString("0.#"), 60, true);
+                Out(k + "2", HitsToKill(atFloor, rareSword, n.health, n.armor, f, random).ToString("0.#"), 80, true);
+                Out(k + "3", HitsToKill(atFloor, mace, n.health, n.armor, f, random).ToString("0.#"), 60, true);
+                Out(k + "4", HitsToKill(atFloor, rareMace, n.health, n.armor, f, random).ToString("0.#"), 80, true);
                 float landed = CharacterStats.AfterArmor(n.damage, set, true, false, false, f);
                 Out(k + "5", landed > 0f ? Mathf.Ceil(health / landed).ToString("0") : "-", 84, true);
                 GUILayout.EndHorizontal();
