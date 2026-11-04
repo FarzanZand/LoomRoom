@@ -273,7 +273,8 @@ public partial class ItemData : ScriptableObject
         if (showMain && withMain)
         {
             lines.Add($"<size=140%><color={TextColor}>{mainText}</color></size>  <color={DimColor}>{(IsWeapon ? "Weapon damage" : mainLabel)}</color>");
-            if (IsWeapon) lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
+            // Only a speed that differs from the usual is worth a line.
+            if (IsWeapon && SwingSpeedWord(SwingSpeed) != "Normal") lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
         // The item's own stats in white, the rolled properties of an Uncommon, Rare, Unique or Legendary item in blue.
         if (canBeEquipped && statModifiers != null)

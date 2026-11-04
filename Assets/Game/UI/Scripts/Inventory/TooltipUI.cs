@@ -190,7 +190,8 @@ public class TooltipUI : Singleton<TooltipUI>
         if (compareNameText != null) compareNameText.text = Title(equipped);
         // The panel's own tab says EQUIPPED; without one the type line does.
         if (compareTypeText != null) compareTypeText.text = (compareIcon != null ? "" : "EQUIPPED  ·  ") + Kind(equipped);
-        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null);
+        // Its tab already says EQUIPPED.
+        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null, false);
         if (compareIcon != null) { compareIcon.sprite = equipped.icon; compareIcon.enabled = equipped.icon != null; compareIcon.preserveAspect = true; }
         if (compareIconSlot != null) compareIconSlot.gameObject.SetActive(equipped.icon != null);
         if (compareRarityLine != null) compareRarityLine.color = equipped.HasSlotFill ? Color.Lerp(equipped.RarityColour, Color.white, equipped.HasRarityColour ? .25f : .1f) : lineDefault;
