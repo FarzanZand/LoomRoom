@@ -294,6 +294,19 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
     public bool BlockBlessing { get; set; }
 
+    // What a hit leaves once the target's armour has had its share (armour: the target's Armor stat, with the shield's when
+    // blocked). The player's armour against an unblocked physical hit takes a share off it that depends on the floor
+    // (CombatManager.Armor.cs); otherwise armour comes off the effective share of the hit and the rest always lands, a block
+    // using all of it, and magic ignores it. TakeDamage takes every hit through it; Asset Studio's Balance page reckons
+    // fights with it.
+    public static float AfterArmor(float amount, float armour, bool player, bool blocked, bool magic, int floor)
+    {
+        if (!magic && !blocked && player && CombatManager.ScaledPlayerArmor) return amount * (1f - CombatManager.ArmorCut(armour, floor));
+        float stop = magic ? 0 : armour * CombatManager.ArmorPerPoint;
+        float effective = blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .65f;
+        return Mathf.Max(0f, effective * amount - stop) + (1f - effective) * amount;
+    }
+
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
@@ -308,17 +321,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         }
 
-        float actual;
-        // The player's armour against an unblocked hit takes a share off it that depends on the floor (CombatManager.Armor.cs).
-        if (!info.Magic && !info.Blocked && Character is Player && CombatManager.ScaledPlayerArmor)
-            actual = info.Amount * (1f - CombatManager.ArmorCut(ResolveStat(StatType.Armor, false), CombatManager.CurrentFloor));
-        else
-        {
-            float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked) * CombatManager.ArmorPerPoint;
-            // Armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
-            float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .65f;
-            actual = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
-        }
+        float actual = AfterArmor(info.Amount, ResolveStat(StatType.Armor, info.Blocked), Character is Player, info.Blocked, info.Magic, CombatManager.CurrentFloor);
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         // The boss arena's blessing: the same, for every blocked hit.

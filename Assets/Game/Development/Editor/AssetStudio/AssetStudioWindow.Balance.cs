@@ -6,27 +6,147 @@ using UnityEditor;
 using UnityEngine;
 
 // Asset Studio's Balance view (the user, 2026-11-04: "a section for armor balancing where you can tweak things like armor,
-// scaling of items per tier / rarity, enemy scaling per floor, drop rates"). Four tabs, each the real values edited in
-// place (undoable) beside a preview of what they give on each floor of the picked dungeon (the Dungeon view's pick,
-// Dungeon1): Armour (CombatManager > Hits > Armor), Items (InventoryManager > Rarity and each tier's main numbers), Enemies
-// (the level's DungeonBalance, its stages' jumps and elites, ProgressionManager > Enemy balance) and Drops (InventoryManager
-// > Drops by source and the whole-game multipliers, the spoils, the level's Gear by floor). The managers are the room's
-// scene objects (save the scene after), the rest are assets saved at once.
+// scaling of items per tier / rarity, enemy scaling per floor, drop rates"; then "make the UX on all balance pages easier
+// to work with, and understand"). Five tabs, each answering one question: inputs on the left (the real values, edited in
+// place and undoable, each with its unit, the value it had when the page first showed it and a reset, and a link to where
+// it lives), results on the right (said per what, totals that add up, "1 in N" by small chances, the outcome a designer
+// looks for in big letters), the cells an edit changed lit until the next edit with their old value, and the last edit
+// said under the tabs. Previews are the picked dungeon's floors (the Dungeon view's pick, Dungeon1). The managers are the
+// room's scene objects (Save scene after), the rest are assets saved at once. The Weapons tab and the fights live in
+// AssetStudioWindow.Balance.Weapons.cs.
 public partial class AssetStudioWindow
 {
     Vector2 balanceScroll;
     string balanceTab = "Armour";
     int balanceKind;
     bool showingBalance => studioView == StudioView.Balance;
-    static readonly string[] BalanceTabs = { "Armour", "Items", "Enemies", "Drops" };
+    static readonly string[] BalanceTabs = { "Armour", "Weapons", "Items", "Enemies", "Drops" };
     static readonly ItemRarity[] GearRarities = { ItemRarity.Common, ItemRarity.Uncommon, ItemRarity.Rare, ItemRarity.Unique, ItemRarity.Legendary };
-    static readonly EquipmentSlot[] ArmourSlots = { EquipmentSlot.Head, EquipmentSlot.Body, EquipmentSlot.Gloves, EquipmentSlot.Boots, EquipmentSlot.Legs };
     const string CombatManagerPath = "Assets/Game/Combat/Prefabs/CombatManager.prefab";
     const string TablePlayerPath = "Assets/Game/Characters/Players/Table/TablePlayer.prefab";
 
     void OpenBalance() { studioView = StudioView.Balance; GUI.FocusControl(null); }
 
-    // The kinds of gear the tier table and the rarity preview show.
+    // ── The page's kit: inputs that remember, results that light up ──
+
+    enum BalUnit { None, Percent, PercentPerFloor, Times, PerFloor, Seconds }
+    static string UnitText(BalUnit u) => u switch { BalUnit.Percent => "%", BalUnit.PercentPerFloor => "% a floor", BalUnit.Times => "x", BalUnit.PerFloor => "a floor", BalUnit.Seconds => "s", _ => "" };
+    static bool Percentish(BalUnit u) => u == BalUnit.Percent || u == BalUnit.PercentPerFloor;
+    static string Shown(float v, BalUnit u) => Percentish(u) ? $"{v * 100f:0.##}%" : u == BalUnit.Times ? $"x{v:0.###}" : v.ToString("0.###");
+
+    // Each field's value when the page first showed it (this editor session): shown as "was" and reset to.
+    static readonly Dictionary<string, float> balanceBaseline = new();
+    // Result cells: this repaint's, the last repaint's, and the ones just before the last edit.
+    readonly Dictionary<string, string> cellsNow = new(), cellsShown = new();
+    Dictionary<string, string> cellsBefore = new();
+    string lastEdit;
+    static AssetStudioWindow balanceWindow;
+
+    // The group a field is drawn in (Group): two fields of one name in different groups are different fields.
+    string balanceGroup = "";
+    string KeyOf(UnityEngine.Object o, string label) => (o != null ? o.name + "/" + o.GetType().Name : "-") + "/" + balanceGroup + "/" + label;
+
+    // An edit is about to be written: the results as they were are kept to light up what it changes.
+    static void Edited(string what)
+    {
+        var w = balanceWindow;
+        if (w == null) return;
+        w.cellsBefore = new Dictionary<string, string>(w.cellsShown);
+        w.lastEdit = what;
+    }
+
+    static void Changed(UnityEngine.Object o)
+    {
+        EditorUtility.SetDirty(o);
+        if (PrefabUtility.IsPartOfPrefabInstance(o)) PrefabUtility.RecordPrefabInstancePropertyModifications(o);
+        if (o is Component c && !EditorUtility.IsPersistent(c)) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(c.gameObject.scene);
+        else AssetDatabase.SaveAssetIfDirty(o);
+    }
+
+    // A labelled input: the field with its unit, and "was" with a reset once it differs from the value the page first showed.
+    void In(string label, float value, UnityEngine.Object owner, Action<float> set, BalUnit unit = BalUnit.None, float min = 0f, float max = float.MaxValue, float labelWidth = 150, string tip = null)
+    {
+        string key = KeyOf(owner, label);
+        if (!balanceBaseline.ContainsKey(key)) balanceBaseline[key] = value;
+        float was = balanceBaseline[key];
+        GUILayout.BeginHorizontal(GUILayout.Height(20));
+        GUILayout.Label(new GUIContent(label, tip), GUILayout.Width(labelWidth));
+        NumField(value, owner, set, Percentish(unit), min, max, label, 56);
+        GUILayout.Label(UnitText(unit), Unit, GUILayout.Width(unit == BalUnit.PercentPerFloor ? 62 : 34));
+        if (!Mathf.Approximately(was, value))
+        {
+            GUILayout.Label($"<color=#e0a85a>was {Shown(was, unit)}</color>", new GUIStyle(StudioSkin.Faint) { richText = true, wordWrap = false }, GUILayout.Width(80));
+            if (GUILayout.Button(new GUIContent("↺", "Back to " + Shown(was, unit)), GUILayout.Width(24), GUILayout.Height(18))) { Edited($"{label} {Shown(value, unit)} → {Shown(was, unit)}"); Undo.RecordObject(owner, label); set(was); Changed(owner); }
+        }
+        GUILayout.EndHorizontal();
+    }
+
+    // A small link to where a group's values live (selects it).
+    void Where(UnityEngine.Object o, string text = null)
+    {
+        if (o == null) return;
+        if (GUILayout.Button(new GUIContent("in " + (text ?? o.name), "Select it"), new GUIStyle(StudioSkin.Faint) { normal = { textColor = new Color(.6f, .75f, .9f) }, wordWrap = false }, GUILayout.ExpandWidth(false)))
+        { Selection.activeObject = o; EditorGUIUtility.PingObject(o); }
+    }
+
+    // A group of inputs: its title and where it lives.
+    void Group(string title, UnityEngine.Object where = null, string whereText = null)
+    {
+        balanceGroup = title;
+        GUILayout.Space(6);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(title, gold);
+        GUILayout.FlexibleSpace();
+        Where(where, whereText);
+        GUILayout.EndHorizontal();
+    }
+
+    // Just the field (for table cells); an edit is said and lights up what it changes.
+    static float NumField(float value, UnityEngine.Object owner, Action<float> set, bool percent = false, float min = 0f, float max = float.MaxValue, string undo = "Balance", float width = 52)
+    {
+        float shown = percent ? Mathf.Round(value * 10000f) / 100f : value;
+        float entered = EditorGUILayout.DelayedFloatField(shown, GUILayout.Width(width));
+        // Only what was typed is written: a value shown rounded is never written back as its rounding.
+        if (owner == null || Mathf.Approximately(entered, shown)) return value;
+        float typed = Mathf.Clamp(percent ? entered / 100f : entered, min, max);
+        Edited($"{undo} {(percent ? shown + "%" : shown.ToString("0.###"))} → {(percent ? typed * 100f + "%" : typed.ToString("0.###"))}");
+        Undo.RecordObject(owner, undo); set(typed); Changed(owner);
+        return typed;
+    }
+
+    static string Pct(float p) => p <= 0f ? "-" : p < .001f ? "<0.1%" : $"{p * 100f:0.#}%";
+    // A small chance as "1 in N" too.
+    static string OneIn(float p) => p <= 0f || p >= .5f ? "" : $"1 in {Mathf.Max(1f, 1f / p):0}";
+    static string Every(float perFloor) => perFloor <= 0f ? "none" : perFloor >= 1f ? $"{perFloor:0.#} a floor" : $"1 every {1f / perFloor:0.#} floors";
+
+    // A heading cell, optionally in a rarity's colour.
+    void Head(string text, float width, ItemRarity? rarity = null)
+    {
+        var style = new GUIStyle(gold) { fontSize = StudioSkin.Size - 2, alignment = TextAnchor.MiddleRight, wordWrap = false, clipping = TextClipping.Clip, richText = true };
+        if (rarity.HasValue) text = $"<color=#{RarityHex(rarity.Value)}>{text}</color>";
+        GUILayout.Label(text, style, GUILayout.Width(width), GUILayout.Height(20));
+    }
+    static string RarityHex(ItemRarity r) => r == ItemRarity.Common ? "e6e6e6" : ColorUtility.ToHtmlStringRGB(UIManager.RarityColor(r));
+
+    // A result cell: right-aligned; lit (with its old value after it in grey) when the last edit changed it.
+    void Out(string key, string text, float width, bool strong = false)
+    {
+        if (Event.current.type == EventType.Repaint || Event.current.type == EventType.Layout) cellsNow[key] = text;
+        bool changed = cellsBefore.TryGetValue(key, out var old) && old != text;
+        var r = GUILayoutUtility.GetRect(width, 20, GUILayout.Width(width), GUILayout.Height(20));
+        if (changed && Event.current.type == EventType.Repaint) EditorGUI.DrawRect(r, new Color(.72f, .565f, .24f, .22f));
+        var style = new GUIStyle(strong ? StudioSkin.Strong : StudioSkin.Label) { alignment = TextAnchor.MiddleRight, wordWrap = false, clipping = TextClipping.Clip, richText = true };
+        GUI.Label(r, new GUIContent(changed ? $"{text} <color=#8f8a80>{old}</color>" : text, changed ? "was " + old : null), style);
+    }
+
+    // The tab's question, in big letters.
+    void Question(string text) => GUILayout.Label(text, new GUIStyle(StudioSkin.Title) { fontSize = StudioSkin.Size + 6 });
+
+    // An outcome in big letters.
+    void Headline(string text) => GUILayout.Label(text, new GUIStyle(StudioSkin.Label) { fontSize = StudioSkin.Size + 4, richText = true, wordWrap = true });
+
+    // ── Shared lookups ──
+
     enum GearKind { Sword, Mace, Shield, Helm, Body, Gloves, Boots, Legs }
     static readonly string[] GearKindNames = { "Sword", "Mace", "Shield", "Helm", "Body", "Gloves", "Boots", "Legs" };
 
@@ -50,57 +170,18 @@ public partial class AssetStudioWindow
         return inScene ? found : AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath)?.GetComponent<T>();
     }
 
-    static void Changed(UnityEngine.Object o)
-    {
-        EditorUtility.SetDirty(o);
-        if (PrefabUtility.IsPartOfPrefabInstance(o)) PrefabUtility.RecordPrefabInstancePropertyModifications(o);
-        if (o is Component c && !EditorUtility.IsPersistent(c)) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(c.gameObject.scene);
-        else AssetDatabase.SaveAssetIfDirty(o);
-    }
-
-    // A labelled number: shown as a percent when percent, edited, written back (undoable) when changed.
-    float Num(string label, float value, UnityEngine.Object owner, Action<float> set, bool percent = false, float min = 0f, float max = float.MaxValue, float labelWidth = 150, string tip = null)
-    {
-        GUILayout.BeginHorizontal();
-        GUILayout.Label(new GUIContent(label, tip), GUILayout.Width(labelWidth));
-        float typed = NumField(value, owner, set, percent, min, max, label);
-        GUILayout.Label(percent ? "%" : "", Unit, GUILayout.Width(16));
-        GUILayout.EndHorizontal();
-        return typed;
-    }
-
-    // Just the field (for table cells).
-    static float NumField(float value, UnityEngine.Object owner, Action<float> set, bool percent = false, float min = 0f, float max = float.MaxValue, string undo = "Balance", float width = 52)
-    {
-        float shown = percent ? Mathf.Round(value * 1000f) / 10f : value;
-        float entered = EditorGUILayout.DelayedFloatField(shown, GUILayout.Width(width));
-        // Only what was typed is written: a value shown rounded is never written back as its rounding.
-        if (owner == null || Mathf.Approximately(entered, shown)) return value;
-        float typed = Mathf.Clamp(percent ? entered / 100f : entered, min, max);
-        Undo.RecordObject(owner, undo); set(typed); Changed(owner);
-        return typed;
-    }
-
-    static string Pct(float p) => p <= 0f ? "-" : p < .001f ? "<0.1%" : $"{p * 100f:0.#}%";
-
-    // A preview cell: right-aligned text in a fixed width.
-    void Cell(string text, float width, bool head = false)
-    {
-        var style = head ? new GUIStyle(gold) { fontSize = StudioSkin.Size - 2, alignment = TextAnchor.MiddleRight, wordWrap = false, clipping = TextClipping.Clip }
-                         : new GUIStyle(StudioSkin.Label) { alignment = TextAnchor.MiddleRight, wordWrap = false, clipping = TextClipping.Clip };
-        GUILayout.Label(text, style, GUILayout.Width(width), GUILayout.Height(20));
-    }
-
-    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain; armour keeps a tenth, tenths).
+    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain; armour keeps a tenth, weapons whole steps).
     static MethodInfo raisedMain;
-    static float Raised(float value, ItemRarity rarity, bool tenths)
+    static float Raised(float value, ItemRarity rarity, bool armour)
     {
         if (rarity == ItemRarity.Common) return value;
         raisedMain ??= typeof(ItemData).GetMethod("RaisedMain", BindingFlags.NonPublic | BindingFlags.Static);
-        return raisedMain != null ? (float)raisedMain.Invoke(null, new object[] { value, rarity, tenths }) : value;
+        if (raisedMain == null) return value;
+        var args = raisedMain.GetParameters().Length == 3 ? new object[] { value, rarity, armour } : new object[] { value, rarity };
+        return (float)raisedMain.Invoke(null, args);
     }
 
-    // The item's main number (its damage or armour) from its own modifiers, and the modifier holding it.
+    // The modifier holding the item's main number (its damage or armour).
     static int MainIndex(ItemData i)
     {
         var main = i != null ? i.MainStatType : null;
@@ -109,7 +190,7 @@ public partial class AssetStudioWindow
         return -1;
     }
 
-    // The plain (Common) item of a kind and tier in the catalog.
+    // The plain (Common) item of each kind and tier in the catalog.
     static Dictionary<(GearKind, int), ItemData> TierItems(InventoryManager im)
     {
         var map = new Dictionary<(GearKind, int), ItemData>();
@@ -124,14 +205,23 @@ public partial class AssetStudioWindow
         return map;
     }
 
+    // ── The page ──
+
     void DrawBalance(Rect r)
     {
+        balanceWindow = this;
         GUI.Box(r, GUIContent.none);
         pageWidth = r.width - 28 - 18;
         GUILayout.BeginArea(new Rect(r.x + 14, r.y + 12, r.width - 28, r.height - 24));
-        balanceScroll = GUILayout.BeginScrollView(balanceScroll);
+        // Up and down only: a page that also scrolled sideways hid its right edge.
+        balanceScroll = GUILayout.BeginScrollView(balanceScroll, GUIStyle.none, GUI.skin.verticalScrollbar);
+        if (Event.current.type == EventType.Layout) cellsNow.Clear();
         try { BalancePage(); }
-        finally { GUILayout.EndScrollView(); GUILayout.EndArea(); }
+        finally
+        {
+            GUILayout.EndScrollView(); GUILayout.EndArea();
+            if (Event.current.type == EventType.Repaint) { cellsShown.Clear(); foreach (var kv in cellsNow) cellsShown[kv.Key] = kv.Value; }
+        }
     }
 
     void BalancePage()
@@ -139,30 +229,42 @@ public partial class AssetStudioWindow
         ReadGameWide();
         var d = DungeonLevel;
         var l = d != null ? World.LevelOf(d) : null;
-        Title("Balance", d != null ? $"Previews are {d.name}'s floors." : null);
         var im = BalanceManager<InventoryManager>(InventoryManagerPath, out bool imScene);
-        var cm = BalanceManager<CombatManager>(CombatManagerPath, out bool cmScene);
-        var pm = BalanceManager<ProgressionManager>(ProgressionManagerPath, out bool pmScene);
+        var cm = BalanceManager<CombatManager>(CombatManagerPath, out _);
+        var pm = BalanceManager<ProgressionManager>(ProgressionManagerPath, out _);
         GUILayout.BeginHorizontal();
-        foreach (var t in BalanceTabs)
-            if (GUILayout.Toggle(balanceTab == t, t, StudioSkin.Tab, GUILayout.Width(110), GUILayout.Height(28)) && balanceTab != t) { balanceTab = t; GUI.FocusControl(null); }
+        GUILayout.Label("Balance", titleStyle);
         GUILayout.FlexibleSpace();
         var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if (imScene && scene.isDirty && GUILayout.Button("Save scene", GUILayout.Width(110), GUILayout.Height(28))) UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+        if (imScene && scene.isDirty)
+        {
+            GUILayout.Label("<color=#e0a85a>● Room has unsaved changes</color>", new GUIStyle(StudioSkin.Label) { richText = true, wordWrap = false }, GUILayout.Height(28));
+            if (GUILayout.Button("Save scene", GUILayout.Width(110), GUILayout.Height(28))) UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+        }
         GUILayout.EndHorizontal();
-        if (!imScene) GUILayout.Label("<color=#e0a85a>Room.unity isn't open: these are the prefabs' values, not the scene's.</color>", new GUIStyle(dim) { richText = true });
+        GUILayout.BeginHorizontal();
+        foreach (var t in BalanceTabs)
+            if (GUILayout.Toggle(balanceTab == t, t, StudioSkin.Tab, GUILayout.Width(110), GUILayout.Height(28)) && balanceTab != t) { balanceTab = t; cellsBefore.Clear(); lastEdit = null; GUI.FocusControl(null); }
+        GUILayout.Space(16);
+        GUILayout.Label(d != null ? $"Floors of {d.name}" : "", dim, GUILayout.Height(28));
+        GUILayout.FlexibleSpace();
+        if (!string.IsNullOrEmpty(lastEdit)) GUILayout.Label($"Last change: {lastEdit}", new GUIStyle(StudioSkin.Label) { wordWrap = false, normal = { textColor = new Color(.86f, .7f, .38f) } }, GUILayout.Height(28));
+        GUILayout.EndHorizontal();
+        if (!imScene) GUILayout.Label("<color=#e0a85a>Room.unity isn't open: prefab values shown.</color>", new GUIStyle(dim) { richText = true });
         GUILayout.Space(8);
         if (d == null || im == null) { GUILayout.Label("No dungeon or InventoryManager found.", dim); return; }
+        balanceGroup = balanceTab;
         switch (balanceTab)
         {
-            case "Armour": ArmourTab(d, im, cm); break;
+            case "Armour": WithFloorGear(d, () => ArmourTab(d, im, cm)); break;
+            case "Weapons": WithFloorGear(d, () => WeaponsTab(d, im, cm, pm)); break;
             case "Items": ItemsTab(d, im); break;
-            case "Enemies": EnemiesTab(d, l, pm); break;
+            case "Enemies": WithFloorGear(d, () => EnemiesTab(d, l, im, cm, pm)); break;
             default: DropsTab(d, im, pm); break;
         }
     }
 
-    // Side by side when there is room, else one under the other.
+    // Inputs on the left, results on the right (one under the other when narrow).
     void TwoColumns(float leftWidth, Action left, Action right)
     {
         bool wide = pageWidth >= leftWidth + 520;
@@ -205,57 +307,53 @@ public partial class AssetStudioWindow
         return total > 0f ? armour / total : SetArmour(items, 1, rarity);
     }
 
-    static float Odds(float cut) { cut = Mathf.Clamp(cut, .01f, .95f); return cut / (1f - cut); }
-
     void ArmourTab(TableLevelData d, InventoryManager im, CombatManager cm)
     {
         if (cm == null) { GUILayout.Label("No CombatManager found.", dim); return; }
         var items = TierItems(im);
-        TwoColumns(330, () =>
+        bool scaled = cm.playerArmorRule == CombatManager.ArmorRule.Scaled;
+        var soldier = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
+        Question("How much of a hit a full set of armour stops, by floor");
+        TwoColumns(470, () =>
         {
-            GUILayout.Label("ARMOUR", gold);
-            GUILayout.BeginHorizontal();
+            Group("THE CURVE", cm, "CombatManager");
+            GUILayout.BeginHorizontal(GUILayout.Height(20));
             GUILayout.Label("Rule", GUILayout.Width(150));
             var rule = (CombatManager.ArmorRule)EditorGUILayout.EnumPopup(cm.playerArmorRule, GUILayout.Width(90));
-            if (rule != cm.playerArmorRule) { Undo.RecordObject(cm, "Armour rule"); cm.playerArmorRule = rule; Changed(cm); }
+            if (rule != cm.playerArmorRule) { Edited($"Armour rule {cm.playerArmorRule} → {rule}"); Undo.RecordObject(cm, "Armour rule"); cm.playerArmorRule = rule; Changed(cm); }
             GUILayout.EndHorizontal();
-            if (cm.playerArmorRule == CombatManager.ArmorRule.Scaled)
+            if (scaled)
             {
-                Num("Common set stops", cm.armorTargetCut, cm, v => cm.armorTargetCut = v, true, .05f, .6f, tip: "A full Common set of the floor's usual gear.");
-                Num("Legendary set stops", cm.armorLegendaryCut, cm, v => cm.armorLegendaryCut = v, true, .05f, .65f, tip: "The same set at Legendary.");
+                In("Common set stops", cm.armorTargetCut, cm, v => cm.armorTargetCut = v, BalUnit.Percent, .05f, .6f, tip: "A full Common set of the floor's usual gear.");
+                In("Legendary set stops", cm.armorLegendaryCut, cm, v => cm.armorLegendaryCut = v, BalUnit.Percent, .05f, .65f, tip: "The same set at Legendary.");
             }
-            else Num("Per point", cm.armorPerPoint, cm, v => cm.armorPerPoint = v, false, 0f, 5f, tip: "Damage each armour point takes off a hit.");
-            Num("Most it stops", cm.armorEffectiveness, cm, v => cm.armorEffectiveness = v, true, 0f, 1f);
-            GUILayout.Space(6);
-            GUILayout.Label("Blocked hits and enemies' armour: per point.", dim);
-            if (cm.playerArmorRule == CombatManager.ArmorRule.Scaled) Num("Per point", cm.armorPerPoint, cm, v => cm.armorPerPoint = v, false, 0f, 5f, tip: "Damage each armour point takes off a blocked hit and an enemy's hit taken.");
+            In("Most it stops", cm.armorEffectiveness, cm, v => cm.armorEffectiveness = v, BalUnit.Percent, 0f, 1f);
+            Group("FLAT RULE");
+            In("Damage a point stops", cm.armorPerPoint, cm, v => cm.armorPerPoint = v, BalUnit.None, 0f, 5f, tip: scaled ? "Blocked hits and enemies' armour." : "Every hit.");
         }, () =>
         {
-            bool scaled = cm.playerArmorRule == CombatManager.ArmorRule.Scaled;
-            GUILayout.Label(scaled ? "SHARE OF A HIT A FULL SET STOPS" : "SHARE OF A CRYPT SOLDIER'S HIT A FULL SET STOPS", gold);
+            int last = d.FloorCount;
+            float first = CombatManager.ArmorCut(FloorSetArmour(d, items, 1, ItemRarity.Common), 1, NumbersAt(d, soldier, 1, null).damage);
+            float top = CombatManager.ArmorCut(FloorSetArmour(d, items, last, ItemRarity.Legendary), last, NumbersAt(d, soldier, last, null).damage);
+            Headline($"Floor 1: a Common set stops <b>{Pct(first)}</b>.   Floor {last}: a Legendary set stops <b>{Pct(top)}</b>.");
+            GUILayout.Label(scaled ? "PER HIT, A FULL SET OF THE FLOOR'S USUAL GEAR" : "PER CRYPT SOLDIER'S HIT, A FULL SET OF THE FLOOR'S USUAL GEAR", gold);
             GUILayout.BeginHorizontal();
-            Cell("Floor", 44, true); Cell("Set", 60, true);
-            foreach (var rar in GearRarities) Cell(rar.ToString(), 82, true);
+            Head("Floor", 44); Head("Armour", 60);
+            foreach (var rar in GearRarities) Head(rar.ToString(), 92, rar);
             GUILayout.EndHorizontal();
-            float power = CombatManager.ArmorPower, cap = cm.armorEffectiveness;
-            var soldier = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
             for (int f = 1; f <= d.FloorCount; f++)
             {
-                float usual = FloorSetArmour(d, items, f, ItemRarity.Common);
-                float k = Mathf.Max(1f, usual * Mathf.Pow(Odds(cm.armorTargetCut), -1f / power));
                 float hit = scaled ? 0f : NumbersAt(d, soldier, f, null).damage;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
-                Cell(f.ToString(), 44); Cell(usual.ToString("0"), 60);
+                Out($"a{f}f", f.ToString(), 44); Out($"a{f}s", FloorSetArmour(d, items, f, ItemRarity.Common).ToString("0"), 60);
                 foreach (var rar in GearRarities)
                 {
-                    float a = FloorSetArmour(d, items, f, rar), cut;
-                    if (scaled) { float o = Mathf.Pow(a / k, power); cut = Mathf.Min(cap, o / (1f + o)); }
-                    else cut = hit > 0f ? Mathf.Min(cap * hit, a * cm.armorPerPoint) / hit : 0f;
-                    Cell($"{Pct(cut)}  <color=#a9a49a>{a:0}</color>", 82);
+                    float a = FloorSetArmour(d, items, f, rar);
+                    Out($"a{f}{rar}", $"{Pct(CombatManager.ArmorCut(a, f, hit))} <color=#a9a49a>{a:0}</color>", 92);
                 }
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label(scaled ? "Set: a Common set of the floor's usual tiers (Gear by floor). Grey: the set's armour." : "Grey: the set's armour.", dim);
+            GUILayout.Label("Grey: the set's armour.", dim);
         });
         GUILayout.Space(8);
         ArmourSimulator(d, im, cm, items);
@@ -268,7 +366,7 @@ public partial class AssetStudioWindow
     readonly List<ItemData> simSet = new();
     string simMany;
 
-    // One piece for a slot on a floor, rolled as a chest rolls gear: the tier by the floor's Gear by floor shares (and its
+    // One piece of a kind for a floor, rolled as a chest rolls gear: the tier by the floor's Gear by floor shares (and its
     // upgrade chance), the rarity by InventoryManager > Rarity at the chest's multipliers, its properties by the table.
     static ItemData RollPiece(TableLevelData d, InventoryManager im, Dictionary<(GearKind, int), ItemData> items, GearKind kind, int floor, System.Random random)
     {
@@ -289,17 +387,9 @@ public partial class AssetStudioWindow
         return sum;
     }
 
-    // The share of a hit this much armour stops on a floor, as the game works it out (CombatManager.ArmorCut), with the
-    // floor's usual set read from this level's Gear by floor.
-    float CutOn(TableLevelData d, CombatManager cm, Dictionary<(GearKind, int), ItemData> items, float armour, int floor, float hit)
-    {
-        if (armour <= 0f) return 0f;
-        if (cm.playerArmorRule != CombatManager.ArmorRule.Scaled) return hit > 0f ? Mathf.Min(cm.armorEffectiveness * hit, armour * cm.armorPerPoint) / hit : 0f;
-        float power = CombatManager.ArmorPower;
-        float k = Mathf.Max(1f, FloorSetArmour(d, items, floor, ItemRarity.Common) * Mathf.Pow(Odds(cm.armorTargetCut), -1f / power));
-        float o = Mathf.Pow(armour / k, power);
-        return Mathf.Min(cm.armorEffectiveness, o / (1f + o));
-    }
+    // The share of a hit this much armour stops on a floor: the game's own (CombatManager.ArmorCut; the page sets the floor's
+    // usual gear from this level's Gear by floor while it draws, WithFloorGear).
+    static float CutOn(TableLevelData d, CombatManager cm, Dictionary<(GearKind, int), ItemData> items, float armour, int floor, float hit) => CombatManager.ArmorCut(armour, floor, hit);
 
     void ArmourSimulator(TableLevelData d, InventoryManager im, CombatManager cm, Dictionary<(GearKind, int), ItemData> items)
     {
@@ -335,7 +425,7 @@ public partial class AssetStudioWindow
                 armours.Add(a); cuts.Add(CutOn(d, cm, items, a, simFloor, simHit));
             }
             cuts.Sort(); armours.Sort();
-            simMany = $"1000 sets on floor {simFloor}: armour {armours[100]:0}-{armours[900]:0} (middle {armours[500]:0}), stops {Pct(cuts[100])}-{Pct(cuts[900])} (middle {Pct(cuts[500])}, best {Pct(cuts[999])}). The middle 80% shown.";
+            simMany = $"1000 sets, floor {simFloor}: armour {armours[100]:0}-{armours[900]:0}, stops {Pct(cuts[100])}-{Pct(cuts[900])} (middle 80%). Middle {Pct(cuts[500])}, best {Pct(cuts[999])}.";
         }
         if (simSet.Count > 0)
         {
@@ -346,9 +436,8 @@ public partial class AssetStudioWindow
                 float a = ArmourOf(piece); total += a;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 if (piece == null) { GUILayout.Label("-", dim, GUILayout.Width(260)); GUILayout.EndHorizontal(); continue; }
-                string hex = piece.rarity == ItemRarity.Common ? "e6e6e6" : ColorUtility.ToHtmlStringRGB(UIManager.RarityColor(piece.rarity));
-                GUILayout.Label($"<color=#{hex}>{piece.DisplayName}</color>", StudioSkin.Label, GUILayout.Width(260));
-                Cell(a.ToString("0.#"), 50);
+                GUILayout.Label($"<color=#{RarityHex(piece.rarity)}>{piece.DisplayName}</color>", StudioSkin.Label, GUILayout.Width(260));
+                GUILayout.Label(a.ToString("0.#"), new GUIStyle(StudioSkin.Label) { alignment = TextAnchor.MiddleRight }, GUILayout.Width(50));
                 GUILayout.Space(10);
                 float extra = a - (MainIndex(piece) >= 0 ? piece.statModifiers[MainIndex(piece)].value : 0f);
                 GUILayout.Label(extra > .01f ? $"<color=#a9a49a>+{extra:0.#} rolled</color>" : "", StudioSkin.Label, GUILayout.Width(110));
@@ -356,9 +445,9 @@ public partial class AssetStudioWindow
             }
             float cut = CutOn(d, cm, items, total, simFloor, simHit), usual = CutOn(d, cm, items, FloorSetArmour(d, items, simFloor, ItemRarity.Common), simFloor, simHit);
             GUILayout.Space(2);
-            GUILayout.Label($"Armour {total:0.#}: stops {Pct(cut)}. A {simHit:0.#} hit lands as {simHit * (1f - cut):0.#}. <color=#a9a49a>(Common set of the floor: {Pct(usual)})</color>", StudioSkin.Label);
+            Headline($"Armour {total:0.#} stops <b>{Pct(cut)}</b>: a {simHit:0.#} hit lands as <b>{simHit * (1f - cut):0.#}</b>.  <color=#a9a49a>Common set: {Pct(usual)}</color>");
         }
-        if (!string.IsNullOrEmpty(simMany)) { GUILayout.Space(4); GUILayout.Label(simMany, Wrapped, GUILayout.Width(pageWidth - 24)); }
+        if (!string.IsNullOrEmpty(simMany)) { GUILayout.Space(4); GUILayout.Label(simMany, StudioSkin.Label); }
         GUILayout.EndVertical();
     }
 
@@ -367,47 +456,40 @@ public partial class AssetStudioWindow
     void ItemsTab(TableLevelData d, InventoryManager im)
     {
         var items = TierItems(im);
+        Question("Each tier's damage and armour, and what rarity adds");
         GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(pageWidth));
-        GUILayout.Label("RARITY", gold);
         GUILayout.BeginHorizontal();
-        Cell("", 100, true); Cell("Main +", 70, true); Cell("Properties", 90, true); Cell("Price x", 70, true); Cell("Chance", 70, true); Cell("A floor +", 76, true);
+        GUILayout.Label("RARITY", gold);
+        GUILayout.FlexibleSpace();
+        Where(im, "InventoryManager");
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        Head("", 100); Head("Main number +", 110); Head("Properties", 96); Head("Price x", 70);
+        GUILayout.Space(16);
+        if (GUILayout.Button(new GUIContent("Chances: Drops tab", "How often each rarity drops."), new GUIStyle(StudioSkin.Faint) { normal = { textColor = new Color(.6f, .75f, .9f) } }, GUILayout.ExpandWidth(false))) balanceTab = "Drops";
         GUILayout.EndHorizontal();
         foreach (var s in im.rarities.Where(x => x != null))
         {
             var step = s;
             GUILayout.BeginHorizontal(GUILayout.Height(22));
-            GUILayout.Label(step.rarity.ToString(), StudioSkin.Strong, GUILayout.Width(100));
-            GUILayout.Space(18); NumField(step.baseBonus, im, v => step.baseBonus = v, true, 0f, 2f, "Rarity bonus"); GUILayout.Label("%", Unit, GUILayout.Width(14));
-            GUILayout.Space(8);
+            GUILayout.Label($"<color=#{RarityHex(step.rarity)}>{step.rarity}</color>", new GUIStyle(StudioSkin.Strong) { richText = true }, GUILayout.Width(100));
+            GUILayout.Space(46); NumField(step.baseBonus, im, v => step.baseBonus = v, true, 0f, 2f, step.rarity + " main +"); GUILayout.Label("%", Unit, GUILayout.Width(14));
+            GUILayout.Space(14);
             int lo = EditorGUILayout.DelayedIntField(step.properties.x, GUILayout.Width(34));
             int hi = EditorGUILayout.DelayedIntField(step.properties.y, GUILayout.Width(34));
-            if (lo != step.properties.x || hi != step.properties.y) { Undo.RecordObject(im, "Rarity properties"); lo = Mathf.Clamp(lo, 0, 6); step.properties = new Vector2Int(lo, Mathf.Clamp(hi, lo, 6)); Changed(im); }
-            GUILayout.Space(18); NumField(step.priceMultiplier, im, v => step.priceMultiplier = v, false, 0f, 50f, "Rarity price");
-            GUILayout.Space(18); NumField(step.chance, im, v => step.chance = v, true, 0f, 1f, "Rarity chance"); GUILayout.Label("%", Unit, GUILayout.Width(14));
-            GUILayout.Space(8); NumField(step.chancePerFloor, im, v => step.chancePerFloor = v, true, 0f, .2f, "Rarity chance a floor"); GUILayout.Label("%", Unit, GUILayout.Width(14));
+            if (lo != step.properties.x || hi != step.properties.y) { Edited($"{step.rarity} properties {step.properties.x}-{step.properties.y} → {lo}-{hi}"); Undo.RecordObject(im, "Rarity properties"); lo = Mathf.Clamp(lo, 0, 6); step.properties = new Vector2Int(lo, Mathf.Clamp(hi, lo, 6)); Changed(im); }
+            GUILayout.Space(18); NumField(step.priceMultiplier, im, v => step.priceMultiplier = v, false, 0f, 50f, step.rarity + " price x");
             GUILayout.EndHorizontal();
-        }
-        GUILayout.Space(4);
-        // The table player's base Attack Damage (TablePlayer.prefab's PlayerData), added to every weapon's.
-        var player = AssetDatabase.LoadAllAssetsAtPath(TablePlayerPath).OfType<PlayerData>().FirstOrDefault();
-        if (player != null && player.stats != null)
-        {
-            int at = player.stats.FindIndex(e => e.stat == StatType.AttackDamage);
-            if (at >= 0)
-            {
-                var e = player.stats[at];
-                Num("Player base damage", e.baseValue, player, v => { var x = player.stats[at]; x.baseValue = v; player.stats[at] = x; }, false, 0f, 100f, 150, "Added to every weapon's damage.");
-            }
         }
         GUILayout.EndVertical();
         GUILayout.Space(8);
 
         TwoColumns(Mathf.Max(300f, Mathf.Min(pageWidth - 520, 760)), () =>
         {
-            GUILayout.Label("MAIN NUMBER BY TIER (COMMON)", gold);
+            GUILayout.Label("MAIN NUMBER BY TIER, COMMON", gold);
             GUILayout.BeginHorizontal();
-            Cell("Tier", 96, true);
-            foreach (var n in GearKindNames) Cell(n, 60, true);
+            Head("Tier", 96);
+            foreach (var n in GearKindNames) Head(n, 60);
             GUILayout.EndHorizontal();
             for (int t = 1; t <= LootFloorTiers.Count; t++)
             {
@@ -423,7 +505,7 @@ public partial class AssetStudioWindow
                 }
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label("Swords and maces: damage. The rest: armour. Tiers 5-12: GearSets.Build() writes them again.", dim);
+            GUILayout.Label("Weapons: damage. The rest: armour. Tiers 5-12: GearSets.Build() writes them again.", dim);
         }, () =>
         {
             GUILayout.BeginHorizontal();
@@ -432,9 +514,10 @@ public partial class AssetStudioWindow
                 if (GUILayout.Toggle(balanceKind == i, shown[i], StudioSkin.Tab, GUILayout.Width(70), GUILayout.Height(24)) && balanceKind != i) balanceKind = i;
             GUILayout.EndHorizontal();
             var kind = (GearKind)Array.IndexOf(GearKindNames, shown[Mathf.Clamp(balanceKind, 0, shown.Length - 1)]);
+            GUILayout.Label($"A {kind.ToString().ToLowerInvariant()}'s main number, by tier and rarity", gold);
             GUILayout.BeginHorizontal();
-            Cell("Tier", 96, true);
-            foreach (var rar in GearRarities) Cell(rar.ToString(), 76, true);
+            Head("Tier", 96);
+            foreach (var rar in GearRarities) Head(rar.ToString(), 80, rar);
             GUILayout.EndHorizontal();
             for (int t = 1; t <= LootFloorTiers.Count; t++)
             {
@@ -442,63 +525,18 @@ public partial class AssetStudioWindow
                 float v = item.statModifiers[MainIndex(item)].value;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 GUILayout.Label($"{t} {LootFloorTiers.Names[t - 1]}", StudioSkin.Strong, GUILayout.Width(96));
-                foreach (var rar in GearRarities) Cell(Raised(v, rar, item.MainStatType == StatType.Armor).ToString("0.#"), 76);
+                foreach (var rar in GearRarities) Out($"i{kind}{t}{rar}", Raised(v, rar, kind != GearKind.Sword && kind != GearKind.Mace).ToString("0.#"), 80);
                 GUILayout.EndHorizontal();
             }
         });
     }
 
-    // ── Enemies ──────────────────────────────────────────────────────
-
-    void EnemiesTab(TableLevelData d, AssetStudioWorld.Level l, ProgressionManager pm)
-    {
-        if (l == null) { GUILayout.Label("No level.", dim); return; }
-        var rat = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Rat.prefab");
-        var soldier = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
-        float left = 640;
-        bool wide = pageWidth >= left + 520;
-        float keep = pageWidth;
-        if (wide) GUILayout.BeginHorizontal();
-        GUILayout.BeginVertical(GUILayout.Width(wide ? left : pageWidth));
-        pageWidth = wide ? left : keep;
-        GrowthFields(d);
-        GUILayout.Space(6);
-        if (pm != null)
-        {
-            GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(pageWidth));
-            GUILayout.Label("EVERY ENEMY", gold);
-            Num("Damage", pm.enemyBaseDamage, pm, v => pm.enemyBaseDamage = v, false, 0f, 10f, 110, "ProgressionManager > Enemy balance, on top of the above.");
-            Num("Health", pm.enemyBaseHealth, pm, v => pm.enemyBaseHealth = v, false, 0f, 10f, 110, "ProgressionManager > Enemy balance, on top of the above.");
-            GUILayout.EndVertical();
-            GUILayout.Space(6);
-        }
-        StageSteps(l);
-        pageWidth = keep;
-        GUILayout.EndVertical();
-        if (wide) GUILayout.Space(12); else GUILayout.Space(8);
-        GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(wide ? pageWidth - left - 12 : pageWidth));
-        GUILayout.Label("EACH FLOOR", gold);
-        GUILayout.BeginHorizontal();
-        Cell("Floor", 44, true); Cell("Damage", 62, true); Cell("Health", 62, true); Cell("Armour", 58, true); Cell("Rat hit", 62, true); Cell("Rat HP", 58, true); Cell("Soldier hit", 76, true); Cell("Soldier HP", 74, true);
-        GUILayout.EndHorizontal();
-        var floors = RunDifficulty(l);
-        foreach (var f in floors)
-        {
-            var a = NumbersAt(d, rat, f.floor, null); var b = NumbersAt(d, soldier, f.floor, null);
-            GUILayout.BeginHorizontal(GUILayout.Height(20));
-            Cell((f.bossFloor ? "<color=#e05a5a>" : "") + f.floor + (f.bossFloor ? "</color>" : ""), 44);
-            Cell($"x{f.damage * wideDamage:0.00}", 62); Cell($"x{f.health * wideHealth:0.00}", 62); Cell($"+{f.armour:0.#}", 58);
-            Cell(a.damage.ToString("0.#"), 62); Cell(a.health.ToString("0"), 58); Cell(b.damage.ToString("0.#"), 76); Cell(b.health.ToString("0"), 74);
-            GUILayout.EndHorizontal();
-        }
-        GUILayout.Label("With every enemy's multipliers. Red: a boss floor.", dim);
-        GUILayout.EndVertical();
-        if (wide) GUILayout.EndHorizontal();
-    }
-
     // ── Drops ────────────────────────────────────────────────────────
 
-    // Each rarity's share of a piece of gear on a floor, as InventoryManager.RollRarity rolls it.
+    int dropChests = 6;
+    readonly Dictionary<ItemRarity, float> wantPerFloor = new();
+
+    // Each rarity's share of a piece of gear on a floor, as InventoryManager.RollRarity rolls it (Common first).
     static float[] RaritySplit(InventoryManager im, int floor, float scale)
     {
         var split = new float[GearRarities.Length];
@@ -517,103 +555,239 @@ public partial class AssetStudioWindow
         return split;
     }
 
+    // The average rolls a chest gives: the level's chest tiers by weight, each 1 + its extra rolls.
+    static float ChestRolls(TableLevelData d)
+    {
+        float total = 0f, rolls = 0f;
+        foreach (var t in d.chestTiers ?? Array.Empty<DungeonWeightedPrefab>())
+        {
+            if (t == null || t.prefab == null || t.weight <= 0f) continue;
+            var c = t.prefab.GetComponentInChildren<DungeonContainer>(true);
+            total += t.weight; rolls += t.weight * (1 + (c != null ? Mathf.Max(0, c.extraRolls) : 0));
+        }
+        return total > 0f ? rolls / total : 1f;
+    }
+
+    // One source's odds: the chance of gear, the tome among it, and each rarity of the rest, all of one kill (or roll).
+    struct DropOdds { public float gear, tome; public float[] rarity; }
+    static DropOdds OddsOf(InventoryManager im, SourceDrops s, float dropScale, int floor)
+    {
+        float gear = Mathf.Clamp01(s.gearChance * dropScale);
+        var split = RaritySplit(im, floor, im.rarityChanceMultiplier * s.rarityMultiplier);
+        var o = new DropOdds { gear = gear, tome = gear * im.tomeShare, rarity = new float[split.Length] };
+        for (int i = 0; i < split.Length; i++) o.rarity[i] = gear * (1f - im.tomeShare) * split[i];
+        return o;
+    }
+
     void DropsTab(TableLevelData d, InventoryManager im, ProgressionManager pm)
     {
+        Question("How often each rarity drops: per kill, per chest roll, per floor");
+        float rolls = ChestRolls(d);
+        float killScale = im.dropChanceMultiplier * im.enemyDropMultiplier;
+        float PerFloor(int f, int r) => fightKills * OddsOf(im, im.enemyDrops, killScale, f).rarity[r] + dropChests * rolls * OddsOf(im, im.chestDrops, 1f, f).rarity[r];
         TwoColumns(470, () =>
         {
-            GUILayout.Label("BY SOURCE", gold);
+            Group("RARITY CHANCES", im, "InventoryManager");
             GUILayout.BeginHorizontal();
-            Cell("", 80, true); Cell("Gold", 60, true); Cell("Amount", 74, true); Cell("Gear", 60, true); Cell("Potions", 60, true); Cell("Rarity x", 60, true);
+            Head("", 100); Head("Floor 1", 80); Head("More a floor", 110);
+            GUILayout.EndHorizontal();
+            foreach (var s in im.rarities.Where(x => x != null))
+            {
+                var step = s;
+                GUILayout.BeginHorizontal(GUILayout.Height(22));
+                GUILayout.Label($"<color=#{RarityHex(step.rarity)}>{step.rarity}</color>", new GUIStyle(StudioSkin.Strong) { richText = true }, GUILayout.Width(100));
+                GUILayout.Space(18); NumField(step.chance, im, v => step.chance = v, true, 0f, 1f, step.rarity + " chance", 56); GUILayout.Label("%", Unit, GUILayout.Width(14));
+                GUILayout.Space(30); NumField(step.chancePerFloor, im, v => step.chancePerFloor = v, true, 0f, .2f, step.rarity + " a floor", 56); GUILayout.Label("%", Unit, GUILayout.Width(14));
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.Label("Common: the rest. Before the multipliers below.", dim);
+            Group("RARITY MULTIPLIERS");
+            In("Whole game", im.rarityChanceMultiplier, im, v => im.rarityChanceMultiplier = v, BalUnit.Times, 0f, 10f);
+            In("Kills", im.enemyDrops.rarityMultiplier, im, v => im.enemyDrops.rarityMultiplier = v, BalUnit.Times, 0f, 10f);
+            In("Chests", im.chestDrops.rarityMultiplier, im, v => im.chestDrops.rarityMultiplier = v, BalUnit.Times, 0f, 10f);
+            In("Breakables", im.breakableDrops.rarityMultiplier, im, v => im.breakableDrops.rarityMultiplier = v, BalUnit.Times, 0f, 10f);
+            In("Merchants", im.merchantRarity, im, v => im.merchantRarity = v, BalUnit.Times, 0f, 10f);
+            Group("HOW OFTEN GEAR DROPS");
+            In("A kill", im.enemyDrops.gearChance, im, v => im.enemyDrops.gearChance = v, BalUnit.Percent, 0f, 1f, tip: "Before the multipliers below.");
+            In("A chest roll", im.chestDrops.gearChance, im, v => im.chestDrops.gearChance = v, BalUnit.Percent, 0f, 1f);
+            In("A breakable", im.breakableDrops.gearChance, im, v => im.breakableDrops.gearChance = v, BalUnit.Percent, 0f, 1f);
+            In("Kills and breakables", im.dropChanceMultiplier, im, v => im.dropChanceMultiplier = v, BalUnit.Times, 0f, 10f, tip: "Gear and potions; chests keep their own.");
+            In("Kills, on top", im.enemyDropMultiplier, im, v => im.enemyDropMultiplier = v, BalUnit.Times, 0f, 10f);
+            In("Spell tomes", im.tomeShare, im, v => im.tomeShare = v, BalUnit.Percent, 0f, 1f, tip: "Share of the gear that drops.");
+            Group("GOLD AND POTIONS");
+            GUILayout.BeginHorizontal();
+            Head("", 90); Head("Gold", 66); Head("Amount", 76); Head("Potions", 70);
             GUILayout.EndHorizontal();
             void Source(string name, SourceDrops s)
             {
                 if (s == null) return;
                 GUILayout.BeginHorizontal(GUILayout.Height(22));
-                GUILayout.Label(name, StudioSkin.Strong, GUILayout.Width(80));
+                GUILayout.Label(name, StudioSkin.Strong, GUILayout.Width(90));
                 GUILayout.Space(4); NumField(s.goldChance, im, v => s.goldChance = v, true, 0f, 1f, name + " gold", 46); GUILayout.Label("%", Unit, GUILayout.Width(12));
                 int lo = EditorGUILayout.DelayedIntField(s.goldMin, GUILayout.Width(32)), hi = EditorGUILayout.DelayedIntField(s.goldMax, GUILayout.Width(32));
-                if (lo != s.goldMin || hi != s.goldMax) { Undo.RecordObject(im, name + " gold amount"); s.goldMin = Mathf.Max(0, lo); s.goldMax = Mathf.Max(s.goldMin, hi); Changed(im); }
-                GUILayout.Space(6); NumField(s.gearChance, im, v => s.gearChance = v, true, 0f, 1f, name + " gear", 46); GUILayout.Label("%", Unit, GUILayout.Width(12));
-                NumField(s.recoveryChance, im, v => s.recoveryChance = v, true, 0f, 1f, name + " potions", 46); GUILayout.Label("%", Unit, GUILayout.Width(12));
-                NumField(s.rarityMultiplier, im, v => s.rarityMultiplier = v, false, 0f, 10f, name + " rarity", 46);
+                if (lo != s.goldMin || hi != s.goldMax) { Edited($"{name} gold {s.goldMin}-{s.goldMax} → {lo}-{hi}"); Undo.RecordObject(im, name + " gold amount"); s.goldMin = Mathf.Max(0, lo); s.goldMax = Mathf.Max(s.goldMin, hi); Changed(im); }
+                GUILayout.Space(6); NumField(s.recoveryChance, im, v => s.recoveryChance = v, true, 0f, 1f, name + " potions", 46); GUILayout.Label("%", Unit, GUILayout.Width(12));
                 GUILayout.EndHorizontal();
             }
             Source("Kill", im.enemyDrops); Source("Breakable", im.breakableDrops); Source("Chest", im.chestDrops);
-            GUILayout.Space(6);
-            GUILayout.Label("WHOLE GAME", gold);
-            Num("Rarity chances x", im.rarityChanceMultiplier, im, v => im.rarityChanceMultiplier = v, false, 0f, 10f);
-            Num("Drop chances x", im.dropChanceMultiplier, im, v => im.dropChanceMultiplier = v, false, 0f, 10f, tip: "Kills and breakables; chests keep their own.");
-            Num("Kill drops x", im.enemyDropMultiplier, im, v => im.enemyDropMultiplier = v, false, 0f, 10f, tip: "On top, kills only.");
-            Num("Gold x", im.goldMultiplier, im, v => im.goldMultiplier = v, false, 0f, 10f);
-            Num("Spell tome share", im.tomeShare, im, v => im.tomeShare = v, true, 0f, 1f, tip: "Of gear drops.");
-            Num("Merchant rarity x", im.merchantRarity, im, v => im.merchantRarity = v, false, 0f, 10f);
+            In("Gold", im.goldMultiplier, im, v => im.goldMultiplier = v, BalUnit.Times, 0f, 10f);
             if (pm != null)
             {
-                GUILayout.Space(6);
-                GUILayout.Label("SPOILS", gold);
-                Num("A kill", pm.enemySpoilsChance, pm, v => pm.enemySpoilsChance = v, true, 0f, 1f);
-                Num("A chest", pm.chestSpoilsChance, pm, v => pm.chestSpoilsChance = v, true, 0f, 1f);
+                Group("SPOILS", pm, "ProgressionManager");
+                In("A kill", pm.enemySpoilsChance, pm, v => pm.enemySpoilsChance = v, BalUnit.Percent, 0f, 1f);
+                In("A chest", pm.chestSpoilsChance, pm, v => pm.chestSpoilsChance = v, BalUnit.Percent, 0f, 1f);
             }
+            Group("A FLOOR HAS");
+            GUILayout.BeginHorizontal(GUILayout.Height(20));
+            GUILayout.Label("Kills", GUILayout.Width(150)); fightKills = Mathf.Clamp(EditorGUILayout.IntField(fightKills, GUILayout.Width(56)), 0, 500);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal(GUILayout.Height(20));
+            GUILayout.Label("Chests", GUILayout.Width(150)); dropChests = Mathf.Clamp(EditorGUILayout.IntField(dropChests, GUILayout.Width(56)), 0, 100);
+            GUILayout.Label($"x {rolls:0.##} rolls", Unit, GUILayout.Width(100));
+            GUILayout.EndHorizontal();
         }, () =>
         {
-            GUILayout.Label("GEAR FROM A KILL / A CHEST ROLL", gold);
+            // The headline: each rarity a floor, on floor 1 and the last.
+            int last = d.FloorCount;
             GUILayout.BeginHorizontal();
-            Cell("Floor", 44, true); Cell("Kill gear", 70, true);
-            foreach (var rar in GearRarities.Take(4)) Cell(rar.ToString(), 70, true);
-            Cell("Chest", 60, true);
-            foreach (var rar in GearRarities.Skip(1).Take(3)) Cell(rar.ToString(), 70, true);
-            GUILayout.EndHorizontal();
-            float killGear = Mathf.Clamp01(im.enemyDrops.gearChance * im.dropChanceMultiplier * im.enemyDropMultiplier);
-            float chestGear = Mathf.Clamp01(im.chestDrops.gearChance);
-            float notTome = 1f - im.tomeShare;
-            for (int f = 1; f <= d.FloorCount; f++)
+            for (int r = 1; r < GearRarities.Length; r++)
             {
-                var kill = RaritySplit(im, f, im.rarityChanceMultiplier * im.enemyDrops.rarityMultiplier);
-                var chest = RaritySplit(im, f, im.rarityChanceMultiplier * im.chestDrops.rarityMultiplier);
+                GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(170));
+                GUILayout.Label($"<color=#{RarityHex(GearRarities[r])}>{GearRarities[r]}</color>", new GUIStyle(StudioSkin.Strong) { richText = true });
+                float a = PerFloor(1, r), b = PerFloor(last, r);
+                Headline(Every(a));
+                if (!Mathf.Approximately(a, b)) GUILayout.Label($"floor {last}: {Every(b)}", dim);
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.Label($"A floor: {fightKills} kills and {dropChests} chests ({rolls:0.##} rolls each).", dim);
+
+            void PerSource(string title, SourceDrops s, float scale, string per)
+            {
+                GUILayout.Space(8);
+                GUILayout.Label(title, gold);
+                GUILayout.BeginHorizontal();
+                Head("Floor", 40);
+                foreach (var rar in GearRarities) Head(rar.ToString(), 96, rar);
+                Head("Tome", 86); Head("= Gear", 70);
+                GUILayout.EndHorizontal();
+                for (int f = 1; f <= d.FloorCount; f++)
+                {
+                    var o = OddsOf(im, s, scale, f);
+                    GUILayout.BeginHorizontal(GUILayout.Height(20));
+                    Out($"{per}{f}f", f.ToString(), 40);
+                    for (int r = 0; r < GearRarities.Length; r++) Out($"{per}{f}{r}", $"{Pct(o.rarity[r])} <color=#a9a49a>{OneIn(o.rarity[r])}</color>", 96);
+                    Out($"{per}{f}t", $"{Pct(o.tome)} <color=#a9a49a>{OneIn(o.tome)}</color>", 86);
+                    Out($"{per}{f}g", Pct(o.gear), 70, true);
+                    GUILayout.EndHorizontal();
+                }
+            }
+            PerSource("PER KILL  (THE ROW ADDS UP TO = GEAR)", im.enemyDrops, killScale, "k");
+            PerSource("PER CHEST ROLL  (THE ROW ADDS UP TO = GEAR)", im.chestDrops, 1f, "c");
+
+            GUILayout.Space(8);
+            GUILayout.Label("OF THE GEAR DROPPED  (EACH ROW 100%)", gold);
+            GUILayout.BeginHorizontal();
+            Head("", 120);
+            foreach (var rar in GearRarities) Head(rar.ToString(), 80, rar);
+            Head("Tome", 70);
+            GUILayout.EndHorizontal();
+            void ShareRow(string label, SourceDrops s, float scale, int f)
+            {
+                var o = OddsOf(im, s, scale, f);
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
-                Cell(f.ToString(), 44); Cell(Pct(killGear), 70);
-                for (int i = 0; i < 4; i++) Cell(Pct(killGear * notTome * kill[i]), 70);
-                Cell(Pct(chestGear), 60);
-                for (int i = 1; i < 4; i++) Cell(Pct(chestGear * notTome * chest[i]), 70);
+                GUILayout.Label(label, StudioSkin.Label, GUILayout.Width(120));
+                for (int r = 0; r < GearRarities.Length; r++) Out($"s{label}{r}", o.gear > 0f ? Pct(o.rarity[r] / o.gear) : "-", 80);
+                Out($"s{label}t", o.gear > 0f ? Pct(o.tome / o.gear) : "-", 70);
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label($"Of every kill or chest roll. Tomes: {Pct(im.tomeShare)} of gear. Iron and gold chests roll twice.", dim);
+            ShareRow("Kill, floor 1", im.enemyDrops, killScale, 1);
+            ShareRow($"Kill, floor {last}", im.enemyDrops, killScale, last);
+            ShareRow("Chest, floor 1", im.chestDrops, 1f, 1);
+            ShareRow($"Chest, floor {last}", im.chestDrops, 1f, last);
+
             GUILayout.Space(8);
-            GearByFloorTable(d);
+            GUILayout.Label($"PER FLOOR  ({fightKills} KILLS, {dropChests} CHESTS)", gold);
+            GUILayout.BeginHorizontal();
+            Head("Floor", 40);
+            foreach (var rar in GearRarities) Head(rar.ToString(), 110, rar);
+            GUILayout.EndHorizontal();
+            for (int f = 1; f <= d.FloorCount; f++)
+            {
+                GUILayout.BeginHorizontal(GUILayout.Height(20));
+                Out($"p{f}f", f.ToString(), 40);
+                for (int r = 0; r < GearRarities.Length; r++) { float n = PerFloor(f, r); Out($"p{f}{r}", n >= 1f ? n.ToString("0.#") : n > 0f ? $"{n:0.##} <color=#a9a49a>1 in {1f / n:0.#} fl.</color>" : "-", 110); }
+                GUILayout.EndHorizontal();
+            }
+
+            // Target: how many of a rarity a floor should give, and the floor-1 chance that gives it.
+            GUILayout.Space(8);
+            GUILayout.Label("TARGET ON FLOOR 1", gold);
+            GUILayout.BeginHorizontal();
+            Head("", 100); Head("Want a floor", 100); Head("Chance", 80);
+            GUILayout.EndHorizontal();
+            foreach (var s in im.rarities.Where(x => x != null && x.rarity != ItemRarity.Legendary))
+            {
+                var step = s;
+                int r = Array.IndexOf(GearRarities, step.rarity);
+                if (r <= 0) continue;
+                // A rarity's count follows its chance while the steps' chances stay under 100% together.
+                float now = PerFloor(1, r), per = step.chance > 0f ? now / step.chance : 0f;
+                if (!wantPerFloor.ContainsKey(step.rarity)) wantPerFloor[step.rarity] = Mathf.Round(now * 100f) / 100f;
+                GUILayout.BeginHorizontal(GUILayout.Height(22));
+                GUILayout.Label($"<color=#{RarityHex(step.rarity)}>{step.rarity}</color>", new GUIStyle(StudioSkin.Strong) { richText = true }, GUILayout.Width(100));
+                GUILayout.Space(40);
+                wantPerFloor[step.rarity] = Mathf.Max(0f, EditorGUILayout.FloatField(wantPerFloor[step.rarity], GUILayout.Width(56)));
+                float need = per > 0f ? Mathf.Clamp01(wantPerFloor[step.rarity] / per) : 0f;
+                GUILayout.Label(per > 0f ? Pct(need) : "-", new GUIStyle(StudioSkin.Label) { alignment = TextAnchor.MiddleRight }, GUILayout.Width(80));
+                GUILayout.Space(8);
+                if (per > 0f && Mathf.Abs(need - step.chance) > .0001f && GUILayout.Button("Set", GUILayout.Width(50)))
+                { Edited($"{step.rarity} chance {Pct(step.chance)} → {Pct(need)}"); Undo.RecordObject(im, "Rarity chance"); step.chance = need; Changed(im); }
+                GUILayout.EndHorizontal();
+            }
         });
+        GUILayout.Space(8);
+        GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(pageWidth));
+        GearByFloorTable(d);
+        GUILayout.EndVertical();
     }
 
     // The level's Gear by floor rows, each tier's share and the upgrade chance, edited in place.
     void GearByFloorTable(TableLevelData d)
     {
-        GUILayout.Label($"GEAR BY FLOOR ({d.name})", gold);
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("WHICH TIERS DROP ON EACH FLOOR", gold);
+        GUILayout.FlexibleSpace();
+        Where(d, d.name + " > Gear by floor");
+        GUILayout.EndHorizontal();
         if (d.gearByFloor == null || d.gearByFloor.Count == 0) { GUILayout.Label("No rows: the loot profiles' own tiers.", dim); return; }
         int top = 1;
         foreach (var row in d.gearByFloor) if (row != null) top = Mathf.Max(top, row.HighestTier);
         top = Mathf.Min(LootFloorTiers.Count, top + 1);
         GUILayout.BeginHorizontal();
-        Cell("From", 44, true);
-        for (int t = 1; t <= top; t++) Cell(LootFloorTiers.Names[t - 1], 66, true);
-        Cell("Up +1", 66, true);
+        Head("From floor", 70);
+        for (int t = 1; t <= top; t++) Head(LootFloorTiers.Names[t - 1], 70);
+        Head("One tier up", 84);
         GUILayout.EndHorizontal();
         foreach (var row in d.gearByFloor)
         {
             if (row == null) continue;
             var r = row;
             GUILayout.BeginHorizontal(GUILayout.Height(20));
+            GUILayout.Space(26);
             int from = EditorGUILayout.DelayedIntField(r.fromFloor, GUILayout.Width(40));
-            if (from != r.fromFloor) { Undo.RecordObject(d, "Gear by floor"); r.fromFloor = Mathf.Max(1, from); Changed(d); }
+            if (from != r.fromFloor) { Edited($"Gear row from floor {r.fromFloor} → {from}"); Undo.RecordObject(d, "Gear by floor"); r.fromFloor = Mathf.Max(1, from); Changed(d); }
             var shares = r.Shares;
             for (int t = 1; t <= top; t++)
             {
                 int tier = t;
-                GUILayout.Space(8);
-                NumField(shares[t - 1], d, v => r.SetShare(tier, v), false, 0f, 1000f, "Gear by floor", 58);
+                GUILayout.Space(12);
+                NumField(shares[t - 1], d, v => r.SetShare(tier, v), false, 0f, 1000f, $"Floor {r.fromFloor}+ {LootFloorTiers.Names[t - 1]} share", 58);
             }
-            GUILayout.Space(8);
-            NumField(r.upgradeChance, d, v => r.upgradeChance = v, true, 0f, 1f, "Gear upgrade", 44); GUILayout.Label("%", Unit, GUILayout.Width(12));
+            GUILayout.Space(26);
+            NumField(r.upgradeChance, d, v => r.upgradeChance = v, true, 0f, 1f, $"Floor {r.fromFloor}+ one tier up", 50); GUILayout.Label("%", Unit, GUILayout.Width(12));
             GUILayout.EndHorizontal();
         }
-        GUILayout.Label("Shares by weight. Up +1: chance it comes one tier better.", dim);
+        GUILayout.Label("Shares by weight.", dim);
     }
 }

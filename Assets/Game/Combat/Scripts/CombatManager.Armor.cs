@@ -80,6 +80,9 @@ public partial class CombatManager
         return total > 0f ? armour / total : TierSetArmor(1);
     }
 
+    // Read the tiers' set armour again (after an item's armour is edited outside Play: Asset Studio's Balance page).
+    public static void ForgetTierSets() { if (HasInstance) Instance.tierSets = null; }
+
     static readonly EquipmentSlot[] SetSlots = { EquipmentSlot.Head, EquipmentSlot.Body, EquipmentSlot.Gloves, EquipmentSlot.Boots, EquipmentSlot.Legs };
     float[] tierSets;
     // The armour of a plain (Common) full set of a tier, read from the item catalog once (Leather 18, Iron 44, Steel 64...).
