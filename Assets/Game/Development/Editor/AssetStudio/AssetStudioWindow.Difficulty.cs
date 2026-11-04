@@ -51,7 +51,7 @@ public partial class AssetStudioWindow
                 list.Add(new FloorDifficulty
                 {
                     floor = f, floorInStage = f - st.firstFloor + 1, stage = st, depth = depth,
-                    damage = bal != null ? bal.damageMultiplier * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth) : 1f,
+                    damage = (bal != null ? bal.damageMultiplier * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth) : 1f) * d.StageDamage(f),
                     health = bal != null ? bal.healthMultiplier * DungeonBalance.Grown(bal.healthGrowthPerFloor, depth) : 1f,
                     armour = bal != null ? bal.armorPerFloor * depth : 0f,
                     firstOfStage = f == st.firstFloor, bossFloor = f == st.lastFloor && st.boss && AssetStudioWorld.HasGuardian(st.biome),
@@ -129,6 +129,7 @@ public partial class AssetStudioWindow
         GUILayout.BeginHorizontal();
         GUILayout.Label("Stage", gold, GUILayout.Width(170));
         GUILayout.Label(new GUIContent("Difficulty jump", "From this stage's first floor on, enemies grow as if this many floors deeper: a jump in difficulty, in floors' worth of growth (added up with earlier stages'). 0: the usual one floor's step."), gold, GUILayout.Width(120));
+        GUILayout.Label(new GUIContent("Damage x", "Enemies on this stage's floors only hit this many times as hard (not later stages, not the boss). 1: as the balance says."), gold, GUILayout.Width(80));
         GUILayout.Label(new GUIContent("Elites", "How often a generated enemy on the biome's floors is an elite."), gold, GUILayout.Width(80));
         GUILayout.Label(new GUIContent("Elites grow", "How many floors deeper an elite grows and rolls its loot."), gold, GUILayout.Width(110));
         GUILayout.EndHorizontal();
@@ -146,8 +147,12 @@ public partial class AssetStudioWindow
                 float extra = Mathf.Max(0f, EditorGUILayout.DelayedFloatField(stage.extraFloors, GUILayout.Width(44)));
                 GUILayout.Label(stage.extraFloors > 0 ? "<color=#e0a85a>floors</color>" : "floors", Unit, GUILayout.Width(72));
                 if (!Mathf.Approximately(extra, stage.extraFloors)) { Undo.RecordObject(d, "Extra floors"); stage.extraFloors = extra; EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d); }
+                float scale = stage.damageScale > 0f ? stage.damageScale : 1f;
+                float typed = Mathf.Max(.1f, EditorGUILayout.DelayedFloatField(scale, GUILayout.Width(44)));
+                GUILayout.Label(!Mathf.Approximately(scale, 1f) ? "<color=#e0a85a>x</color>" : "x", Unit, GUILayout.Width(32));
+                if (!Mathf.Approximately(typed, scale)) { Undo.RecordObject(d, "Stage damage"); stage.damageScale = typed; EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d); }
             }
-            else GUILayout.Label("-", dim, GUILayout.Width(120));
+            else GUILayout.Label("-", dim, GUILayout.Width(200));
             if (b != null)
             {
                 float chance = Mathf.Clamp(EditorGUILayout.DelayedFloatField(Mathf.Round(b.eliteChance * 1000f) / 10f, GUILayout.Width(44)), 0f, 50f) / 100f;

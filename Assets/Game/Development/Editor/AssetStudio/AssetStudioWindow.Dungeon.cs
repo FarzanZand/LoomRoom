@@ -551,6 +551,8 @@ public partial class AssetStudioWindow
         if (bal != null)
         {
             dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth);
+            // The stage's own Damage x, on its floors only and never the boss (DungeonBalance.Apply).
+            if (!boss && d != null) dmg *= d.StageDamage(floor);
             hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * DungeonBalance.Grown(bal.healthGrowthPerFloor, depth);
             arm += bal.armorPerFloor * depth;
         }
