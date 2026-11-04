@@ -228,10 +228,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         strikeOpened = strikeClosed = false;
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
-        // Cleared here, not on press: a press during a heavy release must not turn its hit light.
-        // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy).
-        ComboFinisher = Combo && !comboHeavy && comboIndex == ComboHits - 1;
-        HeavySwing = ComboFinisher && CombatManager.Instance.comboFinisherHeavy;
+        // Cleared here, not on press: a press during a heavy release must not turn its hit light. A combo hit's own
+        // flags are set where the hit is chosen (UpdateCombo), so they never wait on this clip event.
+        if (!Combo || comboHeavy) { ComboFinisher = false; HeavySwing = false; }
         // Alternate the light swing per actual swing; a pause restarts the sequence.
         swingIndex = NextSwingIndex;
         lastSwingAt = Time.time;
@@ -364,6 +363,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         comboIndex = Time.time - comboStartedAt > tuning.comboResetTime / speed ? 0 : (comboIndex + 1) % ComboHits;
         comboStartedAt = Time.time;
         comboQueuedUntil = -1f;
+        // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy); every other hit is light.
+        ComboFinisher = comboIndex == ComboHits - 1;
+        HeavySwing = ComboFinisher && tuning.comboFinisherHeavy;
         AnimatorHelper.SetInteger(armsAnimator, comboIndexParam, comboIndex);
         // Each hit plays at its own speed (CombatManager Combo First Hit / Second Hit / Finisher Speed).
         AnimatorHelper.SetFloat(armsAnimator, comboSpeedParam, speed * tuning.ComboHitSpeed(comboIndex));
