@@ -86,6 +86,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     public void Focus(Vector3 standAt, Vector3 face)
     {
         focusAt = standAt; faceAt = face;
+        HoldColliders(standing);
         if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
             animator.CrossFadeInFixedTime(leanState, leanBlend, 0);
     }
@@ -108,6 +109,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         var look = face - at; look.y = 0;
         body.SetPositionAndRotation(at, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : body.rotation);
         focusAt = at; faceAt = face; returning = false;
+        HoldColliders(true);
         if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
             animator.CrossFadeInFixedTime(leanState, .1f, 0);
         return true;
@@ -141,6 +143,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     // made him pop up 6-8 cm for a frame several times a second through every fight. Set here, the drawn place is this one.
     void LateUpdate()
     {
+        HoldColliders(standing && (focusAt.HasValue || returning));
         // Seated (and sitting down), he stays on the chair: the clips' root motion would walk him off it.
         if (!standing) { body.SetPositionAndRotation(seatPosition, seatRotation); return; }
         if (focusAt.HasValue)
@@ -162,8 +165,28 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         body.rotation = Quaternion.RotateTowards(body.rotation, Quaternion.LookRotation(to), turnSpeed * Time.deltaTime);
     }
 
+    // Away from his place (a spell or a boss fight brings him to the table and he leans over it) his body and his talk
+    // trigger have no collider: his body is many metres across at the dungeon's scale and stood in the floor, walling
+    // off corridors and stopping spells.
+    Collider[] colliders;
+    bool[] authored;
+    bool away;
+    void HoldColliders(bool nowAway)
+    {
+        if (nowAway == away) return;
+        away = nowAway;
+        if (colliders == null)
+        {
+            colliders = (animator != null ? animator.transform : transform).GetComponentsInChildren<Collider>(true);
+            authored = new bool[colliders.Length];
+            for (int i = 0; i < colliders.Length; i++) authored[i] = colliders[i].enabled;
+        }
+        for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = !away && authored[i];
+    }
+
     void OnDisable()
     {
+        HoldColliders(false);
         DungeonMaster.Spoke -= OnSpoke;
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
     }
