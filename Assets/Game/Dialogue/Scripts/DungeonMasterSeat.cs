@@ -80,8 +80,10 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     [Tooltip("World units he stands back from the table's edge while he leans on it (his forearms reach the top).")]
     [Min(0)] public float leanBack = 6f;
 
-    // He has reached the spot a boss fight brought him to (or there is none).
-    public bool Arrived => !focusAt.HasValue || (new Vector2(body.position.x - focusAt.Value.x, body.position.z - focusAt.Value.z)).sqrMagnitude < .05f;
+    // He has reached the spot a boss fight brought him to (or there is none). Within a unit (about 4 cm): the leaning
+    // clip's root motion nudges him about a quarter of a unit off it every frame before LateUpdate puts him back, so a
+    // tighter test was never met in a coroutine and every reach of his hand sat out its 6 s timeouts.
+    public bool Arrived => !focusAt.HasValue || (new Vector2(body.position.x - focusAt.Value.x, body.position.z - focusAt.Value.z)).sqrMagnitude < 1f;
 
     public void Focus(Vector3 standAt, Vector3 face)
     {
