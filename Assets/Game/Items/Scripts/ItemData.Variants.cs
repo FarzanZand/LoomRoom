@@ -87,7 +87,7 @@ public partial class ItemData
             {
                 var m = modifiers[i];
                 if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
-                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity) };
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity, main.Value == StatType.Armor) };
             }
         foreach (var roll in copy.rolls)
         {
@@ -106,10 +106,12 @@ public partial class ItemData
 
     // A main number raised to a rarity: plus the step's bonus share (InventoryManager > Rarity), rounded to the nearest,
     // whole numbers to whole, others to a tenth. A whole number is also at least 1 above the step below it, so every
-    // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8).
-    static float RaisedMain(float value, ItemRarity rarity)
+    // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8). Armour always keeps a tenth
+    // (the user, 2026-11-04): on 3-armour Leather the +1 rule took a Legendary helm to 7 where +75% is 5.3, and the
+    // player's armour curve (CombatManager.Armor.cs) is set by the share, so a 3 helm goes 3.5, 3.9, 4.4, 5.3.
+    static float RaisedMain(float value, ItemRarity rarity, bool tenths = false)
     {
-        bool whole = Mathf.Abs(value - Mathf.Round(value)) < .001f;
+        bool whole = !tenths && Mathf.Abs(value - Mathf.Round(value)) < .001f;
         float Raise(RarityStep s) => whole ? Mathf.Floor(value * (1f + s.baseBonus) + .5f) : Mathf.Floor(value * (1f + s.baseBonus) * 10f + .5f) / 10f;
         var steps = InventoryManager.HasInstance ? InventoryManager.Instance.rarities : null;
         float below = value;

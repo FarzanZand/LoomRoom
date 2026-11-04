@@ -48,7 +48,7 @@ public class AdventureCharacterUI : MonoBehaviour
 
 
         if (combat != null)
-            combat.text = $"ATK  <color=#E8DCC4>{stats.GetFinal(StatType.AttackDamage):0}</color>\n\nAC   <color=#E8DCC4>{stats.GetFinal(StatType.Armor):0}</color>";
+            combat.text = $"ATK  <color=#E8DCC4>{stats.GetFinal(StatType.AttackDamage):0}</color>\n\nAC   <color=#E8DCC4>{stats.GetFinal(StatType.Armor):0.#}</color>";
 
     }
 }
