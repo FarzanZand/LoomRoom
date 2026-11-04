@@ -491,17 +491,17 @@ public partial class AssetStudioWindow
         GUILayout.EndVertical();
         GUILayout.Space(8);
 
-        TwoColumns(Mathf.Max(300f, Mathf.Min(pageWidth - 520, 760)), () =>
+        TwoColumns(Mathf.Max(300f, Mathf.Min(pageWidth - 520, 790)), () =>
         {
             GUILayout.Label("MAIN NUMBER BY TIER, COMMON", gold);
             GUILayout.BeginHorizontal();
-            Head("Tier", 96);
+            Head("Tier", 124);
             foreach (var n in GearKindNames) Head(n, 60);
             GUILayout.EndHorizontal();
             for (int t = 1; t <= LootFloorTiers.Count; t++)
             {
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
-                GUILayout.Label($"{t} {TierName(t, null)}", StudioSkin.Strong, GUILayout.Width(96));
+                GUILayout.Label($"{t} {TierName(t, null)}", StudioSkin.Strong, GUILayout.Width(124));
                 foreach (GearKind kind in Enum.GetValues(typeof(GearKind)))
                 {
                     GUILayout.Space(8);
