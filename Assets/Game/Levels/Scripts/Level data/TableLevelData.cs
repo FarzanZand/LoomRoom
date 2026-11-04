@@ -71,10 +71,15 @@ public partial class TableLevelData : ScriptableObject
         public float damageScale = 1f;
     }
 
+    // A runtime copy built for a floor of another level (a portal's pocket) takes that floor's stage damage and difficulty
+    // steps instead of its own (PortalArch.Build sets them), so its enemies hit as hard as those outside.
+    [System.NonSerialized] public float? heldStageDamage, heldExtraFloors;
+
     // The difficulty steps reached by this floor: every stage's Extra Floors from the stage it starts in down to this one
     // (DungeonBalance.Apply adds them to the floor's depth).
     public float ExtraFloors(int floor)
     {
+        if (heldExtraFloors.HasValue) return heldExtraFloors.Value;
         if (!HasStages) return 0f;
         float extra = 0f; int start = 1;
         foreach (var stage in stages)
@@ -88,6 +93,7 @@ public partial class TableLevelData : ScriptableObject
     // The Damage x of the stage this floor is in (1 with no stages or past the last).
     public float StageDamage(int floor)
     {
+        if (heldStageDamage.HasValue) return heldStageDamage.Value;
         if (!HasStages) return 1f;
         int start = 1;
         foreach (var stage in stages)
