@@ -91,13 +91,13 @@ public partial class AssetStudioWindow
         GUILayout.Label(text, style, GUILayout.Width(width), GUILayout.Height(20));
     }
 
-    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain).
+    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain; armour keeps a tenth, tenths).
     static MethodInfo raisedMain;
-    static float Raised(float value, ItemRarity rarity)
+    static float Raised(float value, ItemRarity rarity, bool tenths)
     {
         if (rarity == ItemRarity.Common) return value;
         raisedMain ??= typeof(ItemData).GetMethod("RaisedMain", BindingFlags.NonPublic | BindingFlags.Static);
-        return raisedMain != null ? (float)raisedMain.Invoke(null, new object[] { value, rarity }) : value;
+        return raisedMain != null ? (float)raisedMain.Invoke(null, new object[] { value, rarity, tenths }) : value;
     }
 
     // The item's main number (its damage or armour) from its own modifiers, and the modifier holding it.
@@ -189,7 +189,7 @@ public partial class AssetStudioWindow
             while (t > 1 && !items.ContainsKey((kind, t))) t--;
             if (!items.TryGetValue((kind, t), out var i)) continue;
             int k = MainIndex(i);
-            if (k >= 0) sum += Raised(i.statModifiers[k].value, rarity);
+            if (k >= 0) sum += Raised(i.statModifiers[k].value, rarity, true);
         }
         return sum;
     }
@@ -442,7 +442,7 @@ public partial class AssetStudioWindow
                 float v = item.statModifiers[MainIndex(item)].value;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 GUILayout.Label($"{t} {LootFloorTiers.Names[t - 1]}", StudioSkin.Strong, GUILayout.Width(96));
-                foreach (var rar in GearRarities) Cell(Raised(v, rar).ToString("0.#"), 76);
+                foreach (var rar in GearRarities) Cell(Raised(v, rar, item.MainStatType == StatType.Armor).ToString("0.#"), 76);
                 GUILayout.EndHorizontal();
             }
         });
