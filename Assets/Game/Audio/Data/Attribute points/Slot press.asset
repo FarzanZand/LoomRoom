@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e9b3359b28da254e89f68f4b1011920, type: 3}
+  m_Name: Slot press
+  m_EditorClassIdentifier: Assembly-CSharp::AudioData
+  clips:
+  - {fileID: 8300000, guid: 1ef6dd199aeec624684db084075226c4, type: 3}
+  - {fileID: 8300000, guid: 0e8cf161b82d7e142b19b47f5b1b3d9a, type: 3}
+  volume: 0.8
+  pitch: 0.82
+  pitchVariance: 0.04
+  minDistance: 1
+  maxDistance: 500
