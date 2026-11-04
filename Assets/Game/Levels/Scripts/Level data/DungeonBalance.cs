@@ -24,11 +24,12 @@ public class DungeonBalance : ScriptableObject
     // The multiplier growth reaches after depth floors, compounded.
     public static float Grown(float growthPerFloor,float depth) => Mathf.Pow(1f+Mathf.Max(0f,growthPerFloor),Mathf.Max(0f,depth));
 
-    // extraFloors: the level's difficulty steps reached by this floor (TableLevelData.ExtraFloors).
-    public void Apply(Character enemy,int floor,bool boss=false,float extraFloors=0f){
+    // extraFloors: the level's difficulty steps reached by this floor (TableLevelData.ExtraFloors). stageDamage: the Damage x
+    // of the floor's run stage (TableLevelData.StageDamage), on every enemy but the boss.
+    public void Apply(Character enemy,int floor,bool boss=false,float extraFloors=0f,float stageDamage=1f){
         if(enemy==null || enemy.Stats==null)return;
         float depth=Depth(floor,extraFloors);
-        float damage=boss && separateBossDamage ? bossDamageMultiplier : damageMultiplier;
+        float damage=(boss && separateBossDamage ? bossDamageMultiplier : damageMultiplier)*(boss ? 1f : Mathf.Max(0f,stageDamage));
         float health=boss ? bossHealthMultiplier : healthMultiplier;
         if(!Mathf.Approximately(damage,1))enemy.Stats.AddModifier(new StatModifier(StatType.AttackDamage,damage-1,ModifierType.PercentMultiply,this));
         if(!Mathf.Approximately(health,1))enemy.Stats.AddModifier(new StatModifier(StatType.MaxHealth,health-1,ModifierType.PercentMultiply,this));

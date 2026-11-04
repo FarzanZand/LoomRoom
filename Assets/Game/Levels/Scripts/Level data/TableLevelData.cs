@@ -67,6 +67,8 @@ public partial class TableLevelData : ScriptableObject
         public bool boss = true;
         [HorizontalGroup("Row", LabelWidth = 95), LabelText("Difficulty jump"), Min(0), Tooltip("A bigger jump in difficulty as this stage begins (a new biome after a boss), counted in floors' worth of growth: 2 makes the step into this stage three floors' worth instead of one, and every later floor keeps it (the balance's damage, health and armour per floor). It adds up with earlier stages' jumps. 0: the usual one floor's step.")]
         public float extraFloors;
+        [HorizontalGroup("Row", LabelWidth = 62), LabelText("Damage x"), Min(.1f), Tooltip("Enemies on this stage's floors hit this many times as hard, on top of the balance and its growth (only this stage, not later ones; not the boss, whose fight is tuned apart). 1: as the balance says. Dungeon1's first three floors are x1.42, x1.42, x1.28 (the user, 2026-11-04: too many hits to die there).")]
+        public float damageScale = 1f;
     }
 
     // The difficulty steps reached by this floor: every stage's Extra Floors from the stage it starts in down to this one
@@ -82,6 +84,20 @@ public partial class TableLevelData : ScriptableObject
             start += Mathf.Max(1, stage.floors);
         }
         return extra;
+    }
+    // The Damage x of the stage this floor is in (1 with no stages or past the last).
+    public float StageDamage(int floor)
+    {
+        if (!HasStages) return 1f;
+        int start = 1;
+        foreach (var stage in stages)
+        {
+            if (stage == null || stage.biome == null) continue;
+            int end = start + Mathf.Max(1, stage.floors);
+            if (floor >= start && floor < end) return stage.damageScale > 0f ? stage.damageScale : 1f;   // 0: a level saved before the field
+            start = end;
+        }
+        return 1f;
     }
     [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor. Empty: every floor is the base biome (a one-floor level needs no biome of its own).", HorizontalLine = false)]
     [ListDrawerSettings(ShowFoldout = true)]
