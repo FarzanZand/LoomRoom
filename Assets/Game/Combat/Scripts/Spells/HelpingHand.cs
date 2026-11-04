@@ -22,6 +22,8 @@ public class HelpingHandSettings
     [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(0f), Tooltip("He stands at least this far outside the roof that comes off (world units), so it can come back down while he is still there; he leaves only once it is back on and hides him. Out to Appear Farthest from the player.")]
     public float clearOfRoof = 4f;
     [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(4f)] public float appearFarthest = 24f;
+    [FoldoutGroup("His hand"), ShowIf("@reach == HelpReach.Appear"), Min(0f), Tooltip("How far to the player's right he stands (world units), so his palm is held in front of his right shoulder and his arm comes straight out from his side (straight in front of the player his hand was on his middle and the arm crossed his chest).")]
+    public float appearAside = 9f;
     [FoldoutGroup("His hand"), Min(.2f), Tooltip("Seconds his hand takes to come in over the player once he stands at the table.")]
     public float reachSeconds = 1.4f;
     [FoldoutGroup("His hand"), Min(.2f), Tooltip("Seconds he holds his hand over the player, healing them all the while (the spell's power in all).")]
@@ -37,9 +39,9 @@ public class HelpingHandSettings
     [FoldoutGroup("His hand"), Min(1f), Tooltip("How fast he walks to the table's edge (world units a second).")]
     public float walkSpeed = 45f;
     [FoldoutGroup("His hand"), Min(1f), Tooltip("Height above the player's feet the middle of his palm is held at (metres).")]
-    public float palmHeight = 7f;
+    public float palmHeight = 5f;
     [FoldoutGroup("His hand"), Min(0f), Tooltip("How far in front of the player his palm is held (metres along where they look), so it is seen looking up a little.")]
-    public float palmAhead = 4.5f;
+    public float palmAhead = 5.5f;
     [FoldoutGroup("His hand"), AssetsOnly, Tooltip("Pours down onto the player while his hand is over them (kept at their feet).")]
     public SpellVisual pour;
     [FoldoutGroup("His hand"), AssetsOnly, Tooltip("A shaft of light from his palm down onto the player (a moonbeam prefab: its light and shaft come down from Beam Source onto its own origin; it is turned and sized to reach from his palm to their feet).")]
@@ -178,9 +180,10 @@ public class HelpingHand : MonoBehaviour
             foreach (var turn in new[] { 0f, 25f, -25f, 50f, -50f })
             {
                 var dir = Quaternion.Euler(0f, turn, 0f) * ahead;
+                var aside = Vector3.Cross(Vector3.up, dir) * settings.appearAside;
                 for (float d = settings.appearDistance; d <= settings.appearFarthest; d += 1f)
                 {
-                    var p = me + dir * d;
+                    var p = me + dir * d + aside;
                     var level = p; if (hasRoof) level.y = roof.center.y;
                     bool clear = hasRoof && !roof.Contains(level);
                     if (wantClear && !clear) continue;

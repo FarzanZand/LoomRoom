@@ -178,6 +178,7 @@ MonoBehaviour:
     appearDistance: 17
     clearOfRoof: 4
     appearFarthest: 24
+    appearAside: 9
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -185,8 +186,8 @@ MonoBehaviour:
     edgeGap: 1.5
     maxWalk: 40
     walkSpeed: 45
-    palmHeight: 7
-    palmAhead: 4.5
+    palmHeight: 5
+    palmAhead: 5.5
     pour: {fileID: 5233650602891333819, guid: b370ad301f30cfe4cbec54ed13e226c2, type: 3}
     beam: {fileID: 4696081989565957123, guid: 90d4468408f2f8d43b3b95cb31a55381, type: 3}
     beamSource: {x: -1.2, y: 11, z: -0.6}

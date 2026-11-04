@@ -2,7 +2,7 @@ using UnityEngine;
 
 // The way down as a real hole: on a walled floor that goes on, the exit cell is cut down into the table (TableCut, like
 // a pit) and a spiral stair winds down round a stone newel into the dark, a warm glow far below. A low stone kerb rings
-// the mouth, open on the side the room is entered from, with a post and a torch either side of the opening; an iron
+// the mouth, open on the side the room is entered from, with a post either side of the opening; an iron
 // grate lies over the hole while the floor's guardian lives. Walking onto the first steps goes down (DungeonExit).
 // On a boss stage the shaft goes down through the stage's own block instead (PlanStageShaft), covered by a plain stage
 // block until the boss falls and the exit shows. Boards, pockets, the last floor and exit rooms built from a template
@@ -130,16 +130,10 @@ public partial class DungeonGenerator
         {
             Part("Kerb side", new Vector3(x * (half + thick * .5f), kerb * .5f, .05f), new Vector3(thick, kerb, size + .1f), walls);
             Part("Kerb cap side", new Vector3(x * (half + thick * .5f), kerb + .05f, .05f), new Vector3(thick + .08f, .1f, size + .18f), trim);
-            // Posts either side of the mouth, a torch on each.
+            // Posts either side of the mouth. No torches on them (the user, 2026-11-04: wall torches on the posts hung in
+            // the air and clipped); the room's own lights and the glow below light the way down.
             Part("Post", new Vector3(x * (half + thick * .5f), .8f, -half - thick * .5f), new Vector3(thick + .1f, 1.6f, thick + .1f), walls);
             Part("Post cap", new Vector3(x * (half + thick * .5f), 1.65f, -half - thick * .5f), new Vector3(thick + .2f, .1f, thick + .2f), trim);
-            // Not on a boss stage: out in the open its two torches hung in the air over the posts (the user, 2026-11-01).
-            var torch = cell != stageShaftCell && WallLights != null && WallLights.Length > 0 && WallLights[0] != null ? WallLights[0].prefab : null;
-            if (torch != null)
-            {
-                var t = Instantiate(torch, root.TransformPoint(new Vector3(x * (half + thick * .5f), 1.2f, -half - thick - .12f)), root.rotation * Quaternion.Euler(0, 180f, 0), root);
-                t.name = "Shaft torch";
-            }
         }
 
         // The spiral: solid stone steps round a newel. Each is a wedge from the newel out to the shaft's walls and down

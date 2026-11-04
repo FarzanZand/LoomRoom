@@ -132,7 +132,18 @@ public class DungeonMasterHand : MonoBehaviour
         // A finger flick comes down from above: the elbow held up over the hand, so the forearm stands up out of the room
         // through its open roof instead of reaching in sideways through its walls.
         bool fromAbove = !float.IsNaN(curl) && flickFromAbove;
-        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, fromAbove ? rightWeight : 0f);
+        // His open hand (Bless): the elbow held out to his right and a little down from the middle of the arm, so the arm
+        // comes out from his side (left to itself the elbow dropped under the hand and the forearm stood up through his chest).
+        bool fromSide = !float.IsNaN(curl) && openHand && !fromAbove;
+        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, fromAbove || fromSide ? rightWeight : 0f);
+        if (fromSide)
+        {
+            var shoulder = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            float upper = ArmLength(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightLowerArm);
+            var from = shoulder != null ? shoulder.position : transform.position + Vector3.up * 26f;
+            var middle = Vector3.Lerp(from, tipTarget + tipFix, .45f);
+            animator.SetIKHintPosition(AvatarIKHint.RightElbow, middle + transform.right * upper * blessElbowOut - Vector3.up * upper * blessElbowDown);
+        }
         if (fromAbove)
         {
             float forearm = ArmLength(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, HumanBodyBones.RightHand);
@@ -550,6 +561,12 @@ public class DungeonMasterHand : MonoBehaviour
     public float blessTilt = 18f;
     [Min(0), Tooltip("Light on his hand while he holds it over the player.")]
     public float blessLight = 1.5f;
+    [Range(0, 2), Tooltip("How far out to his right his elbow is held while his open hand reaches, in upper arm lengths.")]
+    public float blessElbowOut = .9f;
+    [Range(0, 2), Tooltip("How far down his elbow is held while his open hand reaches, in upper arm lengths.")]
+    public float blessElbowDown = .4f;
+    [Tooltip("Where his open hand comes up on its way out: shares of his arm's length out toward the player, to his right and above his shoulder (it came up past his face, the carrying move, and crossed it).")]
+    public Vector3 blessShown = new(.35f, .6f, -.1f);
 
     // He brings his hand in flat over point (the palm's middle there, palm down, fingers pointing along direction), holds
     // it there for hold seconds (holding is called as it arrives) and takes it away. follow: where the point is now, asked
@@ -564,7 +581,9 @@ public class DungeonMasterHand : MonoBehaviour
         flickCarried = null; openHand = true;
         // The fingertip a finger's length on past the palm's middle.
         Vector3 Tip(Vector3 palm) => palm + flickAim * finger * 1.1f;
-        Arc(point, out _, out _, out _, out var shown);
+        Arc(point, out var outward, out var shoulderAt, out var reach, out _);
+        // Up at his side, out from his right shoulder (not past his face).
+        var shown = shoulderAt + (outward * blessShown.x + Vector3.Cross(Vector3.up, outward) * blessShown.y + Vector3.up * blessShown.z) * reach;
         var from = FingerTip(); tipTarget = from; tipFix = RightHand != null ? RightHand.position - from : Vector3.zero; handFix = Quaternion.identity;
         restTip = transform.InverseTransformPoint(from);
         lookTarget = point; lookGoal = 1f; rightGoal = 1f; curl = 0f;
