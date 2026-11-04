@@ -22,7 +22,7 @@ public class ShieldBashAbility : SkillAbility
     public float angle = 35f;
     [Min(0f), Tooltip("Damage of the hit before armour: Holy damage, like a spell it ignores the enemy's armour.")]
     public float damage = 6f;
-    [Min(0f), Tooltip("Extra damage per point of damage the player's own armour stops (armour x Armor Per Point, so 5 armour counts as 1).")]
+    [Min(0f), Tooltip("Extra damage per 5 points of the player's own armour (armour x CombatManager's Armor Per Point, 0.2, whatever rule cuts the hits they take).")]
     public float damagePerArmor = 1.5f;
     [Min(0f), Tooltip("Seconds the struck enemy stands stunned (its swing is cancelled). Its usual stagger immunity follows.")]
     public float stun = 1f;

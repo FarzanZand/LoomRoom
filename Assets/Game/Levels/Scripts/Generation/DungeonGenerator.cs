@@ -287,6 +287,7 @@ public partial class DungeonGenerator : MonoBehaviour
     IEnumerator BuildArchitecture(TableLevelData level, int seed, int floorNumber, System.Diagnostics.Stopwatch watch)
     {
         StageRoom = FindStageRoom();
+        stageChestRoom = StageChestRoom();
         // Rooms are one tile high: a template that asks for more is taller (for effect), and a biome with Tall Room
         // Chance builds a few of its big generated rooms two tiles high (halls), on their own stream.
         RoomHeightTiles = new int[Layout.rooms.Count];
@@ -778,6 +779,7 @@ public partial class DungeonGenerator : MonoBehaviour
         if(Roles[index]==RoomRole.Storage && Spot(out var extra))MakeContainer(extra,false,rewards,FaceCenter(extra,index));
         // Treasure that comes with the room's shape: a hoard in an inner chamber, a chest at a big hall's far end.
         ShapeTreasure(index,available,cursor,rewards);
+        if(index==stageChestRoom)PlaceStageChest(index,available,cursor);
         var (rules,prefabs)=Furnishing(profile);
         if(rules!=null)
         {

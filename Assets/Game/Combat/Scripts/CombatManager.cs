@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 
 // Central toggles and tuning for combat feel. Hit stop lives here too, so there is
 // exactly one entry point and a hit can never freeze the game twice.
-public class CombatManager : Singleton<CombatManager>
+public partial class CombatManager : Singleton<CombatManager>
 {
     // Inspector: tabs (Player, Enemies, Hits, Death) of foldouts. Field names are what the prefab and scene save;
     // grouping them never changes a value.
@@ -427,10 +427,10 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Hits: Armor ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
-    [Tooltip("Armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
+    [Tooltip("The most of a hit armour ever stops: under the flat rule armour comes off this share of the hit and the rest always lands; under the scaled rule (the player's, CombatManager.Armor.cs) it caps the share. So armour never makes anyone untouchable. A successful block uses the full hit (1).")]
     [Range(0f, 1f)] public float armorEffectiveness = .65f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
-    [Min(0f), Tooltip("Damage one point of armour stops. Armour numbers are five times what they were before 2026-10-15 (a Leather Helm is 5), so 0.2 keeps the old balance and each rarity step's +20% shows as whole points.")]
+    [Min(0f), Tooltip("Flat rule (enemies, blocked hits, and the player when Player Armor Rule is Flat): damage one point of armour stops. The shield bash also counts the player's armour by it (armour x this x its Damage Per Armor), whatever the rule.")]
     public float armorPerPoint = .2f;
     public static float ArmorPerPoint => HasInstance ? Instance.armorPerPoint : .2f;
 

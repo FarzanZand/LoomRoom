@@ -108,12 +108,12 @@ public class InventoryManager : Singleton<InventoryManager>
     }
 
     // A given reward of this floor's gear: the tiers the level's Gear by floor gives the floor (as its loot does), rolled at
-    // this rarity (an event room's prize, Not a witch's Legendary, the Skeleton Party's chest). A level with no table gives
-    // tiers 1 to Fallback Top.
-    public static ItemData FloorGear(ItemRarity rarity, int floor, System.Random random, int fallbackTop = 2)
+    // this rarity (an event room's prize, Not a witch's drop, the Skeleton Party's chest); Tiers Above lets it come up to that
+    // many tiers past the floor's. A level with no table gives tiers 1 to Fallback Top.
+    public static ItemData FloorGear(ItemRarity rarity, int floor, System.Random random, int fallbackTop = 2, int tiersAbove = 0)
     {
         var row = LootSource.FloorGear?.Invoke(Mathf.Max(1, floor));
-        return row != null ? GivenGear(rarity, row.HighestTier, floor, random, row.LowestTier) : GivenGear(rarity, fallbackTop, floor, random);
+        return row != null ? GivenGear(rarity, Mathf.Min(12, row.HighestTier + tiersAbove), floor, random, row.LowestTier) : GivenGear(rarity, fallbackTop, floor, random);
     }
 
     // A random piece of gear from the catalog (weapon, shield or armour, Min Tier to Max Tier, by loot weight) rolled at this

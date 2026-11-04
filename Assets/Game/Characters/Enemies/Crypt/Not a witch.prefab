@@ -134,15 +134,15 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 7
-    baseValue: 1
+    baseValue: 1.2
     min: 0
     max: 0
   - stat: 0
-    baseValue: 80
+    baseValue: 100
     min: 0
     max: 0
   - stat: 2
-    baseValue: 7
+    baseValue: 8.75
     min: 0
     max: 0
   - stat: 1
@@ -241,7 +241,7 @@ MonoBehaviour:
     animatorTrigger: Attack
     minRange: 0
     maxRange: 1.65
-    cooldown: 1.4
+    cooldown: 1.1666666
     facingAngle: 45
     hitboxIndex: 0
     fallbackHitDelay: 0.45
@@ -286,7 +286,7 @@ MonoBehaviour:
     handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
     minRange: 3
     maxRange: 12
-    cooldown: 4.9
+    cooldown: 4.0833335
     animatorTrigger: CastSpell
     releaseTime: 1.35
     aimTrackSpeed: 0
@@ -311,7 +311,7 @@ MonoBehaviour:
     handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
     minRange: 3
     maxRange: 10
-    cooldown: 9.8
+    cooldown: 8.166667
     animatorTrigger: CastSpell
     releaseTime: 1.35
     aimTrackSpeed: 0
@@ -336,7 +336,7 @@ MonoBehaviour:
     handEffect: {fileID: 6658911669708422142, guid: 916fb89ef926e444ab27adab792c11fa, type: 3}
     minRange: 4
     maxRange: 14
-    cooldown: 14
+    cooldown: 11.666667
     animatorTrigger: CastSpell
     releaseTime: 1.35
     aimTrackSpeed: 0
@@ -357,5 +357,5 @@ MonoBehaviour:
       scale: 1.1
       homing: 0
   closesIn: 1
-  spellGap: 4
+  spellGap: 3.3333333
   experience: 60

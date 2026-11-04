@@ -379283,7 +379283,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
-  enemyBaseDamage: 1.15
+  enemyBaseDamage: 1.38
   enemyBaseHealth: 1
   diceSet: {fileID: 11400000, guid: 7f937215e668f0449bc166ee46693245, type: 2}
   diceTradingBonus: 5
@@ -379303,13 +379303,13 @@ MonoBehaviour:
     worth: 10
     floor1: 10
     perFloor: 2
-  enemySpoilsChance: 0.15
-  chestSpoilsChance: 0.3
-  healthPerSpoil: 50
+  enemySpoilsChance: 0.09
+  chestSpoilsChance: 0.18
+  healthPerSpoil: 83
   bossSpoils:
   - boss: {fileID: -8644375173445383690, guid: bd8b4f7112b969642b0413e17be3273a, type: 3}
     item: {fileID: 11400000, guid: c8c0daea26038644da47464013264bfb, type: 2}
-    worth: 25
+    worth: 15
   firstPrice: 10
   priceMultiplier: 1.5
   tracks:
@@ -382152,8 +382152,8 @@ MonoBehaviour:
     chance: 0
     chancePerFloor: 0
   merchantRarity: 1.3
-  rarityChanceMultiplier: 1
-  dropChanceMultiplier: 0.5
+  rarityChanceMultiplier: 0.75
+  dropChanceMultiplier: 0.375
   enemyDropMultiplier: 1
   goldMultiplier: 1
   tomeShare: 0.1

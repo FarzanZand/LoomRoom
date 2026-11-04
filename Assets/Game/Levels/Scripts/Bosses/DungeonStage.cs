@@ -25,6 +25,11 @@ public class DungeonStage : MonoBehaviour
     public Transform bossSpot;
     [Tooltip("Where the exit stairs appear once the boss falls. Empty: the middle of the stage.")]
     public Transform exitSpot;
+    [Header("Chest before the fight")]
+    [Tooltip("With this or the potion set, the last generated room on the way to the stage gets a chest (DungeonGenerator.StageChest): this shield when the player carries none, and the potion.")]
+    public ItemData prepShield;
+    [Tooltip("Always in the chest before the fight.")]
+    public ItemData prepPotion;
 
     void OnDrawGizmos()
     {

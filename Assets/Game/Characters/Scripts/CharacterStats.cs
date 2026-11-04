@@ -308,10 +308,17 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         }
 
-        float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked) * CombatManager.ArmorPerPoint;
-        // Armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
-        float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .65f;
-        float actual  = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
+        float actual;
+        // The player's armour against an unblocked hit takes a share off it that depends on the floor (CombatManager.Armor.cs).
+        if (!info.Magic && !info.Blocked && Character is Player && CombatManager.ScaledPlayerArmor)
+            actual = info.Amount * (1f - CombatManager.ArmorCut(ResolveStat(StatType.Armor, false), CombatManager.CurrentFloor));
+        else
+        {
+            float armor = info.Magic ? 0 : ResolveStat(StatType.Armor, info.Blocked) * CombatManager.ArmorPerPoint;
+            // Armor comes off the effective share of the hit; the rest always lands. A block uses all of it.
+            float effective = info.Blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .65f;
+            actual = Mathf.Max(0f, effective * info.Amount - armor) + (1f - effective) * info.Amount;
+        }
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         // The boss arena's blessing: the same, for every blocked hit.

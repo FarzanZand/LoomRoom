@@ -29,7 +29,7 @@ MonoBehaviour:
   - id: armour
     enabled: 1
     stat: 1
-    statPerPoint: 5
+    statPerPoint: 1
     slots: 124
     weight: 1
     byFloor:
@@ -38,6 +38,8 @@ MonoBehaviour:
     - 2
     - 2
     growthPerFloor: 0.5
+    sizedByFloorArmor: 1
+    floorArmorShare: 0.25
   - id: block
     enabled: 1
     stat: 1

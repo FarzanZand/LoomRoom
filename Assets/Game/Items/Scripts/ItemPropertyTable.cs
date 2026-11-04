@@ -28,9 +28,14 @@ public class ItemPropertyDef
     public float[] byFloor = { 1, 2, 3, 4 };
     [Tooltip("Added for each floor past the last value, for longer dungeons.")]
     public float growthPerFloor;
+    [Tooltip("Sized by the floor's armour instead of By Floor: a share of one plain piece of the gear usual on the floor (CombatManager.UsualSetArmor / 5), at least 1, so a roll on the first floors can't double a Leather piece (the armour roll, 2026-11-04).")]
+    public bool sizedByFloorArmor;
+    [ShowIf(nameof(sizedByFloorArmor)), Range(.05f, 1f), Tooltip("The share of a plain piece one roll adds (0.25: 1 on Leather floors, 8 on floor 9's Grave).")]
+    public float floorArmorShare = .25f;
 
     public float ValueAt(int step)
     {
+        if (sizedByFloorArmor) return Mathf.Max(1f, Mathf.Round(floorArmorShare * CombatManager.UsualSetArmor(Mathf.Max(0, step) + 1) / 5f));
         if (byFloor == null || byFloor.Length == 0) return 0f;
         if (step < byFloor.Length) return byFloor[Mathf.Max(0, step)];
         float value = byFloor[byFloor.Length - 1] + growthPerFloor * (step - byFloor.Length + 1);
