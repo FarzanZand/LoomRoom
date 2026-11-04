@@ -22,8 +22,8 @@ public class EquipmentPanelUI : MonoBehaviour
     // The held weapon's spread makes damage a range (5-9).
     string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"{dmg:0.#}";}
 
-    // A stat line's hover tooltip (StatTooltipUI): the player's own numbers, one a line, the name dim and the number in
-    // colour. No sentences on how things work.
+    // A stat line's hover tooltip (StatTooltipUI): the player's own numbers behind the line, one a line, the name dim and
+    // the number in colour. No sentences on how things work, and nothing the line beside it already says.
     public bool Explain(StatTooltipUI.Kind kind,out string title,out string subtitle,out string body)
     {
         title=subtitle=body="";
@@ -33,19 +33,19 @@ public class EquipmentPanelUI : MonoBehaviour
         {
             case StatTooltipUI.Kind.Health:
             {
-                title="Health";subtitle=$"{Mathf.CeilToInt(s.CurrentHealth)} / {s.MaxHealth:0}";
+                title="Health";
                 var b=new System.Text.StringBuilder();
                 float killHeal=s.GetFinal(StatType.KillHeal);
                 if(killHeal>0)Row(b,"Per kill",$"+{killHeal:0.#}");
                 if(s.FoodRemaining>0)Row(b,$"Food, {s.FoodRemaining:0}s",$"+{s.FoodHealingPerSecond:0.#}/s");
                 body=b.ToString();
-                return true;
+                return body.Length>0;   // nothing behind the number: no tooltip
             }
             case StatTooltipUI.Kind.Stamina:
             {
-                title="Stamina";subtitle=$"{Mathf.CeilToInt(s.CurrentStamina)} / {s.MaxStamina:0}";
+                title="Stamina";
                 var b=new System.Text.StringBuilder();
-                Row(b,"Regeneration",$"+{s.GetFinal(StatType.StaminaRegen):0.#}/s");
+                Regen(b,s.GetFinal(StatType.StaminaRegen));
                 if(CombatManager.HasInstance)
                 {
                     var cm=CombatManager.Instance;
@@ -57,16 +57,16 @@ public class EquipmentPanelUI : MonoBehaviour
             }
             case StatTooltipUI.Kind.Mana:
             {
-                title="Mana";subtitle=$"{Mathf.CeilToInt(s.CurrentMana)} / {s.MaxMana:0}";
+                title="Mana";
                 var b=new System.Text.StringBuilder();
-                Row(b,"Regeneration",$"+{(s.HasStat(StatType.ManaRegen)?s.GetFinal(StatType.ManaRegen):0f):0.#}/s");
+                Regen(b,s.HasStat(StatType.ManaRegen)?s.GetFinal(StatType.ManaRegen):0f);
                 body=b.ToString();
                 return true;
             }
             case StatTooltipUI.Kind.Damage:
             {
                 float crit=Mathf.Min(CombatManager.HasInstance?CombatManager.Instance.critChanceCap:.6f,(CombatManager.HasInstance?CombatManager.Instance.critChance:.08f)+s.GetFinal(StatType.CriticalChance));
-                title="Damage";subtitle=DamageText(s);
+                title="Damage";
                 var b=new System.Text.StringBuilder();
                 Row(b,"Critical chance",$"{crit*100f:0.#}%");
                 float backstab=s.GetFinal(StatType.BackstabDamage),heavy=s.GetFinal(StatType.HeavyDamage);
@@ -83,9 +83,12 @@ public class EquipmentPanelUI : MonoBehaviour
             {
                 float per=CombatManager.ArmorPerPoint;
                 float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
-                title="Armour";subtitle=block>0?$"{armorNow:0.#}  (+{block:0.#} blocking)":$"{armorNow:0.#}";
+                title="Armour";
                 var b=new System.Text.StringBuilder();
-                Row(b,"Per hit",$"-{armorNow*per:0.#}");
+                // Against this floor's enemies (floor 1 in the room): the share of a hit it stops. The old flat rule
+                // stops a set amount instead.
+                if(CombatManager.ScaledPlayerArmor)Row(b,$"Floor {CombatManager.CurrentFloor} hits",$"-{CombatManager.ArmorCut(armorNow,CombatManager.CurrentFloor)*100f:0}%");
+                else Row(b,"Per hit",$"-{armorNow*per:0.#}");
                 if(block>0)Row(b,"Blocked hit",$"-{(armorNow+block)*per:0.#}");
                 body=b.ToString();
                 return true;
@@ -93,6 +96,9 @@ public class EquipmentPanelUI : MonoBehaviour
         }
         return false;
     }
+
+    // A regeneration line; none at all reads dim, like every other nothing.
+    static void Regen(System.Text.StringBuilder b,float perSecond)=>Row(b,"Regeneration",perSecond>.05f?$"+{perSecond:0.#}/s":"0/s",perSecond>.05f?ItemData.GoodColor:ItemData.DimColor);
 
     // One tooltip line: the name dim on the left, the number in colour in a column.
     static void Row(System.Text.StringBuilder b,string label,string number,string colour=ItemData.GoodColor)
@@ -111,7 +117,7 @@ public class EquipmentPanelUI : MonoBehaviour
         var progress=player.GetComponent<AdventurerProgress>();
         int score=progress!=null?progress.Score(a):meta.AttributeScore(a),above=score-t.baseScore;
         int fromRun=progress!=null && (int)a<progress.AttributePoints.Length?progress.AttributePoints[(int)a]:0;
-        title=t.displayName;subtitle=fromRun>0?$"{score}  (+{fromRun} this run)":score.ToString();
+        title=t.displayName;subtitle=fromRun>0?$"+{fromRun} this run":"";
         string dim=ItemData.DimColor;
         var b=new System.Text.StringBuilder($"<color={dim}><pos=62%>Point<pos=84%>Now</color>");
         void Gain(float per,string unit)

@@ -92,13 +92,14 @@ public class TooltipUI : Singleton<TooltipUI>
         if (equipped != null && comparePanel != null) ShowCompare(equipped);
     }
 
-    // The name in its rarity colour (Common stays white); the type line says the rarity and what it is ("UNCOMMON  ·  HELM").
+    // The name in its rarity colour (Common stays white); the type line says the rarity and what it is ("UNCOMMON  ·  HELM"),
+    // the rarity left out for Common.
     static string Title(ItemData item) => item.HasRarityColour ? $"<color={item.RarityTextColour}>{item.itemName}</color>" : item.itemName;
 
     static string Kind(ItemData item)
     {
         string kind = item.TypeLine().ToUpperInvariant();
-        return item.IsGear ? $"{item.RarityName.ToUpperInvariant()}  ·  {kind}" : kind;
+        return item.IsGear && item.rarity != ItemRarity.Common ? $"{item.RarityName.ToUpperInvariant()}  ·  {kind}" : kind;
     }
 
     void ShowHeader(ItemData item)
@@ -127,7 +128,7 @@ public class TooltipUI : Singleton<TooltipUI>
         {
             float mine = item.SwingSpeed, theirs = wearing ? mine : equipped != null ? equipped.SwingSpeed : 0f;
             // -0.5 (very slow) to +0.5 (very fast) across the bar.
-            Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), ItemData.SwingSpeedWord(mine).ToLowerInvariant(), (mine - theirs) * 100f, "%");
+            Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), SpeedWord(mine), (mine - theirs) * 100f, "%");
         }
         if (compareNote != null)
         {
@@ -138,6 +139,9 @@ public class TooltipUI : Singleton<TooltipUI>
             compareNote.text = nothingWorn ? "Nothing worn there" : "";
         }
     }
+
+    // A swing speed in a word, none for the usual one.
+    static string SpeedWord(float speed) { string word = ItemData.SwingSpeedWord(speed); return word == "Normal" ? "" : word.ToLowerInvariant(); }
 
     static void Fill(CompareBar bar, string label, float mine, float worn, string text, float delta, string unit = "")
     {
@@ -151,7 +155,7 @@ public class TooltipUI : Singleton<TooltipUI>
         if (bar.label != null) bar.label.text = label;
         string change = Mathf.Abs(delta) < .01f ? $"<color={ItemData.DimColor}>same</color>"
             : $"<color={(delta > 0 ? ItemData.GoodColor : ItemData.BadColor)}>{(delta > 0 ? "+" : "")}{delta:0.#}{unit}</color>";
-        if (bar.value != null) bar.value.text = $"{text}  {change}";
+        if (bar.value != null) bar.value.text = string.IsNullOrEmpty(text) ? change : $"{text}  {change}";
     }
 
     static void Span(Image image, float from, float to)
@@ -219,7 +223,7 @@ public class TooltipUI : Singleton<TooltipUI>
         HideCompare();
         HideItemParts();
         if (nameText != null) nameText.text = title;
-        if (typeText != null) typeText.text = subtitle;
+        if (typeText != null) { typeText.text = subtitle; typeText.gameObject.SetActive(!string.IsNullOrEmpty(subtitle)); }
         // No body (a stat with nothing to list): no empty box under the title.
         if (descriptionText != null) { descriptionText.text = description; descriptionText.gameObject.SetActive(!string.IsNullOrEmpty(description)); }
         if (rarityLine != null) rarityLine.gameObject.SetActive(true);

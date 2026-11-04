@@ -28,7 +28,7 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     void Awake() { if (text == null) text = GetComponent<TMP_Text>(); }
 
     // The worn gear's bonuses in words, summed from its modifiers (not from the stats, which also hold attributes and
-    // buffs); critical chance as the total with the base chance. A weapon's own swing speed counts as its speed, not a bonus.
+    // buffs); critical chance as the whole chance a swing rolls. A weapon's own swing speed counts as its speed, not a bonus.
     public static void Collect(Equipment gear, List<string> into)
     {
         into.Clear();
@@ -50,7 +50,10 @@ public class GearBonusesUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
             if (value <= .0001f) continue;
             if (stat == StatType.CriticalChance)
             {
-                float total = value + (CombatManager.HasInstance ? CombatManager.Instance.critChance : .08f);
+                // The whole chance a swing rolls (base, gear, Dexterity, skills, capped), as the Damage tooltip says it.
+                var stats = gear.GetComponent<CharacterStats>();
+                float bonus = stats != null ? stats.GetFinal(StatType.CriticalChance) : value;
+                float total = Mathf.Min(CombatManager.HasInstance ? CombatManager.Instance.critChanceCap : .6f, (CombatManager.HasInstance ? CombatManager.Instance.critChance : .08f) + bonus);
                 into.Add($"{total * 100f:0.#}% critical chance");
             }
             else into.Add(StatModifierEntry.Describe(stat, ModifierType.Flat, value));

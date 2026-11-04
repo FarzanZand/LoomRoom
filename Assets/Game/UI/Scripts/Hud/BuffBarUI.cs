@@ -98,7 +98,7 @@ public class BuffBarUI : MonoBehaviour
             var item = (m.Source as ItemBuffSource)?.Item;
             bySource[key] = shown.Count;
             shown.Add(new Shown { icon = item != null && item.icon != null ? item.icon : fallbackIcon, seconds = m.Duration, harmful = m.Value < 0f,
-                title = item != null ? item.itemName : "Effect", subtitle = m.Value < 0f ? "Harmful" : "Helpful", body = StatModifierEntry.Describe(m.Stat, m.Type, m.Value) });
+                title = item != null ? item.itemName : "Effect", subtitle = "", body = StatModifierEntry.Describe(m.Stat, m.Type, m.Value) });
         }
     }
 
