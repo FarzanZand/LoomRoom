@@ -64,8 +64,21 @@ public partial class AssetStudioWindow
         EditorUtility.SetDirty(o);
         if (PrefabUtility.IsPartOfPrefabInstance(o)) PrefabUtility.RecordPrefabInstancePropertyModifications(o);
         if (o is Component c && !EditorUtility.IsPersistent(c)) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(c.gameObject.scene);
-        else AssetDatabase.SaveAssetIfDirty(o);
+        else { AssetDatabase.SaveAssetIfDirty(o); balanceSaved.Add(o); }
     }
+
+    // An asset is saved the moment it is edited here, but Undo puts it back only in memory (Zelda): the file kept the edit
+    // until the next save of everything, or for good if the editor quit. So after every undo or redo the assets this page
+    // saved are saved again, and the numbers worked out from them are made again.
+    static readonly HashSet<UnityEngine.Object> balanceSaved = new();
+    [InitializeOnLoadMethod]
+    static void SaveBalanceOnUndo() => Undo.undoRedoPerformed += () =>
+    {
+        if (balanceSaved.Count == 0) return;
+        balanceVersion++;
+        if (!EditorApplication.isPlaying) ItemData.ForgetVariants();
+        foreach (var o in balanceSaved) if (o != null) { EditorUtility.SetDirty(o); AssetDatabase.SaveAssetIfDirty(o); }
+    };
 
     // A labelled input: the field with its unit, and "was" with a reset once it differs from the value the page first showed.
     void In(string label, float value, UnityEngine.Object owner, Action<float> set, BalUnit unit = BalUnit.None, float min = 0f, float max = float.MaxValue, float labelWidth = 150, string tip = null)
