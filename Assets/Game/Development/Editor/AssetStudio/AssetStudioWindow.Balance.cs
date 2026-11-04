@@ -190,6 +190,11 @@ public partial class AssetStudioWindow
         return -1;
     }
 
+    // A tier's name for a kind of gear: tier 1 is Bronze for weapons and shields, Leather for worn armour (both when the
+    // kind is not given).
+    static string TierName(int tier, GearKind? kind) =>
+        tier != 1 ? LootFloorTiers.Names[tier - 1] : kind == null ? "Bronze/Leather" : kind is GearKind.Sword or GearKind.Mace or GearKind.Shield ? "Bronze" : "Leather";
+
     // The plain (Common) item of each kind and tier in the catalog.
     static Dictionary<(GearKind, int), ItemData> TierItems(InventoryManager im)
     {
@@ -494,7 +499,7 @@ public partial class AssetStudioWindow
             for (int t = 1; t <= LootFloorTiers.Count; t++)
             {
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
-                GUILayout.Label($"{t} {LootFloorTiers.Names[t - 1]}", StudioSkin.Strong, GUILayout.Width(96));
+                GUILayout.Label($"{t} {TierName(t, null)}", StudioSkin.Strong, GUILayout.Width(96));
                 foreach (GearKind kind in Enum.GetValues(typeof(GearKind)))
                 {
                     GUILayout.Space(8);
@@ -524,7 +529,7 @@ public partial class AssetStudioWindow
                 if (!items.TryGetValue((kind, t), out var item) || MainIndex(item) < 0) continue;
                 float v = item.statModifiers[MainIndex(item)].value;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
-                GUILayout.Label($"{t} {LootFloorTiers.Names[t - 1]}", StudioSkin.Strong, GUILayout.Width(96));
+                GUILayout.Label($"{t} {TierName(t, kind)}", StudioSkin.Strong, GUILayout.Width(96));
                 foreach (var rar in GearRarities) Out($"i{kind}{t}{rar}", Raised(v, rar, kind != GearKind.Sword && kind != GearKind.Mace).ToString("0.#"), 80);
                 GUILayout.EndHorizontal();
             }
