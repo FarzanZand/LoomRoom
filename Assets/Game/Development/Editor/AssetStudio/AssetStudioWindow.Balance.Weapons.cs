@@ -174,13 +174,33 @@ public partial class AssetStudioWindow
         return mean * (1f + bonus) * (1f + crit * (f.critMultiplier - 1f));
     }
 
-    // A plain weapon of a kind and tier at a rarity (its properties rolled by the table with a fixed seed when not Common).
+    // The typical weapon of a kind and tier at a rarity: its main number raised to the rarity, with the properties that add
+    // damage or critical chance at their average over many rolls of the table (one roll decided the whole cell, so a Rare
+    // could out-hit a Unique, Zelda), made by the game's own ItemData.Rolled.
+    // Kept until the next edit on the page, or a few seconds (the property table may be edited elsewhere).
+    const int PropertyRolls = 200;
+    static readonly Dictionary<(ItemData, ItemRarity, int), ItemData> typicalWeapons = new();
+    static int typicalVersion = -1;
+    static double typicalAt;
     static ItemData WeaponAt(Dictionary<(GearKind, int), ItemData> items, GearKind kind, int tier, ItemRarity rarity, int floor)
     {
         while (tier > 1 && !items.ContainsKey((kind, tier))) tier--;
         if (!items.TryGetValue((kind, tier), out var plain)) return null;
         var table = ItemPropertyTable.Current;
-        return rarity == ItemRarity.Common || table == null ? plain : plain.Rolled(rarity, table.Roll(plain, rarity, floor, new System.Random(tier * 31 + (int)rarity)));
+        if (rarity == ItemRarity.Common || table == null) return plain;
+        if (typicalVersion != balanceVersion || EditorApplication.timeSinceStartup - typicalAt > 3) { typicalWeapons.Clear(); typicalVersion = balanceVersion; typicalAt = EditorApplication.timeSinceStartup; }
+        if (typicalWeapons.TryGetValue((plain, rarity, floor), out var known)) return known;
+        var sums = new Dictionary<string, float>();
+        var random = new System.Random(tier * 31 + (int)rarity * 7 + floor);
+        for (int n = 0; n < PropertyRolls; n++)
+            foreach (var roll in table.Roll(plain, rarity, floor, random) ?? Array.Empty<RolledProperty>())
+            {
+                var def = table.Find(roll.id);
+                if (def == null || def.stat != StatType.AttackDamage && def.stat != StatType.CriticalChance) continue;
+                sums[roll.id] = (sums.TryGetValue(roll.id, out var s) ? s : 0f) + roll.value;
+            }
+        var average = sums.Select(kv => new RolledProperty(kv.Key, Mathf.Round(kv.Value / PropertyRolls * 100f) / 100f)).ToArray();
+        return typicalWeapons[(plain, rarity, floor)] = plain.Rolled(rarity, average);
     }
 
     // An item's own flat modifier of a stat, edited as a percent; "-" when it has none.

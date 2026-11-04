@@ -47,8 +47,10 @@ public partial class AssetStudioWindow
     string KeyOf(UnityEngine.Object o, string label) => (o != null ? o.name + "/" + o.GetType().Name : "-") + "/" + balanceGroup + "/" + label;
 
     // An edit is about to be written: the results as they were are kept to light up what it changes.
+    static int balanceVersion;
     static void Edited(string what)
     {
+        balanceVersion++;
         var w = balanceWindow;
         if (w == null) return;
         w.cellsBefore = new Dictionary<string, string>(w.cellsShown);
