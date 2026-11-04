@@ -94,7 +94,7 @@ public partial class ItemData
             {
                 var m = modifiers[i];
                 if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
-                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity, main.Value == StatType.Armor) };
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity, main.Value == StatType.AttackDamage) };
             }
         foreach (var roll in copy.rolls)
         {
@@ -116,18 +116,21 @@ public partial class ItemData
     // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8). Armour always keeps a tenth
     // (the user, 2026-11-04): on 3-armour Leather the +1 rule took a Legendary helm to 7 where +75% is 5.3, and the
     // player's armour curve (CombatManager.Armor.cs) is set by the share, so a 3 helm goes 3.5, 3.9, 4.4, 5.3.
-    static float RaisedMain(float value, ItemRarity rarity, bool tenths = false)
+    // A main number raised to a rarity (the user, 2026-11-04: damage and armour are whole numbers, and a weapon's step up
+    // in rarity was too strong): the rarity's Base Bonus on armour, Weapon Bonus Share of it on a weapon's damage, never
+    // below the rarity under it. A weapon's is rounded up, so every Uncommon weapon gains a point (the user's pick): Bronze
+    // Sword 4, 5, 5, 5, 6; armour to the nearest: Leather Helm 3, 3, 4, 4, 5.
+    static float RaisedMain(float value, ItemRarity rarity, bool weapon = false)
     {
-        bool whole = !tenths && Mathf.Abs(value - Mathf.Round(value)) < .001f;
-        float Raise(RarityStep s) => whole ? Mathf.Floor(value * (1f + s.baseBonus) + .5f) : Mathf.Floor(value * (1f + s.baseBonus) * 10f + .5f) / 10f;
+        float scale = weapon && InventoryManager.HasInstance ? InventoryManager.Instance.weaponBonusShare : 1f;
+        float Raise(RarityStep s) => weapon ? Mathf.Ceil(value * (1f + s.baseBonus * scale) - .001f) : Mathf.Floor(value * (1f + s.baseBonus * scale) + .5f);
         var steps = InventoryManager.HasInstance ? InventoryManager.Instance.rarities : null;
         float below = value;
         if (steps != null)
             foreach (var s in steps)   // worst first
             {
                 if (s == null || s.baseBonus <= 0f) continue;
-                float raised = Raise(s);
-                if (whole && value > 0f) raised = Mathf.Max(raised, below + 1f);
+                float raised = Mathf.Max(Raise(s), below);
                 if (s.rarity == rarity) return raised;
                 below = raised;
             }

@@ -174,14 +174,14 @@ public partial class AssetStudioWindow
         return inScene ? found : AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath)?.GetComponent<T>();
     }
 
-    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain; armour keeps a tenth, weapons whole steps).
+    // A main number raised to a rarity, the game's own rule (ItemData.RaisedMain: whole numbers, weapons a share of the bonus).
     static MethodInfo raisedMain;
-    static float Raised(float value, ItemRarity rarity, bool armour)
+    static float Raised(float value, ItemRarity rarity, bool weapon)
     {
         if (rarity == ItemRarity.Common) return value;
         raisedMain ??= typeof(ItemData).GetMethod("RaisedMain", BindingFlags.NonPublic | BindingFlags.Static);
         if (raisedMain == null) return value;
-        var args = raisedMain.GetParameters().Length == 3 ? new object[] { value, rarity, armour } : new object[] { value, rarity };
+        var args = raisedMain.GetParameters().Length == 3 ? new object[] { value, rarity, weapon } : new object[] { value, rarity };
         return (float)raisedMain.Invoke(null, args);
     }
 
@@ -300,7 +300,7 @@ public partial class AssetStudioWindow
             while (t > 1 && !items.ContainsKey((kind, t))) t--;
             if (!items.TryGetValue((kind, t), out var i)) continue;
             int k = MainIndex(i);
-            if (k >= 0) sum += Raised(i.statModifiers[k].value, rarity, true);
+            if (k >= 0) sum += Raised(i.statModifiers[k].value, rarity, false);
         }
         return sum;
     }
@@ -534,7 +534,7 @@ public partial class AssetStudioWindow
                 float v = item.statModifiers[MainIndex(item)].value;
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 GUILayout.Label($"{t} {TierName(t, kind)}", StudioSkin.Strong, GUILayout.Width(96));
-                foreach (var rar in GearRarities) Out($"i{kind}{t}{rar}", Raised(v, rar, kind != GearKind.Sword && kind != GearKind.Mace).ToString("0.#"), 80);
+                foreach (var rar in GearRarities) Out($"i{kind}{t}{rar}", Raised(v, rar, kind == GearKind.Sword || kind == GearKind.Mace).ToString("0.#"), 80);
                 GUILayout.EndHorizontal();
             }
         });

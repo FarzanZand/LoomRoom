@@ -26,6 +26,10 @@ MonoBehaviour:
     - 2
     - 3
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 1
+    floorWeaponShare: 0.15
   - id: armour
     enabled: 1
     stat: 1
@@ -40,6 +44,8 @@ MonoBehaviour:
     growthPerFloor: 0.5
     sizedByFloorArmor: 1
     floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: block
     enabled: 1
     stat: 1
@@ -52,6 +58,10 @@ MonoBehaviour:
     - 2
     - 3
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: health
     enabled: 1
     stat: 0
@@ -64,6 +74,10 @@ MonoBehaviour:
     - 9
     - 12
     growthPerFloor: 2
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: speed
     enabled: 1
     stat: 7
@@ -76,6 +90,10 @@ MonoBehaviour:
     - 11
     - 15
     growthPerFloor: 1
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: crit
     enabled: 1
     stat: 20
@@ -88,6 +106,10 @@ MonoBehaviour:
     - 7
     - 9
     growthPerFloor: 1
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: backstab
     enabled: 1
     stat: 21
@@ -100,6 +122,10 @@ MonoBehaviour:
     - 50
     - 70
     growthPerFloor: 5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: skeletons
     enabled: 0
     stat: 28
@@ -112,6 +138,10 @@ MonoBehaviour:
     - 40
     - 50
     growthPerFloor: 5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: beasts
     enabled: 0
     stat: 29
@@ -124,6 +154,10 @@ MonoBehaviour:
     - 40
     - 50
     growthPerFloor: 5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: slimes
     enabled: 0
     stat: 30
@@ -136,6 +170,10 @@ MonoBehaviour:
     - 40
     - 50
     growthPerFloor: 5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: kill
     enabled: 1
     stat: 25
@@ -148,6 +186,10 @@ MonoBehaviour:
     - 3
     - 4
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: move
     enabled: 1
     stat: 6
@@ -160,6 +202,10 @@ MonoBehaviour:
     - 6
     - 8
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: light
     enabled: 1
     stat: 22
@@ -172,6 +218,10 @@ MonoBehaviour:
     - 1.5
     - 2
     growthPerFloor: 0.25
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: mana
     enabled: 1
     stat: 10
@@ -184,6 +234,10 @@ MonoBehaviour:
     - 12
     - 16
     growthPerFloor: 2
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: manaregen
     enabled: 1
     stat: 11
@@ -196,6 +250,10 @@ MonoBehaviour:
     - 0.7
     - 1
     growthPerFloor: 0.1
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: spell
     enabled: 1
     stat: 24
@@ -208,6 +266,10 @@ MonoBehaviour:
     - 16
     - 22
     growthPerFloor: 2
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: bash
     enabled: 1
     stat: 27
@@ -220,6 +282,10 @@ MonoBehaviour:
     - 4
     - 6
     growthPerFloor: 1
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: swords
     enabled: 1
     stat: 31
@@ -232,6 +298,10 @@ MonoBehaviour:
     - 4
     - 5
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: maces
     enabled: 1
     stat: 32
@@ -244,6 +314,10 @@ MonoBehaviour:
     - 4
     - 5
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: blocking
     enabled: 1
     stat: 33
@@ -256,6 +330,10 @@ MonoBehaviour:
     - 4
     - 5
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: gold
     enabled: 1
     stat: 26
@@ -268,6 +346,10 @@ MonoBehaviour:
     - 22
     - 30
     growthPerFloor: 2
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15
   - id: firecircle
     enabled: 1
     stat: 34
@@ -280,3 +362,7 @@ MonoBehaviour:
     - 6
     - 8
     growthPerFloor: 0.5
+    sizedByFloorArmor: 0
+    floorArmorShare: 0.25
+    sizedByFloorWeapon: 0
+    floorWeaponShare: 0.15

@@ -56,6 +56,8 @@ public class InventoryManager : Singleton<InventoryManager>
         // Legendary: the highest, never rolled by chance; only given (the weeping witch, the Skeleton Party's chest).
         new RarityStep { rarity = ItemRarity.Legendary, properties = new(4, 4), baseBonus = .75f, priceMultiplier = 6f, chance = 0f, chancePerFloor = 0f },
     };
+    [Range(0, 1), Tooltip("The share of each rarity's Base Bonus a weapon's damage takes (armour takes all of it): 0.5 halves a weapon's step up in rarity (the user, 2026-11-04: it was too strong). Damage and armour stay whole numbers.")]
+    public float weaponBonusShare = .5f;
     [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
     [ShowInInspector, ReadOnly, MultiLineProperty(4), LabelText("Chests by floor"), Tooltip("Rarity of chest gear on each floor, with the whole-game multiplier.")]

@@ -32,9 +32,14 @@ public class ItemPropertyDef
     public bool sizedByFloorArmor;
     [ShowIf(nameof(sizedByFloorArmor)), Range(.05f, 1f), Tooltip("The share of a plain piece one roll adds (0.25: 1 on Leather floors, 8 on floor 9's Grave).")]
     public float floorArmorShare = .25f;
+    [Tooltip("Sized by the floor's weapons instead of By Floor: a share of the damage of a plain weapon usual on the floor (CombatManager.UsualWeaponDamage), whole, at least 1 (the damage roll, 2026-11-04: rarity was too strong on weapons).")]
+    public bool sizedByFloorWeapon;
+    [ShowIf(nameof(sizedByFloorWeapon)), Range(.05f, 1f), Tooltip("The share of a plain weapon's damage one roll adds (0.15: 1 on Bronze floors, 4 on floor 9's Grave).")]
+    public float floorWeaponShare = .15f;
 
     public float ValueAt(int step)
     {
+        if (sizedByFloorWeapon) return Mathf.Max(1f, Mathf.Round(floorWeaponShare * CombatManager.UsualWeaponDamage(Mathf.Max(0, step) + 1)));
         if (sizedByFloorArmor) return Mathf.Max(1f, Mathf.Round(floorArmorShare * CombatManager.UsualSetArmor(Mathf.Max(0, step) + 1) / 5f));
         if (byFloor == null || byFloor.Length == 0) return 0f;
         if (step < byFloor.Length) return byFloor[Mathf.Max(0, step)];
