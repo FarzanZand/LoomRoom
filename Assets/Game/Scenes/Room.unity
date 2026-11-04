@@ -382156,6 +382156,7 @@ MonoBehaviour:
   dropChanceMultiplier: 0.5
   enemyDropMultiplier: 1
   goldMultiplier: 1
+  tomeShare: 0.1
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5
