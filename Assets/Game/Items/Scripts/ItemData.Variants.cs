@@ -27,6 +27,13 @@ public partial class ItemData
         variants.Clear();
     }
 
+#if UNITY_EDITOR
+    // Editor tools that change an item's numbers outside Play (Asset Studio's Balance page): the cached copies keep the
+    // numbers they were made with, so they are forgotten and made again on the next roll. Not destroyed: a preview may
+    // still hold one.
+    public static void ForgetVariants() => variants.Clear();
+#endif
+
     // At each run start the rolled copies nobody holds any more (the last run's drops, shop stock and bags) are destroyed,
     // so the cache doesn't grow with every drop for the whole session. Held means in a bag, hotbar or hand, lying on the
     // floor, carried by an enemy, on a merchant's table or in the bag kept for the way back to the town.

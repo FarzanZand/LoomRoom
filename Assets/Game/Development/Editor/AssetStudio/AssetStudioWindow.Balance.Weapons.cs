@@ -40,10 +40,18 @@ public partial class AssetStudioWindow
         finally { LootSource.FloorGear = was; CombatManager.ForgetTierSets(); }
     }
 
+    // The table player's data, inside its prefab: loaded once (loading every asset of the prefab on each draw was slow).
+    static PlayerData tablePlayerData;
+    static PlayerData TablePlayerData()
+    {
+        if (tablePlayerData == null) tablePlayerData = AssetDatabase.LoadAllAssetsAtPath(TablePlayerPath).OfType<PlayerData>().FirstOrDefault();
+        return tablePlayerData;
+    }
+
     Fighter AssumedFighter(CombatManager cm, ProgressionManager pm)
     {
         var f = new Fighter { critMultiplier = cm != null ? cm.critMultiplier : 1.75f, critCap = cm != null ? cm.critChanceCap : .6f, critChance = cm != null ? cm.critChance : .08f };
-        var player = AssetDatabase.LoadAllAssetsAtPath(TablePlayerPath).OfType<PlayerData>().FirstOrDefault();
+        var player = TablePlayerData();
         if (player != null && player.stats != null) foreach (var e in player.stats) if (e.stat == StatType.AttackDamage) f.baseDamage = e.baseValue;
         var rules = pm != null ? pm.classRules : null;
         var warrior = rules?.classes?.FirstOrDefault(c => c != null && c.displayName == "Warrior") ?? rules?.classes?.FirstOrDefault(c => c != null);
@@ -190,7 +198,7 @@ public partial class AssetStudioWindow
     // The typical weapon of a kind and tier at a rarity: its main number raised to the rarity, with the properties that add
     // damage or critical chance at their average over many rolls of the table (one roll decided the whole cell, so a Rare
     // could out-hit a Unique, Zelda), made by the game's own ItemData.Rolled.
-    // Kept until the next edit on the page, or a few seconds (the property table may be edited elsewhere).
+    // Kept until the next edit on the page or half a minute (the property table may be edited elsewhere), as hits to kill.
     const int PropertyRolls = 200;
     static readonly Dictionary<(ItemData, ItemRarity, int), ItemData> typicalWeapons = new();
     static int typicalVersion = -1;
@@ -201,7 +209,7 @@ public partial class AssetStudioWindow
         if (!items.TryGetValue((kind, tier), out var plain)) return null;
         var table = ItemPropertyTable.Current;
         if (rarity == ItemRarity.Common || table == null) return plain;
-        if (typicalVersion != balanceVersion || EditorApplication.timeSinceStartup - typicalAt > 3) { typicalWeapons.Clear(); typicalVersion = balanceVersion; typicalAt = EditorApplication.timeSinceStartup; }
+        if (typicalVersion != balanceVersion || EditorApplication.timeSinceStartup - typicalAt > 30) { typicalWeapons.Clear(); typicalVersion = balanceVersion; typicalAt = EditorApplication.timeSinceStartup; }
         if (typicalWeapons.TryGetValue((plain, rarity, floor), out var known)) return known;
         var sums = new Dictionary<string, float>();
         var random = new System.Random(tier * 31 + (int)rarity * 7 + floor);
@@ -237,7 +245,7 @@ public partial class AssetStudioWindow
         GUILayout.Label(fighter.about, Wrapped, GUILayout.Width(pageWidth));
         TwoColumns(Mathf.Max(300f, Mathf.Min(pageWidth - 560, 600)), () =>
         {
-            var player = AssetDatabase.LoadAllAssetsAtPath(TablePlayerPath).OfType<PlayerData>().FirstOrDefault();
+            var player = TablePlayerData();
             Group("EVERY HIT", player, "TablePlayer");
             if (player != null && player.stats != null)
             {

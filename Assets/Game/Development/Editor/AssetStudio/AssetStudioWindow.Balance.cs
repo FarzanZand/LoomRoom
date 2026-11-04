@@ -51,6 +51,8 @@ public partial class AssetStudioWindow
     static void Edited(string what)
     {
         balanceVersion++;
+        // Rolled copies are kept by their roll, not by the item's numbers: forget them so the next roll reads the edit.
+        if (!EditorApplication.isPlaying) ItemData.ForgetVariants();
         var w = balanceWindow;
         if (w == null) return;
         w.cellsBefore = new Dictionary<string, string>(w.cellsShown);
