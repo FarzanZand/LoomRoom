@@ -107,42 +107,73 @@ public class EquipmentPanelUI : MonoBehaviour
         b.Append($"<color={ItemData.DimColor}>{label}</color><pos=62%><color={colour}>{number}</color>");
     }
 
-    // An attribute: each of its gains on a line, what one point gives and what the score gives now (from the track,
-    // as the sheet and the level-up cards say it).
+    // An attribute: each of its gains on a line as the player's real number now and with one more point
+    // ("Damage 5 -> 6", "Heavy attack damage 165% -> 182%"), from the track as the sheet and the level-up cards say it.
     bool ExplainAttribute(MetaAttribute a,out string title,out string subtitle,out string body)
     {
         title=subtitle=body="";
         var meta=ProgressionManager.HasInstance?ProgressionManager.Instance:null;var t=meta!=null?meta.Track(a):null;
-        if(t==null)return false;
+        if(t==null || player==null || player.Stats==null)return false;
         var progress=player.GetComponent<AdventurerProgress>();
         int score=progress!=null?progress.Score(a):meta.AttributeScore(a),above=score-t.baseScore;
         int fromRun=progress!=null && (int)a<progress.AttributePoints.Length?progress.AttributePoints[(int)a]:0;
         title=t.displayName;subtitle=fromRun>0?$"+{fromRun} this run":"";
-        string dim=ItemData.DimColor;
-        var b=new System.Text.StringBuilder($"<color={dim}><pos=62%>Point<pos=84%>Now</color>");
-        void Gain(float per,string unit)
+        var stats=ProgressionManager.AttributeStats(a);
+        float[] perPoint={t.bonusPerPoint,t.secondBonusPerPoint,t.thirdBonusPerPoint};
+        string[] units={t.unit,t.secondUnit,t.thirdUnit};
+        var b=new System.Text.StringBuilder();
+        for(int i=0;i<3;i++)
         {
-            if(per==0 || string.IsNullOrEmpty(unit))return;
-            unit=unit.Trim();bool percent=unit.StartsWith("%"),perSecond=unit.EndsWith("/s");
-            string name=unit.TrimStart('%').Trim();
-            if(perSecond)name=name.Substring(0,name.Length-2)+" regeneration";
-            if(name.Length==0)return;
-            string suffix=percent?"%":perSecond?"/s":"";
-            b.Append('\n').Append($"<color={dim}>{char.ToUpperInvariant(name[0])}{name.Substring(1)}</color>")
-             .Append($"<pos=62%>{Amount(per,suffix)}<pos=84%>{Amount(per*above,suffix)}");
+            if(perPoint[i]==0 || string.IsNullOrEmpty(units[i]))continue;
+            string name=units[i].Trim().TrimStart('%').Trim();
+            if(name.EndsWith("/s"))name=name.Substring(0,name.Length-2).Trim()+" regeneration";
+            if(name.Length==0)continue;
+            // Intelligence's third gain is spell power, which is no stat (AdventurerProgress.SpellPower).
+            bool spell=i>=stats.Length;
+            float step=spell?perPoint[i]*.01f:perPoint[i]*ProgressionManager.StatScale(a,stats[i]);
+            string now=spell?SpellPercent(above,step):Total(stats[i],0f),next=spell?SpellPercent(above+1,step):Total(stats[i],step);
+            if(b.Length>0)b.Append('\n');
+            b.Append($"<color={ItemData.DimColor}>{char.ToUpperInvariant(name[0])}{name.Substring(1)}</color>")
+             .Append($"<pos=60%><color={ItemData.TextColor}>{now}</color><pos=77%><color={ItemData.DimColor}>></color><pos=82%><color={(next==now?ItemData.DimColor:ItemData.GoodColor)}>{next}</color>");
         }
-        Gain(t.bonusPerPoint,t.unit);Gain(t.secondBonusPerPoint,t.secondUnit);Gain(t.thirdBonusPerPoint,t.thirdUnit);
         body=b.ToString();
-        return true;
+        return body.Length>0;
     }
 
-    // A gain in colour: green above nothing, red below, dim at nothing.
-    static string Amount(float v,string suffix)
+    // Spell damage from Intelligence alone, as a share of a spell's own (AdventurerProgress.SpellPower's part of it).
+    static string SpellPercent(int pointsAbove,float perPoint)=>$"{(1f+Mathf.Max(0,pointsAbove)*perPoint)*100f:0}%";
+
+    // The player's real number behind a stat an attribute raises, with `add` more of the stat: what the game uses
+    // (CombatManager, Hitbox, ShieldBash, ItemEffectProcessor), written as the panel writes it.
+    string Total(StatType stat,float add)
     {
-        if(Mathf.Abs(v)<.001f)return $"<color={ItemData.DimColor}>0</color>";
-        string n=Mathf.Approximately(v,Mathf.Round(v))?Mathf.Abs(Mathf.RoundToInt(v)).ToString():Mathf.Abs(v).ToString("0.##");
-        return v>0?$"<color={ItemData.GoodColor}>+{n}{suffix}</color>":$"<color={ItemData.BadColor}>-{n}{suffix}</color>";
+        var s=player.Stats;
+        float v=(s.HasStat(stat)?s.GetFinal(stat):0f)+add;
+        var cm=CombatManager.HasInstance?CombatManager.Instance:null;
+        switch(stat)
+        {
+            case StatType.AttackDamage:
+            {
+                var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;
+                int spread=held!=null && held.IsWeapon?held.damageSpread:0;
+                return spread>0?$"{Mathf.Max(1f,v-spread):0}-{v+spread:0}":Number(v);
+            }
+            case StatType.ShieldBashDamage:
+            {
+                var t=cm!=null?cm.shieldBash:null;
+                float armor=Mathf.Max(0f,s.ArmorWithoutShield+s.BlockArmor);
+                return Number((t!=null?t.damage+armor*CombatManager.ArmorPerPoint*t.damagePerArmor:0f)+Mathf.Max(0f,v));
+            }
+            case StatType.HeavyDamage: return $"{(cm!=null?cm.heavyDamageMultiplier:1.65f)*(1f+Mathf.Max(0f,v))*100f:0}%";
+            case StatType.CriticalChance: return $"{Mathf.Min(cm!=null?cm.critChanceCap:.6f,(cm!=null?cm.critChance:.08f)+v)*100f:0.#}%";
+            case StatType.BackstabDamage: return $"{(cm!=null?cm.backstabMultiplier:2.5f)*(1f+v)*100f:0}%";
+            case StatType.AttackSpeed: return $"{(s.HasStat(stat)?v:1f+add)*100f:0}%";
+            case StatType.HealingItems: return $"{(1f+Mathf.Max(0f,v))*100f:0}%";
+            case StatType.ManaRegen: return $"{Mathf.Max(0f,v):0.#}/s";
+            default: return Number(v);
+        }
     }
+    static string Number(float v)=>Mathf.Approximately(v,Mathf.Round(v))?Mathf.RoundToInt(v).ToString():v.ToString("0.#");
 
     public void Bind(Player value){player=value;foreach(var slot in slots)if(slot!=null)slot.Bind(player);Refresh();}
     static readonly (StatType stat,string label)[] Attributes={(StatType.Strength,"STRENGTH"),(StatType.Dexterity,"DEXTERITY"),(StatType.Constitution,"CONSTITUTION"),(StatType.Intelligence,"INTELLIGENCE")};
