@@ -248,6 +248,8 @@ public partial class ItemData : ScriptableObject
     // is wearing in that slot (only while a player exists), then the description as flavour and the price.
     public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
     public const string FlavourColor = "#B8A27A";
+    // A half-height empty line between an item's own lines and its rolled ones (the user's choice: space, no line).
+    const string RolledDivider = "<size=50%> </size>";
 
     // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's or armour's armour.
     public bool TryMainStat(out string label, out float value, out string text)
@@ -277,6 +279,7 @@ public partial class ItemData : ScriptableObject
             if (IsWeapon && SwingSpeedWord(SwingSpeed) != "Normal") lines.Add($"<color={DimColor}>{SwingSpeedWord(SwingSpeed)} swings</color>");
         }
         // The item's own stats in white, the rolled properties of an Uncommon, Rare, Unique or Legendary item in blue.
+        bool dividerAdded = false;
         if (canBeEquipped && statModifiers != null)
             for (int i = 0; i < statModifiers.Length; i++)
             {
@@ -286,6 +289,8 @@ public partial class ItemData : ScriptableObject
                 if (!rolledStat && showMain && modifier.stat == main.Value && modifier.type == ModifierType.Flat) continue;
                 if (!rolledStat && IsWeapon && modifier.stat == StatType.AttackSpeed && modifier.type == ModifierType.Flat) continue;
                 string colour = Worse(modifier.stat, modifier.value) ? BadColor : rolledStat ? EffectColor : TextColor;
+                // A little space between the item's own lines and the rolled ones.
+                if (rolledStat && lines.Count > 0 && !dividerAdded) { lines.Add(RolledDivider); dividerAdded = true; }
                 lines.Add($"<color={colour}>{StatLine(modifier.stat, modifier.type, modifier.value, BlockOnly(modifier.stat))}</color>");
             }
         Add(blocks, lines);
