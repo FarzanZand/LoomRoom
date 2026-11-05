@@ -43,17 +43,15 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
 
     // ── Player: Swing set ──
-    // Which light attack the player has (serialized by number, append only).
-    public enum SwingSet { Simple = 0, IkSwings = 1, Combo = 2, Classic = 3, Classic2 = 4, Combo2 = 5 }
+    // Which light attack the player has (serialized by number, append only). 1 (IK Swings), 3 (Classic) and 4 (Classic 2)
+    // are retired (removed 2026-11-05 with their clips); a saved one reads as Combo 2 (Live).
+    public enum SwingSet { Simple = 0, Combo = 2, Combo2 = 5 }
+    static SwingSet Live(SwingSet set) => set == SwingSet.Simple || set == SwingSet.Combo || set == SwingSet.Combo2 ? set : SwingSet.Combo2;
     // One swing set per weapon type: the held weapon's category picks it (SwingSetFor).
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), FormerlySerializedAs("swingSet")]
-    [Tooltip("For swords. Simple: the original light swings (Attack_Swing_A/B), with charge and heavy swings. IK Swings: the baked IK " +
-        "set (FirstPersonPlayer/IK swings): a visible windup, a strike in a few frames and a held follow-through, " +
-        "forehand and backhand. Combo: the three-hit combo converted from the Unreal game (Combo swing left, swing right, " +
-        "stab; FirstPersonPlayer/Combo), one hit per press, no charge or heavy swing. Classic: the same combo with its " +
-        "left and right swings reworked into horizontal blows with a held windup (FirstPersonPlayer/Classic). Classic 2: " +
-        "fast, low, flat swipes from screen edge to screen edge with no visible windup (FirstPersonPlayer/Classic2). Combo 2: " +
-        "the Combo's two swings, then the Simple light swing as the third hit (FirstPersonPlayer/Combo2).")]
+    [Tooltip("For swords. Simple: the original light swings (Attack_Swing_A/B), with charge and heavy swings. Combo: the " +
+        "three-hit combo converted from the Unreal game (swing left, swing right, stab; FirstPersonPlayer/Combo), one hit per " +
+        "press. Combo 2: the Combo's two swings, then the Simple light swing as the third hit, a chop (FirstPersonPlayer/Combo2).")]
     public SwingSet swordSwingSet = SwingSet.Combo;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
     [Tooltip("For maces (the same sets as for swords).")]
@@ -68,7 +66,7 @@ public partial class CombatManager : Singleton<CombatManager>
     static bool IsMace(ItemData weapon) => weapon != null && weapon.IsWeapon && weapon.weaponCategory == WeaponCategory.Mace;
     public float StaggerStrengthFor(ItemData weapon) => weapon == null || !weapon.IsWeapon ? 1f : IsMace(weapon) ? maceStaggerStrength : swordStaggerStrength;
 
-    public SwingSet SwingSetFor(ItemData weapon) => IsMace(weapon) ? maceSwingSet : swordSwingSet;
+    public SwingSet SwingSetFor(ItemData weapon) => Live(IsMace(weapon) ? maceSwingSet : swordSwingSet);
     // The table player's swing set now: the one for the weapon in their right hand.
     public SwingSet swingSet
     {
@@ -78,12 +76,10 @@ public partial class CombatManager : Singleton<CombatManager>
             return SwingSetFor(player != null && player.Equipment != null ? player.Equipment.Get(EquipmentSlot.RightHand) : null);
         }
     }
-    static bool IsCombo(SwingSet set) => set == SwingSet.Combo || set == SwingSet.Classic || set == SwingSet.Classic2 || set == SwingSet.Combo2;
-    public bool simpleSwings => swingSet != SwingSet.IkSwings;
+    static bool IsCombo(SwingSet set) => Live(set) != SwingSet.Simple;
     public bool comboAttack => IsCombo(swingSet);
-    // For the inspector: show the combo and IK settings when any weapon type uses them.
+    // For the inspector: show the combo settings when any weapon type uses them.
     bool AnyCombo => IsCombo(swordSwingSet) || IsCombo(maceSwingSet);
-    bool AnyIk => swordSwingSet == SwingSet.IkSwings || maceSwingSet == SwingSet.IkSwings;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Range(.3f, 1.5f), Tooltip("How fast the combo's hits play (1 = as in the Unreal clips). The attack speed stat multiplies it.")]
     public float comboSpeed = .7f;
@@ -136,12 +132,6 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Min(0f), Tooltip("A pause this long after a hit starts the combo again from its first hit.")]
     public float comboResetTime = 1.1f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
-    [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of an IK forehand; the backhand mirrors yaw and roll.")]
-    public Vector3 ikSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
-    [Tooltip("IK swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
-    public AnimationCurve ikSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
     // ── Player: Strike feel ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]

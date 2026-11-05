@@ -93,15 +93,15 @@ public static partial class UnrealComboConverter
         if (System.Array.FindIndex(controller.parameters, p => p.name == "ComboSet") < 0) controller.AddParameter("ComboSet", AnimatorControllerParameterType.Int);
         string[] tags = { "AttackReleaseAlt", "AttackRelease", "AttackRelease" };
         int added = 0;
-        // ComboSet 0 the converted combo, 1 Classic, 2 Classic 2.
-        var sets = new List<(string, string[])> { (Output, System.Array.ConvertAll(Clips, c => c.clip)) };
-        foreach (var style in Styles) sets.Add((style.folder, System.Array.ConvertAll(ComboNames, c => StyleClip(style, c))));
-        sets.Add((Combo2Folder, Combo2Names));   // ComboSet 3: Combo 2
-        for (int set = 0; set < sets.Count; set++)
+        // ComboSet 0 the converted combo, 3 Combo 2 (1 and 2 were the retired Classic sets).
+        var sets = new List<(string, string[])> { (Output, System.Array.ConvertAll(Clips, c => c.clip)), (Combo2Folder, Combo2Names) };
+        int[] setNumbers = { 0, 3 };
+        for (int s = 0; s < sets.Count; s++)
             for (int i = 0; i < 3; i++)
             {
-                var name = sets[set].Item2[i];
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{sets[set].Item1}/{name}.anim");
+                int set = setNumbers[s];
+                var name = sets[s].Item2[i];
+                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{sets[s].Item1}/{name}.anim");
                 if (clip == null) continue;
                 AnimatorState state = null;
                 foreach (var st in machine.states) if (st.state.motion == clip) state = st.state;

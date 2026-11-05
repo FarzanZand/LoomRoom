@@ -24,6 +24,31 @@ public static partial class UnrealComboConverter
     // How far the follow-through goes on past the cut's low point, the way its fastest stretch went (1 = not at all).
     const float ChopThroughMore = 1.5f;
 
+    // Combo 2 (CombatManager.SwingSet.Combo2): copies of the Combo's two swings (so its states stand apart from
+    // the Combo's and can be edited on their own), then Combo2 chop as the third hit (UnrealComboConverter.Combo2.cs).
+    // Rebuilt in place on each run.
+    public const string Combo2Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/Combo2";
+    public static readonly string[] Combo2Names = { "Combo2 swing left", "Combo2 swing right", ChopName };
+
+    public static string MakeCombo2()
+    {
+        System.IO.Directory.CreateDirectory(Combo2Folder);
+        var sources = new[] { $"{Output}/Combo swing left.anim", $"{Output}/Combo swing right.anim" };
+        for (int i = 0; i < 2; i++)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<AnimationClip>(sources[i]);
+            if (source == null) return "Combo2: missing " + sources[i];
+            string path = $"{Combo2Folder}/{Combo2Names[i]}.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null) { clip = Object.Instantiate(source); AssetDatabase.CreateAsset(clip, path); }
+            else EditorUtility.CopySerialized(source, clip);
+            clip.name = Combo2Names[i];
+            EditorUtility.SetDirty(clip);
+        }
+        AssetDatabase.SaveAssets();
+        return "Combo2: 2 swings | " + MakeCombo2Chop();
+    }
+
     public static string MakeCombo2Chop()
     {
         const string fp = "Assets/Game/Characters/Animations/FirstPersonPlayer";
