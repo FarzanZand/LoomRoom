@@ -45,8 +45,8 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
     public static string Coloured(string format, string value, string colour = Good) =>
         Number.Replace(string.Format(format, "\u0001" + value + "\u0002"), $"<color={colour}>$1$2$3</color>");
 
-    // What the skill does for each point, what it gives at this rank and how close the next point is (how it is trained
-    // is left for the player to find out; the milestones have their own tooltips on their markers).
+    // What the skill gives for each rank and in all at this rank, one line per bonus (how it is trained is left for the
+    // player to find out; the milestones have their own tooltips on their markers).
     public static void ShowTooltip(AdventurerProgress progress, AdventureSkill skill)
     {
         if (progress == null || !TooltipUI.HasInstance) return;
@@ -56,16 +56,29 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         var text = new System.Text.StringBuilder();
         if (!string.IsNullOrEmpty(def.bonusText) && def.bonusAt100 > 0)
         {
-            float now = progress.Bonus(skill) * 100;
-            text.Append($"<color={Dim}>Now</color><pos=36%>").Append(now < .05f ? $"<color={Dim}>none</color>" : Coloured(def.bonusText, now.ToString("0.#"))).AppendLine();
+            BonusLine(text, def.bonusText, def.bonusAt100, rank * def.bonusAt100);
             if (!string.IsNullOrEmpty(def.extraText) && def.extraAt100 > 0)
-                text.Append("<pos=36%>").Append(rank <= 0 ? $"<color={Dim}>none</color>" : Coloured(def.extraText, def.ExtraShown(rank))).AppendLine();
-            text.Append($"<color={Dim}>Per rank</color><pos=36%>").Append(Coloured(def.bonusText, (def.bonusAt100).ToString("0.##")));
-            if (!string.IsNullOrEmpty(def.extraText) && def.extraAt100 > 0)
-                text.AppendLine().Append("<pos=36%>").Append(Coloured(def.extraText, (def.extraFlat ? def.extraAt100 * .01f : def.extraAt100).ToString("0.##")));
+            {
+                float per = def.extraFlat ? def.extraAt100 * .01f : def.extraAt100;
+                BonusLine(text, def.extraText, per, rank * per);
+            }
         }
         else text.Append(def.description);
-        TooltipUI.Instance.ShowText(def.displayName, $"{AdventureSkills.Tier(rank).ToUpperInvariant()}  {rank} / 100", text.ToString());
+        TooltipUI.Instance.ShowText(def.displayName, $"RANK {rank} / 100", text.ToString());
+    }
+
+    // "-{0}% block stamina" with 1 and 25: the total as the skill's own words with the number in green ("-25% block
+    // stamina"; dim at nothing), and under it, dim, what each rank adds ("-1% per rank"); an empty line between two bonuses.
+    static void BonusLine(System.Text.StringBuilder text, string format, float perRank, float now)
+    {
+        static string N(float v) => v.ToString("0.##");
+        int at = format.IndexOf("{0}", System.StringComparison.Ordinal);
+        if (at < 0) return;
+        string sign = format.Substring(0, at).Trim(' ', '\'');
+        string unit = format.Substring(at + 3).StartsWith("%") ? "%" : "";
+        if (text.Length > 0) text.Append("\n\n");
+        text.Append(Coloured(format.Trim('\''), N(now), now < .005f ? Dim : Good))
+            .Append('\n').Append($"<color={Dim}>{sign}{N(perRank)}{unit} per rank</color>");
     }
 
     // A milestone marker's tooltip: what it unlocks, at which rank, and whether this run has it.
