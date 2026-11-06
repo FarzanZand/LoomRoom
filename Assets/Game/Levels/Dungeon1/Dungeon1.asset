@@ -290,8 +290,8 @@ MonoBehaviour:
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Dungeon
-  description: 'Nine floors: cellars, catacombs, the crypt, three deep realms and
-    three ruins. The Crypt Lord waits on the third.'
+  description: 'Twelve floors: the cellars, the catacombs, the crypt, the deep realms
+    and the ruins. The Crypt Lord waits on the fourth.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages:
@@ -301,7 +301,7 @@ MonoBehaviour:
     extraFloors: 0
     damageScale: 1.42
   - biome: {fileID: 11400000, guid: 5ee85df962efbc140ad726eaefcfd87b, type: 2}
-    floors: 1
+    floors: 2
     boss: 0
     extraFloors: 0
     damageScale: 1.42
@@ -316,7 +316,7 @@ MonoBehaviour:
     extraFloors: 1
     damageScale: 1
   - biome: {fileID: 11400000, guid: 5c3c2fd95bbff7542a3462f9fbc3fb46, type: 2}
-    floors: 1
+    floors: 2
     boss: 0
     extraFloors: 0
     damageScale: 1
@@ -331,7 +331,7 @@ MonoBehaviour:
     extraFloors: 1
     damageScale: 1
   - biome: {fileID: 11400000, guid: 29d73894662dc204ebe0b50f8ce9acab, type: 2}
-    floors: 1
+    floors: 2
     boss: 0
     extraFloors: 0
     damageScale: 1
@@ -359,8 +359,8 @@ MonoBehaviour:
     tier12: 0
     upgradeChance: 0
   - fromFloor: 2
-    tier1: 40
-    tier2: 60
+    tier1: 30
+    tier2: 70
     tier3: 0
     tier4: 0
     tier5: 0
@@ -389,8 +389,8 @@ MonoBehaviour:
   - fromFloor: 4
     tier1: 0
     tier2: 0
-    tier3: 60
-    tier4: 40
+    tier3: 70
+    tier4: 30
     tier5: 0
     tier6: 0
     tier7: 0
@@ -404,8 +404,8 @@ MonoBehaviour:
     tier1: 0
     tier2: 0
     tier3: 0
-    tier4: 60
-    tier5: 40
+    tier4: 70
+    tier5: 30
     tier6: 0
     tier7: 0
     tier8: 0
@@ -419,8 +419,8 @@ MonoBehaviour:
     tier2: 0
     tier3: 0
     tier4: 0
-    tier5: 60
-    tier6: 40
+    tier5: 90
+    tier6: 10
     tier7: 0
     tier8: 0
     tier9: 0
@@ -433,9 +433,9 @@ MonoBehaviour:
     tier2: 0
     tier3: 0
     tier4: 0
-    tier5: 0
-    tier6: 60
-    tier7: 40
+    tier5: 10
+    tier6: 90
+    tier7: 0
     tier8: 0
     tier9: 0
     tier10: 0
@@ -448,9 +448,9 @@ MonoBehaviour:
     tier3: 0
     tier4: 0
     tier5: 0
-    tier6: 0
-    tier7: 60
-    tier8: 40
+    tier6: 30
+    tier7: 70
+    tier8: 0
     tier9: 0
     tier10: 0
     tier11: 0
@@ -463,15 +463,58 @@ MonoBehaviour:
     tier4: 0
     tier5: 0
     tier6: 0
-    tier7: 0
-    tier8: 100
+    tier7: 50
+    tier8: 50
     tier9: 0
     tier10: 0
     tier11: 0
     tier12: 0
     upgradeChance: 0
+  - fromFloor: 10
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 60
+    tier9: 40
+    tier10: 0
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 11
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 80
+    tier10: 20
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
+  - fromFloor: 12
+    tier1: 0
+    tier2: 0
+    tier3: 0
+    tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 100
+    tier11: 0
+    tier12: 0
+    upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   eventRoomsPerFloor: {x: 2, y: 2}
+  tavernEvery: 2
   startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems:

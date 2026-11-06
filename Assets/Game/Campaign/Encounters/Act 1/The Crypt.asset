@@ -17,7 +17,7 @@ MonoBehaviour:
   kind: 0
   level: {fileID: 11400000, guid: 42db8accb58492743bedbc91bbca4ba3, type: 2}
   act: 1
-  description: Nine floors deep. The Crypt Lord waits on the third.
+  description: Twelve floors deep. The Crypt Lord waits on the fourth.
   pickedLine:
     text: The crypt. Down we go.
     voice: {fileID: 0}

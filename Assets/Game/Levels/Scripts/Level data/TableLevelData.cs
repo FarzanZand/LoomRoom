@@ -156,6 +156,9 @@ public partial class TableLevelData : ScriptableObject
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Scripted events", HorizontalLine = false), MinMaxSlider(0, 5, true), LabelText("Event rooms per floor"),
      Tooltip("Fewest and most scripted event rooms on each grown floor: every event the player can walk into (the duel, the bell, the wager, the sleeping giant, the dice, Not a witch, and the Portal hall, whose portal leads to the Skeleton Party). The tavern doesn't count. They come from the floor's biome pool: a floor whose pool has fewer event rooms than the fewest gets all it has (a forest's board pool has none). The room a run opens in counts.")]
     public Vector2Int eventRoomsPerFloor = new(0, 1);
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), LabelText("Tavern every"), Min(1), SuffixLabel("floors", true),
+     Tooltip("A tavern (the merchant's room) only on every this many floors: 2 puts one on floors 2, 4, 6 and on. On those floors the floor's biome decides as before (its Merchant Chance). 1: every floor may have one. Dungeon1 is 2 (the user, 2026-11-06).")]
+    public int tavernEvery = 1;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room keeps its chest. Off: the chest is taken out (the Arena starts with none).")]
     public bool startingChest = true;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
@@ -573,6 +576,12 @@ public partial class TableLevelData : ScriptableObject
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    // A pocket (one room behind a portal) never has a merchant.
-    public float MerchantChance(int floor) { var biome = Biome(floor); return pocket || biome == null ? 0 : biome.merchantChance; }
+    // A pocket (one room behind a portal) never has a merchant, and with Tavern Every above 1 only every that many floors has one.
+    public float MerchantChance(int floor)
+    {
+        var biome = Biome(floor);
+        if (pocket || biome == null) return 0;
+        if (tavernEvery > 1 && floor % tavernEvery != 0) return 0;
+        return biome.merchantChance;
+    }
 }
