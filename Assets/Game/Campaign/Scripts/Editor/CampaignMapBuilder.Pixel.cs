@@ -71,6 +71,7 @@ public static partial class CampaignMapBuilder
         {
             var map = root.GetComponent<CampaignMap>();
             var ground = root.transform.Find("Ground");
+            var mist = root.transform.Find("Mist");   // soft sheets of mist, not props: a restyle made them solid white planes
             var tinted = new Dictionary<(Material, Color32), Material>();
             var fitted = new HashSet<string>();
             // One mesh per source (model and materials): every size step unwraps it the same way (a fixed pack
@@ -87,9 +88,10 @@ public static partial class CampaignMapBuilder
                 var renderer = filter.GetComponent<MeshRenderer>();
                 if (filter.sharedMesh == null || renderer == null || renderer.sharedMaterial == null) continue;
                 if (ground != null && filter.transform.IsChildOf(ground)) continue;
+                if (mist != null && filter.transform.IsChildOf(mist)) continue;
                 if (filter.GetComponentInParent<CampaignPath>() != null || filter.name == "Base" || filter.transform.parent != null && filter.transform.parent.name == "Base") continue;
                 var mat = renderer.sharedMaterial;
-                if (mat.name.Contains("Glass") || mat.name.Contains("Glow") || filter.sharedMesh.name.Contains("Glow")) continue;
+                if (mat.name.Contains("Glass") || mat.name.Contains("Glow") || filter.sharedMesh.name.Contains("Glow") || filter.name == "Flame") continue;
                 // Already a pixel copy (a second run, or ArenaSetup's after Build): left as it is.
                 if (filter.sharedMesh.name.EndsWith(" (Synty Pixel)") || AssetDatabase.GetAssetPath(filter.sharedMesh).StartsWith(PixelDir + "/")) continue;
                 // The size step this copy stands at.
