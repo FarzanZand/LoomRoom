@@ -60,7 +60,8 @@ public static partial class CryptEntrance
         {
             // The crag: cliffs either side of the gate and crags heaped on its top.
             P(Cliff, -3.9f, 0, -1.8f, 20, .44f), P(Cliff, 3.9f, 0, -1.9f, 200, .47f),
-            P(Crag, -4.4f, 0, 1.2f, 60, .3f), P(Crag, 4.5f, 0, .8f, -50, .33f),
+            // (a crag's bulk lies toward its +z: these two are turned away from the guardians, who stand clear of them)
+            P(Crag, -4.9f, 0, .8f, -60, .3f), P(Crag, 5.35f, 0, .6f, 50, .33f),
             P(DU + "Misc/SM_Env_Entrance_Large_01.prefab", 0, 0, -.7f, 0, .62f),
             P(Crag, -1.9f, 4.9f, -.6f, 30, .25f), P(Crag, 0, 5.0f, -.7f, 110, .26f), P(Crag, 1.9f, 4.8f, -.6f, 200, .25f),
             // The way in: the flight runs down from the arch into the rock (the pack's flight rises toward its -z, so it
@@ -82,7 +83,7 @@ public static partial class CryptEntrance
             P(Crag, -1.3f, 2.6f, -6.3f, 250, .28f), P(Crag, -1.1f, 3f, -3.9f, 170, .26f), P(Crag, -1.4f, 1.4f, -7.5f, 300, .26f),
             P(WallTorch, -1.1f, -.35f, -2.3f, 90, .8f, .72f, .29f, .5f), P(WallTorch, 1.1f, -.75f, -3.0f, -90, .8f, .72f, .29f, .5f),
             // Guardians, fire stands and banners at the gate; bones and boulders on the court.
-            P(DU + "Misc/SM_Env_Statue_02.prefab", -3.1f, 0, 1.5f, 10, 1.15f), P(DU + "Misc/SM_Env_Statue_02.prefab", 3.1f, 0, 1.5f, -10, 1.15f),
+            P(DU + "Misc/SM_Env_Statue_02.prefab", -2.85f, 0, 1.5f, 10, 1.15f), P(DU + "Misc/SM_Env_Statue_02.prefab", 2.85f, 0, 1.5f, -10, 1.15f),
             P(Brazier, -1.5f, 0, 2.0f, 0, .85f, .72f, 0, .65f), P(Brazier, 1.5f, 0, 2.0f, 0, .85f, .72f, 0, .65f),
             P(FO + "Props/SM_Prop_Banner_03.prefab", -1.75f, 2.2f, .25f, 0, .7f), P(FO + "Props/SM_Prop_Banner_03.prefab", 1.75f, 2.2f, .25f, 0, .7f),
             P(SkullPile, -2.1f, 0, 3.0f, 30, .85f), P(SkullPile, 2.3f, 0, 2.8f, 200, .7f), P(BonePile2, .4f, 0, 3.9f, 80, .8f),
