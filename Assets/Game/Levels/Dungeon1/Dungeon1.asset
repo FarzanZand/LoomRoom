@@ -545,7 +545,7 @@ MonoBehaviour:
   authoredContent: 
   authoredMarkers: []
   baseBiome: {fileID: -5829940429411452592}
-  backgroundMusic: {fileID: 8300000, guid: 68a87100ce18d3744805954328f56c37, type: 3}
+  backgroundMusic: {fileID: 8300000, guid: 0396187a27184e445b4342ef6ccfd533, type: 3}
   backgroundMusicVolume: 1
   dialogue:
   - trigger: 1
