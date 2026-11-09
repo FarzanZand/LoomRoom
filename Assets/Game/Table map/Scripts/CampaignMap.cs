@@ -22,6 +22,9 @@ public partial class CampaignMap : MonoBehaviour
     [Tooltip("What roads are drawn with.")] public Material roadMaterial;
     [HideInInspector] public List<GameObject> hiddenByRoads = new();   // scatter ClearScatterUnderRoads switched off itself
 
+    // The map lies on the table under the bedroom's ceiling, where the sun never reaches: it stays out of the sun's shadow maps.
+    void OnEnable() => LightingManager.LeaveOutOfSunShadows(transform);
+
     // ── Ground ──
 
     // Height of the ground at a local position (x, z).

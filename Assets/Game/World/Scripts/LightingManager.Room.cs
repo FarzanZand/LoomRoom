@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 // The room keeps its own light while a dungeon floor is dark. The dungeon is a miniature on the table in
 // the same scene, so its darkness (ambient and sun held down) would otherwise black out the bedroom seen
@@ -44,6 +45,59 @@ public sealed partial class LightingManager
     // Rendering layer added to room renderers; the sun lights only this layer during darkness.
     public const uint RoomLayer = 8;
 
+    // ── What casts the sun's shadows ──────────────────────────────────
+
+    // Rendering layer "Sun shadows": what the sun's shadow maps draw. Room renderers carry it, less what is left
+    // out below. No light lights by it.
+    public const uint SunShadowLayer = 64;
+    [TabGroup("Tabs", "Room"), PropertyOrder(10)]
+    [Tooltip("On: the sun's shadow maps draw only the room (walls, ceilings, furniture, characters), not the campaign map on the table. The map lies under the bedroom's ceiling, where the sun never reaches, and was four fifths of what those shadow maps drew, four times a frame (about 440,000 triangles and 400 draw calls facing the table). The picture is the same. Off: everything casts the sun's shadows.")]
+    public bool sunShadowsRoomOnly = true;
+    static readonly List<Transform> sunShadowLeftOut = new();
+    // Nothing under this root casts a shadow from the sun (the campaign map, which stands where no sun reaches).
+    public static void LeaveOutOfSunShadows(Transform root)
+    {
+        if (root == null || sunShadowLeftOut.Contains(root)) return;
+        sunShadowLeftOut.Add(root);
+        if (Instance != null) Instance.nextRoomTag = 0f;
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ForgetSunShadowRoots() => sunShadowLeftOut.Clear();
+
+    // A room renderer's layers: its own, with Room, and Sun shadows unless it is left out.
+    uint RoomLayers(Renderer r)
+    {
+        uint layers = (r.renderingLayerMask & ~SunShadowLayer) | RoomLayer;
+        for (int i = sunShadowLeftOut.Count - 1; i >= 0; i--)
+        {
+            var root = sunShadowLeftOut[i];
+            if (root == null) { sunShadowLeftOut.RemoveAt(i); continue; }
+            if (r.transform.IsChildOf(root)) return layers;
+        }
+        return layers | SunShadowLayer;
+    }
+
+    // The layers the sun lights. With shadow layers of its own, URP keeps the shadow casters' layers in the Light's
+    // own mask, so the lit layers are read from its light data.
+    static uint SunLayers(Light sun)
+    {
+        var data = sun.GetComponent<UniversalAdditionalLightData>();
+        return data != null ? (uint)data.renderingLayers : (uint)sun.renderingLayerMask;
+    }
+
+    // Sets the layers the sun lights and, in Play, which layer casts its shadows.
+    void SetSunLayers(Light sun, uint layers)
+    {
+        FirstPersonLighting.SetLayers(sun, layers);
+        var data = sun.GetComponent<UniversalAdditionalLightData>();
+        bool own = sunShadowsRoomOnly && Application.isPlaying;
+        if (data.customShadowLayers != own) data.customShadowLayers = own;
+        if (!own) return;
+        data.shadowRenderingLayers = SunShadowLayer;
+        // SetLayers wrote the lit layers into the Light's mask, which is the shadow casters' while the sun has its own.
+        sun.renderingLayerMask = (int)SunShadowLayer;
+    }
+
     float lampBase = -1f, appliedRoomDark = -1f;
     Color appliedTint = Color.white;
     bool lampDriven;
@@ -84,7 +138,7 @@ public sealed partial class LightingManager
     public static void LightAsRoom(GameObject go)
     {
         if (go == null || Instance == null || !Instance.RoomSeparated) return;
-        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) if (r != null && !Instance.IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
+        foreach (var r in go.GetComponentsInChildren<Renderer>(true)) if (r != null && !Instance.IsNotRoom(r.transform)) r.renderingLayerMask = Instance.RoomLayers(r);
     }
 
     // Room renderers carry the Room rendering layer for good: the pixel look reads it to give the room
@@ -98,9 +152,15 @@ public sealed partial class LightingManager
             if (root == null) continue;
             root.GetComponentsInChildren(true, tagScratch);
             foreach (var r in tagScratch)
-                if (r != null && !IsNotRoom(r.transform)) r.renderingLayerMask |= RoomLayer;
+            {
+                if (r == null || IsNotRoom(r.transform)) continue;
+                uint layers = RoomLayers(r);
+                if (r.renderingLayerMask != layers) r.renderingLayerMask = layers;
+            }
         }
         tagScratch.Clear();
+        var sun = Sun();
+        if (sun != null) SetSunLayers(sun, SunLayers(sun));
         // The room's lamps light only the room: the dungeon lies on the table under them, and the bedroom's
         // ceiling lamp lit it through its walls and ceiling (no dark corners left). The sun is held separately.
         if (sceneSources != null)
@@ -130,7 +190,7 @@ public sealed partial class LightingManager
         var sun = Sun();
         heldSun = sun != null ? sun.intensity : 0f;
         heldSunColor = sun != null ? sun.color : Color.white;
-        heldSunLayers = sun != null ? (uint)sun.renderingLayerMask : uint.MaxValue;
+        heldSunLayers = sun != null ? SunLayers(sun) : uint.MaxValue;
         var sky = moodSkybox != null ? moodSkybox : baseSkybox;
         string tint = SkyTintProperty(sky);
         heldSky = tint != null ? sky.GetColor(tint) : Color.white;
@@ -222,7 +282,7 @@ public sealed partial class LightingManager
         }
         roomRenderers.Clear(); blockless.Clear();
         var sun = Sun();
-        if (sun != null) FirstPersonLighting.SetLayers(sun, heldSunLayers);
+        if (sun != null) SetSunLayers(sun, heldSunLayers);
     }
 
     // While held: the sky stays the room's.
@@ -238,7 +298,7 @@ public sealed partial class LightingManager
         if (!roomHeld || sun == null) return false;
         sun.intensity = heldSun * (1f - RoomDark);
         sun.color = heldSunColor * RoomTint;
-        if ((uint)sun.renderingLayerMask != RoomLayer) FirstPersonLighting.SetLayers(sun, RoomLayer);
+        if (SunLayers(sun) != RoomLayer) SetSunLayers(sun, RoomLayer);
         return true;
     }
 }
