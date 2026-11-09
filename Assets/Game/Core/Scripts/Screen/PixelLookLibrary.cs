@@ -38,8 +38,6 @@ public class PixelLookLibrary : ScriptableObject
     public float tableBrightness = 1f;
 
     [Header("Materials")]
-    [Tooltip("Hidden/LoomRoom/Pixel Lit Object (Rendering/PixelLook/PixelLitObject.shader), the per-object pixelation shader. Referenced here so player builds include it.")]
-    public Shader objectShader;
     // Editor only: the pairs are read by the editor tools alone, and in a player build they pulled every listed
     // material and its full-size textures in (about 30 MB of Synty sheets nothing draws).
 #if UNITY_EDITOR
