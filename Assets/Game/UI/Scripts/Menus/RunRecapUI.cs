@@ -173,7 +173,7 @@ public class RunRecapUI : MonoBehaviour
     }
 
     const string ReviveUnlockedFlag = "story.reviveUnlocked";
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
     static bool DebugRevive => true;
 #else
     static bool DebugRevive => false;

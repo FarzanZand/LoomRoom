@@ -897,7 +897,7 @@ public partial class DungeonGenerator
                         // check finds no room for a body: the template's author placed it there on purpose.
                         if(placed==null && socket.overridePrefab!=null)
                         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
                             Debug.LogWarning($"[Sockets] {prefab.name} found no clear floor at {t.position} (room {room}); placed there anyway.",this);
 #endif
                             placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null,false,true);

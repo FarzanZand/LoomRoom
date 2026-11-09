@@ -65,7 +65,7 @@ public static class PackageToolsMenu
     static bool? BurstChecked(string path)
     {
         if (!path.StartsWith("Jobs/Burst/", StringComparison.Ordinal)) return null;
-        var options = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType("Unity.Burst.Editor.BurstEditorOptions")).FirstOrDefault(t => t != null);
+        var options = UnityEngine.Assemblies.CurrentAssemblies.GetLoadedAssemblies().Select(a => a.GetType("Unity.Burst.Editor.BurstEditorOptions")).FirstOrDefault(t => t != null);
         if (options == null) return null;
         bool Read(string name) => (bool)(options.GetProperty(name, StaticMembers)?.GetValue(null)
             ?? options.GetField(name, StaticMembers)?.GetValue(null) ?? false);

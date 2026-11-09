@@ -37,10 +37,11 @@ public class PixelLookLibrary : ScriptableObject
     [Range(.1f, 3f), Tooltip("Same for the Table player (dungeons and town).")]
     public float tableBrightness = 1f;
 
-    [Header("Materials")]
     // Editor only: the pairs are read by the editor tools alone, and in a player build they pulled every listed
-    // material and its full-size textures in (about 30 MB of Synty sheets nothing draws).
+    // material and its full-size textures in (about 30 MB of Synty sheets nothing draws). The header is inside the
+    // #if with them: left outside, a player build puts it on whatever follows the #endif and fails (CS0592).
 #if UNITY_EDITOR
+    [Header("Materials")]
     [Tooltip("Folder the generated Pixel Lit materials are written to.")]
     [FolderPath] public string outputFolder = "Assets/Game/Rendering/PixelLook/Materials";
     [TableList(AlwaysExpanded = false, ShowPaging = true, NumberOfItemsPerPage = 30)]

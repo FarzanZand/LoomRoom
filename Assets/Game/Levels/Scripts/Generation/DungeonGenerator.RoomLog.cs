@@ -3,7 +3,7 @@ using UnityEngine;
 // Editor and development builds: names the room at a point for the developer prompt's game state.
 public partial class DungeonGenerator
 {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
     // The room at a point, for the developer prompt's game state: "room 4 (Combat): Not a witch" or "corridor".
     public string DescribeRoomAt(Vector3 position)
     {

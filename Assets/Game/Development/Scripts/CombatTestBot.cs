@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -9,7 +9,8 @@ using UnityEngine;
 // timings, and can capture frames at a fixed 30 fps for frame sheets. Started from an eval with
 // CombatTestBot.Run("place Soldier 1.6; face; capture 3 swing; attack; wait .6; attack; wait 2").
 // Commands (separated by ';'):
-//   place <name> <metres>   move the first living enemy whose name contains <name> in front of the player
+//   place <name> <metres>   move the enemy it has (frozen or not), else the first living enemy whose name contains <name>, in front
+//                           of the player; with none alive, a new one of that prefab name
 //   face                    turn the player toward that enemy (chest height); track [off] keeps facing it
 //   followflick <seconds>   keep the view on a Flick (or Helping Hand) as a player would watch it: the die in the air, else the Dungeon
 //                           Master's hand while it reaches, else the enemy being flicked
@@ -350,10 +351,15 @@ public class CombatTestBot : MonoBehaviour
 
     void Place(string name, float distance)
     {
+        var last = enemy;
         if (enemy != null) { enemy.Damaged -= OnEnemyDamaged; enemy.Died -= OnEnemyDied; }
         enemy = null;
-        foreach (var brain in EnemyBrain.Active)
-            if (brain != null && brain.Character.IsAlive && brain.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0) { enemy = brain.Character; break; }
+        // The enemy it already has stays its enemy: a frozen one has its brain off, so it is not among EnemyBrain.Active,
+        // and looking only there spawned a new one at every place after a freeze.
+        if (last != null && last.IsAlive && last.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0) enemy = last;
+        if (enemy == null)
+            foreach (var brain in EnemyBrain.Active)
+                if (brain != null && brain.Character.IsAlive && brain.name.IndexOf(name, System.StringComparison.OrdinalIgnoreCase) >= 0) { enemy = brain.Character; break; }
 #if UNITY_EDITOR
         // None alive: spawn the enemy prefab with that name.
         if (enemy == null)

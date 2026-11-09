@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
