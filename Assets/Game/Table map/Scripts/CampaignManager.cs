@@ -251,7 +251,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
     // The map view stopped from outside (its table switched off mid-view: a coroutine's finally doesn't run then):
     // nothing it set is left behind.
     // Switched off mid-way (the table off, an error), nothing may stay busy: a later Choose waits on these.
-    void OnDisable() { popping = false; revealing = false; rising = false; AbortMapView(); }
+    void OnDisable() { popping = false; revealing = false; rising = false; quickStepping = false; AbortMapView(); }
 
     // Ends a map view whose coroutine was stopped from outside (the table switched off, or an error in it): the cancel
     // handler, the lifted place, the hint and the question go.
@@ -556,8 +556,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
         }
     }
 
-    // The map is folding away into the table (a floor waits for it before it is shown).
-    public static bool MapSinking => HasInstance && Instance.sinking;
+    // The map is folding away into the table, or the view is still on its way to the map's view after E at the table
+    // (QuickPlay): a floor waits for both before it is shown, so it is revealed from where the view ends.
+    public static bool MapSinking => HasInstance && (Instance.sinking || Instance.quickStepping);
     bool sinking;
 
     IEnumerator Sink()

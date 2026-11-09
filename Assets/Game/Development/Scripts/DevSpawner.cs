@@ -524,7 +524,7 @@ public partial class DevSpawner : MonoBehaviour
     {
         switch (k)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
             case Kind.Items:
                 foreach (var item in DevGive.CatalogItems(false).Where(i => i.spell == null).OrderBy(i => ItemGroupOrder(i)).ThenBy(i => i.tier).ThenBy(i => i.itemName))
                 {
@@ -663,7 +663,7 @@ public partial class DevSpawner : MonoBehaviour
             case Kind.Audio:
                 foreach (var e in AudioEntries()) yield return e;
                 break;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
             case Kind.Rooms:
                 foreach (var (prefab, g) in Rooms())
                 {
@@ -711,7 +711,7 @@ public partial class DevSpawner : MonoBehaviour
         return string.Join("\n\n", lines);
     }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
     static string RoomText(GameObject prefab)
     {
         var lines = new List<string>();

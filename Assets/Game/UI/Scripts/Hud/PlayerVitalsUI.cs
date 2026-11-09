@@ -113,6 +113,6 @@ public class PlayerVitalsUI : MonoBehaviour
         int c = Mathf.CeilToInt(current), m = Mathf.CeilToInt(max);
         if (written[at] == c && written[at + 1] == m) return;
         written[at] = c; written[at + 1] = m;
-        label.SetText("{0}/{1}", c, m);
+        label.SetText("{0}/{1}", (float)c, (float)m);
     }
 }

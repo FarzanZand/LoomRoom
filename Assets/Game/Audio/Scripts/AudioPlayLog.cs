@@ -15,13 +15,13 @@ public static class AudioPlayLog
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { sfxKeys.Clear(); uiKeys.Clear(); assets.Clear(); datas.Clear(); clips.Clear(); }
 
-    [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+    [Conditional("UNITY_EDITOR"), Conditional("DEBUG")]
     public static void HeardSfx(string key) { if (!string.IsNullOrEmpty(key)) sfxKeys[key] = Time.unscaledTime; }
 
-    [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+    [Conditional("UNITY_EDITOR"), Conditional("DEBUG")]
     public static void HeardUI(string key) { if (!string.IsNullOrEmpty(key)) uiKeys[key] = Time.unscaledTime; }
 
-    [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+    [Conditional("UNITY_EDITOR"), Conditional("DEBUG")]
     public static void Heard(AudioData data)
     {
         if (data == null) return;
@@ -29,7 +29,7 @@ public static class AudioPlayLog
         assets[data] = Time.unscaledTime;
     }
 
-    [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
+    [Conditional("UNITY_EDITOR"), Conditional("DEBUG")]
     public static void Heard(AudioClip clip)
     {
         if (clip == null) return;

@@ -105,6 +105,7 @@ InitTestScene*.unity*
 Tools/__pycache__/
 *.pyc
 .claude/settings.local.json
+CLAUDE.local.md
 *.slnx
 *.dmp
 

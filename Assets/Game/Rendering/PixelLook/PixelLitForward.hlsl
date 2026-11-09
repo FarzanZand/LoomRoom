@@ -1,5 +1,4 @@
-// Forward pass of LoomRoom/Pixel Lit, shared with its per-object low-res twin
-// (Hidden/LoomRoom/Pixel Lit Object, compiled with PIXEL_OBJECT_PASS).
+// Forward pass of LoomRoom/Pixel Lit.
 #ifndef LOOMROOM_PIXEL_LIT_FORWARD
 #define LOOMROOM_PIXEL_LIT_FORWARD
 
@@ -59,8 +58,6 @@ half3 Gloss(Light light, float3 n, float3 v)
     return light.color * (light.distanceAttenuation * light.shadowAttenuation * hit * _Gloss);
 }
 
-float4 _PixelObjectTargetSize; // xy size, zw 1/size (set by PixelObjectFeature)
-
 // The screen UV of a world point, made the way this pixel's own UV is made: clip space to pixel coordinates as the
 // rasterizer maps them (y flipped where UVs start at the top), then the same normalisation as the pixel's.
 float2 TexelCentreScreenUv(float3 positionWS, float2 pixelUv)
@@ -72,11 +69,7 @@ float2 TexelCentreScreenUv(float3 positionWS, float2 pixelUv)
         p.y = 1.0 - p.y;
     #endif
     // Kept just inside the screen: a UV of exactly 1 indexes one Forward+ tile past the end and loses its lights.
-    #if defined(PIXEL_OBJECT_PASS)
-        return clamp(p, 1e-5, 0.99999);
-    #else
-        return clamp(GetNormalizedScreenSpaceUV(float4(p * _ScaledScreenParams.xy, 0, 1)), 1e-5, 0.99999);
-    #endif
+    return clamp(GetNormalizedScreenSpaceUV(float4(p * _ScaledScreenParams.xy, 0, 1)), 1e-5, 0.99999);
 }
 
 half4 Frag(Varyings input) : SV_Target
@@ -148,12 +141,7 @@ half4 Frag(Varyings input) : SV_Target
     InputData inputData = (InputData)0;
     inputData.positionWS = litPos;
     inputData.normalWS = n;
-    #if defined(PIXEL_OBJECT_PASS)
-    // Drawn into the low-res object buffer: screen UV from that buffer's size, not the camera's.
-    inputData.normalizedScreenSpaceUV = input.positionCS.xy * _PixelObjectTargetSize.zw;
-    #else
     inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(input.positionCS);
-    #endif
     half4 shadowMask = half4(1, 1, 1, 1);
     float3 v = GetWorldSpaceNormalizeViewDir(input.positionWS);
 
