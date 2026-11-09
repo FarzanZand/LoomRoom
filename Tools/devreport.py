@@ -7,10 +7,18 @@ Asset Studio). The game only reads what this writes:
     python Tools/devreport.py triage <id> <status> <owner> [note]
                                                        triage.json: status working|done|failed, who has it, a short note
     python Tools/devreport.py list                     every report with its status
-    python Tools/devreport.py wait                     blocks until there are new reports and Play has stopped since the
-                                                       newest (DevReports/.play-stopped, written by DevReportPlayStop in
-                                                       the editor), then lists them and ends: Main runs it in the
-                                                       background so stopping Play wakes it
+    python Tools/devreport.py watch                    blocks until a report with no receipt comes in (during Play too),
+                                                       then lists the new ones and ends: Main keeps it running in the
+                                                       background so each request reaches it as it is sent
+    python Tools/devreport.py wait                     blocks until Play has stopped after the newest open game request
+                                                       (DevReports/.play-stopped, written by DevReportPlayStop in the
+                                                       editor; Asset Studio requests need no stop), then lists the open
+                                                       ones and ends: Main acts on requests only after this ends
+    python Tools/devreport.py hook                     the SessionStart hook (.claude/settings.local.json): for Main's
+                                                       session only, tells it to start the watcher and lists what is open
+
+Main's loop: watch (background) -> receive what came, say it is noted -> wait (background) and watch again -> act once
+Play has stopped. The hook brings the loop back after every restart, so the user never has to ask.
 
 Writes are atomic (temporary file, then replace). Report folders are never changed otherwise."""
 import json, os, sys, datetime, re
@@ -101,31 +109,82 @@ def main(argv):
                                                 "note": argv[5] if len(argv) > 5 else "", "task": "", "updated_at": now()})
     elif cmd == "wait":
         wait()
+    elif cmd == "watch":
+        watch()
+    elif cmd == "hook":
+        hook()
     else:
         sys.exit(__doc__)
 
 
 def stopped_at():
+    # The UTC time Play last stopped, as the editor wrote it ("" when it never has); compared to the seconds.
     p = os.path.join(ROOT, ".play-stopped")
-    return os.path.getmtime(p) if os.path.isfile(p) else 0.0
+    if not os.path.isfile(p):
+        return ""
+    with open(p, encoding="utf-8") as f:
+        return f.read().strip()[:19]
+
+
+def open_reports():
+    return [r for r in reports() if status(r) in ("new", "received")]
+
+
+def ready(rs):
+    # Play has stopped after the newest open game request (an Asset Studio request is made outside Play).
+    games = [r.get("created_at", "")[:19] for r in rs if r.get("context") == "game"]
+    return bool(rs) and (not games or stopped_at() >= max(games))
+
+
+def watch(poll=2.0):
+    import time
+    while True:
+        fresh = [r for r in reports() if status(r) == "new"]
+        if fresh:
+            print("new requests")
+            for r in fresh:
+                print(one_line(r))
+            return
+        time.sleep(poll)
 
 
 def wait(poll=3.0):
-    # Ends once Play stops (the marker is written again) while some request is still untriaged, or at once when an Asset
-    # Studio request comes in (made outside Play, so no stop will follow it).
     import time
-    start = stopped_at()
-    seen = {r["report_id"] for r in reports()}
     while True:
-        time.sleep(poll)
-        rs = reports()
-        open_ = [r for r in rs if status(r) in ("new", "received")]
-        fresh_studio = [r for r in rs if r["report_id"] not in seen and r.get("context") != "game"]
-        if (stopped_at() > start and open_) or fresh_studio:
-            print("play stopped" if stopped_at() > start else "studio request")
-            for r in open_:
+        rs = open_reports()
+        if ready(rs):
+            print("play stopped")
+            for r in rs:
                 print(f"{status(r):9} {one_line(r)}")
             return
+        time.sleep(poll)
+
+
+# Main's session id (the Guen - R&D chat). Other sessions in this folder get nothing from the hook.
+MAIN_SESSIONS = {"bb964bc9-abc6-43bf-80a8-772c0dea1768"}
+
+
+def hook():
+    try:
+        sid = json.load(sys.stdin).get("session_id", "")
+    except Exception:
+        sid = ""
+    if sid not in MAIN_SESSIONS:
+        return
+    rs = open_reports()
+    lines = [
+        "You are Main for the developer prompt outbox (DevReports/). Right away, start the watcher in the background "
+        "(Bash, run_in_background): python Tools/devreport.py watch. Each time it ends, mark every new request received "
+        "(python Tools/devreport.py receive <id> Guen), tell the user in one line per request that it is noted, start "
+        "python Tools/devreport.py wait in the background, and start watch again. Do no work on the requests (no edits, "
+        "no editor use, no handing out) until wait has ended, which means Play has stopped; then do or route them. "
+        "Route by waking the teammate yourself (mcp__ccd_session_mgmt__send_message to her local_ session id from "
+        "list_sessions; offline sessions wake on it). Never wait for the user to remind you of any of this.",
+    ]
+    if rs:
+        lines.append("Open requests now (" + ("Play has stopped since: act on them" if ready(rs) else "Play still running: hold") + "):")
+        lines += [f"{status(r):9} {one_line(r)}" for r in rs]
+    print("\n".join(lines))
 
 
 if __name__ == "__main__":

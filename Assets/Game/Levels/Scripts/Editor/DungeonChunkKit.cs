@@ -403,10 +403,10 @@ public static class DungeonChunkKit
         Light(c, 0, 4, West); Light(c, 4, 3, East);
         made.Add(Save(c));
 
-        // 4. Two stone gates across a tall hall, pillars in the corners, a fallen block, chains.
+        // 4. A tall hall, pillars in the corners, a fallen block, chains. Its two free-standing arches across the middle are
+        // gone (the user, 2026-11-04: they looked odd standing in the room on their own).
         c = Begin("Gate hall", 9, 9, 2, new Vector2Int(4, 0), new Vector2Int(4, 8), new Vector2Int(0, 4));
         c.rooms = Combat | Treasure | Quiet | Storage; c.cellars = .8f; c.crypt = .9f;
-        Piece(c, "Arch", c.Cell(4, 2)); Piece(c, "Arch", c.Cell(4, 6));
         foreach (var (x, y) in new[] { (2, 2), (6, 2), (2, 6), (6, 6) }) Piece(c, "Pillar", c.Cell(x, y));
         Piece(c, "Rubble", c.Cell(7, 7), 30f);
         Socket(c, DungeonSocketType.Feature, c.Cell(3, 4), 1f, 0f, brazier); Socket(c, DungeonSocketType.Feature, c.Cell(5, 4), 1f, 0f, brazier);

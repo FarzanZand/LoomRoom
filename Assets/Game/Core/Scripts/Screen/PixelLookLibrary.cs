@@ -54,7 +54,7 @@ public class PixelLookLibrary : ScriptableObject
 
     // ── Pixel lighting ───────────────────────────────────────────────
     // The game's own materials switched between their own shader and LoomRoom/Pixel Lit in place (ScreenManager >
-    // Pixel lighting, F6 in Play mode). Filled by Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials.
+    // Pixel lighting, F3 in Play mode). Filled by Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials.
 
     [System.Serializable]
     public class LitEntry

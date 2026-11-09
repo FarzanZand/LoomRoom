@@ -546,17 +546,14 @@ public static class EventRoomsSetup
         return made;
     }
 
-    // The dice: a 7 x 7 room open to the sky in moonlight, his gaming board on the floor under the opening and a gambler's
-    // table at its near edge: a skeleton slumped over its last bet, an empty chair, coins, a candle and the cup to shake.
+    // The dice: a 7 x 7 candlelit room one tile high under a closed ceiling (the user, 2026-11-04: no beam of light, and
+    // the chains the floor's furnishing hangs need a ceiling to hang from; he lifts the roof off like a lid to drop his
+    // die, DungeonMasterReach), his gaming board on the floor and a gambler's table at its near edge: a skeleton slumped
+    // over its last bet, an empty chair, coins, a candle and the cup to shake.
     static GameObject Dice(GameObject die) => Room("Dice room", "dice",
-        "His gaming board lies under the opening, a dead gambler at the table beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.",
+        "His gaming board lies on the floor, a dead gambler at the table beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.",
         Rows(7, 7, new Vector2Int(3, 0), new Vector2Int(6, 3)), 1, (root, e) =>
         {
-            // The moonlight's shaft and motes on the board, but not its night-sky card: the opening must show the Dungeon
-            // Master above.
-            var moon = Put(root, $"{Shared}/Effects/Moonlight.prefab", new Vector3(0f, 0f, 1f));
-            var sky = moon != null ? moon.transform.Find("Night sky") : null;
-            if (sky != null) sky.gameObject.SetActive(false);
             var board = Put(root, DiceBoard(), new Vector3(0f, 0f, 1f));
             var landing = Marker(root, "Landing", new Vector3(0f, BoardT, 1f));
             // The gambler's table at the board's west side, clear of the way in: from the door the board is seen whole with
@@ -611,7 +608,10 @@ public static class EventRoomsSetup
             ev.roll = Load<AudioClip>("Assets/ThirdParty/Sound Effects Library/SoundFX/DiceRollFast.wav");
             ev.toughEnemy = Load<GameObject>("Assets/Game/Characters/Enemies/Crypt/Demon.prefab");
             ev.healEffect = Load<GameObject>("Assets/Game/Combat/Spells/Heal/Heal Impact.prefab");
-        }, openCeiling: true, skylight: 3, light: DungeonRoomLight.Moonlit);
+            // The roof he lifts off sounds as it does for his Helping Hand.
+            var help = Load<SpellDefinition>("Assets/Game/Combat/Spells/Helping Hand/Helping Hand.asset");
+            if (help != null && help.helpingHand != null) ev.lid = help.helpingHand.lid;
+        }, light: DungeonRoomLight.Candlelit);
 
     // ── Biome pools ──────────────────────────────────────────────────
 

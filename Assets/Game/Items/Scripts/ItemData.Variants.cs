@@ -27,6 +27,13 @@ public partial class ItemData
         variants.Clear();
     }
 
+#if UNITY_EDITOR
+    // Editor tools that change an item's numbers outside Play (Asset Studio's Balance page): the cached copies keep the
+    // numbers they were made with, so they are forgotten and made again on the next roll. Not destroyed: a preview may
+    // still hold one.
+    public static void ForgetVariants() => variants.Clear();
+#endif
+
     // At each run start the rolled copies nobody holds any more (the last run's drops, shop stock and bags) are destroyed,
     // so the cache doesn't grow with every drop for the whole session. Held means in a bag, hotbar or hand, lying on the
     // floor, carried by an enemy, on a merchant's table or in the bag kept for the way back to the town.
@@ -87,7 +94,7 @@ public partial class ItemData
             {
                 var m = modifiers[i];
                 if (m == null || m.stat != main.Value || m.type != ModifierType.Flat) continue;
-                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity) };
+                modifiers[i] = new StatModifierEntry { stat = m.stat, type = m.type, value = RaisedMain(m.value, rarity, main.Value == StatType.AttackDamage) };
             }
         foreach (var roll in copy.rolls)
         {
@@ -106,19 +113,24 @@ public partial class ItemData
 
     // A main number raised to a rarity: plus the step's bonus share (InventoryManager > Rarity), rounded to the nearest,
     // whole numbers to whole, others to a tenth. A whole number is also at least 1 above the step below it, so every
-    // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8).
-    static float RaisedMain(float value, ItemRarity rarity)
+    // rarity beats the last (a 4-damage sword: Uncommon 5, Rare 6, Unique 7, Legendary 8). Armour always keeps a tenth
+    // (the user, 2026-11-04): on 3-armour Leather the +1 rule took a Legendary helm to 7 where +75% is 5.3, and the
+    // player's armour curve (CombatManager.Armor.cs) is set by the share, so a 3 helm goes 3.5, 3.9, 4.4, 5.3.
+    // A main number raised to a rarity (the user, 2026-11-04: damage and armour are whole numbers, and a weapon's step up
+    // in rarity was too strong): the rarity's Base Bonus on armour, Weapon Bonus Share of it on a weapon's damage, never
+    // below the rarity under it. A weapon's is rounded up, so every Uncommon weapon gains a point (the user's pick): Bronze
+    // Sword 4, 5, 5, 5, 6; armour to the nearest: Leather Helm 3, 3, 4, 4, 5.
+    static float RaisedMain(float value, ItemRarity rarity, bool weapon = false)
     {
-        bool whole = Mathf.Abs(value - Mathf.Round(value)) < .001f;
-        float Raise(RarityStep s) => whole ? Mathf.Floor(value * (1f + s.baseBonus) + .5f) : Mathf.Floor(value * (1f + s.baseBonus) * 10f + .5f) / 10f;
+        float scale = weapon && InventoryManager.HasInstance ? InventoryManager.Instance.weaponBonusShare : 1f;
+        float Raise(RarityStep s) => weapon ? Mathf.Ceil(value * (1f + s.baseBonus * scale) - .001f) : Mathf.Floor(value * (1f + s.baseBonus * scale) + .5f);
         var steps = InventoryManager.HasInstance ? InventoryManager.Instance.rarities : null;
         float below = value;
         if (steps != null)
             foreach (var s in steps)   // worst first
             {
                 if (s == null || s.baseBonus <= 0f) continue;
-                float raised = Raise(s);
-                if (whole && value > 0f) raised = Mathf.Max(raised, below + 1f);
+                float raised = Mathf.Max(Raise(s), below);
                 if (s.rarity == rarity) return raised;
                 below = raised;
             }

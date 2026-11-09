@@ -67,12 +67,19 @@ public partial class TableLevelData : ScriptableObject
         public bool boss = true;
         [HorizontalGroup("Row", LabelWidth = 95), LabelText("Difficulty jump"), Min(0), Tooltip("A bigger jump in difficulty as this stage begins (a new biome after a boss), counted in floors' worth of growth: 2 makes the step into this stage three floors' worth instead of one, and every later floor keeps it (the balance's damage, health and armour per floor). It adds up with earlier stages' jumps. 0: the usual one floor's step.")]
         public float extraFloors;
+        [HorizontalGroup("Row", LabelWidth = 62), LabelText("Damage x"), Min(.1f), Tooltip("Enemies on this stage's floors hit this many times as hard, on top of the balance and its growth (only this stage, not later ones; not the boss, whose fight is tuned apart). 1: as the balance says. Dungeon1's first three floors are x1.42, x1.42, x1.28 (the user, 2026-11-04: too many hits to die there).")]
+        public float damageScale = 1f;
     }
+
+    // A runtime copy built for a floor of another level (a portal's pocket) takes that floor's stage damage and difficulty
+    // steps instead of its own (PortalArch.Build sets them), so its enemies hit as hard as those outside.
+    [System.NonSerialized] public float? heldStageDamage, heldExtraFloors;
 
     // The difficulty steps reached by this floor: every stage's Extra Floors from the stage it starts in down to this one
     // (DungeonBalance.Apply adds them to the floor's depth).
     public float ExtraFloors(int floor)
     {
+        if (heldExtraFloors.HasValue) return heldExtraFloors.Value;
         if (!HasStages) return 0f;
         float extra = 0f; int start = 1;
         foreach (var stage in stages)
@@ -82,6 +89,21 @@ public partial class TableLevelData : ScriptableObject
             start += Mathf.Max(1, stage.floors);
         }
         return extra;
+    }
+    // The Damage x of the stage this floor is in (1 with no stages or past the last).
+    public float StageDamage(int floor)
+    {
+        if (heldStageDamage.HasValue) return heldStageDamage.Value;
+        if (!HasStages) return 1f;
+        int start = 1;
+        foreach (var stage in stages)
+        {
+            if (stage == null || stage.biome == null) continue;
+            int end = start + Mathf.Max(1, stage.floors);
+            if (floor >= start && floor < end) return stage.damageScale > 0f ? stage.damageScale : 1f;   // 0: a level saved before the field
+            start = end;
+        }
+        return 1f;
     }
     [TabGroup(Tabs, Run), ShowIf(D), Title("Biomes", "In order from the top floor down. Each biome lasts its number of floors and its guardian waits on its last floor. Empty: every floor is the base biome (a one-floor level needs no biome of its own).", HorizontalLine = false)]
     [ListDrawerSettings(ShowFoldout = true)]
@@ -134,6 +156,9 @@ public partial class TableLevelData : ScriptableObject
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Scripted events", HorizontalLine = false), MinMaxSlider(0, 5, true), LabelText("Event rooms per floor"),
      Tooltip("Fewest and most scripted event rooms on each grown floor: every event the player can walk into (the duel, the bell, the wager, the sleeping giant, the dice, Not a witch, and the Portal hall, whose portal leads to the Skeleton Party). The tavern doesn't count. They come from the floor's biome pool: a floor whose pool has fewer event rooms than the fewest gets all it has (a forest's board pool has none). The room a run opens in counts.")]
     public Vector2Int eventRoomsPerFloor = new(0, 1);
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), LabelText("Tavern every"), Min(1), SuffixLabel("floors", true),
+     Tooltip("A tavern (the merchant's room) only on every this many floors: 2 puts one on floors 2, 4, 6 and on. On those floors the floor's biome decides as before (its Merchant Chance). 1: every floor may have one. Dungeon1 is 2 (the user, 2026-11-06).")]
+    public int tavernEvery = 1;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room keeps its chest. Off: the chest is taken out (the Arena starts with none).")]
     public bool startingChest = true;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("The starting room's chest always holds two things: one piece of gear rolled from the floor's loot, and this (a potion). Its chest is never trapped. Empty: an ordinary chest.")]
@@ -551,6 +576,12 @@ public partial class TableLevelData : ScriptableObject
         return guardian != null && guardian.enabled && guardian.boss != null && floorInBiome == biomeFloors ? guardian : null;
     }
 
-    // A pocket (one room behind a portal) never has a merchant.
-    public float MerchantChance(int floor) { var biome = Biome(floor); return pocket || biome == null ? 0 : biome.merchantChance; }
+    // A pocket (one room behind a portal) never has a merchant, and with Tavern Every above 1 only every that many floors has one.
+    public float MerchantChance(int floor)
+    {
+        var biome = Biome(floor);
+        if (pocket || biome == null) return 0;
+        if (tavernEvery > 1 && floor % tavernEvery != 0) return 0;
+        return biome.merchantChance;
+    }
 }

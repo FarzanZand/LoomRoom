@@ -15,8 +15,8 @@ MonoBehaviour:
   damageMultiplier: 1.15
   separateBossDamage: 0
   bossDamageMultiplier: 1
-  healthMultiplier: 1.4375
-  bossHealthMultiplier: 1.05
-  damageGrowthPerFloor: 0.12
-  healthGrowthPerFloor: 0.1
+  healthMultiplier: 1.49
+  bossHealthMultiplier: 1.5
+  damageGrowthPerFloor: 0.1
+  healthGrowthPerFloor: 0.175
   armorPerFloor: 1.25

@@ -17,12 +17,39 @@ public static partial class UnrealComboConverter
     const string ChopName = "Combo2 chop";
     const float ChopPlaySpeed = .64f;
     const float ChopFps = 60f;
-    // Real seconds: windup, held at the top, the cut, the follow-through, back to rest.
-    const float ChopWindup = .19f, ChopTop = .02f, ChopCut = .14f, ChopThrough = .11f, ChopRecover = .34f;
+    // Real seconds: windup, held at the top, the cut, the follow-through, back to rest. The windup was .19 s eased in
+    // and out, so the blade stood upright for about 8 frames before the cut and read as a stall (the user, 2026-11-09):
+    // now it is short and leaves at once (ChopWindupEase), slowing only into the top.
+    const float ChopWindup = .12f, ChopTop = .02f, ChopCut = .14f, ChopThrough = .11f, ChopRecover = .34f;
     // Windup seconds carried on past the clip's end (as far as its last .13 s went again, times this share).
     const float ChopWindupMore = .12f;
     // How far the follow-through goes on past the cut's low point, the way its fastest stretch went (1 = not at all).
     const float ChopThroughMore = 1.5f;
+
+    // Combo 2 (CombatManager.SwingSet.Combo2): copies of the Combo's two swings (so its states stand apart from
+    // the Combo's and can be edited on their own), then Combo2 chop as the third hit (UnrealComboConverter.Combo2.cs).
+    // Rebuilt in place on each run.
+    public const string Combo2Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/Combo2";
+    public static readonly string[] Combo2Names = { "Combo2 swing left", "Combo2 swing right", ChopName };
+
+    public static string MakeCombo2()
+    {
+        System.IO.Directory.CreateDirectory(Combo2Folder);
+        var sources = new[] { $"{Output}/Combo swing left.anim", $"{Output}/Combo swing right.anim" };
+        for (int i = 0; i < 2; i++)
+        {
+            var source = AssetDatabase.LoadAssetAtPath<AnimationClip>(sources[i]);
+            if (source == null) return "Combo2: missing " + sources[i];
+            string path = $"{Combo2Folder}/{Combo2Names[i]}.anim";
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null) { clip = Object.Instantiate(source); AssetDatabase.CreateAsset(clip, path); }
+            else EditorUtility.CopySerialized(source, clip);
+            clip.name = Combo2Names[i];
+            EditorUtility.SetDirty(clip);
+        }
+        AssetDatabase.SaveAssets();
+        return "Combo2: 2 swings | " + MakeCombo2Chop();
+    }
 
     public static string MakeCombo2Chop()
     {
@@ -91,7 +118,7 @@ public static partial class UnrealComboConverter
             {
                 float clipTime = f / ChopFps, r = clipTime / ChopPlaySpeed;
                 Quaternion[] pose;
-                if (r < tTop) pose = Windup((windupEnd + ChopWindupMore) * Smoother(r / ChopWindup));
+                if (r < tTop) pose = Windup((windupEnd + ChopWindupMore) * ChopWindupEase(r / ChopWindup));
                 else if (r < tCut) pose = Windup(windupEnd + ChopWindupMore + .02f * Smoother((r - tTop) / ChopTop));
                 else if (r < tThrough)
                 {
@@ -147,6 +174,9 @@ public static partial class UnrealComboConverter
             if (holder != null) Object.DestroyImmediate(holder);
         }
     }
+
+    // Out of the last hit's pose at speed (the transition's blend softens the start), slowing into the top.
+    static float ChopWindupEase(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x); }
 
     static float Smoother(float x) { x = Mathf.Clamp01(x); return x * x * x * (x * (x * 6f - 15f) + 10f); }
 }

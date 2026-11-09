@@ -46,7 +46,7 @@ public class Hitbox : MonoBehaviour
     Vector3 queryCenter;
     Vector3 segmentA, segmentB;    // the blade's line in the current sweep step (capsule colliders)
     Vector3 lastStepCenter, sweepDirection;
-    bool heavy;
+    bool heavy, finisher;
 
     public void SetProfile(HitProfile p) => profile = p ?? HitProfile.Default;
     public void ClearProfile()           => profile = HitProfile.Default;
@@ -85,6 +85,8 @@ public class Hitbox : MonoBehaviour
         owner  = GetComponentInParent<Character>();
         Active = true;
         heavy=owner is Player p && p.Combat != null && p.Combat.HeavySwing;
+        // Taken with heavy as the blade comes out: the next combo hit can be chosen before this one's last contact.
+        finisher=owner is Player f && f.Combat != null && f.Combat.ComboFinisher;
         if(weaponCollider != null) { previousPosition=weaponCollider.transform.position; previousRotation=weaponCollider.transform.rotation; }
         lastStepCenter = Vector3.zero; sweepDirection = Vector3.zero;
     }
@@ -218,7 +220,6 @@ public class Hitbox : MonoBehaviour
         if(heavy && CombatManager.HasInstance)
         {
             // The combo's finisher has its own multiplier (CombatManager.comboFinisherDamage); a charged heavy attack keeps the heavy one.
-            bool finisher = owner is Player striker && striker.Combat != null && striker.Combat.ComboFinisher;
             // Strength adds to a charged heavy attack (StatType.HeavyDamage), not to the combo's finisher.
             float heavyBonus = owner != null && owner.Stats != null ? Mathf.Max(0f, owner.Stats.GetFinal(StatType.HeavyDamage)) : 0f;
             baseDamage *= finisher ? CombatManager.Instance.comboFinisherDamage : CombatManager.Instance.heavyDamageMultiplier * (1f + heavyBonus);

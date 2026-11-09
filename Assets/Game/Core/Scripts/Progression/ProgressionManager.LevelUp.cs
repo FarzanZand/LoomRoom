@@ -10,12 +10,13 @@ public enum LevelUpReward { Points = 0, Cards = 1 }
 
 public partial class ProgressionManager
 {
-    [Header("Level up")]
+    [FoldoutGroup("Level up"), PropertyOrder(10), LabelText("What a level gives")]
+    [InfoBox("Each character level gained in a run gives one attribute point (Strength, Dexterity, Constitution or Intelligence). Cards: four cards come up and the one picked takes the point. Points: the player spends it with the + on the character panel.")]
     [Tooltip("Points: each level's attribute point is put in with the + on the character panel. Cards: four attribute cards are dealt out of a fight and the one picked takes it.")]
     public LevelUpReward levelUpReward = LevelUpReward.Cards;
-    [ShowIf(nameof(levelUpReward), LevelUpReward.Cards), Tooltip("The level-up cards (UI/Prefabs/Progression/Level up cards, built by LevelUpCardsSetup.Build()): put on the HUD canvas at the start of play while Level up Reward is Cards.")]
+    [FoldoutGroup("Level up"), PropertyOrder(10), LabelText("Cards (prefab)"), ShowIf(nameof(levelUpReward), LevelUpReward.Cards), Tooltip("The level-up cards (UI/Prefabs/Progression/Level up cards, built by LevelUpCardsSetup.Build()): put on the HUD canvas at the start of play while Level up Reward is Cards.")]
     public LevelUpCardsUI levelUpCards;
-    [ShowIf(nameof(levelUpReward), LevelUpReward.Cards), Tooltip("On: the cards come up by themselves once out of a fight, and the game waits. Off: \"Press R to level up\" shows, and R brings the cards up while the game goes on (Esc puts them away again).")]
+    [FoldoutGroup("Level up"), PropertyOrder(10), LabelText("Cards come up by themselves"), ShowIf(nameof(levelUpReward), LevelUpReward.Cards), Tooltip("On: the cards come up by themselves once out of a fight, and the game waits. Off: \"Press R to level up\" shows, and R brings the cards up while the game goes on (Esc puts them away again).")]
     public bool autoPopup = true;
 
     public static bool CardsOnLevelUp => HasInstance && Instance.levelUpReward == LevelUpReward.Cards;

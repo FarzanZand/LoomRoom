@@ -82,7 +82,7 @@ public class BuffBarUI : MonoBehaviour
             var track = ProgressionManager.HasInstance ? ProgressionManager.Instance.Track(AdventureSkill.Blocking) : null;
             var ability = track != null && track.milestones.Count > 0 && track.milestones[0] != null ? track.milestones[0].ability : null;
             shown.Add(new Shown { icon = ability != null && ability.icon != null ? ability.icon : fallbackIcon, seconds = combat.DeflectCooldownLeft, harmful = true,
-                title = ability != null ? ability.displayName : "Deflect", subtitle = "Recharging", body = "Your shield can't send a shot back until this runs out." });
+                title = ability != null ? ability.displayName : "Deflect", subtitle = "Recharging", body = "" });
         }
         foreach (var m in stats.Modifiers)
         {
@@ -98,7 +98,7 @@ public class BuffBarUI : MonoBehaviour
             var item = (m.Source as ItemBuffSource)?.Item;
             bySource[key] = shown.Count;
             shown.Add(new Shown { icon = item != null && item.icon != null ? item.icon : fallbackIcon, seconds = m.Duration, harmful = m.Value < 0f,
-                title = item != null ? item.itemName : "Effect", subtitle = m.Value < 0f ? "Harmful" : "Helpful", body = StatModifierEntry.Describe(m.Stat, m.Type, m.Value) });
+                title = item != null ? item.itemName : "Effect", subtitle = "", body = StatModifierEntry.Describe(m.Stat, m.Type, m.Value) });
         }
     }
 

@@ -21,8 +21,8 @@ using UnityEngine;
 public static partial class AssetStudioWorld
 {
     public const string LevelsRoot = "Assets/Game/Levels", SharedRooms = LevelsRoot + "/Shared/Rooms", SharedBiomes = LevelsRoot + "/Shared/Biomes";
-    public const string CampaignManagerPrefab = "Assets/Game/Campaign/Prefabs/CampaignManager.prefab", RealmMapPrefab = "Assets/Game/Campaign/Map/Realm map.prefab";
-    public const string CatalogPath = LevelsRoot + "/Resources/TableLevels.asset", EncountersRoot = "Assets/Game/Campaign/Encounters";
+    public const string CampaignManagerPrefab = "Assets/Game/Table map/Prefabs/CampaignManager.prefab", RealmMapPrefab = "Assets/Game/Table map/Map/Realm map.prefab";
+    public const string CatalogPath = LevelsRoot + "/Resources/TableLevels.asset", EncountersRoot = "Assets/Game/Table map/Encounters";
     // What every level shares (chests, the merchant, breakables, features, wall lights, the run's HUD pieces).
     public const string DefaultsPath = LevelsRoot + "/Resources/Table level defaults.asset";
 
@@ -213,7 +213,7 @@ public static partial class AssetStudioWorld
 
         // The campaign: places and events, what the manager lists and what stands on the map.
         m.places.AddRange(All<CampaignEncounter>(EncountersRoot).OrderBy(p => p.act).ThenBy(p => p.displayName));
-        m.events.AddRange(All<CampaignEvent>("Assets/Game/Campaign").OrderBy(e => e.afterAct).ThenBy(e => e.title));
+        m.events.AddRange(All<CampaignEvent>("Assets/Game/Table map").OrderBy(e => e.afterAct).ThenBy(e => e.title));
         var manager = AssetDatabase.LoadAssetAtPath<GameObject>(CampaignManagerPrefab)?.GetComponent<CampaignManager>();
         if (manager != null)
         {
@@ -306,7 +306,7 @@ public static partial class AssetStudioWorld
 
     static bool Pinned(string path, HashSet<string> pins)
     {
-        if (path.StartsWith("Assets/Game/Campaign/") || path.StartsWith(LevelsRoot + "/Arena/") || path.StartsWith(LevelsRoot + "/Resources/") || path.StartsWith("Assets/Game/Development/")) return true;
+        if (path.StartsWith("Assets/Game/Table map/") || path.StartsWith(LevelsRoot + "/Arena/") || path.StartsWith(LevelsRoot + "/Resources/") || path.StartsWith("Assets/Game/Development/")) return true;
         if (pins.Contains(path)) return true;
         // A folder named in code pins the files right in it (a builder writes there), not its subfolders.
         string dir = Path.GetDirectoryName(path).Replace('\\', '/');

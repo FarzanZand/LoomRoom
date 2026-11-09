@@ -18,7 +18,7 @@ MonoBehaviour:
   spell: {fileID: 0}
   unlocksClass: {fileID: 0}
   rarity: 0
-  description: 'Trophy. Athletics 15: the dash. They hang on the trophy wall.'
+  description: 'Trophy. Athletics 15: the dash.'
   icon: {fileID: 21300000, guid: bddc9b3e90999d54992c706115585267, type: 3}
   iconSource:
     custom: 0

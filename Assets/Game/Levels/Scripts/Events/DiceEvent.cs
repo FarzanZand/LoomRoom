@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// The dice room (on the Dice room template's root, with a ScriptedEventRoom): a room open to the sky with his gaming board
-// on the floor under the opening, six painted squares saying what each face brings, and a little gambler's table at its
+// The dice room (on the Dice room template's root, with a ScriptedEventRoom): a candlelit room with his gaming board on
+// the floor, six painted squares saying what each face brings, and a little gambler's table at its
 // edge where a skeleton died over his last bet. Walking in, the Dungeon Master says what the room is; shaking the cup on
-// the table (DiceCup) asks for the roll: he leans over, brings his die up in his fingers and drops it through the opening
+// the table (DiceCup) asks for the roll: he leans over, lifts the roof off, brings his die up in his fingers and drops it
 // onto the board, where it comes to rest on the square of its own number, and a light comes up on that square:
 //   1 an ambush (gates and two waves)   2 he sets a tough enemy down     3 nothing
 //   4 a rest (health back to full)      5 he sets down an iron chest     6 he sets down a gold chest with gear rolled Unique
@@ -13,7 +13,7 @@ using UnityEngine;
 public class DiceEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("The Dungeon Master's die (a cube; its faces: +Y 1, +X 2, +Z 3, -Z 4, -X 5, -Y 6).")] public GameObject diePrefab;
-    [Tooltip("Where it lands when the board has no squares (under the opening).")] public Transform landing;
+    [Tooltip("Where it lands when the board has no squares.")] public Transform landing;
     [Tooltip("The board's squares, 1 to 6: the die comes to rest on its own number's square.")] public Transform[] squares = new Transform[0];
     [Tooltip("A light (the board's child) moved over the square the die lands on and faded in.")] public Light squareLight;
     [Min(0f)] public float squareLightIntensity = 6f;
@@ -27,6 +27,8 @@ public class DiceEvent : MonoBehaviour, ICoopEventRoom
     [Range(1, 4), Tooltip("How many tough enemies a 2 brings, set down one after another.")] public int toughCount = 2;
     [Range(1, 4), Tooltip("Each of the ambush's waves (a 1) is this many times its usual size.")] public int ambushScale = 2;
     [Tooltip("The effect on the player when a 4 heals them.")] public GameObject healEffect;
+    [Tooltip("The room's roof, which he lifts off to drop his die and set down what it brings: its sounds and dust.")]
+    public LidEffects lid = new();
     [Tooltip("Testing: the face it always lands on (0: the floor's seed picks).")] [Range(0, 6)] public int forceFace;
     [Tooltip("Highest gear tier of its prize on a level with no Gear by floor table; otherwise the prize is of the floor's tiers.")] [Range(1, 12)] public int maxTier = 2;
     [Header("Lines")]
@@ -114,22 +116,28 @@ public class DiceEvent : MonoBehaviour, ICoopEventRoom
         bool released = false;
         Coroutine tumble = null;
         // Over the room if he can reach it; else from as far as he can reach, he tosses it in. It falls (or flies) the
-        // moment he lets go.
+        // moment he lets go. The room has a ceiling (the user, 2026-11-04: no opening and no beam of light): once he is
+        // there he lifts its roof off, and puts it back when the board has spoken and what it brings is set down.
         bool reach = DungeonMasterReach.CanReach(spot);
+        if (reach) yield return DungeonMasterReach.Approach(spot); else yield return DungeonMasterReach.TurnTo(spot);
+        yield return DungeonMasterReach.Lid(room.Dungeon, true, new[] { spot }, lid);
         yield return DungeonMasterReach.DropOver(die.transform, spot, raiseSeconds, () =>
         {
             released = true;
             tumble = StartCoroutine(Tumble(die.transform, spot, Result, rng, Toss(die.transform.position, spot)));
         }, reach);
-        StartCoroutine(DungeonMasterReach.Leave());
-        if (!released) yield break;
+        if (!released) { yield return DungeonMasterReach.Lid(room.Dungeon, false, null, lid); StartCoroutine(DungeonMasterReach.Leave()); yield break; }
         yield return tumble;
         foreach (var c in colliders) if (c != null) c.enabled = true;
         StartCoroutine(LightSquare(die.transform.position));
         yield return new WaitForSeconds(.5f);
         ScriptedEventRoom.Say(faceLines[Result - 1]);
         yield return new WaitForSeconds(.8f);
+        // A roll that brings nothing he sets down: the roof goes back now (an ambush is not fought with it off).
+        bool sets = Result == 2 || Result == 5 || Result == 6;
+        if (!sets) { yield return DungeonMasterReach.Lid(room.Dungeon, false, null, lid); StartCoroutine(DungeonMasterReach.Leave()); }
         yield return Outcome(player, spot, rng);
+        if (sets) { yield return DungeonMasterReach.Lid(room.Dungeon, false, null, lid); yield return DungeonMasterReach.Leave(); }
     }
 
     // The square the die rests on lights up (its light stays: the board says what the room became).
@@ -275,7 +283,6 @@ public class DiceEvent : MonoBehaviour, ICoopEventRoom
                     break;
                 }
                 var prefab = toughEnemy != null ? toughEnemy : room.Dungeon.PickEnemy(room.Room, rng);
-                bool put = false;
                 for (int i = 0; i < toughCount && prefab != null; i++)
                 {
                     // Each a little further round from the last, so they don't land on one spot.
@@ -283,9 +290,7 @@ public class DiceEvent : MonoBehaviour, ICoopEventRoom
                     var enemy = room.Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(Flat(player.transform.position - at)));
                     if (enemy == null) continue;
                     yield return DungeonMasterReach.Put(enemy, at);
-                    put = true;
                 }
-                if (put) yield return DungeonMasterReach.Leave();
                 break;
             }
             case 3: break;
@@ -303,7 +308,6 @@ public class DiceEvent : MonoBehaviour, ICoopEventRoom
                 CoopWorld.AddContainer(chest);
                 if (Result == 6) { var prize = ScriptedEventRoom.Gear(ItemRarity.Unique, rng, maxTier); if (prize != null) chest.guaranteedItems.Add(prize); }
                 yield return DungeonMasterReach.PutThing(chest.transform, at);
-                yield return DungeonMasterReach.Leave();
                 break;
             }
         }

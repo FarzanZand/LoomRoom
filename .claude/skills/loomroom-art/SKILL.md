@@ -150,7 +150,7 @@ looks wrong, too.
   shelves) every view covers only a sliver of each surface, and the result is camouflage-like noise, black outline
   flecks and smears. Don't use it for those; say so and ask how to proceed.
 - Look at every asset at full size, side by side with the reference creatures and with the old version.
-- Then in game: hold it, drop it, fight with it (`Development/CombatTestBot.cs`: `capture` frame sheets).
+- Then in game: hold it, drop it, fight with it (`Development/Scripts/CombatTestBot.cs`: `capture` frame sheets).
 - Show the user stills; never say "good" from small contact sheets. If the user says it isn't up to the creatures, redo it
   with this pipeline, from scratch if needed.
 

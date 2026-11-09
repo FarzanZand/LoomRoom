@@ -107,10 +107,10 @@ Lower-priority bugs: torch placement ignores the floor seed (`DungeonGenerator.G
 | JMO Cartoon FX / VFXPACK_IMPACT | 39 + 28 MB | ~0.5 MB and ~1.7 MB used. |
 | `World/Terrain/Woodland/Grounded Meadow *` + `Table Terrain`, `Table Navigation` | 27 MB | Unreferenced (live copies in `Rendering/`). |
 | FPC docs | 7.8 MB | Footstep WAVs used, PDF/docs not. |
-| `Assets/ProPixelizer` | 18 MB | No references; replaced by PixelLook. Compiles 79 scripts. |
+| `Assets/ThirdParty/ProPixelizer` | 18 MB | No references; replaced by PixelLook. Compiles 79 scripts. |
 | `Assets/ThirdParty/Pixel Items` | 19 MB + 53 MB of .meta | 11,600 PNGs, ~70 used; big import cost. |
 | Loose music | ~40 MB | `Pixel March.wav`, `Mines01.mp3`, several RPG tracks unreferenced. |
-| Root clutter | | `Assets/New Terrain.asset` (3.4 MB), `Assets/Settings` URP template leftovers (Mobile/PC RP assets, Readme, TutorialInfo), empty folders `Items/Data/Generic`, `Items/Data/Keys`, `World/Props`. |
+| Root clutter | | `Assets/New Terrain.asset` (3.4 MB), `Assets/Game/Rendering/Settings` URP template leftovers (Mobile/PC RP assets, Readme, TutorialInfo), empty folders `Items/Data/Generic`, `Items/Data/Keys`, `World/Props`. |
 | Small leftovers | | Unused `Audio/Data/Poof`, `Weapon_Swing_Default`, five `UI/Audio/*.asset`, `UI/Resources/UIFeedback rows.asset`, `Items/Effects/LogMessage`, `Bronze Shield/Sword` prefabs, `Heal Potion` pickup, `Adventure option`, `Skill Row` prefabs, `Loomy Dungeons Darkened` theme, `PIXEARG_OUT`/`SDFUnderlay` fonts (check TMP fallbacks), `TableArmsMesh*` prefabs, `_Archive/Green Slime`. |
 
 **Licensing:** a track from another game's soundtrack is reachable from the scene (would ship in a build) and a YouTube rip (Tom Cardy) is committed. Paid Synty packs are in the repo: keep the GitHub repo private.

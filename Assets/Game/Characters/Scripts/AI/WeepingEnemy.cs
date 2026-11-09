@@ -3,7 +3,8 @@ using UnityEngine;
 // An enemy that kneels and weeps where it was set down (the Not a witch room's moonlight) and leaves the player alone until
 // someone hurts it: it notices nothing (EnemyBrain.Entranced, no close awareness behind it), so a quiet approach and a
 // blow from behind is an easy backstab. The first hit wakes it for good: it stands, screams and fights (its own
-// melee and spells, EnemyData). It drops a random piece of gear rolled Legendary (the highest rarity) and spoils when it dies.
+// melee and spells, EnemyData). It drops a random piece of gear (Rare, of the floor's tiers or one above since 2026-11-04,
+// the user: it was Legendary) and spoils when it dies.
 // On the enemy's prefab, next to its EnemyBrain.
 public class WeepingEnemy : MonoBehaviour
 {
@@ -16,7 +17,11 @@ public class WeepingEnemy : MonoBehaviour
     [Tooltip("Wakes with its fireball volley (the first volley in its spells) before anything else.")]
     public bool openWithVolley = true;
     [Header("Reward")]
-    [Tooltip("Its Legendary drop is of the floor's gear tiers (the level's Gear by floor); on a level with no table, tiers 1 to this.")]
+    [Tooltip("The rarity its piece of gear is rolled at.")]
+    public ItemRarity rarity = ItemRarity.Rare;
+    [Range(0, 3), Tooltip("Its drop is of the floor's gear tiers (the level's Gear by floor) or up to this many tiers above them.")]
+    public int tiersAbove = 1;
+    [Tooltip("On a level with no Gear by floor table, its drop is of tiers 1 to this.")]
     [Range(1, 12)] public int maxTier = 2;
     [Tooltip("The spoils it always drops (empty: the meta progression's biggest kind).")] public ItemData spoils;
     [Min(1)] public int spoilsCount = 1;
@@ -114,7 +119,7 @@ public class WeepingEnemy : MonoBehaviour
             foreach (var s in brain.Data.spells) if (s != null && s.volley && s.spell != null) { brain.OpenWith(s); break; }
     }
 
-    // Its reward: a random piece of gear, Legendary, and the spoils, thrown out where it fell.
+    // Its reward: a random piece of gear at its rarity, and the spoils, thrown out where it fell.
     void Dropped()
     {
         if (source != null) source.Stop();
@@ -122,7 +127,7 @@ public class WeepingEnemy : MonoBehaviour
         var at = transform.position + Vector3.up * .3f;
         var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
         var random = new System.Random(System.Environment.TickCount ^ (int)(transform.position.x * 1000f));
-        var item = InventoryManager.FloorGear(ItemRarity.Legendary, floor, random, maxTier);
+        var item = InventoryManager.FloorGear(rarity, floor, random, maxTier, tiersAbove);
         if (item != null) DungeonPickup.Spawn(item, at + transform.right * .6f, parent);
         var spoilsItem = spoils;
         if (spoilsItem == null && ProgressionManager.HasInstance && ProgressionManager.MetaActive)

@@ -24581,6 +24581,8 @@ MonoBehaviour:
   startRadius: 2
   bossSpot: {fileID: 0}
   exitSpot: {fileID: 0}
+  prepShield: {fileID: 11400000, guid: 49d3c10a30673d240982e4adce0127fd, type: 2}
+  prepPotion: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
 --- !u!114 &7184850321969923451
 MonoBehaviour:
   m_ObjectHideFlags: 0

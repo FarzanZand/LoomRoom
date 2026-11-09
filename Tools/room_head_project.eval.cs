@@ -77,7 +77,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
   for (int y = 0; y < G; y++) for (int x = 0; x < G; x++) { int k = pk[0][y * G + x].r; if (k < 3 || pc[0][y * G + x].a < 128) continue; ffx0 = System.Math.Min(ffx0, x); ffx1 = System.Math.Max(ffx1, x); ffy0 = System.Math.Min(ffy0, y); ffy1 = System.Math.Max(ffy1, y); }
   bool InFeatures(UnityEngine.Vector3 w) { var d = w - c; float fx = (UnityEngine.Vector3.Dot(d, vR[0]) / region + .5f) * G, fy = (UnityEngine.Vector3.Dot(d, vU[0]) / region + .5f) * G; return UnityEngine.Vector3.Dot(d, f) > 0 && fx >= ffx0 - 4 && fx <= ffx1 + 4 && fy >= ffy0 - 4 && fy <= ffy1 + 4; }
   // skin or not for every pixel of the full-size bake (as Tools/room_head_swatches.py decides it)
-  var bakeFullT = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Meshy/RoomHead{(who == "woman" ? "Woman" : "Man")}/{name} baked.png");
+  var bakeFullT = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Art/Meshy/RoomHead{(who == "woman" ? "Woman" : "Man")}/{name} baked.png");
   var bft = new UnityEngine.Texture2D(2, 2); bft.LoadImage(System.IO.File.ReadAllBytes(UnityEditor.AssetDatabase.GetAssetPath(bakeFullT))); int FW = bft.width; var bpx = bft.GetPixels();
   var fullSkin = new bool[bpx.Length];
   { bool Sk0(UnityEngine.Color q) => q.r > q.g * 1.04f && q.g > q.b * .98f && q.r > q.b * 1.1f && (q.r + q.g + q.b) / 3f > .3f;

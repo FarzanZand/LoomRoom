@@ -13,7 +13,7 @@ foreach (var (headGo, bodyGo, name, who) in new[] { (bt.headA, bt.bodyA, "Room H
   var feat = headGo.transform.Find("Face features"); if (feat) feat.gameObject.SetActive(false);
   float tpu = PixelRestyle.TexelsPerUnit(bodyGo.GetComponent<UnityEngine.SkinnedMeshRenderer>()) * FaceDetail;
   var mr = headGo.GetComponent<UnityEngine.Renderer>(); var keepMat = mr.sharedMaterial; int keepLayer = headGo.layer;
-  var bake = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Meshy/RoomHead{(who == "woman" ? "Woman" : "Man")}/{name} baked.png");
+  var bake = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Art/Meshy/RoomHead{(who == "woman" ? "Woman" : "Man")}/{name} baked.png");
   var unlit = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Unlit")); unlit.SetTexture("_BaseMap", bake); unlit.SetFloat("_Cull", 0);
   // a skinned head is rendered from its bind-pose mesh, the positions the projection maps from (the live skeleton's pose can differ)
   UnityEngine.GameObject bindGo = null; var renderR = mr;

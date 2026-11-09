@@ -76,7 +76,7 @@ try
     if (line.Trim() == "" || line.StartsWith("#")) continue;
     var a = line.Split('|'); string name = a[0]; float size = float.Parse(a[1], ci), drop = float.Parse(a[2], ci), turn = float.Parse(a[3], ci), fwd = float.Parse(a[4], ci); float taper = a.Length > 5 ? float.Parse(a[5], ci) : 0f, taperHeight = a.Length > 6 ? float.Parse(a[6], ci) : .25f, extend = a.Length > 7 ? float.Parse(a[7], ci) : 0f;
     var kind = (KeeperFaceKind)System.Enum.Parse(typeof(KeeperFaceKind), name);
-    string dir = $"Assets/Game/Meshy/KeeperHead{name}";
+    string dir = $"Assets/Game/Art/Meshy/KeeperHead{name}";
     // the head as Tools/keeper_head_bake.py wrote it ("Keeper Head <X> obj.txt", already in Unity's frame: y up, face +z),
     // one vertex per corner; made into a mesh asset here (Unity's FBX import strung these remeshes' triangles across the head)
     var P = new System.Collections.Generic.List<UnityEngine.Vector3>(); var T = new System.Collections.Generic.List<UnityEngine.Vector2>(); var N = new System.Collections.Generic.List<UnityEngine.Vector3>();

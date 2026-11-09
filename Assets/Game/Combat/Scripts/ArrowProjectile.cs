@@ -2,7 +2,7 @@ using UnityEngine;
 
 // An arrow in flight: a fast line with a little drop. Hurts the first hostile character it
 // meets, flies past friends and sticks in whatever else it hits. Fired by EnemyAttackRunner
-// for archers (EnemyArchery); lives on Combat/Arrows/Arrow. The art child points along +Z.
+// for archers (EnemyArchery); lives on Combat/Prefabs/Arrows/Arrow. The art child points along +Z.
 public class ArrowProjectile : MonoBehaviour
 {
     public LayerMask collisionMask = ~0;

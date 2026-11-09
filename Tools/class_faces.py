@@ -8,7 +8,7 @@ AdventurerClass.face points at it and AdventureClassSelectionUI shows it where U
 import sys
 from PIL import Image
 
-SRC = "Assets/Game/Art/Portraits Highquality/"
+SRC = "Assets/Game/Characters/Classes/Portraits Highquality/"
 OUT = "Assets/Game/UI/Sprites/Meta/Portraits/"
 # class: painting, centre x, centre y, square size (in the 1536 x 2048 paintings): the face a little above the middle,
 # the top of the shoulders at the foot

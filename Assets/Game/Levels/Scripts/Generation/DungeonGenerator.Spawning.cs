@@ -850,7 +850,7 @@ public partial class DungeonGenerator
         if(mayBeElite && !boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
            && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
             eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
-        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors);
+        if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors,data.StageDamage(FloorNumber));
         // Co-op: tougher for a bigger party.
         if(character!=null && character.Stats!=null && Coop.PartySize>1)
             character.Stats.AddModifier(new StatModifier(StatType.MaxHealth,(Coop.PartySize-1)*MultiplayerManager.Instance.enemyHealthPerPlayer,ModifierType.PercentAdd,Coop.PartySource));

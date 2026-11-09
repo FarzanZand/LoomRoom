@@ -56,6 +56,8 @@ public class InventoryManager : Singleton<InventoryManager>
         // Legendary: the highest, never rolled by chance; only given (the weeping witch, the Skeleton Party's chest).
         new RarityStep { rarity = ItemRarity.Legendary, properties = new(4, 4), baseBonus = .75f, priceMultiplier = 6f, chance = 0f, chancePerFloor = 0f },
     };
+    [Range(0, 1), Tooltip("The share of each rarity's Base Bonus a weapon's damage takes (armour takes all of it): 0.5 halves a weapon's step up in rarity (the user, 2026-11-04: it was too strong). Damage and armour stay whole numbers.")]
+    public float weaponBonusShare = .5f;
     [Min(0), Tooltip("Times every rarity chance for a merchant's gear (a better pick than the floor's loot; its price follows the rarity).")] public float merchantRarity = 1.3f;
 
     [ShowInInspector, ReadOnly, MultiLineProperty(4), LabelText("Chests by floor"), Tooltip("Rarity of chest gear on each floor, with the whole-game multiplier.")]
@@ -108,12 +110,12 @@ public class InventoryManager : Singleton<InventoryManager>
     }
 
     // A given reward of this floor's gear: the tiers the level's Gear by floor gives the floor (as its loot does), rolled at
-    // this rarity (an event room's prize, Not a witch's Legendary, the Skeleton Party's chest). A level with no table gives
-    // tiers 1 to Fallback Top.
-    public static ItemData FloorGear(ItemRarity rarity, int floor, System.Random random, int fallbackTop = 2)
+    // this rarity (an event room's prize, Not a witch's drop, the Skeleton Party's chest); Tiers Above lets it come up to that
+    // many tiers past the floor's. A level with no table gives tiers 1 to Fallback Top.
+    public static ItemData FloorGear(ItemRarity rarity, int floor, System.Random random, int fallbackTop = 2, int tiersAbove = 0)
     {
         var row = LootSource.FloorGear?.Invoke(Mathf.Max(1, floor));
-        return row != null ? GivenGear(rarity, row.HighestTier, floor, random, row.LowestTier) : GivenGear(rarity, fallbackTop, floor, random);
+        return row != null ? GivenGear(rarity, Mathf.Min(12, row.HighestTier + tiersAbove), floor, random, row.LowestTier) : GivenGear(rarity, fallbackTop, floor, random);
     }
 
     // A random piece of gear from the catalog (weapon, shield or armour, Min Tier to Max Tier, by loot weight) rolled at this

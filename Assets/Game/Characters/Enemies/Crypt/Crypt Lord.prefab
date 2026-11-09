@@ -3496,11 +3496,11 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 285
+    baseValue: 570
     min: 0
     max: 0
   - stat: 2
-    baseValue: 12
+    baseValue: 14.4
     min: 0
     max: 0
   - stat: 1
@@ -3572,10 +3572,10 @@ MonoBehaviour:
     loseSightGracePeriod: 3
     maxSearchTime: 5
     useChaseSpeed: 1
-    chaseSpeed: 3.6
+    chaseSpeed: 4.14
     useWanderSpeed: 1
     wanderSpeed: 0.7
-    acceleration: 30
+    acceleration: 34.5
     preferredRangeFraction: 0.7
     circleTarget: 1
     circleSpeedFraction: 0.32
@@ -3583,20 +3583,20 @@ MonoBehaviour:
     spacingSpeedFraction: 0.8
     spacingSway: 0.35
     spacingSwayPeriod: {x: 2.2, y: 3.4}
-    stepBackAfterSwing: 0.5
+    stepBackAfterSwing: 0.43478262
     stepBackSpeedFraction: 0.25
     footworkPace: 1.1
     passiveAngularSpeed: 360
-    chaseAngularSpeed: 720
-    attackFaceSpeed: 900
-    windupTrackSpeed: 240
+    chaseAngularSpeed: 828
+    attackFaceSpeed: 1035
+    windupTrackSpeed: 276
   attacks:
   - name: Bite / strike
     weight: 1
     animatorTrigger: Attack
     minRange: 0
     maxRange: 1.65
-    cooldown: 2.1
+    cooldown: 1.826087
     facingAngle: 45
     hitboxIndex: 0
     fallbackHitDelay: 0.7

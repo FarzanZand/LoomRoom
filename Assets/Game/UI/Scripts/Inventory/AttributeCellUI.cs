@@ -34,6 +34,7 @@ public class AttributeCellUI : MonoBehaviour
         int score = owner != null ? owner.Score(attribute) : meta != null ? meta.AttributeScore(attribute) : 8;
         bool raised = owner != null && (int)attribute < owner.AttributePoints.Length && owner.AttributePoints[(int)attribute] > 0;
         if (value != null) value.text = raised ? $"<color={ItemData.GoodColor}>{score}</color>" : score.ToString();
-        if (plus != null) plus.gameObject.SetActive(owner != null && owner.InRun && owner.UnspentPoints > 0 && !ProgressionManager.CardsOnLevelUp);
+        // The points panel in the middle of the screen takes the points when it is there.
+        if (plus != null) plus.gameObject.SetActive(owner != null && owner.InRun && owner.UnspentPoints > 0 && !ProgressionManager.CardsOnLevelUp && !AttributePointsUI.Present);
     }
 }

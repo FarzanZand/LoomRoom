@@ -6,7 +6,7 @@ using UnityEngine.Serialization;
 
 // Central toggles and tuning for combat feel. Hit stop lives here too, so there is
 // exactly one entry point and a hit can never freeze the game twice.
-public class CombatManager : Singleton<CombatManager>
+public partial class CombatManager : Singleton<CombatManager>
 {
     // Inspector: tabs (Player, Enemies, Hits, Death) of foldouts. Field names are what the prefab and scene save;
     // grouping them never changes a value.
@@ -43,17 +43,15 @@ public class CombatManager : Singleton<CombatManager>
     [Min(.1f)] public float enemyHurtAnimationSpeed = 1.3f;
 
     // ── Player: Swing set ──
-    // Which light attack the player has (serialized by number, append only).
-    public enum SwingSet { Simple = 0, IkSwings = 1, Combo = 2, Classic = 3, Classic2 = 4, Combo2 = 5 }
+    // Which light attack the player has (serialized by number, append only). 1 (IK Swings), 3 (Classic) and 4 (Classic 2)
+    // are retired (removed 2026-11-05 with their clips); a saved one reads as Combo 2 (Live).
+    public enum SwingSet { Simple = 0, Combo = 2, Combo2 = 5 }
+    static SwingSet Live(SwingSet set) => set == SwingSet.Simple || set == SwingSet.Combo || set == SwingSet.Combo2 ? set : SwingSet.Combo2;
     // One swing set per weapon type: the held weapon's category picks it (SwingSetFor).
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), FormerlySerializedAs("swingSet")]
-    [Tooltip("For swords. Simple: the original light swings (Attack_Swing_A/B), with charge and heavy swings. IK Swings: the baked IK " +
-        "set (FirstPersonPlayer/IK swings): a visible windup, a strike in a few frames and a held follow-through, " +
-        "forehand and backhand. Combo: the three-hit combo converted from the Unreal game (Combo swing left, swing right, " +
-        "stab; FirstPersonPlayer/Combo), one hit per press, no charge or heavy swing. Classic: the same combo with its " +
-        "left and right swings reworked into horizontal blows with a held windup (FirstPersonPlayer/Classic). Classic 2: " +
-        "fast, low, flat swipes from screen edge to screen edge with no visible windup (FirstPersonPlayer/Classic2). Combo 2: " +
-        "the Combo's two swings, then the Simple light swing as the third hit (FirstPersonPlayer/Combo2).")]
+    [Tooltip("For swords. Simple: the original light swings (Attack_Swing_A/B), with charge and heavy swings. Combo: the " +
+        "three-hit combo converted from the Unreal game (swing left, swing right, stab; FirstPersonPlayer/Combo), one hit per " +
+        "press. Combo 2: the Combo's two swings, then the Simple light swing as the third hit, a chop (FirstPersonPlayer/Combo2).")]
     public SwingSet swordSwingSet = SwingSet.Combo;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set")]
     [Tooltip("For maces (the same sets as for swords).")]
@@ -68,7 +66,7 @@ public class CombatManager : Singleton<CombatManager>
     static bool IsMace(ItemData weapon) => weapon != null && weapon.IsWeapon && weapon.weaponCategory == WeaponCategory.Mace;
     public float StaggerStrengthFor(ItemData weapon) => weapon == null || !weapon.IsWeapon ? 1f : IsMace(weapon) ? maceStaggerStrength : swordStaggerStrength;
 
-    public SwingSet SwingSetFor(ItemData weapon) => IsMace(weapon) ? maceSwingSet : swordSwingSet;
+    public SwingSet SwingSetFor(ItemData weapon) => Live(IsMace(weapon) ? maceSwingSet : swordSwingSet);
     // The table player's swing set now: the one for the weapon in their right hand.
     public SwingSet swingSet
     {
@@ -78,12 +76,10 @@ public class CombatManager : Singleton<CombatManager>
             return SwingSetFor(player != null && player.Equipment != null ? player.Equipment.Get(EquipmentSlot.RightHand) : null);
         }
     }
-    static bool IsCombo(SwingSet set) => set == SwingSet.Combo || set == SwingSet.Classic || set == SwingSet.Classic2 || set == SwingSet.Combo2;
-    public bool simpleSwings => swingSet != SwingSet.IkSwings;
+    static bool IsCombo(SwingSet set) => Live(set) != SwingSet.Simple;
     public bool comboAttack => IsCombo(swingSet);
-    // For the inspector: show the combo and IK settings when any weapon type uses them.
+    // For the inspector: show the combo settings when any weapon type uses them.
     bool AnyCombo => IsCombo(swordSwingSet) || IsCombo(maceSwingSet);
-    bool AnyIk => swordSwingSet == SwingSet.IkSwings || maceSwingSet == SwingSet.IkSwings;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Range(.3f, 1.5f), Tooltip("How fast the combo's hits play (1 = as in the Unreal clips). The attack speed stat multiplies it.")]
     public float comboSpeed = .7f;
@@ -136,12 +132,6 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyCombo))]
     [Min(0f), Tooltip("A pause this long after a hit starts the combo again from its first hit.")]
     public float comboResetTime = 1.1f;
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
-    [Tooltip("Camera turn (pitch, yaw, roll in degrees) at the peak of an IK forehand; the backhand mirrors yaw and roll.")]
-    public Vector3 ikSwingCameraRotation = new Vector3(.4f, -1.2f, .6f);
-    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Swing set"), ShowIf(nameof(AnyIk))]
-    [Tooltip("IK swing camera motion over the release clip: peaks with the strike, eases off through the follow-through.")]
-    public AnimationCurve ikSwingCameraCurve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(.12f, 1f), new Keyframe(.6f, .35f), new Keyframe(1f, 0f));
 
     // ── Player: Strike feel ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
@@ -307,6 +297,12 @@ public class CombatManager : Singleton<CombatManager>
     [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]
     [Min(.1f)] public float enemyAttackCommitTime = .4f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(0f), Tooltip("Seconds before an enemy's blow lands that it stops turning to follow the target, whatever the Commit Time says: the window a sideways dash has to get out of the swing (it was 0, so the swing followed a dodge to the end). 0: only Commit Time.")]
+    public float enemyCommitBeforeHit = .25f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Range(0f, 1.5f), Tooltip("How far ahead an enemy's swing leads a moving target: it turns toward, and commits to, where the target will be when the blow lands, from how it is moving (1: all the way). A steady walk or strafe round it is then hit; a dash started after the commit still gets out. 0: it aims where the target is (holding a strafe dodged most swings).")]
+    public float enemyAimLead = 1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Seconds the enemy stands after a swing before it moves again.")]
     [Min(0)] public float enemyRecoveryTime = .18f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
@@ -325,8 +321,11 @@ public class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemyAttackTell)), Tooltip("Optional sound at the start of every enemy attack.")]
     public AudioData enemyTellAudio;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
-    [Tooltip("Max angle between where the enemy committed to swing and the target for the hit to land.")]
-    [Range(10,100)] public float enemyHitFacingAngle = 60f;
+    [Tooltip("Degrees either side of where an enemy committed its swing that its blow can still land (the front of the swing; Swing Half Width decides how far aside).")]
+    [Range(10,100)] public float enemyHitFacingAngle = 80f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(.2f), Tooltip("Metres either side of an enemy's committed swing line that its blow lands: a strafe (well under a metre aside before the blow) is hit, a dash after the commit (about two) gets out.")]
+    public float enemySwingHalfWidth = 1f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
@@ -383,7 +382,7 @@ public class CombatManager : Singleton<CombatManager>
     [Min(1f), Tooltip("Reach multiplier for player/enemy melee queries and enemy attack selection.")]
     public float meleeReachMultiplier = 1.2f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
-    [Min(1f), Tooltip("Thickness multiplier for melee hit queries; also widens fallback enemy hit arcs.")]
+    [Min(1f), Tooltip("Thickness multiplier for the player's melee hit queries.")]
     public float meleeWidthMultiplier = 1.25f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
     [Min(0f), Tooltip("Player swings: every swing also hits anything out to this far from the player's chest, in the direction the blade is sweeping, so every swing and every weapon reaches the same distance. 0 = only where the blade goes.")]
@@ -427,10 +426,10 @@ public class CombatManager : Singleton<CombatManager>
 
     // ── Hits: Armor ──
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
-    [Tooltip("Armor effectiveness: armor is taken off this share of a hit, the rest always lands, so armor never makes anyone untouchable. A successful block uses the full hit (1).")]
+    [Tooltip("The most of a hit armour ever stops: under the flat rule armour comes off this share of the hit and the rest always lands; under the scaled rule (the player's, CombatManager.Armor.cs) it caps the share. So armour never makes anyone untouchable. A successful block uses the full hit (1).")]
     [Range(0f, 1f)] public float armorEffectiveness = .65f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Armor")]
-    [Min(0f), Tooltip("Damage one point of armour stops. Armour numbers are five times what they were before 2026-10-15 (a Leather Helm is 5), so 0.2 keeps the old balance and each rarity step's +20% shows as whole points.")]
+    [Min(0f), Tooltip("Flat rule (enemies, blocked hits, and the player when Player Armor Rule is Flat): damage one point of armour stops. The shield bash also counts the player's armour by it (armour x this x its Damage Per Armor), whatever the rule.")]
     public float armorPerPoint = .2f;
     public static float ArmorPerPoint => HasInstance ? Instance.armorPerPoint : .2f;
 

@@ -37,11 +37,22 @@ public class InteractController : MonoBehaviour
         if (!InputManager.HasInstance) return;
         InputManager.Instance.InteractPressed -= OnInteractInput;
         InputManager.Instance.InteractPressed += OnInteractInput;
+        InputManager.Instance.MapPressed -= OnSecondaryInput;
+        InputManager.Instance.MapPressed += OnSecondaryInput;
     }
     void OnDisable()
     {
-        if (InputManager.HasInstance) InputManager.Instance.InteractPressed -= OnInteractInput;
+        if (InputManager.HasInstance) { InputManager.Instance.InteractPressed -= OnInteractInput; InputManager.Instance.MapPressed -= OnSecondaryInput; }
         SetActiveTrigger(null);
+    }
+    // The second key (R): the aimed-at interactable's second action, when it has one now.
+    void OnSecondaryInput()
+    {
+        if (Blocked || !Evaluate(activeTrigger, out float score) || score > releaseAngle) return;
+        if (activeTrigger.Interactable is ISecondaryInteractable second && !string.IsNullOrEmpty(second.SecondaryPrompt)
+            && activeTrigger.Interactable.CanInteract(character))
+            second.SecondaryInteract(character);
+        RefreshBest();
     }
     // Evaluate after camera motion, avoiding a frame of disagreement with the view.
     void LateUpdate() => RefreshBest();

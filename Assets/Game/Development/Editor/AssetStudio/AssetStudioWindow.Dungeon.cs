@@ -551,6 +551,8 @@ public partial class AssetStudioWindow
         if (bal != null)
         {
             dmg *= (boss && bal.separateBossDamage ? bal.bossDamageMultiplier : bal.damageMultiplier) * DungeonBalance.Grown(bal.damageGrowthPerFloor, depth);
+            // The stage's own Damage x, on its floors only and never the boss (DungeonBalance.Apply).
+            if (!boss && d != null) dmg *= d.StageDamage(floor);
             hp *= boss ? bal.bossHealthMultiplier : bal.healthMultiplier * DungeonBalance.Grown(bal.healthGrowthPerFloor, depth);
             arm += bal.armorPerFloor * depth;
         }
@@ -564,7 +566,7 @@ public partial class AssetStudioWindow
     {
         var d = l.data;
         var room = d.baseBiome != null ? d.baseBiome.shopRoom : null;
-        PageHeader("The tavern", "A walled-off room on every floor behind a shield door: the keeper's wares, a hot meal, rumours and a fire to rest by.",
+        PageHeader("The tavern", "A walled-off room behind a shield door on the floors that have one (the level's Tavern Every): the keeper's wares, a hot meal, rumours and a fire to rest by.",
             ("Walk into it", "A run that opens in the tavern.", () => Toast(room != null ? GameLauncher.PlayRoom(room) : "No tavern room.")),
             ("Visit it in the arena", "The Debug arena has a tavern west of its floor.", () => { if (!DebugDungeonToolbar.StartDebug()) Toast("Unity is busy: try again in a moment."); }));
 

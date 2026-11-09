@@ -54,7 +54,7 @@ public static class BossStageSetup
         if (material == null)
         {
             var source = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/Combat/Spells/_Pack/Materials/Trail_LWRP.mat")
-                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/Spells Pack/LWRP(URP)/Particles_LWRP/Materials/Trail_LWRP.mat");
+                ?? AssetDatabase.LoadAssetAtPath<Material>("Assets/ThirdParty/Spells Pack/LWRP(URP)/Particles_LWRP/Materials/Trail_LWRP.mat");
             material = new Material(source) { name = "DM beam" };
             if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", Color.white);
             AssetDatabase.CreateAsset(material, matPath);
@@ -85,7 +85,7 @@ public static class BossStageSetup
     // the beam (DM beam bolt.png, cut from the pack's Thunder), Glow sparks. Made again each run from the pack.
     public static void BeamArt(DungeonMasterBeam beam)
     {
-        const string pack = "Assets/Spells Pack/LWRP(URP)/Particles_LWRP/Materials/";
+        const string pack = "Assets/ThirdParty/Spells Pack/LWRP(URP)/Particles_LWRP/Materials/";
         Material Pack(string name, int divisor) => SpellPackEffects.PixelMaterial(AssetDatabase.LoadAssetAtPath<Material>(pack + name), divisor);
         // Core and halo textures are cut from the pack's FireTrail and Glow with real alpha (DM beam core/glow.png):
         // the pack's own copies, alpha from grayscale, draw nothing on a line here.

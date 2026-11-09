@@ -20,8 +20,8 @@ public partial class ProgressionManager
     {
         [HorizontalGroup("Row", 0.4f), HideLabel] public ItemData item;
         [HorizontalGroup("Row"), LabelWidth(42), Min(1)] public int worth = 1;
-        [HorizontalGroup("Row"), LabelWidth(60), Min(0), Tooltip("Weight on floor 1 (75, 15, 10 for Lesser, Greater, Grand).")] public float floor1 = 75;
-        [HorizontalGroup("Row"), LabelWidth(70), Tooltip("Added to the weight each floor deeper (Lesser -5, Greater +3, Grand +2), never below 0.")] public float perFloor = -5;
+        [HorizontalGroup("Row"), LabelWidth(60), LabelText("Floor 1"), Min(0), Tooltip("Weight on floor 1 (75, 15, 10 for Lesser, Greater, Grand).")] public float floor1 = 75;
+        [HorizontalGroup("Row"), LabelWidth(70), LabelText("Per floor"), Tooltip("Added to the weight each floor deeper (Lesser -5, Greater +3, Grand +2), never below 0.")] public float perFloor = -5;
         public float WeightAt(int floor) => Mathf.Max(0, floor1 + perFloor * (Mathf.Max(1, floor) - 1));
     }
 
@@ -36,7 +36,7 @@ public partial class ProgressionManager
     [Serializable]
     public class Milestone
     {
-        [HorizontalGroup("Row", 60), HideLabel, Tooltip("The value the track reaches (15 or 25, then 50).")] public int value = 25;
+        [HorizontalGroup("Row", 60), HideLabel, Tooltip("The skill's value it is reached at (15 or 25, then 50).")] public int value = 25;
         [HorizontalGroup("Row"), LabelWidth(50), Tooltip("The ability it unlocks, an asset in its skill's folder (Characters/Skills/<Skill>/) that holds its name, icon and description. Empty: the fields below, \"?\" until designed.")] public SkillAbility ability;
         [HideIf(nameof(ability)), Tooltip("What it unlocks while it has no ability; \"?\" until designed.")] public string unlock = "?";
         [HideIf(nameof(ability)), Tooltip("Shown on the sheet's hover card.")] public string description;
@@ -53,59 +53,63 @@ public partial class ProgressionManager
     [Serializable]
     public class MetaTrack
     {
-        [HorizontalGroup("Id", 0.5f), LabelWidth(40), Tooltip("Stable save key; never change it once players have saves.")] public string id;
-        [HorizontalGroup("Id"), LabelWidth(50)] public string displayName;
-        public MetaTrackKind kind;
+        [HorizontalGroup("Id", 0.5f), LabelWidth(40), LabelText("Id"), Tooltip("Stable save key; never change it once players have saves.")] public string id;
+        [HorizontalGroup("Id"), LabelWidth(50), LabelText("Name")] public string displayName;
+        [Tooltip("A skill (bought in steps of skill points, with milestones) or an attribute (bought a point at a time).")] public MetaTrackKind kind;
         [ShowIf("@kind == MetaTrackKind.Skill")] public AdventureSkill skill;
         [ShowIf("@kind == MetaTrackKind.Attribute")] public MetaAttribute attribute;
         [PreviewField(32)] public Sprite icon;
-        [Min(0), Tooltip("Levels the track starts with for free (skills: 2, so every skill starts at 10).")] public int givenLevels = 2;
-        [Min(1), Tooltip("All levels, given ones included.")] public int levels = 10;
-        [Min(1), ShowIf("@kind == MetaTrackKind.Skill"), Tooltip("Skill points per level.")] public int perLevel = 5;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("The score with nothing bought.")] public int baseScore = 8;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to the attribute's first stat (AttributeStats): health, mana, damage or critical chance in percent.")] public float bonusPerPoint = 5;
-        [ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its second stat (AttributeStats): Strength's shield bash damage, Dexterity's backstab damage in percent, Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
-        [ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
-        [ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the base gives to its third stat, in percent: Strength's heavy attack damage, Dexterity's attack speed, Constitution's healing from items; Intelligence's is its spell power, which is no stat (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
-        [ShowIf("@kind == MetaTrackKind.Attribute")] public string thirdUnit;
-        [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true)] public List<Milestone> milestones = new();
+        [Min(0), LabelText("Free levels"), Tooltip("Levels it starts with for free (skills: 2, so every skill starts at 10).")] public int givenLevels = 2;
+        [Min(1), LabelText("Levels"), Tooltip("All the levels it has, the free ones included.")] public int levels = 10;
+        [Min(1), LabelText("Skill points a level"), ShowIf("@kind == MetaTrackKind.Skill"), Tooltip("Skill points each level adds.")] public int perLevel = 5;
+        [LabelText("Starting score"), ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("The score with nothing bought.")] public int baseScore = 8;
+        [LabelText("Gain 1, a point"), ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the starting score gives to the attribute's first stat (AttributeStats): health, mana, damage or critical chance in percent.")] public float bonusPerPoint = 5;
+        [LabelText("Gain 1, named"), ShowIf("@kind == MetaTrackKind.Attribute")] public string unit = "health";
+        [LabelText("Gain 2, a point"), ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the starting score gives to its second stat (AttributeStats): Strength's shield bash damage, Dexterity's backstab damage in percent, Constitution's stamina, Intelligence's mana per second.")] public float secondBonusPerPoint;
+        [LabelText("Gain 2, named"), ShowIf("@kind == MetaTrackKind.Attribute")] public string secondUnit;
+        [LabelText("Gain 3, a point (%)"), ShowIf("@kind == MetaTrackKind.Attribute"), Tooltip("What each point above the starting score gives to its third stat, in percent: Strength's heavy attack damage, Dexterity's attack speed, Constitution's healing from items; Intelligence's is its spell power, which is no stat (AdventurerProgress.SpellPower reads it).")] public float thirdBonusPerPoint;
+        [LabelText("Gain 3, named"), ShowIf("@kind == MetaTrackKind.Attribute")] public string thirdUnit;
+        [ShowIf("@kind == MetaTrackKind.Skill"), ListDrawerSettings(ShowFoldout = true), Tooltip("Values of the skill that unlock an ability and give a trophy for the wall (Athletics 15: the dash).")] public List<Milestone> milestones = new();
     }
 
     // ── Controls ──────────────────────────────────────────────────────
 
-    [FoldoutGroup("Meta progression"), TabGroup("Meta progression/Tabs", "Spoils"), ListDrawerSettings(ShowFoldout = true)]
+    [FoldoutGroup("Spoils"), PropertyOrder(30), LabelText("Sizes and drop weights"), ListDrawerSettings(ShowFoldout = true)]
+    [InfoBox("Spoils are the red loot a run brings home (monster parts and baubles). When a run ends they are counted (the tally) and banked, to spend on the character sheet. The intro's practice run gives none.")]
     [Tooltip("The three sizes of spoils (an assortment of monster parts and baubles). Which one drops is picked by these weights for the floor.")]
     public List<SpoilsKind> spoils = new();
-    [TabGroup("Meta progression/Tabs", "Spoils"), Range(0, 1), Tooltip("Chance a kill drops spoils.")] public float enemySpoilsChance = .15f;
-    [TabGroup("Meta progression/Tabs", "Spoils"), Range(0, 1), Tooltip("Chance a chest holds spoils (barrels and crates never do).")] public float chestSpoilsChance = .30f;
-    [TabGroup("Meta progression/Tabs", "Spoils"), Min(1), Tooltip("At the tally, 1 spoil per this much health of the enemies killed.")] public int healthPerSpoil = 50;
-    [TabGroup("Meta progression/Tabs", "Spoils"), ListDrawerSettings(ShowFoldout = true), Tooltip("Bosses always drop their own spoils.")]
+    [FoldoutGroup("Spoils"), PropertyOrder(30), LabelText("Chance a kill drops some"), Range(0, 1), Tooltip("Chance a kill drops spoils.")] public float enemySpoilsChance = .15f;
+    [FoldoutGroup("Spoils"), PropertyOrder(30), LabelText("Chance a chest holds some"), Range(0, 1), Tooltip("Chance a chest holds spoils (barrels and crates never do).")] public float chestSpoilsChance = .30f;
+    [FoldoutGroup("Spoils"), PropertyOrder(30), LabelText("Enemy health a bonus spoil"), Min(1), Tooltip("At the tally, 1 more spoil per this much health of the enemies killed in the run.")] public int healthPerSpoil = 50;
+    [FoldoutGroup("Spoils"), PropertyOrder(30), LabelText("Bosses' own spoils"), ListDrawerSettings(ShowFoldout = true), Tooltip("Bosses always drop their own spoils.")]
     public List<BossSpoils> bossSpoils = new();
 
-    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("The spoils the first level costs on any track.")] public int firstPrice = 10;
-    [TabGroup("Meta progression/Tabs", "Tracks"), Min(1), Tooltip("Each level costs this much more than the one before.")] public float priceMultiplier = 1.5f;
-    [TabGroup("Meta progression/Tabs", "Tracks"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Price of a first level"), Min(1), Tooltip("Spoils the first level bought costs, on any skill or attribute.")]
+    [InfoBox("The character sheet on the hobby table in the bedroom. Between runs the player spends spoils there on skills and attributes, and every run starts from what was bought. A skill's milestones unlock abilities (Athletics 15: the dash) and give a trophy for the wall; a hung trophy unlocks it for every class.")] public int firstPrice = 10;
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Each next level costs x"), Min(1), Tooltip("Each level costs this many times the one before (1.5: 10, 15, 22...).")] public float priceMultiplier = 1.5f;
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Skills and attributes for sale"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
+    [Tooltip("Every row on the sheet: the eight skills and the four attributes, with their levels and milestones.")]
     public List<MetaTrack> tracks = new();
 
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Back in the room after the first run that ends in a real dungeon.")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Says, pointing to the sheet"), Tooltip("Back in the room after the first run that ends in a real dungeon.")]
+    [InfoBox("Teaching the sheet. After the first run ends, the Dungeon Master points the player to the sheet and tops up their spoils, and no new run starts until they buy the first skill below up to its first milestone (Athletics to 15: the dash). Here are that skill and his lines.")]
     public DungeonMaster.Line lessonIntro = new() { text = "There's a sheet on the hobby table by the trophy wall. Have a look." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("The skill the lesson teaches first (Athletics since 2026-11-01, the dash at 15; Blocking before): until its first milestone is bought nothing else on the sheet can be, and no run starts.")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Skill to buy first"), Tooltip("The skill the lesson teaches first (Athletics since 2026-11-01, the dash at 15; Blocking before): until its first milestone is bought nothing else on the sheet can be, and no run starts.")]
     public AdventureSkill lessonSkill = AdventureSkill.Athletics;
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Trying to buy anything but the lesson's skill before its first milestone.")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Says, if something else is bought"), Tooltip("Trying to buy anything but the lesson's skill before its first milestone.")]
     [UnityEngine.Serialization.FormerlySerializedAs("lessonBlockingFirst")]
     public DungeonMaster.Line lessonSkillFirst = new() { text = "Athletics first. Trust me." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("When the first tally can't pay for the lesson skill's next level, the DM adds the rest.")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Says, topping up the spoils"), Tooltip("When the first tally can't pay for the lesson skill's next level, the DM adds the rest.")]
     public DungeonMaster.Line lessonTopUp = new() { text = "Have a bit extra. Don't tell anyone." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over one trophy.")]
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Says, handing over a trophy"), Tooltip("The Dungeon Master, handing over one trophy as the sheet is put down.")]
     public DungeonMaster.Line handOverOne = new() { text = "This one goes on the wall." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Handing over several trophies at once.")]
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Says, handing over trophies"), Tooltip("The Dungeon Master, handing over several trophies at once.")]
     public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Tooltip("Said once, as the sheet is put down after the lesson skill's first milestone (the dash) is bought. {sprint} and the other keys are the player's own.")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Says, once it is bought"), Tooltip("Said once, as the sheet is put down after the lesson skill's first milestone (the dash) is bought. {sprint} and the other keys are the player's own.")]
     [UnityEngine.Serialization.FormerlySerializedAs("shieldBashMounted")]
     public DungeonMaster.Line lessonTrophyMounted = new() { text = "You can dash now. {sprint} and a direction, sideways or back." };
-    [TabGroup("Meta progression/Tabs", "Lesson"), Min(0), Tooltip("Seconds after the room player is free before the lesson's first line.")] public float lessonDelay = 2.5f;
-    [TabGroup("Meta progression/Tabs", "Sheet"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
+    [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Wait before he speaks (s)"), Min(0), Tooltip("Seconds after the room player is free before his first line about the sheet.")] public float lessonDelay = 2.5f;
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Portraits in colour"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
     public bool colourSheetPortraits;
 
     // The portrait the sheet shows for a class, in the look picked above.
@@ -472,11 +476,11 @@ public partial class ProgressionManager
 
     // ── Debug ─────────────────────────────────────────────────────────
 
-    [TabGroup("Meta progression/Tabs", "Debug"), ShowInInspector, ReadOnly, LabelText("Spoils to spend")] int DebugSpoils => Application.isPlaying ? Spoils : 0;
-    [TabGroup("Meta progression/Tabs", "Debug"), Button("Add 100 spoils"), EnableIf("@UnityEngine.Application.isPlaying")] void DebugAddSpoils() => AddSpoils(100);
-    [TabGroup("Meta progression/Tabs", "Debug"), Button("Teach the lesson skill (skip the lesson)"), EnableIf("@UnityEngine.Application.isPlaying")]
+    [FoldoutGroup("Debug (Play mode)"), PropertyOrder(70), ShowInInspector, ReadOnly, LabelText("Spoils to spend")] int DebugSpoils => Application.isPlaying ? Spoils : 0;
+    [FoldoutGroup("Debug (Play mode)"), PropertyOrder(70), Button("Add 100 spoils"), EnableIf("@UnityEngine.Application.isPlaying")] void DebugAddSpoils() => AddSpoils(100);
+    [FoldoutGroup("Debug (Play mode)"), PropertyOrder(70), Button("Teach the lesson skill (skip the lesson)"), EnableIf("@UnityEngine.Application.isPlaying")]
     void DebugTeach() { SetFlag(LedgerIntroFlag); SetFlag(LedgerSaidFlag); SetFlag(LessonTaughtFlag); MetaChanged?.Invoke(); }
-    [TabGroup("Meta progression/Tabs", "Debug"), Button("Reset meta progression"), EnableIf("@UnityEngine.Application.isPlaying")]
+    [FoldoutGroup("Debug (Play mode)"), PropertyOrder(70), Button("Reset meta progression"), EnableIf("@UnityEngine.Application.isPlaying")]
     void DebugReset()
     {
         foreach (var key in new List<string>(flags.Keys))
@@ -486,6 +490,6 @@ public partial class ProgressionManager
         SetFlag(CharacterSheetTable.OpenedFlag, 0);
         MetaChanged?.Invoke();
     }
-    [TabGroup("Meta progression/Tabs", "Debug"), Button("Open the character sheet"), EnableIf("@UnityEngine.Application.isPlaying")]
+    [FoldoutGroup("Debug (Play mode)"), PropertyOrder(70), Button("Open the character sheet"), EnableIf("@UnityEngine.Application.isPlaying")]
     void DebugOpenSheet() { if (CharacterSheetUI.HasInstance) CharacterSheetUI.Instance.Open(); }
 }

@@ -4,13 +4,13 @@
 // Also Resources/Elite glow (Characters/Enemies/Elite/Elite Glow.shader, EliteEnemy). Safe to run again. Edit mode.
 var sb = new System.Text.StringBuilder();
 const float Texels = 6.4f;
-string png = "Assets/Game/Campaign/Map/New place banner.png";
+string png = "Assets/Game/Table map/Map/Materials/New place banner.png";
 var ti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(png);
 ti.textureType = UnityEditor.TextureImporterType.Default; ti.filterMode = UnityEngine.FilterMode.Point; ti.mipmapEnabled = false;
 ti.npotScale = UnityEditor.TextureImporterNPOTScale.None; ti.alphaIsTransparency = true; ti.wrapMode = UnityEngine.TextureWrapMode.Clamp;
 ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed; ti.SaveAndReimport();
 var tex = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(png);
-string matPath = "Assets/Game/Campaign/Map/New place banner.mat";
+string matPath = "Assets/Game/Table map/Map/Materials/New place banner.mat";
 var mat = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Material>(matPath);
 if (mat == null) { mat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Unlit")); UnityEditor.AssetDatabase.CreateAsset(mat, matPath); }
 if (mat.shader.name != "Universal Render Pipeline/Unlit") mat.shader = UnityEngine.Shader.Find("Universal Render Pipeline/Unlit");
@@ -28,8 +28,8 @@ quad.name = "Banner"; quad.transform.SetParent(root.transform, false);
 quad.transform.localPosition = new UnityEngine.Vector3(0, h * .5f, 0); quad.transform.localScale = new UnityEngine.Vector3(w, h, 1);
 var mr = quad.GetComponent<UnityEngine.MeshRenderer>(); mr.sharedMaterial = mat;
 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
-string prefab = "Assets/Game/Campaign/Resources/Campaign new place banner.prefab";
-System.IO.Directory.CreateDirectory("Assets/Game/Campaign/Resources");
+string prefab = "Assets/Game/Table map/Resources/Campaign new place banner.prefab";
+System.IO.Directory.CreateDirectory("Assets/Game/Table map/Resources");
 UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, prefab); UnityEngine.Object.DestroyImmediate(root);
 sb.Append($"banner {w:F2} x {h:F2} units -> {prefab}\n");
 string glowPath = "Assets/Game/Characters/Resources/Elite glow.mat";

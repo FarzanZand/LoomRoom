@@ -15,7 +15,7 @@ public struct DungeonGrowthSettings
 
 // Grown layout: shaped rooms packed outwards from the entrance, like stamping rooms onto a
 // map. Each new room is placed a few cells off a room already on the map and tunnelled to it;
-// the exit room is placed last, off the room furthest from the entrance. Rooms keep at least
+// the exit room's spot is kept free on the far side of the grid from the entrance while they grow. Rooms keep at least
 // one wall cell between them, and corridors never run along a room they do not enter, so
 // every opening is a planned doorway.
 public sealed partial class DungeonLayout
@@ -66,6 +66,13 @@ public sealed partial class DungeonLayout
             try { again.GrowRooms(requests, settings, exitAt, true); } catch (InvalidOperationException) when (again.entranceAt.HasValue) { again = null; }
             if (again != null && Better(again, layout, exitAt)) layout = again;
         }
+        // Rooms still lost, with the stairs' far spot in their way: other spots and other growth, the same every time.
+        for (int retry = 1; !exitAt.HasValue && retry <= 4 && layout.PlacedRequests.Length < requests.Count; retry++)
+        {
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry };
+            try { again.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
+            if (Better(again, layout, exitAt)) layout = again;
+        }
         if (layout.PlacedRequests.Length < requests.Count)
             Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
         if (exitAt.HasValue && !layout.ExitPlacedAt)
@@ -86,6 +93,17 @@ public sealed partial class DungeonLayout
     static bool Complete(DungeonLayout layout, IList<DungeonShape> requests, Vector2Int? exitAt) =>
         layout.PlacedRequests.Length == requests.Count && (!exitAt.HasValue || layout.ExitPlacedAt);
 
+    // How far the stairs are from the way in, in cells: the walk there, the straight line, and the walk to the furthest
+    // other room and the widest straight line to one (the stress test's Stairs report).
+    public (int walk, int straight, int furthestWalk, int furthestStraight) ExitDistance()
+    {
+        var d = Distances(Start);
+        int Line(Vector2Int a, Vector2Int b) => Mathf.RoundToInt(Vector2Int.Distance(a, b));
+        int far = 0, wide = 0;
+        for (int i = 0; i < rooms.Count; i++) { var c = roomCenters[i]; if (d[c.x, c.y] < int.MaxValue) far = Mathf.Max(far, d[c.x, c.y]); wide = Mathf.Max(wide, Line(Start, c)); }
+        return (d[Exit.x, Exit.y], Line(Start, Exit), far, wide);
+    }
+
     // The exit stands where it was asked to (a stage): it has one way in, so no loop or spur is cut into it.
     public bool ExitPlacedAt { get; private set; }
 
@@ -94,13 +112,14 @@ public sealed partial class DungeonLayout
     // The entrance stands where it was asked to (entranceAt).
     public bool EntrancePlacedAt { get; private set; }
 
+    int growRetry;
     void GrowRooms(IList<DungeonShape> requests, DungeonGrowthSettings settings, Vector2Int? exitAt, bool plainFirst)
     {
         this.plainFirst = plainFirst;
         int width = floor.GetLength(0), depth = floor.GetLength(1);
         growth = settings;
         growth.spacing = new Vector2Int(Mathf.Clamp(settings.spacing.x, 1, 8), Mathf.Clamp(Mathf.Max(settings.spacing.x, settings.spacing.y), 1, 8));
-        growRandom = new System.Random(unchecked(seed * 31 + 977));
+        growRandom = new System.Random(unchecked(seed * 31 + 977 + growRetry * 7919));
         occupant = new int[width, depth];
         noise = new int[width, depth];
         int wander = Mathf.RoundToInt(Mathf.Clamp(settings.wander, 0, 4) * 10);
@@ -112,12 +131,15 @@ public sealed partial class DungeonLayout
         bool reserved = exitAt.HasValue && Reserve(exitShape, exitAt.Value, true);
         if (!PlaceFirst(requests[0])) throw new InvalidOperationException("The entrance room does not fit the grid. Increase width/depth or reduce room size.");
         placed.Add(0);
+        // No fixed spot asked for: a spot far from the entrance is kept for the stairs, so no room takes it.
+        var exitSpot = exitAt;
+        if (!exitSpot.HasValue && FarSpot(exitShape) is { } far && Reserve(exitShape, far, true)) { exitSpot = far; reserved = true; }
         for (int r = 1; r < last; r++)
             if (TryGrow(requests[r], null)) placed.Add(r);
         if (reserved)
         {
-            Reserve(exitShape, exitAt.Value, false);
-            ExitPlacedAt = PlaceAt(exitShape, exitAt.Value);
+            Reserve(exitShape, exitSpot.Value, false);
+            ExitPlacedAt = PlaceAt(exitShape, exitSpot.Value);
         }
         if (!ExitPlacedAt)
         {
@@ -237,15 +259,46 @@ public sealed partial class DungeonLayout
         return true;
     }
 
-    // A room at a fixed spot, tunnelled to the nearest room that a corridor can reach.
+    // Where the stairs' room stands when nothing fixes it: a free spot among the furthest from the entrance, picked at
+    // random among those at least 85% as far as the furthest, so floors differ. Null when the shape fits nowhere.
+    Vector2Int? FarSpot(DungeonShape s)
+    {
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        var spots = new List<(Vector2Int origin, float far)>();
+        float most = 0f;
+        for (int x = 1; x < width - s.width; x += 2)
+            for (int y = 1; y < depth - s.height; y += 2)
+            {
+                var origin = new Vector2Int(x, y);
+                if (!Fits(s, origin)) continue;
+                float far = Vector2.Distance(origin + new Vector2(s.width, s.height) * .5f, Start);
+                spots.Add((origin, far));
+                most = Mathf.Max(most, far);
+            }
+        spots.RemoveAll(c => c.far < most * .85f);
+        return spots.Count > 0 ? spots[growRandom.Next(spots.Count)].origin : null;
+    }
+
+    // A room at a fixed spot, tunnelled to a room a corridor can reach: among those about as near as the nearest, the one
+    // with the longest walk from the entrance, so the way there is long too.
     bool PlaceAt(DungeonShape s, Vector2Int origin)
     {
         if (!Fits(s, origin)) return false;
+        var walk = Distances(Start);
         int index = Place(s, origin);
         var centre = roomCenters[index];
         var order = new List<int>();
         for (int i = 0; i < index; i++) order.Add(i);
-        order.Sort((a, b) => (roomCenters[a] - centre).sqrMagnitude.CompareTo((roomCenters[b] - centre).sqrMagnitude));
+        float Near(int room) => Vector2Int.Distance(roomCenters[room], centre);
+        float nearest = float.MaxValue;
+        foreach (int room in order) nearest = Mathf.Min(nearest, Near(room));
+        bool Close(int room) => Near(room) <= nearest + 10f;
+        order.Sort((a, b) =>
+        {
+            if (Close(a) != Close(b)) return Close(a) ? -1 : 1;
+            if (!Close(a)) return Near(a).CompareTo(Near(b));
+            return walk[roomCenters[b].x, roomCenters[b].y].CompareTo(walk[roomCenters[a].x, roomCenters[a].y]);
+        });
         foreach (int anchor in order)
             if (Connect(anchor, index, 60 * 16)) return true;
         Unplace(index);

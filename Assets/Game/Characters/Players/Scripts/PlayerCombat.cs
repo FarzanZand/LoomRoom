@@ -37,8 +37,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     [SerializeField] string heavyReleaseSpeedParam = "HeavyReleaseSpeed";
     [SerializeField] string heavyStrikeParam       = "HeavyStrike";
     [SerializeField] string attackSpeedParam       = "AttackSpeed";
-    [SerializeField] string simpleSwingsParam      = "SimpleSwings";
-    [SerializeField] string swingSpeedParam        = "SwingSpeed";
     [SerializeField, Tooltip("Combo attack (CombatManager.swingSet Combo): the trigger that starts the next hit, and which hit (0, 1, 2).")]
     string comboTrigger = "ComboStrike", comboIndexParam = "ComboIndex", comboSpeedParam = "ComboSpeed";
     const int ComboHits = 3;
@@ -232,10 +230,9 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         strikeOpened = strikeClosed = false;
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
-        // Cleared here, not on press: a press during a heavy release must not turn its hit light.
-        // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy).
-        ComboFinisher = Combo && !comboHeavy && comboIndex == ComboHits - 1;
-        HeavySwing = ComboFinisher && CombatManager.Instance.comboFinisherHeavy;
+        // Cleared here, not on press: a press during a heavy release must not turn its hit light. A combo hit's own
+        // flags are set where the hit is chosen (UpdateCombo), so they never wait on this clip event.
+        if (!Combo || comboHeavy) { ComboFinisher = false; HeavySwing = false; }
         // Alternate the light swing per actual swing; a pause restarts the sequence.
         swingIndex = NextSwingIndex;
         lastSwingAt = Time.time;
@@ -363,11 +360,15 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var tuning = CombatManager.Instance;
         float speed = Mathf.Max(.1f, tuning.comboSpeed * (player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f));
         var set = tuning.swingSet;
-        AnimatorHelper.SetInteger(armsAnimator, "ComboSet", set == CombatManager.SwingSet.Classic ? 1 : set == CombatManager.SwingSet.Classic2 ? 2 : set == CombatManager.SwingSet.Combo2 ? 3 : 0);
+        // The controller's ComboSet: 0 the Combo, 3 Combo 2 (1 and 2 were the retired Classic sets).
+        AnimatorHelper.SetInteger(armsAnimator, "ComboSet", set == CombatManager.SwingSet.Combo2 ? 3 : 0);
         if (Time.time < ComboReadyAt) return;
         comboIndex = Time.time - comboStartedAt > tuning.comboResetTime / speed ? 0 : (comboIndex + 1) % ComboHits;
         comboStartedAt = Time.time;
         comboQueuedUntil = -1f;
+        // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy); every other hit is light.
+        ComboFinisher = comboIndex == ComboHits - 1;
+        HeavySwing = ComboFinisher && tuning.comboFinisherHeavy;
         AnimatorHelper.SetInteger(armsAnimator, comboIndexParam, comboIndex);
         // Each hit plays at its own speed (CombatManager Combo First Hit / Second Hit / Finisher Speed).
         AnimatorHelper.SetFloat(armsAnimator, comboSpeedParam, speed * tuning.ComboHitSpeed(comboIndex));
@@ -468,9 +469,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
             AnimatorHelper.SetFloat(armsAnimator, releaseSpeedParam, tuning.releaseSpeed * attackSpeed * release);
             AnimatorHelper.SetFloat(armsAnimator, heavyReleaseSpeedParam, tuning.heavyReleaseSpeed * attackSpeed * heavy);
             AnimatorHelper.SetBool(armsAnimator, heavyStrikeParam, HeavySwing);
-            AnimatorHelper.SetBool(armsAnimator, simpleSwingsParam, tuning.simpleSwings);
-            // The IK swing clips carry their own timing: only the attack speed stat scales them.
-            AnimatorHelper.SetFloat(armsAnimator, swingSpeedParam, player.Stats != null ? player.Stats.GetMultiplier(StatType.AttackSpeed) : 1f);
             UpdateCharge(tuning);
         }
 
@@ -736,13 +734,6 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         var rotation = heavy ? tuning.heavySwingCameraRotation
             : alternate ? tuning.alternateSwingCameraRotation : tuning.lightSwingCameraRotation;
         var curve = heavy ? tuning.heavySwingCameraCurve : tuning.swingCameraCurve;
-        if (!heavy && !tuning.simpleSwings)
-        {
-            // The IK forehand turns the view with the blade (right to left); the backhand mirrors it.
-            rotation = tuning.ikSwingCameraRotation;
-            if (alternate) rotation = new Vector3(rotation.x, -rotation.y, -rotation.z);
-            curve = tuning.ikSwingCameraCurve;
-        }
         return rotation * (curve != null ? curve.Evaluate(Mathf.Clamp01(state.normalizedTime)) : 0f);
     }
 

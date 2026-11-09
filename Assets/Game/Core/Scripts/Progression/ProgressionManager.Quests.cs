@@ -28,7 +28,8 @@ public partial class ProgressionManager
     // the table player is in a dungeon, where they can't be done.
     public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest || id == DiceQuest;
 
-    [FoldoutGroup("Quests"), ListDrawerSettings(ShowFoldout = true)]
+    [FoldoutGroup("Quests"), PropertyOrder(50), LabelText("Quest log lines"), ListDrawerSettings(ShowFoldout = true)]
+    [InfoBox("The lines the quest log shows. Each id is used by the game's code, so change only the text. {attack}, {block} and {sprint} become the player's own keys.")]
     public List<Quest> quests = BuiltInQuests();
 
     // The quests the game's own code gives; a scene saved before one existed gets it added at Play (EnsureBuiltInQuests).

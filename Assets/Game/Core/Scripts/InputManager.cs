@@ -37,6 +37,7 @@ public class InputManager : Singleton<InputManager>
     public event Action InteractPressed;
     // Co-op: mark what the table player looks at for the others (CoopPing).
     public event Action PingPressed;
+    public event Action MapPressed;       // Room: the second action at an interactable (R at the table: the map)
     public event Action InventoryToggled;
     public event Action CancelPressed;
     // While paused, Cancel goes only here (the pause menu): screens under it (figures, the map, a reveal) don't see it.
@@ -151,6 +152,9 @@ public class InputManager : Singleton<InputManager>
         actions.Table.SecondaryAction.performed += _ => { SecondaryHeld = true;  SecondaryPressed?.Invoke(); };
         actions.Table.SecondaryAction.canceled  += _ => { SecondaryHeld = false; SecondaryReleased?.Invoke(); };
 
+        // Found by name, so the map works without it.
+        var roomMap = actions.Room.Get().FindAction("Map");
+        if (roomMap != null) roomMap.performed += _ => MapPressed?.Invoke();
         actions.Table.Pause.performed += _ => PausePressed?.Invoke();
         actions.Table.Ping.performed += _ => PingPressed?.Invoke();
         actions.Room.Pause.performed  += _ => PausePressed?.Invoke();

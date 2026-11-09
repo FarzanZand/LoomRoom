@@ -276,9 +276,10 @@ public partial class IntroController : Singleton<IntroController>
         yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) >= split), false);
         yield return new WaitForSeconds(.4f);
         if (DungeonMaster.HasInstance) DungeonMaster.Instance.ReadingScale = 1f;
-        PopDialogue();
         yield return WaitForTable();
         PlayPractice(true);
+        // Given back only once the table holds its own Dialogue: a frame of Explore between showed its "[E] Play".
+        PopDialogue();
     }
 
     // The practice figure goes on the table. The table refuses while it is busy or the player cannot use it.

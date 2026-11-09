@@ -188,7 +188,7 @@ Each section: what is there now, what I propose, why it will feel better or be e
 Found while surveying; each is a small win.
 - `Assets/Characters/RoomPlayer/RoomPlayer.prefab` is orphaned and carries StarterAssets components.
 - `Assets/Items/Custom Effects/EffectTemplate.prefab` has a missing script.
-- `Assets/Settings/DEPInputSystem_Actions.inputactions` is dead. `Assets/Misc/StarterAssets` can go once the Room prefab is rebuilt.
+- `Assets/Game/Rendering/Settings/DEPInputSystem_Actions.inputactions` is dead. `Assets/Misc/StarterAssets` can go once the Room prefab is rebuilt.
 - `Assets/_Recovery/` scenes, `Assets/New folder`, `Assets/New Terrain.asset`, `Assets/Test/`, `Assets/Editor/Temp/FindCameras.cs`.
 - `Assets/Characters/DungeonMaster/DM.controller` (empty) and `Assets/Characters/RoomPlayer/RoomPlayerParent.controller` are unreferenced; the scene `RoomPlayerParent` Animator has no controller.
 - `ThirdPersonRoom.controller` has a stray `New State`. `HumanoidEnemyData.prefab` is unassigned.

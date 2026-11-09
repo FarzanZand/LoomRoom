@@ -132,7 +132,18 @@ public class DungeonMasterHand : MonoBehaviour
         // A finger flick comes down from above: the elbow held up over the hand, so the forearm stands up out of the room
         // through its open roof instead of reaching in sideways through its walls.
         bool fromAbove = !float.IsNaN(curl) && flickFromAbove;
-        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, fromAbove ? rightWeight : 0f);
+        // His open hand (Bless): the elbow held out to his right and a little down from the middle of the arm, so the arm
+        // comes out from his side (left to itself the elbow dropped under the hand and the forearm stood up through his chest).
+        bool fromSide = !float.IsNaN(curl) && openHand && !fromAbove;
+        animator.SetIKHintPositionWeight(AvatarIKHint.RightElbow, fromAbove || fromSide ? rightWeight : 0f);
+        if (fromSide)
+        {
+            var shoulder = animator.GetBoneTransform(HumanBodyBones.RightUpperArm);
+            float upper = ArmLength(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightLowerArm);
+            var from = shoulder != null ? shoulder.position : transform.position + Vector3.up * 26f;
+            var middle = Vector3.Lerp(from, tipTarget + tipFix, .45f);
+            animator.SetIKHintPosition(AvatarIKHint.RightElbow, middle + transform.right * upper * blessElbowOut - Vector3.up * upper * blessElbowDown);
+        }
         if (fromAbove)
         {
             float forearm = ArmLength(HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, HumanBodyBones.RightHand);
@@ -550,6 +561,14 @@ public class DungeonMasterHand : MonoBehaviour
     public float blessTilt = 18f;
     [Min(0), Tooltip("Light on his hand while he holds it over the player.")]
     public float blessLight = 1.5f;
+    [Range(0, 60), Tooltip("Degrees he leans forward to hold his open hand over the player when it is within his arm's length; further out he leans more, up to Flick Lean.")]
+    public float blessLean = 10f;
+    [Range(0, 2), Tooltip("How far out to his right his elbow is held while his open hand reaches, in upper arm lengths.")]
+    public float blessElbowOut = .9f;
+    [Range(0, 2), Tooltip("How far down his elbow is held while his open hand reaches, in upper arm lengths.")]
+    public float blessElbowDown = .4f;
+    [Tooltip("Where his open hand comes up on its way out: shares of his arm's length out toward the player, to his right and above his shoulder (it came up past his face, the carrying move, and crossed it).")]
+    public Vector3 blessShown = new(.35f, .6f, -.1f);
 
     // He brings his hand in flat over point (the palm's middle there, palm down, fingers pointing along direction), holds
     // it there for hold seconds (holding is called as it arrives) and takes it away. follow: where the point is now, asked
@@ -564,12 +583,15 @@ public class DungeonMasterHand : MonoBehaviour
         flickCarried = null; openHand = true;
         // The fingertip a finger's length on past the palm's middle.
         Vector3 Tip(Vector3 palm) => palm + flickAim * finger * 1.1f;
-        Arc(point, out _, out _, out _, out var shown);
+        Arc(point, out var outward, out var shoulderAt, out var reach, out _);
+        // Up at his side, out from his right shoulder (not past his face).
+        var shown = shoulderAt + (outward * blessShown.x + Vector3.Cross(Vector3.up, outward) * blessShown.y + Vector3.up * blessShown.z) * reach;
         var from = FingerTip(); tipTarget = from; tipFix = RightHand != null ? RightHand.position - from : Vector3.zero; handFix = Quaternion.identity;
         restTip = transform.InverseTransformPoint(from);
         lookTarget = point; lookGoal = 1f; rightGoal = 1f; curl = 0f;
-        var flat = point - transform.position; flat.y = 0f;
-        float lean = Mathf.Lerp(reachLean * .5f, flickLean, Mathf.InverseLerp(flickLeanRange.x, flickLeanRange.y, flat.magnitude));
+        // He leans only as far as his arm needs: with the palm within his arm's length he hardly bends (the finger flick's
+        // lean, up to 55 degrees, put his face down on his own hand).
+        float lean = Mathf.Lerp(blessLean, flickLean, Mathf.InverseLerp(reach, reach * 1.6f, Vector3.Distance(point, shoulderAt)));
         HandLight(blessLight, glow, finger);
         var high = Tip(point) + Vector3.up * carryHeight * .5f - level * finger;
         for (float t = 0; t < seconds; t += Time.deltaTime)

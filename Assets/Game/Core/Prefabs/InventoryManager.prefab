@@ -104,8 +104,8 @@ MonoBehaviour:
     chance: 0
     chancePerFloor: 0
   merchantRarity: 1.3
-  rarityChanceMultiplier: 1
-  dropChanceMultiplier: 0.5
+  rarityChanceMultiplier: 0.75
+  dropChanceMultiplier: 0.375
   enemyDropMultiplier: 1
   goldMultiplier: 1
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}

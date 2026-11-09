@@ -147,6 +147,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""Map"",
+                    ""type"": ""Button"",
+                    ""id"": ""37f2a94c-c383-4927-810f-25f95c600f43"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Inventory"",
                     ""type"": ""Button"",
                     ""id"": ""f7328ebd-704c-4583-be53-5b113f31c5de"",
@@ -437,6 +446,28 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""bf60785c-189c-4746-841e-0c2e248d8ade"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Map"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""79773d97-7771-4d59-ae52-ebb09d1d5d6a"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Map"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -1485,7 +1516,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""6a828260-c65b-4331-9d30-b7a4a7d206df"",
-                    ""path"": ""<Keyboard>/f6"",
+                    ""path"": ""<Keyboard>/f3"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -1528,6 +1559,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Room_Sprint = m_Room.FindAction("Sprint", throwIfNotFound: true);
         m_Room_Crouch = m_Room.FindAction("Crouch", throwIfNotFound: true);
         m_Room_Interact = m_Room.FindAction("Interact", throwIfNotFound: true);
+        m_Room_Map = m_Room.FindAction("Map", throwIfNotFound: true);
         m_Room_Inventory = m_Room.FindAction("Inventory", throwIfNotFound: true);
         m_Room_Hotbar1 = m_Room.FindAction("Hotbar1", throwIfNotFound: true);
         m_Room_Hotbar2 = m_Room.FindAction("Hotbar2", throwIfNotFound: true);
@@ -1661,6 +1693,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Room_Sprint;
     private readonly InputAction m_Room_Crouch;
     private readonly InputAction m_Room_Interact;
+    private readonly InputAction m_Room_Map;
     private readonly InputAction m_Room_Inventory;
     private readonly InputAction m_Room_Hotbar1;
     private readonly InputAction m_Room_Hotbar2;
@@ -1704,6 +1737,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Room/Interact".
         /// </summary>
         public InputAction @Interact => m_Wrapper.m_Room_Interact;
+        /// <summary>
+        /// Provides access to the underlying input action "Room/Map".
+        /// </summary>
+        public InputAction @Map => m_Wrapper.m_Room_Map;
         /// <summary>
         /// Provides access to the underlying input action "Room/Inventory".
         /// </summary>
@@ -1780,6 +1817,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Interact.started += instance.OnInteract;
             @Interact.performed += instance.OnInteract;
             @Interact.canceled += instance.OnInteract;
+            @Map.started += instance.OnMap;
+            @Map.performed += instance.OnMap;
+            @Map.canceled += instance.OnMap;
             @Inventory.started += instance.OnInventory;
             @Inventory.performed += instance.OnInventory;
             @Inventory.canceled += instance.OnInventory;
@@ -1833,6 +1873,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Interact.started -= instance.OnInteract;
             @Interact.performed -= instance.OnInteract;
             @Interact.canceled -= instance.OnInteract;
+            @Map.started -= instance.OnMap;
+            @Map.performed -= instance.OnMap;
+            @Map.canceled -= instance.OnMap;
             @Inventory.started -= instance.OnInventory;
             @Inventory.performed -= instance.OnInventory;
             @Inventory.canceled -= instance.OnInventory;
@@ -2524,6 +2567,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteract(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Map" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMap(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "Inventory" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

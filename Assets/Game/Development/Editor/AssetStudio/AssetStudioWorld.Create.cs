@@ -309,7 +309,7 @@ public static partial class AssetStudioWorld
 
     // ── Campaign ──────────────────────────────────────────────────────
 
-    // A new place: its asset in Campaign/Encounters/Act <act>, appended to the campaign manager's list (append only:
+    // A new place: its asset in Table map/Encounters/Act <act>, appended to the campaign manager's list (append only:
     // the list's order is what saves keep), and a point on the map near the act's other places (move it in the map
     // prefab). With a level it plays that level; without one it is a placeholder ("not made yet").
     public static CampaignEncounter NewPlace(string name, int act, TableLevelData level, out string message)
@@ -339,7 +339,7 @@ public static partial class AssetStudioWorld
         return place;
     }
 
-    // A new event shown once after an act opens: its asset in Campaign/Encounters/Act <act>/<title>, in the manager's events.
+    // A new event shown once after an act opens: its asset in Table map/Encounters/Act <act>/<title>, in the manager's events.
     public static CampaignEvent NewEvent(string title, int afterAct, out string message)
     {
         title = CleanName(title);
@@ -351,7 +351,7 @@ public static partial class AssetStudioWorld
         PrefabUndo.Folder(folder);
         EnsureFolder(folder);
         var e = ScriptableObject.CreateInstance<CampaignEvent>();
-        e.id = FreeId(title, All<CampaignEvent>("Assets/Game/Campaign").Select(x => x.id));
+        e.id = FreeId(title, All<CampaignEvent>("Assets/Game/Table map").Select(x => x.id));
         e.title = title;
         e.afterAct = afterAct;
         e.text = "";
@@ -423,7 +423,7 @@ public static partial class AssetStudioWorld
     }
 
     // After a place's act changed: its point moves near that act's other places (its props go with it) and its file to
-    // Campaign/Encounters/Act <act>. The World's Undo puts both back.
+    // Table map/Encounters/Act <act>. The World's Undo puts both back.
     public static string MoveToAct(CampaignEncounter place)
     {
         PrefabUndo.Begin("Move " + place.displayName + " to Act " + place.act, RealmMapPrefab);

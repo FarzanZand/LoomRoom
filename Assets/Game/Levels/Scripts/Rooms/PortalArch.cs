@@ -208,6 +208,16 @@ public class PortalArch : MonoBehaviour
         // A pocket level without stages: the portal's biome as its one stage (the level's base biome still gives the rest).
         else if (biome != null && !pocketCopy.HasStages)
             pocketCopy.stages = new[] { new TableLevelData.BiomeStage { biome = biome, floors = Mathf.Max(1, pocketCopy.floors), boss = pocketCopy.bossOnLastFloor } };
+        // Its enemies are scaled as the floor's outside: the floor's balance, stage damage and difficulty steps (Zelda,
+        // 2026-11-04: a floor 1 pocket's soldiers hit 11.1 next to 15.8 outside, a floor 4 one's 15.6 next to 17.5).
+        var outside = floor != null ? floor.LevelData : null;
+        if (outside != null)
+        {
+            int n = floor.FloorNumber;
+            if (outside.balance != null) pocketCopy.balance = outside.balance;
+            pocketCopy.heldStageDamage = outside.StageDamage(n);
+            pocketCopy.heldExtraFloors = outside.ExtraFloors(n);
+        }
 
         // Each portal's pocket in its own place, well apart from the others.
         var at = (floor != null ? floor.transform.position : transform.position) + Vector3.right * pocketDistance + Vector3.forward * (index - 1) * 120f;

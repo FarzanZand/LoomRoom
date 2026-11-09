@@ -6,7 +6,7 @@ Test bed for everything unless noted: the Debug Dungeon (toolbar **Debug**), the
 
 ## Status (2026-10-12)
 
-Most of categories 1 and 3-6 is in (1.3 is built but off by default), plus 7.3, 10.1, 11.2-11.4 and 13.6, mostly as recommended. The swing animations (category 2) were built and rejected; they stay off and are to be revisited. Lighting (8) and dungeon architecture (9) are not started. Not in the plan but added: breakables can hide a Crypt Rat that comes out alerted (`DungeonDestructible.ambushPrefab`, `ambushChance` 0.12). Every value is on `CombatManager` or the asset named, so each can be flipped back. Test with `Development/CombatTestBot.cs` (scripted input, frame captures to `Temp/CombatTest`).
+Most of categories 1 and 3-6 is in (1.3 is built but off by default), plus 7.3, 10.1, 11.2-11.4 and 13.6, mostly as recommended. The swing animations (category 2) were built and rejected; they stay off and are to be revisited. Lighting (8) and dungeon architecture (9) are not started. Not in the plan but added: breakables can hide a Crypt Rat that comes out alerted (`DungeonDestructible.ambushPrefab`, `ambushChance` 0.12). Every value is on `CombatManager` or the asset named, so each can be flipped back. Test with `Development/Scripts/CombatTestBot.cs` (scripted input, frame captures to `Temp/CombatTest`).
 
 ## Before anything
 
@@ -36,13 +36,13 @@ Each is a value or a small code switch on `CombatManager`, the enemy bases or `P
 
 | # | Status | Change | Test | Questions |
 |---|---|---|---|---|
-| 2.1 | Rejected, to revisit: baked as a forehand and backhand set (`FirstPersonPlayer/IK swings`, `IkSwingBaker`); the user didn't like them, `simpleSwings` stays on (original clips) | Re-time swing A to the reference's shape: windup you can see (about 0.18 s), strike in 2-3 frames, follow-through held about 0.3 s. Hitbox only on the strike frames | Swing at air and at a soldier, compare frame sheets | I do A first and you approve it before B, C, D copy the timing? Rec: yes. |
+| 2.1 | Rejected, removed 2026-11-05: baked as a forehand and backhand set (`FirstPersonPlayer/IK swings`, `IkSwingBaker`); the user didn't like them, `simpleSwings` stays on (original clips) | Re-time swing A to the reference's shape: windup you can see (about 0.18 s), strike in 2-3 frames, follow-through held about 0.3 s. Hitbox only on the strike frames | Swing at air and at a soldier, compare frame sheets | I do A first and you approve it before B, C, D copy the timing? Rec: yes. |
 | 2.2 | Rejected with 2.1 | Swing B re-timed the same way (the rising thrust from bottom right) | As above | |
 | 2.3 | Rejected with 2.1 | Swings C and D (flat right to left, flat left to right), four in a cycle | Spam-click and watch the cycle | Order? Rec: overhead, rising, flat right-left, flat left-right. |
 | 2.4 | Not started | Downward stab when looking down past about 35 degrees | Stab a rat on the floor | Threshold angle? |
 | 2.5 | Not started (kept as is, without hit stop) | Charged heavy | Hold and release | Keep as is, keep without hit stop and with less zoom, or remove? Rec: keep, toned down. |
 | 2.6 | Not started | Shield raised bigger and more central | Hold block | How much of the screen? Rec: about a third, lower left. |
-| 2.7 | Rejected with 2.1 (`ikSwingCameraRotation` only plays with the IK swings) | Swing camera motion per swing, small, following the swing direction | Swing | |
+| 2.7 | Rejected with 2.1, removed with it | Swing camera motion per swing, small, following the swing direction | Swing | |
 
 ## 3. Hit registration (needed by step 2, no questions except 3.2)
 

@@ -12,7 +12,7 @@ foreach (var (headGo, name, who) in new[] { (bt.headA, "Room Head Woman", "Woman
   bool was = headGo.activeSelf; headGo.SetActive(true);
   var r = headGo.GetComponent<UnityEngine.Renderer>();
   var src = r is UnityEngine.SkinnedMeshRenderer sk ? sk.sharedMesh : headGo.GetComponent<UnityEngine.MeshFilter>().sharedMesh;
-  var bake = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Meshy/RoomHead{who}/{name} baked.png");
+  var bake = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>($"Assets/Game/Art/Meshy/RoomHead{who}/{name} baked.png");
   var srcMat = new UnityEngine.Material(UnityEngine.Shader.Find("Universal Render Pipeline/Lit")); srcMat.SetTexture("_BaseMap", bake); srcMat.SetColor("_BaseColor", UnityEngine.Color.white);
   float meshTexels = DmTexels * r.transform.lossyScale.x;   // texels per mesh unit for DmTexels per world unit
   string dir = $"Assets/Game/Art/Synty Pixel/Characters/{name}";

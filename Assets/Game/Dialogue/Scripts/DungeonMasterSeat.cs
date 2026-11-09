@@ -80,12 +80,15 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     [Tooltip("World units he stands back from the table's edge while he leans on it (his forearms reach the top).")]
     [Min(0)] public float leanBack = 6f;
 
-    // He has reached the spot a boss fight brought him to (or there is none).
-    public bool Arrived => !focusAt.HasValue || (new Vector2(body.position.x - focusAt.Value.x, body.position.z - focusAt.Value.z)).sqrMagnitude < .05f;
+    // He has reached the spot a boss fight brought him to (or there is none). Within a unit (about 4 cm): the leaning
+    // clip's root motion nudges him about a quarter of a unit off it every frame before LateUpdate puts him back, so a
+    // tighter test was never met in a coroutine and every reach of his hand sat out its 6 s timeouts.
+    public bool Arrived => !focusAt.HasValue || (new Vector2(body.position.x - focusAt.Value.x, body.position.z - focusAt.Value.z)).sqrMagnitude < 1f;
 
     public void Focus(Vector3 standAt, Vector3 face)
     {
         focusAt = standAt; faceAt = face;
+        HoldColliders(standing);
         if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
             animator.CrossFadeInFixedTime(leanState, leanBlend, 0);
     }
@@ -108,6 +111,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         var look = face - at; look.y = 0;
         body.SetPositionAndRotation(at, look.sqrMagnitude > .01f ? Quaternion.LookRotation(look) : body.rotation);
         focusAt = at; faceAt = face; returning = false;
+        HoldColliders(true);
         if (animator != null && animator.isActiveAndEnabled && animator.HasState(0, Animator.StringToHash(leanState)))
             animator.CrossFadeInFixedTime(leanState, .1f, 0);
         return true;
@@ -141,6 +145,7 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
     // made him pop up 6-8 cm for a frame several times a second through every fight. Set here, the drawn place is this one.
     void LateUpdate()
     {
+        HoldColliders(standing && (focusAt.HasValue || returning));
         // Seated (and sitting down), he stays on the chair: the clips' root motion would walk him off it.
         if (!standing) { body.SetPositionAndRotation(seatPosition, seatRotation); return; }
         if (focusAt.HasValue)
@@ -162,8 +167,28 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         body.rotation = Quaternion.RotateTowards(body.rotation, Quaternion.LookRotation(to), turnSpeed * Time.deltaTime);
     }
 
+    // Away from his place (a spell or a boss fight brings him to the table and he leans over it) his body and his talk
+    // trigger have no collider: his body is many metres across at the dungeon's scale and stood in the floor, walling
+    // off corridors and stopping spells.
+    Collider[] colliders;
+    bool[] authored;
+    bool away;
+    void HoldColliders(bool nowAway)
+    {
+        if (nowAway == away) return;
+        away = nowAway;
+        if (colliders == null)
+        {
+            colliders = (animator != null ? animator.transform : transform).GetComponentsInChildren<Collider>(true);
+            authored = new bool[colliders.Length];
+            for (int i = 0; i < colliders.Length; i++) authored[i] = colliders[i].enabled;
+        }
+        for (int i = 0; i < colliders.Length; i++) if (colliders[i] != null) colliders[i].enabled = !away && authored[i];
+    }
+
     void OnDisable()
     {
+        HoldColliders(false);
         DungeonMaster.Spoke -= OnSpoke;
         if (PlayerManager.HasInstance) PlayerManager.Instance.PlayerSwapped -= OnPlayerSwapped;
     }

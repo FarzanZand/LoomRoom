@@ -334,6 +334,9 @@ public static partial class PixelRestyle
         if (mat == null) return null;
         Texture tex = null;
         foreach (var p in new[] { p1, p2, p3 }) if (p != null && tex == null && mat.HasProperty(p)) tex = mat.GetTexture(p);
+        // Synty's PolygonShader and Basic_Wind (Dark Fortress walls, banner cloth) name their colour map differently;
+        // without these their copies came out white.
+        if (tex == null && p1 == "_BaseMap") foreach (var p in new[] { "_Base_Texture", "_Main_Texture" }) if (tex == null && mat.HasProperty(p)) tex = mat.GetTexture(p);
         if (tex == null) return null;
         if (cache.TryGetValue(tex, out var t2)) return t2;
         var rt = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);

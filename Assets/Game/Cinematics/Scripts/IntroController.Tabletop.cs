@@ -124,9 +124,9 @@ public partial class IntroController
         yield return SayAll(lampLines);
         if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) });
         yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "", sheetLines);
-        PopDialogue();
         yield return WaitForTable();
         PlayPractice(false);
+        PopDialogue();   // after the table has taken its own Dialogue, so no frame of Explore shows its prompt
     }
 
     // Into the chair: from wherever they stand to the seat, the view settling on the Dungeon Master.

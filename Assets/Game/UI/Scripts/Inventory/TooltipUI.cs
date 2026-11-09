@@ -24,7 +24,7 @@ public class TooltipUI : Singleton<TooltipUI>
     [SerializeField, Tooltip("The bars' parent: off for tooltips without them, so they leave no gap.")] GameObject compareBars;
     [SerializeField, Tooltip("The main number (damage, armour) against what is worn.")] CompareBar mainBar = new();
     [SerializeField, Tooltip("A weapon's swing speed against the held weapon's.")] CompareBar speedBar = new();
-    [SerializeField, Tooltip("Under the bars: what grey stands for (\"Grey: your Iron Sword\").")] TextMeshProUGUI compareNote;
+    [SerializeField, Tooltip("Under the bars, only when nothing is worn in that slot.")] TextMeshProUGUI compareNote;
     [SerializeField] Color lineDefault = new(.3f, .3f, .33f);
     [Header("Stone plate: footer and the equipped panel's header")]
     [SerializeField, Tooltip("The footer row (left note, coin and price); hidden for text-only tooltips.")] GameObject footer;
@@ -92,13 +92,14 @@ public class TooltipUI : Singleton<TooltipUI>
         if (equipped != null && comparePanel != null) ShowCompare(equipped);
     }
 
-    // The name in its rarity colour (Common stays white); the type line says the rarity and what it is ("UNCOMMON  ·  HELM").
+    // The name in its rarity colour (Common stays white); the type line says the rarity and what it is ("UNCOMMON  ·  HELM"),
+    // the rarity left out for Common.
     static string Title(ItemData item) => item.HasRarityColour ? $"<color={item.RarityTextColour}>{item.itemName}</color>" : item.itemName;
 
     static string Kind(ItemData item)
     {
         string kind = item.TypeLine().ToUpperInvariant();
-        return item.IsGear ? $"{item.RarityName.ToUpperInvariant()}  ·  {kind}" : kind;
+        return item.IsGear && item.rarity != ItemRarity.Common ? $"{item.RarityName.ToUpperInvariant()}  ·  {kind}" : kind;
     }
 
     void ShowHeader(ItemData item)
@@ -127,14 +128,20 @@ public class TooltipUI : Singleton<TooltipUI>
         {
             float mine = item.SwingSpeed, theirs = wearing ? mine : equipped != null ? equipped.SwingSpeed : 0f;
             // -0.5 (very slow) to +0.5 (very fast) across the bar.
-            Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), ItemData.SwingSpeedWord(mine).ToLowerInvariant(), (mine - theirs) * 100f, "%");
+            Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), SpeedWord(mine), (mine - theirs) * 100f, "%");
         }
         if (compareNote != null)
         {
-            compareNote.gameObject.SetActive(true);
-            compareNote.text = thisCopy ? "Equipped" : wearing ? $"Grey: your {item.itemName}" : equipped != null ? $"Grey: your {equipped.itemName}" : "Nothing worn there";
+            // Only when there is nothing to compare with: the panel beside it shows what is worn, and the item's own
+            // lines say Equipped.
+            bool nothingWorn = !thisCopy && !wearing && equipped == null;
+            compareNote.gameObject.SetActive(nothingWorn);
+            compareNote.text = nothingWorn ? "Nothing worn there" : "";
         }
     }
+
+    // A swing speed in a word, none for the usual one.
+    static string SpeedWord(float speed) { string word = ItemData.SwingSpeedWord(speed); return word == "Normal" ? "" : word.ToLowerInvariant(); }
 
     static void Fill(CompareBar bar, string label, float mine, float worn, string text, float delta, string unit = "")
     {
@@ -148,7 +155,7 @@ public class TooltipUI : Singleton<TooltipUI>
         if (bar.label != null) bar.label.text = label;
         string change = Mathf.Abs(delta) < .01f ? $"<color={ItemData.DimColor}>same</color>"
             : $"<color={(delta > 0 ? ItemData.GoodColor : ItemData.BadColor)}>{(delta > 0 ? "+" : "")}{delta:0.#}{unit}</color>";
-        if (bar.value != null) bar.value.text = $"{text}  {change}";
+        if (bar.value != null) bar.value.text = string.IsNullOrEmpty(text) ? change : $"{text}  {change}";
     }
 
     static void Span(Image image, float from, float to)
@@ -187,7 +194,8 @@ public class TooltipUI : Singleton<TooltipUI>
         if (compareNameText != null) compareNameText.text = Title(equipped);
         // The panel's own tab says EQUIPPED; without one the type line does.
         if (compareTypeText != null) compareTypeText.text = (compareIcon != null ? "" : "EQUIPPED  ·  ") + Kind(equipped);
-        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null);
+        // Its tab already says EQUIPPED.
+        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null, false);
         if (compareIcon != null) { compareIcon.sprite = equipped.icon; compareIcon.enabled = equipped.icon != null; compareIcon.preserveAspect = true; }
         if (compareIconSlot != null) compareIconSlot.gameObject.SetActive(equipped.icon != null);
         if (compareRarityLine != null) compareRarityLine.color = equipped.HasSlotFill ? Color.Lerp(equipped.RarityColour, Color.white, equipped.HasRarityColour ? .25f : .1f) : lineDefault;
@@ -205,6 +213,8 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         anchor = null;
         ShowLines(title, subtitle, description);
+        // A text tooltip with no body (a stat with nothing to list) is its title alone, no line under it.
+        if (rarityLine != null && string.IsNullOrEmpty(description)) rarityLine.gameObject.SetActive(false);
     }
 
     void ShowLines(string title, string subtitle, string description)
@@ -213,8 +223,10 @@ public class TooltipUI : Singleton<TooltipUI>
         HideCompare();
         HideItemParts();
         if (nameText != null) nameText.text = title;
-        if (typeText != null) typeText.text = subtitle;
-        if (descriptionText != null) descriptionText.text = description;
+        if (typeText != null) { typeText.text = subtitle; typeText.gameObject.SetActive(!string.IsNullOrEmpty(subtitle)); }
+        // No body (a stat with nothing to list): no empty box under the title.
+        if (descriptionText != null) { descriptionText.text = description; descriptionText.gameObject.SetActive(!string.IsNullOrEmpty(description)); }
+        if (rarityLine != null) rarityLine.gameObject.SetActive(true);
         panel.SetActive(true);
         // Unity can reset overrideSorting while an authored nested canvas is inactive.
         var overlay=panel.GetComponent<Canvas>();if(overlay!=null)overlay.overrideSorting=true;

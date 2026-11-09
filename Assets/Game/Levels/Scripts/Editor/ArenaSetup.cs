@@ -12,7 +12,7 @@ using UnityEngine;
 //    kept) and the Arena pit: a 13 x 13 board of sand ringed by three tiers of stands with a crowd of pewter
 //    miniatures, the owner's box under an awning, banners and braziers, the champion waiting near the far side, the DM's
 //    lines and ArenaFight. The level is a landing and the pit (the pit is the last room, its stairs hidden by ArenaFight).
-//  - Campaign/Encounters/Act 1/The Arena, appended to the CampaignManager's places, with its place and road on the map.
+//  - Table map/Encounters/Act 1/The Arena, appended to the CampaignManager's places, with its place and road on the map.
 public static partial class ArenaSetup
 {
     const string Dir = "Assets/Game/Levels/Arena";
@@ -400,7 +400,7 @@ public static partial class ArenaSetup
 
     static CampaignEncounter Encounter(TableLevelData level, System.Text.StringBuilder log)
     {
-        string path = "Assets/Game/Campaign/Encounters/Act 1/The Arena.asset";
+        string path = "Assets/Game/Table map/Encounters/Act 1/The Arena.asset";
         var e = AssetDatabase.LoadAssetAtPath<CampaignEncounter>(path);
         if (e == null) { e = ScriptableObject.CreateInstance<CampaignEncounter>(); AssetDatabase.CreateAsset(e, path); log.Append("made the Arena encounter; "); }
         e.id = "arena"; e.displayName = "The Arena"; e.kind = CampaignEncounterKind.Level; e.level = level; e.act = 1;
@@ -408,7 +408,7 @@ public static partial class ArenaSetup
         e.pickedLine = new DungeonMaster.Line { text = "The arena, then. Try not to bore him.", inPerson = true };
         EditorUtility.SetDirty(e);
         // Appended to the places (their order is saved: append only), on the prefab and in the scene.
-        const string managerPath = "Assets/Game/Campaign/Prefabs/CampaignManager.prefab";
+        const string managerPath = "Assets/Game/Table map/Prefabs/CampaignManager.prefab";
         var root = PrefabUtility.LoadPrefabContents(managerPath);
         var cm = root.GetComponent<CampaignManager>();
         if (System.Array.IndexOf(cm.encounters, e) < 0) { var l = new List<CampaignEncounter>(cm.encounters) { e }; cm.encounters = l.ToArray(); }
@@ -491,6 +491,6 @@ public static partial class ArenaSetup
             log.Append("placed the Arena on the map");
         }
         finally { PrefabUtility.UnloadPrefabContents(root); }
-        log.Append("; " + CampaignMapBuilder.PixelProps());
+        log.Append("; " + CampaignMapBuilder.MakePlacePrefabs() + CampaignMapBuilder.PixelProps());
     }
 }
