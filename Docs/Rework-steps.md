@@ -6,7 +6,7 @@ Test bed for everything unless noted: the Debug Dungeon (toolbar **Debug**), the
 
 ## Status (2026-10-12)
 
-Most of categories 1 and 3-6 is in (1.3 is built but off by default), plus 7.3, 10.1, 11.2-11.4 and 13.6, mostly as recommended. The swing animations (category 2) were built and rejected; they stay off and are to be revisited. Lighting (8) and dungeon architecture (9) are not started. Not in the plan but added: breakables can hide a Crypt Rat that comes out alerted (`DungeonDestructible.ambushPrefab`, `ambushChance` 0.12). Every value is on `CombatManager` or the asset named, so each can be flipped back. Test with `Development/CombatTestBot.cs` (scripted input, frame captures to `Temp/CombatTest`).
+Most of categories 1 and 3-6 is in (1.3 is built but off by default), plus 7.3, 10.1, 11.2-11.4 and 13.6, mostly as recommended. The swing animations (category 2) were built and rejected; they stay off and are to be revisited. Lighting (8) and dungeon architecture (9) are not started. Not in the plan but added: breakables can hide a Crypt Rat that comes out alerted (`DungeonDestructible.ambushPrefab`, `ambushChance` 0.12). Every value is on `CombatManager` or the asset named, so each can be flipped back. Test with `Development/Scripts/CombatTestBot.cs` (scripted input, frame captures to `Temp/CombatTest`).
 
 ## Before anything
 

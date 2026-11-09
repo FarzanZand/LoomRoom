@@ -1,13 +1,13 @@
 # Folder layout
 
-Where things live in `Assets`, and the rules that keep it that way. Reorganised on 2026-10-23.
+Where things live in `Assets`, and the rules that keep it that way. Reorganised on 2026-10-23 and 2026-11-06. To find what to open for a change, see `Assets/Game/README.md`.
 
 ## The two kinds of folders
 
 - **`Assets/Game`** is ours: everything made for The Table Awaits.
-- **Everything else in `Assets`** is bought or third-party and is never edited: `Synty` (models), `Spells Pack` (spell effects),
-  `ThirdParty` (`Pixel Items` icons, `Sound Effects Library`, `Generic Fantasy UI` sounds, StarterAssets, the v-tools and others),
-  `Plugins`, `ProPixelizer`. To change one of their assets, make a copy in `Assets/Game` (the Synty pixel copies are made this way).
+- **Everything else in `Assets`** is bought or third-party and is never edited: `Synty` (models; it has to stay at `Assets/Synty`, Synty's Sidekick tool has that path written in its code and its updater would overwrite a change),
+  `ThirdParty` (every other pack: `Spells Pack`, `Pixel Items` icons, `Sound Effects Library`, `Generic Fantasy UI` sounds, `ProPixelizer`, `Meshy bridge`, StarterAssets, the v-tools and others),
+  `Plugins` (code plugins) and `Editor Default Resources` (Unity needs that name). To change one of their assets, make a copy in `Assets/Game` (the Synty pixel copies are made this way).
 - **Bought packs are not imported whole** (since 2026-10-29). Every pack lives in the library project
   `C:/Game projects/AssetLibrary` (outside git), and only what the game uses is brought into LoomRoom, at the same
   paths and GUIDs, with `python Tools/asset_library.py` (`unpack` a downloaded pack into the library, `find`, `pull`, and `missing`
@@ -17,9 +17,8 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 
 | Folder | What is in it |
 |---|---|
-| `Art` | Art made by our tools from bought models: `Synty Pixel` (the pixel copies of every Synty model in the game; generated, never edited by hand) |
+| `Art` | What tools make from elsewhere: `Synty Pixel` (the pixel copies of every Synty model in the game; generated, never edited by hand), `Meshy` (raw results of `Tools/meshy.py`: models, textures, task ids; the creatures in use, Crypt Rat, Cave Bat and Urn Crawler, are here too) |
 | `Audio` | `Clips` (our sounds, by kind: Chests, Kills, Voice, Dialogue lines, Grunts, SFX, Misc ...), `Data` (AudioData assets), `Music` (every track the game plays, bought packs included), `Scripts`, `GameMixer.mixer` |
-| `Campaign` | The realm map on the table: `Map` (the map prefab, its textures, the pixel props in `Map/Pixel`), `Encounters/Act N` (places and events by act), `Scripts`, `Prefabs`, `Resources` |
 | `Characters` | Players, enemies and NPCs, one prefab each (`Players`, `Enemies/<group>`, `NPCs`), `Skills/<Skill>` (each skill's data and its abilities, Blocking's Shield bash and Deflect), `Animations`, `Scripts` (`AI`, `Data`, `Death`, `Hit feel`, `Editor`) |
 | `Cinematics` | Cutscenes and the intro |
 | `Combat` | Hits, gore, blocking, spells (`Spells/<Spell>`), arrows, effects |
@@ -29,11 +28,11 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 | `Interactions` | Doors, triggers, things to use |
 | `Items` | `Data` (one ItemData per item, by kind), `Prefabs` (world models), `Icons`, `Effects`, `LootTables`, `Scripts` |
 | `Levels` | The table's levels: `Shared` (everything more than one level uses), one folder per level with only its own things, `Scripts` (by topic), `Resources` |
-| `Meshy` | Raw results of `Tools/meshy.py` (models, textures, task ids). The creatures in use (Crypt Rat, Cave Bat, Urn Crawler) are here too |
 | `Progression` | Classes, skills, the character sheet and trophy wall in the room |
 | `Rendering` | The pixel look: shaders, the Pixel Look library, its generated materials |
 | `Rules` | The Dungeon Master's house rules |
 | `Scenes` | `Main Menu`, `Room` |
+| `Table map` | The realm map on the table (scripts still say Campaign): `Map` (`Realm map.prefab`; `Places`, one prefab per real place, nested in it; `Place art`, `Materials`, `Shaders`; `Generated` and `Pixel`, tool output), `Encounters/Act N` (places and events by act), `Scripts`, `Prefabs`, `Resources` |
 | `UI` | `Scripts` (`Hud`, `Inventory`, `Menus`, `Shop`, `Editor`; the UI's own base classes at the top), `Sprites`, `Fonts`, `Prefabs`, `Main Menu` |
 | `World` | The apartment: its art, moods, prefabs, terrain |
 
@@ -49,12 +48,13 @@ Where things live in `Assets`, and the rules that keep it that way. Reorganised 
 
 ## Rules
 
+0. **The same subfolders in every part of the game** where it needs them: `Scripts`, `Prefabs`, `Data`, `Art`, `Resources`, `Materials`, `Shaders`. No loose scripts at a part's top.
 1. **One folder per thing when a thing has several files** (a spell, an enemy's model, a door). A folder with one file is fine only when
    more of its kind will join it.
 2. **Scripts** live in the area's `Scripts`; a folder with more than about 25 scripts is split by topic. Editor-only code goes in an
    `Editor` folder. No namespaces, one assembly.
 3. **`Resources`** only for what code loads by name. Everything else is referenced.
-4. **Generated folders are never edited by hand**: `Art/Synty Pixel`, `Campaign/Map/Pixel`, `Rendering/PixelLook/Materials`,
+4. **Generated folders are never edited by hand**: `Art/Synty Pixel`, `Table map/Map/Pixel`, `Rendering/PixelLook/Materials`,
    `Items/Icons/Generated`, `Levels/Shared/Room pieces/Previews`. Change the tool and run it again.
 5. **Retired assets** go to an `_Archive` folder next to where they lived; the game and the Asset Studio leave `_Archive` out.
 6. **Names** are plain words in sentence case ("Room pieces", "Dialogue lines"), never numbered copies ("Props 1").

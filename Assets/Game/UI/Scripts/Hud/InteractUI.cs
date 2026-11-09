@@ -115,6 +115,10 @@ public class InteractUI : MonoBehaviour
         string key = shownKey ?? (InputManager.HasInstance ? InputManager.Instance.BindingDisplay("Interact") : "E");
         string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
             ? trigger.WorldItem.Item.itemName : trigger.PromptMessage;
+        // A second action on its own key (the table's R for the map) goes beside the first.
+        string second = trigger.Interactable is ISecondaryInteractable s && !string.IsNullOrEmpty(s.SecondaryPrompt)
+            ? "      <b>[" + (InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + "]</b>  " + s.SecondaryPrompt : "";
+        message += second;
         if (key == shownKey && message == shownMessage) return;
         shownKey = key; shownMessage = message;
         promptText.text = "<b>[" + key + "]</b>  " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);

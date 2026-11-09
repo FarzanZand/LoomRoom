@@ -335,7 +335,7 @@ public static class TavernSetup
 
     static void Arena(System.Text.StringBuilder log)
     {
-        var arena = AssetDatabase.FindAssets("t:CampaignEncounter", new[] { "Assets/Game/Campaign/Encounters" })
+        var arena = AssetDatabase.FindAssets("t:CampaignEncounter", new[] { "Assets/Game/Table map/Encounters" })
             .Select(g => AssetDatabase.LoadAssetAtPath<CampaignEncounter>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(e => e != null && e.id == "arena");
         if (arena == null) { log.Append("NO arena place; "); return; }
         arena.rumoured = true;

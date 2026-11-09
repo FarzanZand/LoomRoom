@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PACK = os.path.join(ROOT, "Assets", "Spells Pack", "Particles", "Textures")
+PACK = os.path.join(ROOT, "Assets", "ThirdParty", "Spells Pack", "Particles", "Textures")
 OUT = os.path.join(ROOT, "Assets", "Game", "Combat", "Effects", "DM beam")
 W, H = 128, 32
 

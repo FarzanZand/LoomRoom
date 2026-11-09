@@ -1,42 +1,70 @@
-# LoomRoom project layout
+# Where everything is
 
-The only scene is `Scenes/Room.unity`. Project conventions and a fuller map of the code are in `CLAUDE.md` at the repository root; design notes are in `Docs/`.
+The game opens on `Scenes/Main Menu.unity` and is played in `Scenes/Room.unity`. Project conventions and a fuller map of the code are in `CLAUDE.md` at the repository root; the folder rules are in `Docs/Folder-layout.md`.
+
+## Where do I go to change...
+
+| To change | Open |
+| --- | --- |
+| The table map | `Table map/Map/Realm map.prefab` (ground, scatter, roads, where each place stands) |
+| A place on the map (the Crypt's gate, the Arena, the Peddler's Cellar) | `Table map/Map/Places/<Place>.prefab` |
+| What a place is (name, act, level, lines) | `Table map/Encounters/Act N` |
+| The bedroom and the apartment | `Scenes/Room.unity`; its art is in `World/Art`, its props in `World/Prefabs` |
+| A dungeon's floors, biomes and balance | `Levels/<Level>`, or Asset Studio > Levels |
+| A hand-built room | `Levels/Shared/Rooms`, or a level's own `Rooms` |
+| Room looks (walls, floors) | `Levels/Shared/Room styles` |
+| An enemy or NPC | `Characters/Enemies/<Group>`, `Characters/NPCs` |
+| A class | `Characters/Classes`, its paintings in `Characters/Classes/Portraits` |
+| A skill | `Characters/Skills/<Skill>` |
+| An item | `Items/Data/<Kind>`, its model in `Items/Prefabs`, or Asset Studio > Items |
+| A spell | `Combat/Spells/<Spell>` |
+| A sound or music track | `Audio/Clips`, `Audio/Data`, `Audio/Music` |
+| A menu or the HUD | `UI/Prefabs`, `UI/Sprites`; most HUD objects are in `Scenes/Room.unity` |
+| Lighting moods | `World/Moods`, `Levels/Resources/DungeonLighting` |
+
+**Asset Studio** (the first toolbar button right of Play) finds anything by name and shows where it is used.
+
+## Editing the table map
+
+- **Move a piece of a place:** open its prefab in `Table map/Map/Places`, move it, save. To see it on the map, open `Realm map.prefab` and click the arrow beside the place in the Hierarchy.
+- **Add a prop:** drag it into the place's prefab or under `Scatter`, then press **Bake new props** on the place or on the map's root. It makes the pixel copy at the map's texel size.
+- **Move a whole place:** move it under `Points` in `Realm map.prefab`. Its roads follow.
+- **Add or bend a road:** `Paths` in `Realm map.prefab` (`CampaignPath`: bend, width, wobble).
+- **Trees and rocks:** `Scatter` in `Realm map.prefab`; switch one off to hide it. Those on a road or a place hide themselves.
+- **Paint the ground:** Asset Studio > Props > Campaign map > Paint.
+- **Ground height:** no brush yet. It is a height grid, changed by scripts (`CryptEntrance.Flatten` is an example).
+- **Careful:** `CryptEntrance.Build()` rewrites the Crypt, `ArenaSetup.Build()` the Arena and `CampaignMapBuilder.Build()` the whole map, over any hand edits. Nothing runs them by itself.
 
 ## Folders (`Assets/Game`)
 
+Each part of the game has the same subfolders where it needs them: `Scripts`, `Prefabs`, `Data`, `Art`, `Resources` (only what code loads by name).
+
 | Folder | What is in it |
 | --- | --- |
-| `Core` | Managers (game state, input, players, progression, world, screen, runs, log, pooling, settings) and their prefabs in `Core/Prefabs` |
-| `Characters` | `Players/{Room,Table,Scripts,Input,Settings}`, `Enemies/{Base,Crypt,Town,_Archive}`, `NPCs`, `Animations`, shared character scripts |
-| `Combat` | `CombatManager.prefab`, hitboxes, spells (`Combat/Spells/<Spell>`), arrows |
-| `Items` | Item data, effects, loot tables and profiles scripts, world models, icons |
-| `Levels` | Level code (`Scripts`), `Resources/TableLevels.asset`, `Shared` (reveal, board), one folder per level: `Dungeon1`, `IntroDungeon`, `Town` |
-| `Progression` | Classes, skills, rules, save, memorial table |
-| `Interactions` | Interactables, doors, room loop portal |
-| `Dialogue` | Dialogue Database, `DialogueBridge`, the DM dialogue UI |
-| `Cinematics` | Cutscene controllers, intro assets, timelines |
-| `UI` | UI scripts, prefabs, kit sprites, fonts, themes |
-| `Rendering` | URP assets, `Desktop Renderer`, retro screen shader, Pixel Look |
-| `World` | Lighting manager, moods, prefabs; `World/Art` holds hand-made room art (apartment source materials, paintings, one folder per new thing) |
-| `Audio` | `AudioManager`, audio data (`Audio/Data`) and source clips (`Audio/Library`) |
-| `Art` | Pixel item art, terrain layers, generated pixel restyles (`Art/Synty Pixel`, not edited by hand) |
-| `Meshy` | AI-generated models from `Tools/meshy.py` |
-| `Development` | Debug Dungeon session and settings, editor tools in `Development/Editor` |
-| `Scenes` | `Room.unity` |
+| `Art` | What tools make: `Synty Pixel` (pixel copies of bought models, never edited by hand), `Meshy` (AI models from `Tools/meshy.py`) |
+| `Audio` | Sound clips, audio data, music |
+| `Characters` | Players, enemies, NPCs, classes, skills, animations |
+| `Cinematics` | Cutscenes, the intro, timelines |
+| `Combat` | Hits, gore, spells, arrows, effects |
+| `Core` | The managers and the game's own systems |
+| `Development` | Our tools, never in a release: Asset Studio, the dev prompt, debug arenas, test bots |
+| `Dialogue` | The Dungeon Master's conversations |
+| `Interactions` | Doors and things to use |
+| `Items` | Item data, models, icons, loot |
+| `Levels` | Dungeon levels: `Shared`, one folder per level, `Scripts` |
+| `Progression` | Character sheet, trophy wall, room puzzle |
+| `Rendering` | URP assets and settings, shaders, the pixel look |
+| `Rules` | The house rules |
+| `Scenes` | `Main Menu`, `Room` |
+| `Table map` | The map on the table: its prefab, places, encounters |
+| `UI` | Menus and the HUD |
+| `World` | The apartment: art, props, lighting |
 
-Imported packages live in `Assets/ThirdParty`, `Assets/Synty`, `Assets/Plugins`, `Assets/Packages` and `Assets/ProPixelizer`. `Assets/Settings`, `Assets/Resources` and `Assets/Editor Default Resources` keep their Unity-specific locations.
+Outside `Assets/Game`, everything is bought and not edited: `Synty` (it has to stay at that path, its Sidekick tool has it written in its code), `ThirdParty` (every other pack), `Plugins` (code plugins), `Editor Default Resources` (Unity needs that name).
 
-## Editor menus and toolbar
+## Editor menu and toolbar
 
-Under **Tools > LoomRoom**:
-
-- **New Enemy**, **New NPC** (also right-click a character prefab > **Create > LoomRoom > Character Variant**)
-- **Item Database**, **Sync Item Catalog**
-- **Pixel Look > Build Materials**, **Build Materials (Reset Tuning)**, **Select Library**
-- **Editor Cutaway** (hides the apartment shell in the Scene view)
-- **Fullscreen Game View** (F11), **Fullscreen On Play**
-
-The main toolbar has **Debug** (load the Debug Dungeon arena) and **Dungeon** (generate WorldManager's Debug Dungeon and play it, skipping the room). `PackageToolsMenu` moves the Animation Rigging and Jobs package menus under Tools.
+**Tools > LoomRoom** holds only Asset Studio. The main toolbar has **Debug** (the Debug Dungeon arena), **Dungeon** (the level and floor picked beside it), **Room** and **Boss**.
 
 ## Players
 
@@ -61,4 +89,4 @@ The Table player's Controller also owns combat. The Room wrapper keeps its 20x s
 
 `Systems`, `Players`, `World`, `Characters`, `Interactables`, `UI`, `Cinematics`, `Lighting` and `Development` are the scene's organising roots. Never assume `transform.root` is a character: find the owning `Player` or `Character` instead.
 
-Move assets inside Unity (or with their `.meta` files) so GUID references survive. Some editor tools contain asset paths; update those when moving their assets.
+Move assets inside Unity so GUID references survive. Tools name asset paths in code: update them after a move.

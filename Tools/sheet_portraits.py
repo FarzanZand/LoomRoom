@@ -1,5 +1,5 @@
 """The character sheet's class portraits: a head-and-shoulders square cut from each class painting
-(Assets/Game/Art/Portraits Highquality), written twice into UI/Sprites/Meta/Portraits: <Class> pencil.png (drawn in
+(Assets/Game/Characters/Classes/Portraits Highquality), written twice into UI/Sprites/Meta/Portraits: <Class> pencil.png (drawn in
 graphite on the sheet's paper, the look the sheet uses) and <Class> colour.png (the painting as it is; picked with
 ProgressionManager > Meta progression > Sheet > Colour Sheet Portraits). The sheet's round mask cuts them to a circle.
 
@@ -9,7 +9,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageFilter, ImageOps
 
-SRC = "Assets/Game/Art/Portraits Highquality/"
+SRC = "Assets/Game/Characters/Classes/Portraits Highquality/"
 OUT = "Assets/Game/UI/Sprites/Meta/Portraits/"
 # class: painting, centre x, centre y, square size (in the 1536 x 2048 paintings)
 CROPS = {

@@ -1,13 +1,13 @@
 """Meshy bridge: generate, retexture, remesh and rig models from the command line.
 
-Results land in Assets/Game/Meshy/<name>/ (model files, textures, thumbnail, meshy.json).
+Results land in Assets/Game/Art/Meshy/<name>/ (model files, textures, thumbnail, meshy.json).
 
 API key: MESHY_API_KEY env var, or the first line of ~/.meshy/api_key.
 
   python Tools/meshy.py balance
   python Tools/meshy.py text "a wooden treasure chest with iron bands" --name Chest
   python Tools/meshy.py image ref.png --name Goblin --pose t-pose
-  python Tools/meshy.py retexture Assets/Game/Meshy/Chest/Chest.fbx "mossy, rotten wood" --name ChestMossy
+  python Tools/meshy.py retexture Assets/Game/Art/Meshy/Chest/Chest.fbx "mossy, rotten wood" --name ChestMossy
   python Tools/meshy.py remesh <model or task id> --polycount 3000 --name ChestLow
   python Tools/meshy.py rig <model or task id> --height 1.8 --name GoblinRigged
   python Tools/meshy.py concept "goblin archer, front view" --name GoblinRef
@@ -32,7 +32,7 @@ import requests
 
 API = "https://api.meshy.ai/openapi"
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_OUT = ROOT / "Assets" / "Game" / "Meshy"
+DEFAULT_OUT = ROOT / "Assets" / "Game" / "Art" / "Meshy"
 DEFAULT_FORMATS = ["fbx", "glb"]
 
 # kind -> (endpoint, label)
@@ -299,7 +299,7 @@ def main():
 
     def common(sp, name_required=True):
         sp.add_argument("--name", required=name_required, help="folder and file name under the output folder")
-        sp.add_argument("--out", default=str(DEFAULT_OUT), help="output folder (default Assets/Game/Meshy)")
+        sp.add_argument("--out", default=str(DEFAULT_OUT), help="output folder (default Assets/Game/Art/Meshy)")
         sp.add_argument("--formats", default=",".join(DEFAULT_FORMATS), type=lambda v: [f.strip() for f in v.split(",") if f.strip()])
         sp.add_argument("--model", help="meshy-7.1, meshy-6, meshy-6-lite or latest (default latest)")
         return sp

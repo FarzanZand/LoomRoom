@@ -3,7 +3,7 @@
 // cloth is rolled back) takes it too; and the mist, four broad faint sheets of the main menu's drifting fog over the
 // relief, a child of the map, so it is on the table only while the map is. Safe to run again.
 if (UnityEngine.Application.isPlaying) return "stop Play first";
-const string path = "Assets/Game/Campaign/Map/Realm map.prefab";
+const string path = "Assets/Game/Table map/Map/Realm map.prefab";
 var root = UnityEditor.PrefabUtility.LoadPrefabContents(path); int n = 0;
 try
 {

@@ -84,7 +84,7 @@ public partial class AssetStudioWindow
 
         // Places that open later: by a rumour, after deaths somewhere, or with a later act.
         int lastAct = m.Acts;
-        var campaign = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Campaign/Prefabs/CampaignManager.prefab")?.GetComponent<CampaignManager>();
+        var campaign = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Table map/Prefabs/CampaignManager.prefab")?.GetComponent<CampaignManager>();
         if (campaign != null) lastAct = campaign.lastAct;
         foreach (var p in m.places.Where(p => p.kind == CampaignEncounterKind.Level))
         {

@@ -3,14 +3,14 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Puts the Spells Pack's particle effects (Assets/Spells Pack, its URP copies in LWRP(URP)) into the game's spell
+// Puts the Spells Pack's particle effects (Assets/ThirdParty/Spells Pack, its URP copies in LWRP(URP)) into the game's spell
 // prefabs: Fireball (hand, projectile, impact), Fire Circle (marker, eruption) and Heal (hand, impact). Each effect is
 // copied in unpacked under an "Art" child, without the pack's demo scripts and lights (SpellVisual keeps its own light),
 // its systems set to scale with the hierarchy so the Art's scale sizes it. Run again to rebuild the Art from the pack
 // (hand edits to the Art children are lost then; SpellVisual, lights and sounds on the prefabs are kept).
 public static partial class SpellPackEffects
 {
-    const string Pack = "Assets/Spells Pack/LWRP(URP)/Particles_LWRP/";
+    const string Pack = "Assets/ThirdParty/Spells Pack/LWRP(URP)/Particles_LWRP/";
     const string Spells = "Assets/Game/Combat/Spells/";
     // Pixel look: the effects draw with point-filtered, low-resolution copies of the pack's textures (in _Pack), about an
     // eighth of their size, so they sit with the game's pixel art. Off: the pack's own smooth materials.
@@ -233,7 +233,7 @@ public static partial class SpellPackEffects
     // A copy of a pack material in _Pack/Materials whose textures are the pixel copies; refreshed from the pack each run.
     public static Material PixelMaterial(Material source, int divisor)
     {
-        if (source == null || !AssetDatabase.GetAssetPath(source).StartsWith("Assets/Spells Pack/")) return source;
+        if (source == null || !AssetDatabase.GetAssetPath(source).StartsWith("Assets/ThirdParty/Spells Pack/")) return source;
         string path = PixelFolder + "Materials/" + source.name + ".mat";
         var copy = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (copy == null)
@@ -265,7 +265,7 @@ public static partial class SpellPackEffects
     {
         string from = AssetDatabase.GetAssetPath(source);
         if (string.IsNullOrEmpty(from) || from.StartsWith(PixelFolder)) return source;
-        if (!from.StartsWith("Assets/Spells Pack/") || source is not Texture2D) return source;
+        if (!from.StartsWith("Assets/ThirdParty/Spells Pack/") || source is not Texture2D) return source;
         if (from.Contains("_Normal")) return source;
         string path = PixelFolder + "Textures/" + System.IO.Path.GetFileName(from);
         if (AssetDatabase.LoadAssetAtPath<Texture>(path) == null) { Folder(PixelFolder + "Textures"); AssetDatabase.CopyAsset(from, path); }

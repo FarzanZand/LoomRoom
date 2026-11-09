@@ -17,7 +17,7 @@ public static class BedCloth
     {
         var go = GameObject.Find(scenePath);
         var mf = go.GetComponentInChildren<MeshFilter>(); var mr = mf.GetComponent<MeshRenderer>();
-        var src = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Meshy/Bed_A/Bed_A.fbx").GetComponentInChildren<MeshFilter>().sharedMesh;
+        var src = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Art/Meshy/Bed_A/Bed_A.fbx").GetComponentInChildren<MeshFilter>().sharedMesh;
         var v = src.vertices; var n = src.normals; var uv = src.uv; var t = src.triangles;
         int nt = t.Length / 3;
         var raw = File.ReadAllBytes("Temp/Paint/Room/bed_tricls.bin");

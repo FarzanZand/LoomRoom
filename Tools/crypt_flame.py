@@ -2,13 +2,13 @@
 at its foot, and its texture at the map's 6.4 texels a unit: a few texels, yellow at the foot to dark red at the tips,
 varying texel to texel. Pivot in the basket, 18% up; one unit tall.
 
-The model:    blender -b -P Tools/crypt_flame.py -- "Assets/Game/Campaign/Map/Crypt flame/Crypt flame.fbx"
+The model:    blender -b -P Tools/crypt_flame.py -- "Assets/Game/Table map/Map/Place art/Crypt flame/Crypt flame.fbx"
 The texture:  python Tools/crypt_flame.py
 """
 import math
 import sys
 
-OUT_PNG = "Assets/Game/Campaign/Map/Crypt flame/Crypt flame.png"
+OUT_PNG = "Assets/Game/Table map/Map/Place art/Crypt flame/Crypt flame.png"
 # Rows from the foot up.
 ROWS = [
     [(255, 214, 96), (255, 176, 58), (255, 200, 78), (255, 186, 64)],

@@ -10,7 +10,7 @@ using UnityEngine;
 // How the game table itself looks. Serialized by number: append only.
 public enum TableLook { Simple = 0, Bordered = 1 }
 
-public class TableManager : Singleton<TableManager>, IInteractable
+public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryInteractable
 {
     [Header("Look")]
     [SerializeField, Tooltip("Simple: the plain table (thin legs, an apron and a low rim). Bordered: a heavy dark frame round the map with thick legs and candles on its corners (the mood pass).")]
@@ -23,6 +23,11 @@ public class TableManager : Singleton<TableManager>, IInteractable
     public GameObject DM;
     public Transform dmPlacement;
     [SerializeField] string prompt = "Play";
+    [SerializeField, Tooltip("On: E plays the place where the figure stands on the map at once (or continues the saved run), and R opens the map. Off: E opens the map.")]
+    bool playWithoutMap = true;
+    [SerializeField, Tooltip("What R says while E plays straight away.")] string mapPrompt = "Map";
+    [SerializeField, Tooltip("What E says while it plays straight away.")] string enterPrompt = "Enter Dungeon";
+    [SerializeField, Tooltip("What E says while it continues the run saved on quit.")] string continuePrompt = "Continue Dungeon";
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
     DungeonMaster.Line endingLine = new() { text = "The door's open. Go and get some air." };
     [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (the lesson skill first, Athletics).")]
@@ -72,7 +77,21 @@ public class TableManager : Singleton<TableManager>, IInteractable
     bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
     public string Prompt => IntroController.WaitingForSeat ? "Sit down"
         : ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns
-            ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? $"Train {ProgressionManager.Instance.LessonSkillName} at the sheet first" : "Look at the character sheet first") : prompt;
+            ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? $"Train {ProgressionManager.Instance.LessonSkillName} at the sheet first" : "Look at the character sheet first")
+        : QuickPlayReady ? (CampaignManager.Instance.QuickPlayResumes ? continuePrompt : enterPrompt) : prompt;
+    // E plays straight away (no map view) once the map has been seen: not during the intro, the first morning's sheet,
+    // the lesson or the win ending.
+    bool QuickPlayReady => playWithoutMap && CampaignManager.Active && !IntroController.WaitingForSeat && !IntroController.SheetPending
+        && !EndingRunning && !(ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
+        && CampaignManager.Instance.CanQuickPlay;
+    public string SecondaryPrompt => QuickPlayReady ? mapPrompt : null;
+    public string SecondaryAction => "Map";
+    // R: the map, as E was before.
+    public void SecondaryInteract(Character who)
+    {
+        if (!CanInteract(who) || !QuickPlayReady) return;
+        EnterTable();
+    }
     public bool CanInteract(Character who) => who is Player player && player.kind == PlayerKind.Room
         && player.IsAlive && PlayerManager.HasInstance && PlayerManager.Instance.Active == player
         && (loader == null || !loader.Busy) && sitting == null
@@ -119,6 +138,7 @@ public class TableManager : Singleton<TableManager>, IInteractable
         }
         // The whole dungeon won: the prototype's thank-you instead of a new run.
         if ((!CampaignManager.Active || CampaignManager.Instance.playEndingOnWin) && TryGetComponent<PrototypeEnd>(out var end) && end.TryPlay()) return;
+        if (QuickPlayReady && who is Player player && CampaignManager.Instance.QuickPlay(player)) return;
         EnterTable();
     }
     public void EnterTable() => Play();

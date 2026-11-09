@@ -2,7 +2,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// One camera filter (ScreenFilter) as ScreenManager draws it: settings for the Retro Screen pass (Rendering/RetroScreen.shader)
+// One camera filter (ScreenFilter) as ScreenManager draws it: settings for the Retro Screen pass (Rendering/Shaders/RetroScreen.shader)
 // and an optional volume profile laid over the scene's own. Runs after the world and its post-processing and before the
 // UI, so materials, pixel lighting, texel sizes and the HUD are never touched. Made once by ScreenFilterSetup;
 // tune the numbers here freely.

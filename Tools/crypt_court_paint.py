@@ -15,7 +15,7 @@ import sys
 
 from PIL import Image
 
-TEX = "Assets/Game/Campaign/Map/Generated/terrain texture.png"
+TEX = "Assets/Game/Table map/Map/Generated/terrain texture.png"
 BASE = "Library/crypt_court_terrain_base.png"
 HALF_X, HALF_Z = 39.0, 53.0
 
@@ -32,7 +32,7 @@ FACING = 195.0
 STAIR_HALF, STAIR_FROM, STAIR_TO = 1.7, -1.1, -7.3
 PIT = [(44, 38, 33), (38, 33, 29), (50, 43, 37)]
 # The passage's own pixel copies (run this after CampaignMapBuilder.PixelProps): its stair ceiling and the rock walling it.
-PIXEL = "Assets/Game/Campaign/Map/Pixel"
+PIXEL = "Assets/Game/Table map/Map/Pixel"
 DARKER = [("SM_Env_Ceiling_Stone_Stairs_01 s-4 c423f2", .5), ("SM_Env_Rock_Cliff_01 s-6 60a8c0", .55)]
 
 
