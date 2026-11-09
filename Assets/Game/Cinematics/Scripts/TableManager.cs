@@ -80,8 +80,8 @@ public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryIn
             ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? $"Train {ProgressionManager.Instance.LessonSkillName} at the sheet first" : "Look at the character sheet first")
         : QuickPlayReady ? (CampaignManager.Instance.QuickPlayResumes ? continuePrompt : enterPrompt) : prompt;
     // E plays straight away (no map view) once the map has been seen: not during the intro, the first morning's sheet,
-    // the lesson or the win ending.
-    bool QuickPlayReady => playWithoutMap && CampaignManager.Active && !IntroController.WaitingForSeat && !IntroController.SheetPending
+    // the lesson or the win ending. Nor in co-op, where E sits down for the figures and the host starts the run for everyone.
+    bool QuickPlayReady => playWithoutMap && !Coop.Running && CampaignManager.Active && !IntroController.WaitingForSeat && !IntroController.SheetPending
         && !EndingRunning && !(ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         && CampaignManager.Instance.CanQuickPlay;
     public string SecondaryPrompt => QuickPlayReady ? mapPrompt : null;

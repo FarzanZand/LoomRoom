@@ -27,7 +27,9 @@ public class PartyHudUI : MonoBehaviour
         others.Clear();
         // Seated at the table in the intro the class card takes this corner (its practice board shows the rows again).
         bool seatedInRoom = IntroController.Seated && PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Room;
-        if (Coop.Running && !seatedInRoom)
+        // The bag's character panel and the full-screen menus take this corner too: the rows step aside, as the vitals do.
+        bool covered = HudCanvas.BehindMenu || GameManager.HasInstance && GameManager.Instance.State == GameState.Inventory;
+        if (Coop.Running && !seatedInRoom && !covered)
             foreach (var p in MultiplayerManager.Instance.Players) if (p != null && !p.IsOwner) others.Add(p);
         others.Sort((a, b) => a.SlotIndex.CompareTo(b.SlotIndex));
         if (joinCode != null)
