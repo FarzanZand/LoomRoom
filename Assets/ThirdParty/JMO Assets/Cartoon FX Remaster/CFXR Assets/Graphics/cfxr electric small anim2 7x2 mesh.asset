@@ -7,7 +7,7 @@ Mesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: cfxr electric small anim2 7x2 mesh
-  serializedVersion: 9
+  serializedVersion: 12
   m_SubMeshes:
   - serializedVersion: 2
     firstByte: 0
@@ -27,14 +27,17 @@ Mesh:
   m_BindPose: []
   m_BoneNameHashes: 
   m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
   m_MeshCompression: 0
   m_IsReadable: 1
-  m_KeepVertices: 1
-  m_KeepIndices: 1
+  m_KeepVertices: 0
+  m_KeepIndices: 0
   m_IndexFormat: 0
-  m_IndexBuffer: 11000f0016001500010014001200140001000200120001001300120002000e0012001300100012000e000f0010000e00110010000f000c000f000e000d000c000e0008000c000d000b000c0008000a000b00080007000a000800090004000800070008000400050007000400060005000400030000000100020001000000
+  m_IndexBuffer: 11000f0016001500010014001200140001000200120001001300120002000e0012001300100012000e000f0010000e00110010000f000c000f000e000d000c000e0008000c000d000b000c0008000a000b00080007000a000800090004000800070008000400050007000400060005000400030000000100020001000000y
   m_VertexData:
-    serializedVersion: 2
+    serializedVersion: 3
     m_VertexCount: 23
     m_Channels:
     - stream: 0
@@ -150,13 +153,29 @@ Mesh:
   m_LocalAABB:
     m_Center: {x: 0, y: 0.009765625, z: 0}
     m_Extent: {x: 0.50000006, y: 0.49023438, z: 0}
-  m_MeshUsageFlags: 0
+  m_CookingOptions: 30
+  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
-  m_MeshMetrics[0]: 1
-  m_MeshMetrics[1]: 1
-  m_MeshOptimized: 0
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
+  m_MeshOptimizationFlags: -1
   m_StreamData:
+    serializedVersion: 2
     offset: 0
     size: 0
     path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0

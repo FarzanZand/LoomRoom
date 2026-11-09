@@ -1,10 +1,22 @@
 fileFormatVersion: 2
 guid: a6402d4311c862b4eb1325590d6466af
-PluginImporter:
+AssetOrigin:
   serializedVersion: 1
+  productId: 32416
+  packageName: DOTween Pro
+  packageVersion: 1.0.430
+  assetPath: Assets/Plugins/Demigiant/DOTweenPro/Editor/DOTweenProEditor.dll
+  uploadId: 939690
+PluginImporter:
+  externalObjects: {}
+  serializedVersion: 3
   iconMap: {}
   executionOrder: {}
+  defineConstraints: []
   isPreloaded: 0
+  isOverridable: 0
+  isExplicitlyReferenced: 0
+  validateReferences: 1
   platformData:
     Any:
       enabled: 0
@@ -20,10 +32,3 @@ PluginImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 32416
-  packageName: DOTween Pro
-  packageVersion: 1.0.430
-  assetPath: Assets/Plugins/Demigiant/DOTweenPro/Editor/DOTweenProEditor.dll
-  uploadId: 939690

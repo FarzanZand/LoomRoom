@@ -32,6 +32,14 @@ public static partial class UnrealComboConverter
     public const string Combo2Folder = "Assets/Game/Characters/Animations/FirstPersonPlayer/Combo2";
     public static readonly string[] Combo2Names = { "Combo2 swing left", "Combo2 swing right", ChopName };
 
+    // Where each swing's hitbox closes, in clip seconds. The copied Combo windows (the hand's fastest stretch) closed
+    // before the blade crossed the middle of the view, at .067 and .133 s, so the player's reach (Hitbox: out from the
+    // chest the way the blade is, CombatManager.playerMeleeReach) never pointed at an enemy in front: both swings missed
+    // at 1.6 m and the second even at 1.2 m, where the chop landed (the user, 2026-11-09: the second swing must reach as
+    // far as the first). Measured in play: the blade crosses the middle at .098 s (swing left) and .160 s (swing right),
+    // and is 45 degrees past it at .122 and .222 s, so both now sweep the same arc through the middle.
+    public static readonly float[] Combo2HitClose = { .122f, .222f };
+
     public static string MakeCombo2()
     {
         System.IO.Directory.CreateDirectory(Combo2Folder);
@@ -45,10 +53,35 @@ public static partial class UnrealComboConverter
             if (clip == null) { clip = Object.Instantiate(source); AssetDatabase.CreateAsset(clip, path); }
             else EditorUtility.CopySerialized(source, clip);
             clip.name = Combo2Names[i];
+            SetHitClose(clip, Combo2HitClose[i]);
             EditorUtility.SetDirty(clip);
         }
         AssetDatabase.SaveAssets();
         return "Combo2: 2 swings | " + MakeCombo2Chop();
+    }
+
+    // Moves the clip's DisableHitbox event (Combo2HitClose); the motion and the other events are left as they are.
+    public static string SetHitClose(AnimationClip clip, float close)
+    {
+        var events = AnimationUtility.GetAnimationEvents(clip);
+        foreach (var e in events) if (e.functionName == "DisableHitbox") e.time = Mathf.Min(clip.length, close);
+        AnimationUtility.SetAnimationEvents(clip, events);
+        return $"{clip.name}: hitbox closes at {close:0.000} s";
+    }
+
+    // Applies Combo2HitClose to the existing Combo2 swing clips without rebuilding them (run from an eval).
+    public static string ApplyCombo2HitClose()
+    {
+        var report = new List<string>();
+        for (int i = 0; i < 2; i++)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Combo2Folder}/{Combo2Names[i]}.anim");
+            if (clip == null) { report.Add("missing " + Combo2Names[i]); continue; }
+            report.Add(SetHitClose(clip, Combo2HitClose[i]));
+            EditorUtility.SetDirty(clip);
+        }
+        AssetDatabase.SaveAssets();
+        return string.Join(" | ", report);
     }
 
     public static string MakeCombo2Chop()

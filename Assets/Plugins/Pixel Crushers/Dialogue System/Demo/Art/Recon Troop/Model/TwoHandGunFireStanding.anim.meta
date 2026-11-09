@@ -1,7 +1,5 @@
 fileFormatVersion: 2
 guid: 563daac42cc2bd945929a4e0caa2e9c0
-NativeFormatImporter:
-  userData: 
 AssetOrigin:
   serializedVersion: 1
   productId: 11672
@@ -9,3 +7,9 @@ AssetOrigin:
   packageVersion: 2.2.69
   assetPath: Assets/Plugins/Pixel Crushers/Dialogue System/Demo/Art/Recon Troop/Model/TwoHandGunFireStanding.anim
   uploadId: 897442
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
