@@ -1,6 +1,10 @@
+using System.Collections;
+
 // E at the table plays straight away, with no map view (TableManager.playWithoutMap; R opens the map instead): the run
 // saved on quit is continued, else the place the figure stands at is played as the class last picked, and the map
-// sinks into the table as it does after a click on a place.
+// sinks into the table as it does after a click on a place. The view goes to the map's own view meanwhile (QuickStep:
+// the middle of the map's near side, raised, the whole table and the Dungeon Master in frame) and stays there while
+// the floor is built and shown, so it is never seen from the side the player happened to stand at.
 public partial class CampaignManager
 {
     // The place E would play now, and whether that continues the saved run. False when there is none (the map not
@@ -35,8 +39,27 @@ public partial class CampaignManager
         Current = e;
         MarkVisited(e);
         if (Map != null && Map.gameObject.activeSelf) PlaceFigure(e);
-        if (player.Look != null) player.Look.HeightOverride = null;
+        if (Map != null && player.Look != null) StartCoroutine(QuickStep(player));
+        else if (player.Look != null) player.Look.HeightOverride = null;
         if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
         return true;
+    }
+
+    // The floor is not shown before this is over (MapSinking).
+    bool quickStepping;
+
+    // The same one move as onto the map (Step Seconds). The map's view is then held while the floor is built and shown;
+    // the room player gets the usual view back once the table player has taken over (or the load failed).
+    IEnumerator QuickStep(Player player)
+    {
+        float usualHeight = player.Look.CameraHeight;
+        quickStepping = true;
+        try { yield return StepToMap(player); }
+        finally { quickStepping = false; }
+        while (loader != null && loader.Busy) yield return null;
+        if (player == null) yield break;
+        // Snapped: the room player is switched off during a run, so the eye would only ease down once they are back.
+        if (player.Look != null) { player.Look.HeightOverride = null; player.Look.SnapHeight(usualHeight); }
+        if (player.CameraRig != null) player.CameraRig.FovOffset = 0f;
     }
 }
