@@ -94225,6 +94225,10 @@ MonoBehaviour:
   DM: {fileID: 8548514477388622717}
   dmPlacement: {fileID: 8272895588190165703}
   prompt: Play
+  playWithoutMap: 1
+  mapPrompt: Map
+  enterPrompt: Enter Dungeon
+  continuePrompt: Continue Dungeon
   endingLine:
     text: The door's open. Go and get some air.
     voice: {fileID: 0}
@@ -405267,10 +405271,10 @@ MonoBehaviour:
   comboSpeed: 0.6
   comboFirstHitSpeed: 1
   comboSecondHitSpeed: 1
-  comboFinisherSpeed: 1
+  comboFinisherSpeed: 0.75
   comboCameraStrength: 1
   comboHitCooldown: 0.5
-  comboFinisherCooldown: 0.9
+  comboFinisherCooldown: 0.85
   comboSlashLines: 0
   comboFinisherHeavy: 1
   comboFinisherDamage: 1.3
