@@ -17,6 +17,8 @@ public class EnemyAttackRunner
     public float HitAt { get; private set; } = -1f;
     const float WhooshLead = .14f;   // the whoosh comes just before the hit
     Vector3 committedForward;
+    // Co-op: the aim the swing's blow is judged against (sent with a blow on another player, CoopWorld.DodgedHere).
+    public Vector3 CommittedForward => committedForward;
     bool    directionCommitted;
     bool    fallbackHitPending;
     float   fallbackHitAt;
