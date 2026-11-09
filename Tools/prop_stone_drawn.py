@@ -33,13 +33,29 @@ def stone_surface(path):
     # Mortar: texels darker than the stone around them, in thin runs; grown by two so their soft edges and the
     # wider spots where joints cross go too (left in, they showed as dark blots on the props).
     around = ndimage.median_filter(lum, size=11, mode="wrap")
-    mortar = ndimage.binary_dilation(lum < around * .8, iterations=2)
-    # Fill from the nearest stone texel (wrapping, so the tile stays seamless).
+    # Where joints cross, the mortar is most of what lies round a texel, so "darker than its surroundings" missed
+    # the middle of every crossing and left it in as a black three-pointed hole with a pale rim (the user's "bullet
+    # holes" on the Deep Halls' pillars): mortar is also anything far darker than the tile's usual stone.
+    mortar = (lum < around * .8) | (lum < np.median(lum) * .6)
+    # Grown by three: the joint's soft edge and the one-texel lit bevel each stone has along it.
+    mortar = ndimage.binary_dilation(mortar, iterations=3, structure=np.ones((3, 3), bool))
+    # Fill each mortar texel from the stone beside it: as far into the stone as the texel is into the joint, and slid
+    # a few texels along the joint, so the fill carries the stone's own texel-to-texel grain. (The nearest stone texel
+    # alone drew every joint as streaks; a plain mirror across the joint's edge drew little symmetric figures along
+    # it.) Wrapping, so the tile stays seamless.
     h, w = lum.shape
     bm = np.tile(mortar, (3, 3))
     idx = ndimage.distance_transform_edt(bm, return_distances=False, return_indices=True)
+    yy, xx = np.indices(bm.shape)
+    dy = idx[0] - yy; dx = idx[1] - xx
+    far = np.maximum(np.hypot(dy, dx), 1e-6)
+    slide = 5
+    gy = np.rint(idx[0] + dy + dx / far * slide).astype(int); gx = np.rint(idx[1] + dx - dy / far * slide).astype(int)
+    my = np.clip(gy, 0, bm.shape[0] - 1); mx = np.clip(gx, 0, bm.shape[1] - 1)
+    use = ~bm[my, mx]   # that spot is stone; where it lands in another joint, the nearest stone texel
+    sy = np.where(use, my, idx[0]); sx = np.where(use, mx, idx[1])
     big = np.tile(t, (3, 3, 1))
-    colour = big[idx[0], idx[1]][h:2 * h, w:2 * w]
+    colour = big[sy, sx][h:2 * h, w:2 * w]
     filled = colour @ [.3, .59, .11]
     mean = max(filled.mean(), 1e-3)
     return filled / mean, colour / np.maximum(filled[..., None], 1e-3)
