@@ -261,6 +261,8 @@ public static class CoopWorld
                 hit.enemy = source;
                 hit.slot = (byte)Mathf.Clamp(coopPlayer.SlotIndex, 0, 254);
                 if (hit.hitPoint == Vector3.zero) hit.hitPoint = target.transform.position + Vector3.up;
+                // A melee blow's locked aim, for its owner's own judgement of a dash (DodgedHere); its swing field is free.
+                if (info.Source.TryGetComponent<EnemyBrain>(out var swinger)) hit.swing = swinger.CommittedForward;
                 coopPlayer.HitRpc(hit);
             }
             return true;
@@ -277,6 +279,8 @@ public static class CoopWorld
                 var strike = NetDamage.From(info);
                 strike.enemy = id;
                 strike.slot = (byte)Coop.LocalSlot;
+                // The cheats' 999 damage attacks, switched on here: the host can't know, so the blow carries it.
+                if (DevCheats.MightyBlows) strike.amount = Mathf.Max(strike.amount, DevCheats.MightyDamage);
                 var brain = target.GetComponent<EnemyBrain>();
                 if (brain != null) { strike.stun = brain.PendingNetworkStun; brain.PendingNetworkStun = 0f; }
                 CoopMessages.ToHost(CoopMessages.Strike, strike);
@@ -335,10 +339,32 @@ public static class CoopWorld
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (player == null || !player.IsAlive || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return;
         var info = hit.ToInfo(Enemy(hit.enemy));
+        if (DodgedHere(hit, player)) return;
         ReportOddHit(hit, player);
         Coop.ApplyingRemote = true;
         try { player.Stats.TakeDamage(info); }
         finally { Coop.ApplyingRemote = false; }
+    }
+
+    // A melee blow the host landed where it saw this player, a moment behind (its view of them, and theirs of the swing,
+    // each lag a snapshot or two: most of the quarter second a sideways dash has once the aim is locked). One that arrives
+    // while they are dashing, or just after, and finds them clearly out of the swing's band here (no farther from its line
+    // than CombatManager.enemySwingHalfWidth, as EnemyAttackRunner judges) missed: their dash beat it on their own screen.
+    // Standing still, walking or strafing is judged as the host judged it.
+    const float DodgeAfterDash = .8f, DodgeMargin = .25f;
+    static bool DodgedHere(NetDamage hit, Player player)
+    {
+        var src = Enemy(hit.enemy);
+        if (src == null || hit.direction.sqrMagnitude < .01f || (hit.flags & 64) != 0 || src.data is not EnemyData data) return false;
+        // Melee only: the attack when the host says which, else an enemy with no bow or spell (it can only have swung).
+        var attack = hit.attack >= 0 && hit.attack < data.attacks.Count ? data.attacks[hit.attack] : null;
+        if (attack != null ? attack.IsRanged : data.archer || data.caster) return false;
+        var dash = player.GetComponent<PlayerDash>();
+        if (dash == null || dash.SinceStarted > DodgeAfterDash) return false;
+        var line = Flat(hit.swing.sqrMagnitude > .01f ? hit.swing : hit.direction).normalized;
+        var off = Flat(player.transform.position) - Flat(src.transform.position);
+        float halfWidth = CombatManager.HasInstance ? CombatManager.Instance.enemySwingHalfWidth : 1f;
+        return Vector3.Cross(line, off).magnitude > halfWidth + DodgeMargin;
     }
 
     // A hit from an enemy this player can't see where the host says it struck: its copy here is missing, off, dead or

@@ -1244,6 +1244,23 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         countdownShownLast = left;
     }
 
+    // The cheats' Skip floor and Go to boss (DevSpawner) in co-op: the host takes the whole party down to that floor, as the
+    // stairs would; a guest can't (the floor is the host's). False: not in a co-op run, so the caller goes down alone.
+    public bool CheatDescend(int floor, out string said)
+    {
+        said = null;
+        if (!Connected || !LocalInRun) return false;
+        var loader = TableManager.Loader;
+        if (!IsHost) { said = "In co-op only the host can take the party down."; return true; }
+        if (!runActive || loader == null || loader.Current == null || floor <= runFloor || floor > loader.Current.FloorCount) { said = "No floor there."; return true; }
+        countdownEnds = -1f; atExit.Clear();
+        var start = RunStartFor(floor, true);
+        foreach (var p in players) if (p != null && !p.IsOwner && p.Current.inRun) CoopMessages.ToClient(CoopMessages.RunStart, p.OwnerClientId, start);
+        StartCoroutine(BeginRun(start));
+        said = $"The party goes down to floor {floor}.";
+        return true;
+    }
+
     void HostStairs()
     {
         if (countdownEnds < 0f) return;

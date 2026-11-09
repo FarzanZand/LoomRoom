@@ -33,6 +33,8 @@ public class PlayerDash : MonoBehaviour
     static DashTuning Tuning => CombatManager.HasInstance ? CombatManager.Instance.dash : null;
 
     public bool Dashing => dashing;
+    // Seconds since the last dash began (co-op: a host's blow that arrives just after a dash, CoopWorld.DodgedHere).
+    public float SinceStarted => Time.time - startedAt;
     // What the camera adds while a dash plays out (DashCameraMotion, PlayerFX).
     public Vector3 CameraRotation => lean;
     public float CameraDip => dip;

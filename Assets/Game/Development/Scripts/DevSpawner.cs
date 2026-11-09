@@ -244,6 +244,12 @@ public partial class DevSpawner : MonoBehaviour
         int floor = NextBossFloor(loader);
         Close();
         if (floor == loader.FloorNumber) return WarpToBoss(loader);
+        // Co-op: the host takes the party down (a guest is told it can't).
+        if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.CheatDescend(floor, out var said))
+        {
+            if (Coop.IsHost) StartCoroutine(WarpWhenBuilt(loader, floor));
+            return said;
+        }
         loader.DescendTo(floor);
         StartCoroutine(WarpWhenBuilt(loader, floor));
         return $"Down to floor {floor}.";
@@ -587,7 +593,7 @@ public partial class DevSpawner : MonoBehaviour
                     key = "skipFloor", name = "Skip floor", kind = "Cheat",
                     about = () => "Straight down to the next floor, as if the stairs had been taken: the floor's XP, a new floor built, the checkpoint saved. On the last floor there is nowhere further down.",
                     primaryLabel = "Go to the next floor",
-                    primary = () => { var l = TableManager.Loader; if (l == null || !l.HasNextFloor) return "No floor further down."; int to = l.FloorNumber + 1; l.Descend(); Close(); return $"Down to floor {to}."; },
+                    primary = () => { var l = TableManager.Loader; if (l == null || !l.HasNextFloor) return "No floor further down."; int to = l.FloorNumber + 1; if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.CheatDescend(to, out var said)) { Close(); return said; } l.Descend(); Close(); return $"Down to floor {to}."; },
                     blocked = () => { var l = TableManager.Loader; return !InRun || l == null ? "Only on a floor of a run." : l.Busy ? "A floor is being built. A moment." : !l.HasNextFloor ? "This is the last floor." : null; },
                 };
                 yield return new Entry
