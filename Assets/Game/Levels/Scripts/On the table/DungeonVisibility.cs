@@ -20,13 +20,18 @@ using UnityEngine;
 // floors and ceilings are never hidden: through a hairline seam between two wall pieces the eye catches whatever stands
 // right behind, and with the next room's wall held back that hairline changed colour (found by the pixel comparison).
 //
-// The walls are still drawn differently inside. For play they are merged into 32-cell chunks (64 m), which is what the
-// room's view of the whole table wants. But every lamp that casts shadows draws its surroundings into six shadow maps,
-// and a 64 m chunk lies in all of them, whole: half a floor's frame was wall chunks drawn again and again into shadow
-// maps. So while the player is inside, the big wall chunks stand down for the 8-cell chunks they were merged from (the
-// same vertices to the last bit, DungeonStaticGeometry.Coarsen), and each shadow map draws only the few near its lamp.
-// The standing props, merged into 32-cell chunks at build, stand down the same way for the props themselves, which are
-// then drawn where seen. From anywhere else the big chunks are back, so the cost outside is as before.
+// The walls' shadows can be drawn differently inside (WorldManager.wallShadowsFromSmallChunks, off). For play the
+// walls are merged into 32-cell chunks (64 m), which is what the room's view of the whole table wants. But every lamp
+// that casts shadows draws its surroundings into six shadow maps, and a 64 m chunk lies in all of them, whole: half a
+// floor's frame is wall chunks drawn again and again into shadow maps. With the switch on, the big chunks still draw
+// the picture but cast no shadows while the player is inside, and the 8-cell chunks they were merged from cast them,
+// into shadow maps only, so each shadow map draws only the few near its lamp (a Dungeon1 floor: 1,270,000 down to
+// 680,000 triangles from the landing). It is off because the picture is then not quite the same: in about one view
+// in 150 a one-pixel line of light or shadow down a joint between two wall tiles sits where it did not before, in
+// motion a flash for a frame (the comparison found it, Zelda saw it walking). Why the shadow maps differ at all with
+// the same triangles in them is not understood yet; widening the small chunks' bounds did not change it.
+// The standing props, merged into 32-cell chunks at build, stand down for the props themselves, which are then drawn
+// where seen. From anywhere else everything is as it was, so the cost outside is as before.
 //
 // It stands down (everything drawn) whenever the eye is not inside the floor's rooms (the room's view of the table, the
 // flights in and out), on a boss stage (an open platform that looks over the roofs), while the Dungeon Master reaches
@@ -47,8 +52,12 @@ public class DungeonVisibility : MonoBehaviour
         public bool hidden;
     }
     readonly List<Unit> units = new();
-    // Big merged chunks that stand down while the player is inside, and what is drawn in their place.
+    // Big merged prop chunks that stand down while the player is inside, and what is drawn in their place.
     readonly List<Renderer> parents = new();
+    // Big wall chunks, which keep drawing the picture but leave their shadows, inside, to the small chunks they were
+    // merged from; each with the shadow casting it has outside.
+    readonly List<(Renderer chunk, UnityEngine.Rendering.ShadowCastingMode mode)> wallChunks = new();
+    readonly List<(Renderer chunk, UnityEngine.Rendering.ShadowCastingMode mode)> shadowCasters = new();
     readonly List<(Character who, Renderer[] parts, bool hidden)> actors = new();
     readonly List<(DungeonGenerator pocket, Renderer[] parts, bool hidden)> pockets = new();
 
@@ -87,7 +96,7 @@ public class DungeonVisibility : MonoBehaviour
     // ── Taking note of the floor ──
     void Collect()
     {
-        units.Clear(); parents.Clear(); standIns.Clear();
+        units.Clear(); parents.Clear(); standIns.Clear(); wallChunks.Clear(); shadowCasters.Clear();
         var geometry = dungeon.GetComponent<DungeonStaticGeometry>();
         var ceilings = dungeon.Ceilings;
         var taken = new HashSet<Renderer>();
@@ -107,13 +116,36 @@ public class DungeonVisibility : MonoBehaviour
                 if (geometry.PiecesOf.TryGetValue(small, out var pieces) && prop && Wide(small)) { Split(small, pieces, true); continue; }
                 taken.Add(small); standIns.Add(small);
                 small.forceRenderingOff = true; small.enabled = true;
-                Add(small, true, !prop);
+                // A lone wall or floor tile that the props' merge swept up with them is still a wall: always drawn.
+                Add(small, true, !prop || dungeon.IsArchitecture(small));
             }
         }
         if (geometry != null)
         {
             foreach (var pair in geometry.MergedFrom)
-                if (pair.Key != null && pair.Key.enabled && !pair.Key.forceRenderingOff && !(ceilings != null && pair.Key.transform.IsChildOf(ceilings))) Split(pair.Key, pair.Value, false);
+            {
+                var big = pair.Key;
+                if (big == null || !big.enabled || big.forceRenderingOff || ceilings != null && big.transform.IsChildOf(ceilings)) continue;
+                bool walls = true;
+                foreach (var small in pair.Value) if (small != null && geometry.PropChunks.Contains(small)) { walls = false; break; }
+                if (!walls) { Split(big, pair.Value, false); continue; }
+                // A wall chunk: the picture stays its own; its shadows go to the chunks it was merged from.
+                taken.Add(big);
+                foreach (var small in pair.Value) if (small != null) taken.Add(small);
+                if (big.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.Off) continue;
+                wallChunks.Add((big, big.shadowCastingMode));
+                foreach (var small in pair.Value)
+                {
+                    if (small == null) continue;
+                    shadowCasters.Add((small, small.shadowCastingMode)); standIns.Add(small);
+                    small.forceRenderingOff = true; small.enabled = true;
+                    // Counted as a little larger than it is, so a lamp draws it into the shadow maps next to the one it
+                    // lies in as well. Each of a lamp's six shadow maps reads a few degrees past its own edge, and a
+                    // big chunk was in all six anyway; with the small ones left out next door, a thin line of light or
+                    // shadow ran down the wall where two of a lamp's maps meet.
+                    var box = small.localBounds; box.Expand(ShadowMargin * 2f); small.localBounds = box;
+                }
+            }
             foreach (var pair in geometry.PiecesOf)
                 if (pair.Key != null && pair.Key.enabled && !taken.Contains(pair.Key) && geometry.PropChunks.Contains(pair.Key) && Wide(pair.Key)) Split(pair.Key, pair.Value, false);
         }
@@ -121,6 +153,7 @@ public class DungeonVisibility : MonoBehaviour
         {
             if (!r.enabled || taken.Contains(r)) continue;
             if (r.name == StaticChunk && (geometry == null || !geometry.PropChunks.Contains(r as MeshRenderer))) continue;   // walls and floors: as they are
+            if (dungeon.IsArchitecture(r)) continue;                                              // a wall or floor piece on its own: never hidden
             if (ceilings != null && r.transform.IsChildOf(ceilings)) continue;                    // roofs: few, and the lid's
             if (r.GetComponentInParent<Character>() != null) continue;                            // by where they stand
             if (r.GetComponentInParent<Rigidbody>() != null || r.GetComponentInParent<WorldItem>() != null) continue;   // may move
@@ -131,6 +164,8 @@ public class DungeonVisibility : MonoBehaviour
     }
 
     const string StaticChunk = "Static chunk";
+    // Metres a wall chunk's bounds are widened by on every side for the shadow maps.
+    const float ShadowMargin = 4f;
     bool Wide(Renderer r) => r.bounds.size.x > cell * 10f || r.bounds.size.z > cell * 10f;
 
     void Add(Renderer r, bool hidden, bool always)
@@ -171,7 +206,20 @@ public class DungeonVisibility : MonoBehaviour
     public void ShowEverything() { mode = Mode.All; lookedFrom.x = float.MaxValue; ApplyAll(false); }
 
     // ── Each frame ──
-    void LateUpdate()
+    // Looked at right before the frame is drawn, once the camera stands where this frame is seen from. In LateUpdate
+    // the camera had not always moved yet (its own rig moves it in LateUpdate too), so a jump through a portal drew one
+    // frame of the wrong place: the pocket still held back, or the floor still not drawn (Zelda found both).
+    void OnEnable() => UnityEngine.Rendering.RenderPipelineManager.beginContextRendering += BeforeDrawing;
+
+    int lookedFrame = -1;
+    void BeforeDrawing(UnityEngine.Rendering.ScriptableRenderContext context, List<Camera> cameras)
+    {
+        if (lookedFrame == Time.frameCount) return;   // once a frame, whichever camera is drawn first
+        lookedFrame = Time.frameCount;
+        Decide();
+    }
+
+    void Decide()
     {
         if (dungeon == null || layout == null || Held) return;
         if (Time.unscaledTime >= nextRoll) { nextRoll = Time.unscaledTime + 1f; RollCall(); }
@@ -329,6 +377,7 @@ public class DungeonVisibility : MonoBehaviour
     void ApplySeen(bool openRoof)
     {
         foreach (var p in parents) if (p != null && !p.forceRenderingOff) p.forceRenderingOff = true;
+        WallShadows(WorldManager.HasInstance && WorldManager.Instance.wallShadowsFromSmallChunks, false);
         int hiddenNow = 0;
         for (int i = 0; i < units.Count; i++)
         {
@@ -350,6 +399,7 @@ public class DungeonVisibility : MonoBehaviour
     {
         // The biggest chunks are drawn again; one that stood in for a bigger one stays behind it.
         foreach (var p in parents) if (p != null) p.forceRenderingOff = nothing || standIns.Contains(p);
+        WallShadows(false, nothing);
         for (int i = 0; i < units.Count; i++)
         {
             var u = units[i];
@@ -360,6 +410,26 @@ public class DungeonVisibility : MonoBehaviour
         }
         HideActors(nothing);
         HiddenCount = nothing ? units.Count : 0;
+    }
+
+    // inside: the big wall chunks draw the picture and cast nothing, the small ones cast the shadows and draw nothing
+    // else. Outside: the big ones do both, as before. nothing: the floor is not drawn at all (the player is in a pocket).
+    void WallShadows(bool inside, bool nothing)
+    {
+        foreach (var (chunk, mode) in wallChunks)
+        {
+            if (chunk == null) continue;
+            var want = inside ? UnityEngine.Rendering.ShadowCastingMode.Off : mode;
+            if (chunk.shadowCastingMode != want) chunk.shadowCastingMode = want;
+            if (chunk.forceRenderingOff != nothing) chunk.forceRenderingOff = nothing;
+        }
+        foreach (var (chunk, mode) in shadowCasters)
+        {
+            if (chunk == null) continue;
+            var want = inside ? UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly : mode;
+            if (chunk.shadowCastingMode != want) chunk.shadowCastingMode = want;
+            if (chunk.forceRenderingOff != !inside) chunk.forceRenderingOff = !inside;
+        }
     }
 
     // Chunks and pieces that are drawn only while the player is inside, in place of a bigger chunk.
@@ -406,6 +476,7 @@ public class DungeonVisibility : MonoBehaviour
     // Leaving: nothing of this component's stays behind on a renderer that outlives it.
     void OnDisable()
     {
+        UnityEngine.Rendering.RenderPipelineManager.beginContextRendering -= BeforeDrawing;
         if (dungeon == null) return;
         mode = Mode.All; lookedFrom.x = float.MaxValue;
         ApplyAll(false);

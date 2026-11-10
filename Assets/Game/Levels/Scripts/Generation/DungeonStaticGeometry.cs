@@ -22,7 +22,9 @@ public class DungeonStaticGeometry : MonoBehaviour
     public readonly Dictionary<MeshRenderer,List<MeshRenderer>> PiecesOf=new();
     // keepModes: pieces are grouped by shadow casting and rendering layers too and the chunk keeps them (growth whose
     // small pieces cast no shadow); off, every chunk casts shadows except floor tiles.
-    public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false)
+    // leaveOut: pieces the pass must not take (the late props pass leaves lone wall and floor tiles alone: they are
+    // walls, and DungeonVisibility swaps a props chunk for its pieces while the player is inside).
+    public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false,System.Func<Renderer,bool> leaveOut=null)
     {
         if(root==null)return;
         var groups=new Dictionary<(Material,int,int,ShadowCastingMode,uint),List<MeshFilter>>();
@@ -32,6 +34,7 @@ public class DungeonStaticGeometry : MonoBehaviour
             if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
                || filter.GetComponentInParent<DungeonDestructible>()!=null || filter.GetComponentInParent<KnockDownDecor>()!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
             if(propsToo && Changes(filter))continue;
+            if(leaveOut!=null && leaveOut(renderer))continue;
             var p=root.InverseTransformPoint(filter.transform.position);
             var key=(renderer.sharedMaterial,Mathf.FloorToInt(p.x/chunkSize),Mathf.FloorToInt(p.z/chunkSize),
                 keepModes ? renderer.shadowCastingMode : ShadowCastingMode.On,keepModes ? renderer.renderingLayerMask : 0u);

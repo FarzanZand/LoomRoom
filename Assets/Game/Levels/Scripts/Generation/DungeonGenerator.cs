@@ -201,7 +201,7 @@ public partial class DungeonGenerator : MonoBehaviour
     void MergeProps()
     {
         if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
-        batching.Combine(geometry, data.cellSize * 32, true, true);
+        batching.Combine(geometry, data.cellSize * 32, true, true, IsArchitecture);
         if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 32, true, true);
     }
 
