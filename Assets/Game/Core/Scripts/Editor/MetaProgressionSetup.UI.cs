@@ -245,6 +245,7 @@ public static partial class MetaProgressionSetup
         root.gameObject.SetActive(false);
         var announcement = canvas.Find("Announcement");
         if (announcement != null) holder.SetSiblingIndex(announcement.GetSiblingIndex()); else holder.SetAsLastSibling();
+        BuildSheetLesson();
         BuildKeyItems(canvas);
         EditorSceneManager.MarkSceneDirty(holder.gameObject.scene);
         Debug.Log("Meta: character sheet built under UI/Canvas");

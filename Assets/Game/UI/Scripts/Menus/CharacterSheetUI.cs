@@ -52,6 +52,20 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     [SerializeField, Tooltip("A pen ring drawn round the Train button that quest asks for; it pulses.")]
     Image questRing;
     [SerializeField, Min(0)] Vector2 questRingPadding = new(26, 18);
+    [Header("First lesson")]
+    [SerializeField, Tooltip("The tutorial window shown while the first lesson holds the sheet (the lesson skill must be trained first): it sits by that skill's Train button and its tail points at it.")]
+    RectTransform lessonTip;
+    [SerializeField] TMP_Text lessonTitle, lessonBody;
+    [SerializeField, Tooltip("The window's pointer; it is put on the window's edge nearest the Train button.")] RectTransform lessonTail;
+    [SerializeField, Tooltip("A marker stroke behind the lesson skill's row; it breathes.")] Image lessonHighlight;
+    [SerializeField, Tooltip("Washes over the rest of the sheet while the lesson is on, so its row stands out: the skill rows above it, those below it, and the attributes. Each is a rect mask whose first child is a half clear copy of the paper.")]
+    RectTransform veilAbove, veilBelow, veilSide;
+    [SerializeField, Tooltip("The window's title. {skill} is the lesson skill's name, {price} its next price.")] string lessonTitleText = "Train {skill} first";
+    [SerializeField, TextArea, Tooltip("The window's text. {skill} is the lesson skill's name, {price} its next price.")]
+    string lessonBodyText = "It costs {price} spoils and teaches the dash.\nThe rest of the sheet opens after.";
+    [SerializeField, Min(0), Tooltip("Half the height of a skill row (the washes stop this far above and below the lesson's row).")] float lessonRowHalfHeight = 43f;
+    [SerializeField, Tooltip("The lowest and highest the washes over the skill rows reach, in the paper's own units.")] Vector2 veilSpan = new(-365, 335);
+    [SerializeField, Min(0), Tooltip("How far the window bobs toward the button and back.")] float lessonBob = 4f;
 
     bool open;
     float feedbackUntil;
@@ -148,6 +162,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         ShowFeedback("");
         HideTip();
         if (unlockBanner != null) unlockBanner.gameObject.SetActive(false);
+        if (lessonTip != null) lessonTip.gameObject.SetActive(false);   // so the lesson's window pops in on every opening
         Refresh();
         // With a pad, at once; the arrow keys select on their first press (Update), and the mouse selects nothing, so
         // Space typed later never presses a Train button.
@@ -182,6 +197,13 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             float k = .5f + .5f * Mathf.Sin(Time.unscaledTime * 3.2f);
             var c = pen; c.a = Mathf.Lerp(.55f, 1f, k); questRing.color = c;
             questRing.rectTransform.localScale = Vector3.one * Mathf.Lerp(1f, 1.06f, k);
+        }
+        // The lesson's window bobs toward the button it points at, in step with the ring, and the marker breathes.
+        if (open && questRow != null)
+        {
+            float k = .5f + .5f * Mathf.Sin(Time.unscaledTime * 3.2f);
+            if (lessonTip != null && lessonTip.gameObject.activeSelf) lessonTip.anchoredPosition = lessonTipAt - lessonTipAway * (lessonBob * (1f - k));
+            if (lessonHighlight != null) { var c = lessonHighlightColour; c.a *= Mathf.Lerp(.72f, 1f, k); lessonHighlight.color = c; }
         }
     }
 
@@ -307,15 +329,22 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         RefreshQuest(meta);
     }
 
-    // The spend-spoils quest (ProgressionManager.SpendQuest): its line at the foot of the paper, the lesson skill's row name
-    // in pen and a pen ring round its Train button, until it is done.
+    // The first lesson (ProgressionManager.LessonHoldsRuns: the lesson skill must be trained before anything else): its
+    // quest's line at the foot of the paper, the lesson skill's row name in pen, a pen ring round its Train button, a
+    // marker stroke behind its row, the rest of the sheet washed pale and a tutorial window pointing at the button,
+    // until the skill's first milestone is bought.
     Row questRow;
+    Vector2 lessonTipAt, lessonTipAway;
+    Color lessonHighlightColour;
+    bool lessonHighlightRead;
     void RefreshQuest(ProgressionManager meta)
     {
         var lesson = meta.Track(meta.lessonSkill);
-        // Done on the page as soon as the lesson skill is trained (the quest itself closes when the sheet is put down).
-        bool open = meta.QuestState(ProgressionManager.SpendQuest) == 1 && meta.Bought(lesson) == 0;
+        // By the lesson itself, not by its quest: the quest is only given the frame after the sheet is first opened,
+        // so on that first look (the one that matters) nothing on the page pointed at the skill.
+        bool open = meta.LessonHoldsRuns;
         questRow = open && lesson != null ? rows.Find(r => r.trackId == lesson.id) : null;
+        RefreshLesson(meta, lesson);
         if (questNote != null)
         {
             questNote.gameObject.SetActive(questRow != null);
@@ -331,6 +360,78 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         ring.sizeDelta = target.rect.size + questRingPadding;
         questRing.color = pen;
         questRing.raycastTarget = false;
+    }
+
+    // The lesson's highlight, washes and tutorial window, laid out against the lesson skill's row wherever it is on the
+    // page (everything here is a child of the paper, anchored to its middle).
+    void RefreshLesson(ProgressionManager meta, ProgressionManager.MetaTrack lesson)
+    {
+        bool on = questRow != null && questRow.buy != null;
+        if (lessonHighlight != null)
+        {
+            if (!lessonHighlightRead) { lessonHighlightRead = true; lessonHighlightColour = lessonHighlight.color; }
+            lessonHighlight.gameObject.SetActive(on);
+        }
+        bool shown = lessonTip != null && lessonTip.gameObject.activeSelf;
+        if (lessonTip != null) lessonTip.gameObject.SetActive(on);
+        if (!on)
+        {
+            foreach (var v in new[] { veilAbove, veilBelow, veilSide }) if (v != null) v.gameObject.SetActive(false);
+            return;
+        }
+        var buy = (RectTransform)questRow.buy.transform;
+        float y = buy.anchoredPosition.y;
+        if (lessonHighlight != null) lessonHighlight.rectTransform.anchoredPosition = new Vector2(lessonHighlight.rectTransform.anchoredPosition.x, y);
+        // The washes: from the row's upper edge up, from its lower edge down (pivots on the edge that meets the row).
+        Wash(veilAbove, y + lessonRowHalfHeight, veilSpan.y - (y + lessonRowHalfHeight));
+        Wash(veilBelow, y - lessonRowHalfHeight, (y - lessonRowHalfHeight) - veilSpan.x);
+        if (veilSide != null) { veilSide.gameObject.SetActive(true); AlignPaper(veilSide); }
+        if (lessonTip == null) return;
+        string Fill(string text) => (text ?? "").Replace("{skill}", lesson.displayName).Replace("{price}", Mathf.Max(0, meta.NextPrice(lesson)).ToString());
+        if (lessonTitle != null) lessonTitle.text = Fill(lessonTitleText);
+        if (lessonBody != null) lessonBody.text = Fill(lessonBodyText);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(lessonTip);
+        // Over the button with its tail pointing down at it (there it covers the right end of the two rows above from
+        // edge to edge, nothing cut in half); under it when there is no room above (the first rows). The window's pivot
+        // is its top right corner, and its tail stands outside the edge that faces the button. This is where it rests,
+        // at its farthest: it bobs toward the button from here.
+        float height = lessonTip.rect.height, tail = lessonTail != null ? lessonTail.rect.height : 0f;
+        float clear = buy.rect.height / 2 + questRingPadding.y / 2 + 4f;   // past the ring round the button
+        bool below = y + clear + tail + height > veilSpan.y;
+        float right = buy.anchoredPosition.x + buy.rect.width / 2 + 10f;
+        lessonTipAt = new Vector2(right, below ? y - clear - tail : y + clear + tail + height);
+        lessonTipAway = below ? Vector2.down : Vector2.up;
+        lessonTip.anchoredPosition = lessonTipAt;
+        if (lessonTail != null)
+        {
+            lessonTail.anchorMin = lessonTail.anchorMax = new Vector2(1, below ? 1 : 0);
+            lessonTail.localScale = new Vector3(1, below ? 1 : -1, 1);
+            // Its base lies a few units inside the window, over the frame's line.
+            lessonTail.anchoredPosition = new Vector2(buy.anchoredPosition.x - right, below ? -3f : 3f);
+        }
+        // It pops in when it first shows, from the corner by the button.
+        if (!shown)
+        {
+            lessonTip.DOKill(true);
+            lessonTip.localScale = Vector3.one * .8f;
+            lessonTip.DOScale(1f, .26f).SetEase(Ease.OutBack).SetDelay(.25f).SetUpdate(true).SetLink(lessonTip.gameObject);
+        }
+    }
+
+    static void Wash(RectTransform veil, float edge, float height)
+    {
+        if (veil == null) return;
+        veil.gameObject.SetActive(height > 1f);
+        veil.anchoredPosition = new Vector2(veil.anchoredPosition.x, edge);
+        veil.sizeDelta = new Vector2(veil.sizeDelta.x, Mathf.Max(0f, height));
+        AlignPaper(veil);
+    }
+
+    // A wash is a window (a rect mask) onto a copy of the paper itself, drawn half clear over the ink: the copy is kept
+    // exactly on the paper, so the wash has no edge of its own and only what is drawn on the paper fades.
+    static void AlignPaper(RectTransform veil)
+    {
+        if (veil.childCount > 0 && veil.parent != null) veil.GetChild(0).position = veil.parent.position;
     }
 
     void RefreshRow(ProgressionManager meta, Row r)
