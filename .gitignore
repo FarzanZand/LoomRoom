@@ -119,3 +119,7 @@ CLAUDE.local.md
 # Unity crash recovery scenes and the empty Temp folder some tools make
 /[Aa]ssets/_Recovery*
 /[Aa]ssets/Temp*
+
+# ShaderWarm reads the editor's list of drawn shader variants through this file for a moment (Development/Editor/ShaderWarm.cs)
+/[Aa]ssets/_ShaderWarmTemp.shadervariants
+/[Aa]ssets/_ShaderWarmTemp.shadervariants.meta

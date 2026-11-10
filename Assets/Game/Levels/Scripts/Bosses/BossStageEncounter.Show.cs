@@ -15,6 +15,7 @@ public partial class BossStageEncounter
     BossDiscoBall discoBall;
     bool backupCalled, backupDanced;
     readonly List<(EnemyBrain brain, PlayableGraph graph)> backup = new();
+    PlayableGraph defeatGraph;   // the boss's last pose; a field so it is freed when the floor or Play ends in the middle of it
 
     // As the boss is set down: its burst waits for the defeat scene.
     void ShowSetup()
@@ -184,6 +185,7 @@ public partial class BossStageEncounter
     {
         foreach (var (_, graph) in backup) if (graph.IsValid()) graph.Destroy();
         backup.Clear();
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
     }
 
     // The party is over (the fight won or lost): the floor and the ball go dark, and backup still standing when the boss
@@ -226,8 +228,8 @@ public partial class BossStageEncounter
     {
         if (fight == null || fight.defeatPose == null || boss == null) yield break;
         var anim = boss.Animator;
-        var graph = default(PlayableGraph);
-        if (anim != null) AnimationPlayableUtilities.PlayClip(anim, fight.defeatPose, out graph);
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
+        if (anim != null) AnimationPlayableUtilities.PlayClip(anim, fight.defeatPose, out defeatGraph);
         // Nothing else turns or moves it now (its agent would hold its heading through the spin).
         if (boss.TryGetComponent<NavMeshAgent>(out var agent)) agent.enabled = false;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
@@ -268,6 +270,6 @@ public partial class BossStageEncounter
         if (spot != null) StartCoroutine(Dim(spot, 1.2f));
         yield return null;
         yield return null;
-        if (graph.IsValid()) graph.Destroy();
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
     }
 }
