@@ -1,3 +1,6 @@
+// LoomRoom: bought code, kept as it is. Unity 6.6 warns here (CS0618); switched off for this file so the console stays clean.
+// Put this back after updating the pack.
+#pragma warning disable CS0618
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;

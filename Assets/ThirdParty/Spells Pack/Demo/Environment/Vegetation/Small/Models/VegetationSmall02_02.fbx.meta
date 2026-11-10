@@ -67,12 +67,17 @@ ModelImporter:
   - first:
       205: 20500000
     second: //RootNode
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: VegetationSmall02_Mat
+    second: {fileID: 2100000, guid: 644c4d990d0ad604db9961f895c8b9f9, type: 2}
   materials:
     materialImportMode: 1
     materialName: 1
     materialSearch: 2
-    materialLocation: 0
+    materialLocation: 1
     searchTexturesGlobally: 1
   animations:
     legacyGenerateAnimations: 4

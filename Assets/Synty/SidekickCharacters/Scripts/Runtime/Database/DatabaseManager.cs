@@ -23,7 +23,10 @@ namespace Synty.SidekickCharacters.Database
     /// </summary>
     public class DatabaseManager
     {
+        // LoomRoom: only the editor reads this path, so a player build warned it was never used (CS0414).
+#pragma warning disable CS0414
         private static readonly string _DATABASE_PATH = "Assets/Synty/SidekickCharacters/Database/Side_Kick_Data.db";
+#pragma warning restore CS0414
 #if !UNITY_EDITOR
         // Resources path of the read-only runtime copy of the database; kept in sync from the .db by DatabaseBuildSync.
         // Only referenced by the player-build branch of GetDbConnection, so declared for player builds only.

@@ -1,3 +1,6 @@
+// LoomRoom: bought code, kept as it is. Unity 6.6 warns here (CS0618); switched off for this file so the console stays clean.
+// Put this back after updating the pack.
+#pragma warning disable CS0618
 // Copyright (c) 2025 Synty Studios Limited. All rights reserved.
 //
 // Use of this software is subject to the terms and conditions of the Synty Studios End User Licence Agreement (EULA)
