@@ -31,6 +31,52 @@ public class ScreenManager : Singleton<ScreenManager>
     public int UserPixelLines { get; private set; } = -1;
     public const string PixelLinesPref = "pixel_lines";   // public: the settings screen writes it straight in the main menu
 
+    // Soft shadow edges read the shadow map many times for every lit pixel and light, which a weak graphics card feels
+    // most in the room (seven lights cast them there, two of them over the whole table). On a dungeon floor the lamps
+    // and the carried light are hard-edged already, so soft shadows there only touch what shows of the room.
+    [FoldoutGroup("Shadows"), LabelText("Soft Shadows In Room"), Tooltip("Shadows have soft edges while the room player is the one playing. Off: hard edges, cheaper for the graphics card. The player's own choice in the settings (Soft shadows) goes before this.")]
+    public bool softShadowsInRoom = true;
+    [FoldoutGroup("Shadows"), LabelText("Soft Shadows In Dungeon"), Tooltip("Shadows have soft edges while the table player is on a floor. The dungeon's own lamps are hard-edged either way; this is about the room's lights seen from the floor. The player's own choice in the settings goes before this.")]
+    public bool softShadowsInDungeon = false;
+    [FoldoutGroup("Shadows"), ShowInInspector, ReadOnly, Tooltip("Player's choice from the settings menu. -1 = the two switches above, 0 = off, 1 = room only, 2 = room and dungeon.")]
+    public int UserSoftShadows { get; private set; } = -1;
+    public const string SoftShadowsPref = "soft_shadows";   // public: the settings screen writes it straight in the main menu
+    public static readonly string[] SoftShadowNames = { "Off", "Room only", "Room and dungeon" };
+
+    // Settings menu: 0 off, 1 room only, 2 room and dungeon (-1 back to the authored switches).
+    public void SetUserSoftShadows(int choice)
+    {
+        UserSoftShadows = Mathf.Clamp(choice, -1, 2);
+        PlayerPrefs.SetInt(SoftShadowsPref, UserSoftShadows);
+        ApplyRenderingEffects();
+    }
+
+    // What a stored choice comes to as one of the three (the authored switches when the player never chose).
+    public static int SoftShadowChoice(int stored, bool room, bool dungeon) => stored >= 0 ? Mathf.Min(stored, 2) : dungeon ? 2 : room ? 1 : 0;
+    public int SoftShadowChoiceNow => SoftShadowChoice(UserSoftShadows, softShadowsInRoom, softShadowsInDungeon);
+    bool SoftShadowsFor(bool onFloor) { int c = SoftShadowChoiceNow; return c == 2 || c == 1 && !onFloor; }
+
+    // The pipeline asset's own switch has no public setter, so it is written through its field. Like the renderer
+    // features, the asset is shared: its state is remembered and put back when Play ends.
+    static readonly System.Reflection.FieldInfo SoftShadowsField = typeof(UniversalRenderPipelineAsset).GetField("m_SoftShadowsSupported",
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+    UniversalRenderPipelineAsset softShadowsAsset;
+    bool originalSoftShadows;
+
+    void SetSoftShadows(bool on)
+    {
+        var asset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (asset == null || SoftShadowsField == null) return;
+        if (softShadowsAsset != asset) { RestoreSoftShadows(); softShadowsAsset = asset; originalSoftShadows = asset.supportsSoftShadows; }
+        if (asset.supportsSoftShadows != on) SoftShadowsField.SetValue(asset, on);
+    }
+
+    void RestoreSoftShadows()
+    {
+        if (softShadowsAsset != null && SoftShadowsField != null) SoftShadowsField.SetValue(softShadowsAsset, originalSoftShadows);
+        softShadowsAsset = null;
+    }
+
     [FoldoutGroup("Camera filter"), LabelText("Filter")]
     [Tooltip("The whole screen's look. Standard is the game's own; the others are the looks below (Rendering/Filters), drawn after the world and its post-processing and under the UI. Switches at once in Play mode. Not saved as a player setting.")]
     public ScreenFilter cameraFilter = ScreenFilter.Standard;
@@ -198,6 +244,7 @@ public class ScreenManager : Singleton<ScreenManager>
         filterVolume.priority = 10001.5f;
         filterVolume.enabled = false;
         UserPixelLines = PlayerPrefs.GetInt(PixelLinesPref, -1);
+        UserSoftShadows = Mathf.Clamp(PlayerPrefs.GetInt(SoftShadowsPref, -1), -1, 2);
         tableWeight = TargetTableWeight;
         effectsInitialized = true;
         ApplyRenderingEffects();
@@ -268,6 +315,7 @@ public class ScreenManager : Singleton<ScreenManager>
         if (!effectsInitialized) return;
         if (ambientOcclusionFeature != null) ambientOcclusionFeature.SetActive(originalAO);
         if (retroScreenFeature != null) retroScreenFeature.SetActive(originalRetro);
+        RestoreSoftShadows();
         roomLayer.Destroy();
         tableLayer.Destroy();
         deathLayer.Destroy();
@@ -318,6 +366,7 @@ public class ScreenManager : Singleton<ScreenManager>
         tableLayer.Apply(table, t);
         deathLayer.Apply(deathEffects, deathWeight);
         SetFeature(ambientOcclusionFeature, (t < .5f ? room : table).ambientOcclusion);
+        SetSoftShadows(SoftShadowsFor(t >= .5f));
 
         // One full-screen pass: the stronger side's settings, faded by how much of each side uses it.
         float roomRetro = UsesRetro(room) ? 1f - t : 0f;

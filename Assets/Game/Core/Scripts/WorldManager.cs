@@ -30,6 +30,8 @@ public class WorldManager : Singleton<WorldManager>
     public TableLevelRevealSettings tableLevelReveal;
     [Tooltip("Generated dungeons show no ceilings while they are looked at from the room (the reveal included): the rooms stay open to the room's view. The table player inside still has the ceilings over them.")]
     public bool hideTopForGenerations = true;
+    [Tooltip("On a walled dungeon floor only what the table player can see from where they stand is drawn: rooms and passages in a line of sight, what the lamps near them cast shadows from, and nothing behind walls. The picture is the same; a floor draws about half as much. Seen from the room, on a boss stage and while the Dungeon Master reaches in, everything is drawn as before. Off draws the whole floor all the time.")]
+    public bool drawOnlySeenRooms = true;
     [Tooltip("Designer-editable adventure selection menu prefab.")]
     public TableAdventureMenuView tableAdventureMenu;
 

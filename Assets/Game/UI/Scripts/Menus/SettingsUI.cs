@@ -29,6 +29,8 @@ public class SettingsUI : MonoBehaviour
     [Tooltip("Click for the next resolution the screen offers.")]
     [SerializeField] Button resolution;
     [SerializeField] Button vsync;
+    [Tooltip("Click for the next choice: Off, Room only, Room and dungeon.")]
+    [SerializeField] Button softShadows;
     [SerializeField] Slider brightness;
     [SerializeField] TMP_Text brightnessValue;
     [SerializeField] Button backButton;
@@ -74,6 +76,13 @@ public class SettingsUI : MonoBehaviour
         });
         resolution?.onClick.AddListener(NextResolution);
         vsync?.onClick.AddListener(() => { UserSettings.VSync = !UserSettings.VSync; Labels(); });
+        softShadows?.onClick.AddListener(() =>
+        {
+            int next = (SoftShadowChoice() + 1) % ScreenManager.SoftShadowNames.Length;
+            if (ScreenManager.HasInstance) ScreenManager.Instance.SetUserSoftShadows(next);
+            else PlayerPrefs.SetInt(ScreenManager.SoftShadowsPref, next);
+            Labels();
+        });
         resetBindings?.onClick.AddListener(() =>
         {
             if (InputManager.HasInstance) InputManager.Instance.ResetBindings();
@@ -88,6 +97,11 @@ public class SettingsUI : MonoBehaviour
         // callback while enabling or rebuilding sliders, before Open has loaded the real values.
         if (slider != null) slider.onValueChanged.AddListener(v => { if (!loading && loaded && IsOpen) apply(v); });
     }
+
+    // Off, room only, or room and dungeon. In the main menu (no ScreenManager) a player who never chose sees the
+    // game's own default, room only.
+    static int SoftShadowChoice() => ScreenManager.HasInstance ? ScreenManager.Instance.SoftShadowChoiceNow
+        : ScreenManager.SoftShadowChoice(PlayerPrefs.GetInt(ScreenManager.SoftShadowsPref, -1), true, false);
 
     static int PixelStep(float v) => PixelSteps[Mathf.Clamp(Mathf.RoundToInt(v), 0, PixelSteps.Length - 1)];
 
@@ -153,7 +167,9 @@ public class SettingsUI : MonoBehaviour
         keyList = list;
         // Keys and a pad walk the screen top to bottom: the left column, then the key list, then its reset, then Back.
         order.Clear();
-        order.AddRange(new Selectable[] { masterVolume, musicVolume, sfxVolume, sensitivity, fieldOfView, pixelation, windowMode, resolution, vsync, brightness });
+        order.AddRange(new Selectable[] { masterVolume, musicVolume, sfxVolume, sensitivity, fieldOfView, pixelation, windowMode, resolution, vsync });
+        if (softShadows != null) order.Add(softShadows);
+        order.Add(brightness);
         if (bindings != null) foreach (var row in bindings) if (row != null) order.Add(row.Button);
         order.Add(resetBindings);
         order.Add(backButton);
@@ -198,6 +214,7 @@ public class SettingsUI : MonoBehaviour
         SetLabel(windowMode, UserSettings.Fullscreen ? "Fullscreen" : "Windowed");
         SetLabel(resolution, $"{shownSize.x} x {shownSize.y}");
         SetLabel(vsync, UserSettings.VSync ? "On" : "Off");
+        SetLabel(softShadows, ScreenManager.SoftShadowNames[SoftShadowChoice()]);
     }
 
     static void SetLabel(Button button, string text)
