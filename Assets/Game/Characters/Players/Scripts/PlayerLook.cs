@@ -40,7 +40,8 @@ public class PlayerLook : MonoBehaviour
     float   pitch;
     Vector3 cameraHeight;
 
-    const float MouseDegreesPerCount = .055f, StickDegreesPerSecond = 180f;
+    // The mouse's 1x is 40% quicker since 2026-11-10 (the user; .055 before): everyone gets it, a saved slider value too.
+    const float MouseDegreesPerCount = .077f, StickDegreesPerSecond = 180f;
 
     // Set while a dead player may still look about (a co-op ghost).
     public static bool LookWhileDead;
@@ -59,8 +60,8 @@ public class PlayerLook : MonoBehaviour
         var input    = InputManager.HasInstance ? InputManager.Instance : null;
 
         // ── Look input ──
-        // At 1x a mouse turns the view MouseDegreesPerCount a count (a full turn is about 21 cm at 800 DPI, a little
-        // quicker than the usual first-person default); a stick held all the way turns StickDegreesPerSecond.
+        // At 1x a mouse turns the view MouseDegreesPerCount a count (a full turn is about 15 cm at 800 DPI, quicker
+        // than the usual first-person default); a stick held all the way turns StickDegreesPerSecond.
         float sensitivity = (settings != null ? settings.mouseSensitivity : 1f) * UserSettings.MouseSensitivity;
 
         // The lock check is read only: it also catches the Editor's Esc and a lost window focus,

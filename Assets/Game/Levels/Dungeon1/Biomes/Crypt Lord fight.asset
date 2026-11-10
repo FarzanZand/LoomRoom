@@ -156,7 +156,7 @@ MonoBehaviour:
   phaseTwoBossLine: Let's turn it up!
   danceFloor: {fileID: 2100000, guid: 2743806b102874944b19636fddc4d606, type: 2}
   discoBall: {fileID: 648832377681289351, guid: 67cb16bee95be49448d672fbd8c5cf77, type: 3}
-  backupDancer: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  backupDancer: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   backupCount: 2
   backupAtHealth: 0.45
   backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}

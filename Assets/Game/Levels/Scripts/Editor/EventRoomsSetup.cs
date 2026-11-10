@@ -6,7 +6,8 @@ using UnityEngine;
 // from scratch, losing hand edits). Safe to run again: what exists is kept. Makes
 // - the rooms in Levels/Shared/Rooms/Scripted: Duel bridge, Bell room, Card table, Giant's hoard, Dice room, each a
 //   room template with its ScriptedEventRoom and event script (Levels/Scripts/Events),
-// - their enemies in Characters/Enemies/Events (Duellist, Sleeping giant, Card sharp: variants with their own data),
+// - their enemies in Characters/Enemies/Events (Sleeping giant, Card sharp: variants with their own data; the duel is
+//   fought against the Undead Knight, Characters/Enemies/Realms, as it is),
 // - stand-ins for their props in Levels/Shared/Props/Events (DM die, Great bell) until the art replaces them,
 // - house rule three (a duel is fought face to face),
 // and deals the rooms into Dungeon1's walled biomes' room pools. Edit the prefabs by hand freely after.
@@ -16,6 +17,8 @@ public static class EventRoomsSetup
     const string PropDir = "Assets/Game/Levels/Shared/Props/Events";
     const string EnemyDir = "Assets/Game/Characters/Enemies/Events";
     const string Shared = "Assets/Game/Levels/Shared/Props";
+    // Who waits on the duel bridge (the user, 2026-11-10; the Duellist in Characters/Enemies/Events before).
+    const string DuellistPath = "Assets/Game/Characters/Enemies/Realms/Undead Knight.prefab";
     static bool overwrite;
     const float Weight = .3f;
     static System.Text.StringBuilder log;
@@ -27,7 +30,7 @@ public static class EventRoomsSetup
         overwrite = replace;
         log = new System.Text.StringBuilder();
         Folder(RoomDir); Folder(PropDir); Folder(EnemyDir);
-        var duellist = Enemy("Duellist", "Crypt/Crypt Warden", 1f, (StatType.MaxHealth, 48f), (StatType.AttackDamage, 10f), (StatType.Armor, 10f));
+        var duellist = Load<GameObject>(DuellistPath);
         var giant = Enemy("Sleeping giant", "Crypt/Crypt Warden", 1.7f, (StatType.MaxHealth, 130f), (StatType.AttackDamage, 18f), (StatType.Armor, 12f), (StatType.MoveSpeed, .85f), (StatType.AttackSpeed, .8f));
         var sharp = Enemy("Card sharp", "Crypt/Crypt Soldier", -1f, (StatType.MaxHealth, 30f), (StatType.AttackDamage, 8f));
         var die = Die();
@@ -296,7 +299,9 @@ public static class EventRoomsSetup
                 cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
             }
             var post = Marker(root, "Duellist post", Vector3.zero, 180f);
-            Put(root, duellist, Vector3.zero, 180f);
+            // He roams other floors as a plain enemy: only the one put down here is held still until the duel takes him over.
+            var him = Put(root, duellist, Vector3.zero, 180f);
+            if (him != null && him.GetComponent<EventActor>() == null) him.AddComponent<EventActor>();
             e.entrance = Marker(root, "Entrance", new Vector3(0f, 0f, -7f));
             Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(-4.6f, 2.97f, 2.4f));
             Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(5.2f, 2.97f, -1.6f));
@@ -435,7 +440,7 @@ public static class EventRoomsSetup
     public static string RebuildDuel()
     {
         log = new System.Text.StringBuilder();
-        var duellist = Load<GameObject>($"{EnemyDir}/Duellist.prefab");
+        var duellist = Load<GameObject>(DuellistPath);
         var rule = Rule3();
         overwrite = true;
         try { Duel(duellist, rule); }

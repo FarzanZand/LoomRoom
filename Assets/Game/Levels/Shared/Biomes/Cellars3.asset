@@ -340,7 +340,7 @@ MonoBehaviour:
   torchColor: {r: 1, g: 0.6, b: 0.3, a: 1}
   torchBrightness: 1
   enemies:
-  - enemy: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - enemy: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
     weight: 3
     fromFloor: 1
   - enemy: {fileID: 4669691982873599050, guid: b88508db8f7e2ca4086748e3b133c991, type: 3}

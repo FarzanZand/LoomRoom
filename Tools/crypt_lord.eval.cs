@@ -156,9 +156,12 @@ try
     float k2 = Height / UnityEngine.Mathf.Max(.1f, raw);
     root.transform.localScale = UnityEngine.Vector3.one * k2;
     sb.Append($"old body {oldHeight:F2} m; new body {raw:F2} m raw, root scale {k2:F3} -> {Height} m\n");
-    // The pixel look at 128 texels a metre as he stands (measured on the skinned pose, baked again until within 5%).
-    var srcMesh = body.sharedMesh; float aim = TPU * k2, measured = 0;
+    // The pixel look at 128 texels a metre as he stands, baked again until within 5%. Measured with the root at scale 1
+    // against 128 x his scale: the skinned bake the measure uses leaves the root's scale out, so at his own scale it read
+    // 128 for a texture that was really 128 / scale in the world (119 at 2.08 m; found 2026-11-10 when he grew to 2.39 m).
+    var srcMesh = body.sharedMesh; float want = TPU * k2, aim = want, measured = 0;
     var mats = new[] { body.sharedMaterial };
+    root.transform.localScale = UnityEngine.Vector3.one;
     for (int pass = 0; pass < 4; pass++)
     {
       UnityEditor.AssetDatabase.DeleteAsset($"{DIR}/Crypt Lord.asset");
@@ -167,13 +170,14 @@ try
       body.sharedMesh = mesh; body.sharedMaterials = new[] { mat };
       UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GetAssetPath(mat.GetTexture("_BaseMap")), UnityEditor.ImportAssetOptions.ForceUpdate);
       measured = PixelRestyle.TexelsPerUnit(body, mat);
-      if (measured <= 0f || UnityEngine.Mathf.Abs(measured / TPU - 1f) < .05f) break;
-      aim *= TPU / measured;
+      if (measured <= 0f || UnityEngine.Mathf.Abs(measured / want - 1f) < .05f) break;
+      aim *= want / measured;
     }
+    root.transform.localScale = UnityEngine.Vector3.one * k2;
     body.updateWhenOffscreen = false;
     // A failed restyle leaves the joined mesh and an unsaved material on the body: nothing is saved then.
     if (body.sharedMesh == joined || measured <= 0f || !UnityEditor.AssetDatabase.Contains(body.sharedMaterial)) throw new System.Exception("the restyle failed; the prefab was not saved");
-    sb.Append($"restyled: {measured:F1} texels a metre\n");
+    sb.Append($"restyled: {measured / k2:F1} texels a metre as he stands ({measured:F1} on the unscaled body)\n");
     var data = root.GetComponent<Character>().data as EnemyData;
     if (data != null) { data.creatureKind = CreatureKind.Skeleton; data.gore ??= new GoreProfile(); data.gore.kind = BloodKind.BoneDust; UnityEditor.EditorUtility.SetDirty(data); }
     UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, PATH);

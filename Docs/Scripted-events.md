@@ -16,7 +16,7 @@ meddling. Built on branch `events` (2026-10-28).
 
 | Event | Room | What happens |
 |---|---|---|
-| `duel` | Duel bridge (7 x 9, two tiles high, a chasm each side) | The Duellist waits on the bridge and ignores you. Walk up (5 m) and he salutes and the DM calls a duel. Win fair and he leaves gear rolled Unique and the biggest spoils. Hit him from behind, with a spell (not the shield bash) or before the salute is over: the DM gives house rule three ("A duel is fought face to face", quoted after the first time) and his friends come out at both ends of the bridge. |
+| `duel` | Duel bridge (7 x 9, two tiles high, a chasm each side) | The Undead Knight (`Characters/Enemies/Realms`, as it is; the Duellist of `Characters/Enemies/Events` until 2026-11-10) waits on the bridge and ignores you. Walk up (5 m) and he salutes and the DM calls a duel. Win fair and he leaves gear rolled Unique and the biggest spoils. Hit him from behind, with a spell (not the shield bash) or before the salute is over: the DM gives house rule three ("A duel is fought face to face", quoted after the first time) and his friends come out at both ends of the bridge. |
 | `bell` | Bell room (7 x 7, two tiles high) | Pull the bell's chain: gates slam across the ways out and a wave comes (2, 3, 4, 5). Clear it and the chest at the back comes back a tier better (wood, iron, gold, then gold with a Legendary). Open the chest any time to stop. |
 | `wager` | Card table (7 x 5, candlelit) | A skeleton runs a shell game: bet gold at the table (10 + 5 a floor), he hides the coin under one of three bowls and shuffles, pick a bowl. A win pays double. After two wins he cheats (the coin is under none). Hit him then and you called it: his friends come out of the walls, and once they are down his pot (what you lost plus 40) is yours. Hit him when he played fair and his friends come anyway, no pot. Six games at most. |
 | `giant` | Giant's hoard (9 x 9, two tiles high, candlelit) | A giant sleeps in the middle of gold and gear (rolled Rare) with a gold chest at its back. It sleeps like a sleeping pack but hears better (`hearing` 1.7): a crouching step is never heard, a walking step within about 5 m wakes it, a running one from across the room. Leave with loot and it never stirred: the DM is impressed. Kill it: gear rolled Unique and the biggest spoils. |
@@ -40,7 +40,7 @@ meddling. Built on branch `events` (2026-10-28).
 
 ## Notes from testing (2026-10-28)
 
-- An event room's own enemy (`EventActor` on the Duellist, Card sharp, Sleeping giant) stands still from the moment it
+- An event room's own enemy (`EventActor` on the Card sharp and the Sleeping giant, and added to the Undead Knight put down on the Duel bridge, not to his prefab) stands still from the moment it
   exists until its event lets it go; without it a player starting in the room was attacked before the event found it.
 - Event rooms a floor are the level's `TableLevelData.eventRoomsPerFloor` (Run tab, least and most; Dungeon1 2 and 2, new
   levels 0 and 1). Every event the pool deals counts, Not a witch and the Portal hall (its Skeleton Party) included; the
