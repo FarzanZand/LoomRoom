@@ -34,11 +34,16 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: HangingMoss_mat
     second: {fileID: 2100000, guid: bedaa9f893bcd4149a465fbcce1ccc55, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hanging_Moss_Mat
+    second: {fileID: 2100000, guid: bedaa9f893bcd4149a465fbcce1ccc55, type: 2}
   materials:
     materialImportMode: 1
     materialName: 1
     materialSearch: 2
-    materialLocation: 0
+    materialLocation: 1
     searchTexturesGlobally: 1
   animations:
     legacyGenerateAnimations: 4

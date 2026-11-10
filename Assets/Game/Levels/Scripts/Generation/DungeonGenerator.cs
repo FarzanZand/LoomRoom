@@ -203,7 +203,7 @@ public partial class DungeonGenerator : MonoBehaviour
     void MergeProps()
     {
         if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
-        batching.Combine(geometry, data.cellSize * 32, true, true);
+        batching.Combine(geometry, data.cellSize * 32, true, true, IsArchitecture);
         if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 32, true, true);
     }
 
@@ -342,6 +342,7 @@ public partial class DungeonGenerator : MonoBehaviour
             if (t != null && t.openCeiling) openRoofs[i] = true;
             frames[i] = t != null && t.openCeiling ? t.ceilingFrame : level.skylightFrame;
         }
+        OpenRoofRegions = openRoofs;
         // A template's skylight radius keeps the ceiling over the cells further from its centre.
         bool InSkylight(Vector2Int c)
         {
@@ -583,6 +584,8 @@ public partial class DungeonGenerator : MonoBehaviour
         coarsened = true;
         if (!Board) batching.Coarsen(transform.Find("Architecture"), data.cellSize * 32);
         batching.Coarsen(Ceilings, data.cellSize * 32);
+        // From here on only what the table player can see is drawn (and all of it again from anywhere else).
+        if (!Board && Layout != null && GetComponent<DungeonVisibility>() == null) gameObject.AddComponent<DungeonVisibility>().Initialize(this);
     }
 
     // A walkable point somewhere inside the room, for spawns whose usual spot is blocked.
@@ -940,6 +943,11 @@ public partial class DungeonGenerator : MonoBehaviour
     public Transform Ceilings => ceiling;
     // The spawn room has a skylight: the table reveal's camera can fly in through it.
     public bool SpawnRoofOpen { get; private set; }
+    // Per region (rooms first, then passages): its ceiling has an opening. From such a room the player sees what
+    // stands taller than its own roof (DungeonVisibility keeps those drawn).
+    public bool[] OpenRoofRegions { get; private set; }
+    // The ceiling's height over a floor cell, in metres above the cell's floor.
+    public float CeilingHeight(Vector2Int cell) => Layout != null && Layout.InBounds(cell) && Layout.floor[cell.x, cell.y] ? HeightAt(cell.x, cell.y) : data.architectureTileSize;
 
     // Holes go into the table under this floor's pits while it is on the table (TableCut).
     void OnEnable()

@@ -75,12 +75,12 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: VegetationSmall03_Mat
-    second: {fileID: 2100000, guid: d956f2ebefac9914a922b5e8a47b41c7, type: 2}
+    second: {fileID: 2100000, guid: d26378d7be0d13f468c0ddf749479579, type: 2}
   materials:
     materialImportMode: 1
     materialName: 1
     materialSearch: 2
-    materialLocation: 0
+    materialLocation: 1
     searchTexturesGlobally: 1
   animations:
     legacyGenerateAnimations: 4

@@ -14,9 +14,17 @@ public class DungeonStaticGeometry : MonoBehaviour
     public const string FloorTileName="Flagstone";
     // What the build's Combine made and switched off: the cascade reveal draws the pieces themselves while it runs.
     public readonly List<MeshRenderer> BuildChunks=new(), MergedPieces=new();
+    // For DungeonVisibility: each big chunk Coarsen made with the chunks it was merged from, and which build chunks
+    // hold standing props (the late pass, propsToo) and not walls or floors.
+    public readonly Dictionary<MeshRenderer,List<MeshRenderer>> MergedFrom=new();
+    public readonly HashSet<MeshRenderer> PropChunks=new();
+    // Each build chunk's own pieces: the cascade puts a chunk back in their place once the last of them has landed.
+    public readonly Dictionary<MeshRenderer,List<MeshRenderer>> PiecesOf=new();
     // keepModes: pieces are grouped by shadow casting and rendering layers too and the chunk keeps them (growth whose
     // small pieces cast no shadow); off, every chunk casts shadows except floor tiles.
-    public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false)
+    // leaveOut: pieces the pass must not take (the late props pass leaves lone wall and floor tiles alone: they are
+    // walls, and DungeonVisibility swaps a props chunk for its pieces while the player is inside).
+    public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false,System.Func<Renderer,bool> leaveOut=null)
     {
         if(root==null)return;
         var groups=new Dictionary<(Material,int,int,ShadowCastingMode,uint),List<MeshFilter>>();
@@ -26,6 +34,7 @@ public class DungeonStaticGeometry : MonoBehaviour
             if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
                || filter.GetComponentInParent<DungeonDestructible>()!=null || filter.GetComponentInParent<KnockDownDecor>()!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
             if(propsToo && Changes(filter))continue;
+            if(leaveOut!=null && leaveOut(renderer))continue;
             var p=root.InverseTransformPoint(filter.transform.position);
             var key=(renderer.sharedMaterial,Mathf.FloorToInt(p.x/chunkSize),Mathf.FloorToInt(p.z/chunkSize),
                 keepModes ? renderer.shadowCastingMode : ShadowCastingMode.On,keepModes ? renderer.renderingLayerMask : 0u);
@@ -41,8 +50,10 @@ public class DungeonStaticGeometry : MonoBehaviour
             go.GetComponent<MeshFilter>().sharedMesh=mesh;go.GetComponent<MeshRenderer>().sharedMaterial=group.Key.Item1;
             if(keepModes){var chunk=go.GetComponent<MeshRenderer>();chunk.shadowCastingMode=group.Key.Item4;chunk.renderingLayerMask=group.Value[0].GetComponent<MeshRenderer>().renderingLayerMask;}
             else if(group.Value.TrueForAll(f=>f.name==FloorTileName))go.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
-            BuildChunks.Add(go.GetComponent<MeshRenderer>());
-            foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);}
+            var made=go.GetComponent<MeshRenderer>();var its=new List<MeshRenderer>(group.Value.Count);
+            BuildChunks.Add(made);PiecesOf.Add(made,its);
+            if(propsToo)PropChunks.Add(made);
+            foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);its.Add(piece);}
         }
     }
     // propsToo (the late pass over the finished floor, DungeonGenerator.MergeProps): props that move, flicker, glow or
@@ -78,13 +89,19 @@ public class DungeonStaticGeometry : MonoBehaviour
         {
             if(group.Value.Count<2)continue;
             var instances=new CombineInstance[group.Value.Count];
-            for(int i=0;i<instances.Length;i++){var r=group.Value[i];instances[i]=new CombineInstance{mesh=r.GetComponent<MeshFilter>().sharedMesh,transform=root.worldToLocalMatrix*r.transform.localToWorldMatrix};}
+            // A chunk hangs under root unmoved, so its vertices are taken as they are: through the two matrices each
+            // would shift by a rounding step, and the big chunk would no longer be the small ones to the last bit
+            // (DungeonVisibility draws either, and the picture must not change with which).
+            for(int i=0;i<instances.Length;i++){var r=group.Value[i];var t=r.transform;
+                bool unmoved=t.parent==root && t.localPosition==Vector3.zero && t.localRotation==Quaternion.identity && t.localScale==Vector3.one;
+                instances[i]=new CombineInstance{mesh=r.GetComponent<MeshFilter>().sharedMesh,transform=unmoved ? Matrix4x4.identity : root.worldToLocalMatrix*t.localToWorldMatrix};}
             var mesh=new Mesh{name="Dungeon static chunk",indexFormat=IndexFormat.UInt32};
             mesh.CombineMeshes(instances,true,true);ownedMeshes.Add(mesh);
             var go=new GameObject("Static chunk",typeof(MeshFilter),typeof(MeshRenderer));go.transform.SetParent(root,false);
             go.GetComponent<MeshFilter>().sharedMesh=mesh;
             var merged=go.GetComponent<MeshRenderer>();merged.sharedMaterial=group.Key.Item1;merged.shadowCastingMode=group.Key.Item2;merged.renderingLayerMask=group.Key.Item3;
             foreach(var r in group.Value)r.enabled=false;
+            MergedFrom.Add(merged,group.Value);
         }
     }
     void OnDestroy(){foreach(var mesh in ownedMeshes)if(mesh!=null)Destroy(mesh);}

@@ -1,4 +1,7 @@
 ﻿// Copyright (c) Pixel Crushers. All rights reserved.
+// LoomRoom: bought code, kept as it is. Unity 6.6 warns here (UAC0023); switched off for this file so the console stays clean.
+// Put this back after updating the pack.
+#pragma warning disable UAC0023
 
 using UnityEngine;
 using System;

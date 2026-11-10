@@ -175,9 +175,14 @@ public partial class DungeonGenerator
             + along * ((front - back) * .5f) + Vector3.up * centerY;
         return (center, d.x != 0 ? new Vector3(thickness, height, length) : new Vector3(length, height, thickness));
     }
+    // Every wall, floor, ceiling and trim box of the floor, merged into a chunk or not (DungeonVisibility never hides one).
+    readonly System.Collections.Generic.HashSet<Renderer> architecturePieces = new();
+    public bool IsArchitecture(Renderer r) => r != null && architecturePieces.Contains(r);
+
     GameObject ArchitectureBox(string name, Vector3 pos, Vector3 size, Material material, Transform parent)
     {
         var go = Box(name, pos, size, material, parent);
+        architecturePieces.Add(go.GetComponent<Renderer>());
         float tile = Mathf.Max(.01f, data.architectureTileSize);
         Vector3 relative = pos - transform.position;
         // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size. They wrap

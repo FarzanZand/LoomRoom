@@ -49,6 +49,56 @@ public static class DevGameSnapshot
         public List<string> open_quests = new();
         public LookingAt looking_at;
         public List<PlayerState> players = new();
+        public Performance performance;
+    }
+
+    // How fast the game ran over the last frames before the request, and on what: a slow machine's report says by
+    // itself whether the graphics card or the processor holds it back. Times are milliseconds a frame.
+    [Serializable]
+    public class Performance
+    {
+        public float fps, frame_ms, main_thread_ms, render_thread_ms, graphics_card_ms;
+        public int frames_measured;
+        public string graphics_card, graphics_api, processor;
+        public int graphics_memory_mb, processor_cores, memory_mb;
+        public float render_scale;
+        public bool vsync;
+        public string soft_shadows;
+        public bool draws_only_seen_rooms;
+    }
+
+    static readonly FrameTiming[] timings = new FrameTiming[30];
+
+    static Performance CapturePerformance()
+    {
+        var p = new Performance
+        {
+            graphics_card = SystemInfo.graphicsDeviceName, graphics_api = SystemInfo.graphicsDeviceType.ToString(), graphics_memory_mb = SystemInfo.graphicsMemorySize,
+            processor = SystemInfo.processorType, processor_cores = SystemInfo.processorCount, memory_mb = SystemInfo.systemMemorySize,
+            vsync = QualitySettings.vSyncCount > 0,
+            draws_only_seen_rooms = DungeonVisibility.On,
+        };
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline is UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset urp) p.render_scale = Round(urp.renderScale);
+        if (ScreenManager.HasInstance) p.soft_shadows = ScreenManager.SoftShadowNames[ScreenManager.Instance.SoftShadowChoiceNow];
+        // The last frames as the engine timed them; where it has none (some builds), the last frame's own length.
+        FrameTimingManager.CaptureFrameTimings();
+        uint got = FrameTimingManager.GetLatestTimings((uint)timings.Length, timings);
+        double frame = 0, main = 0, render = 0, gpu = 0; int n = 0, withGpu = 0;
+        for (int i = 0; i < got; i++)
+        {
+            if (timings[i].cpuFrameTime <= 0) continue;
+            frame += timings[i].cpuFrameTime; main += timings[i].cpuMainThreadFrameTime; render += timings[i].cpuRenderThreadFrameTime; n++;
+            if (timings[i].gpuFrameTime > 0) { gpu += timings[i].gpuFrameTime; withGpu++; }
+        }
+        if (n > 0)
+        {
+            p.frames_measured = n;
+            p.frame_ms = Round((float)(frame / n)); p.main_thread_ms = Round((float)(main / n)); p.render_thread_ms = Round((float)(render / n));
+            if (withGpu > 0) p.graphics_card_ms = Round((float)(gpu / withGpu));
+        }
+        else p.frame_ms = Round(Time.unscaledDeltaTime * 1000f);
+        p.fps = p.frame_ms > 0 ? Round(1000f / p.frame_ms) : 0;
+        return p;
     }
 
     public static State Capture()
@@ -63,6 +113,7 @@ public static class DevGameSnapshot
             screen_height = Screen.height,
             time_scale = Time.timeScale,
         };
+        try { s.performance = CapturePerformance(); } catch (Exception e) { Debug.LogWarning("Dev prompt: performance not captured: " + e.Message); }
         try
         {
             if (GameManager.HasInstance) s.game_state = GameManager.Instance.State.ToString();

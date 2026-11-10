@@ -56,6 +56,8 @@ public class TableLevelRevealSettings : ScriptableObject
     [Range(0, .4f), Tooltip("Random lead or lag of each piece, as a share of the whole placing (0: a clean front).")] public float waveJitter = .12f;
     [Range(0, .4f), Tooltip("How uneven the front is: whole patches run ahead or lag, as a share of the whole placing.")] public float waveWarp = .14f;
     [Range(0, .3f), Tooltip("How far behind the floor at the same spot walls and props come, as a share of the whole placing.")] public float wallLag = .04f;
+    [Tooltip("On: a stretch of floor, wall or props is drawn as its one merged mesh again as soon as its last piece has landed, so far fewer things are drawn one by one while the rest falls and the lamps come on. Off: every piece stays apart until the whole build is over. The picture is the same either way.")]
+    public bool mergeAsLanded = true;
     [Header("Cascade: the entrance")]
     [Min(0), Tooltip("Seconds of stillness after the floor before the entrance comes down.")] public float entrancePause = .45f;
     [Min(0), Tooltip("How high the entrance's pieces start, in cells.")] public float entranceDropHeight = 3f;
