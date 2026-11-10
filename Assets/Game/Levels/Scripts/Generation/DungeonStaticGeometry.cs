@@ -14,6 +14,8 @@ public class DungeonStaticGeometry : MonoBehaviour
     public const string FloorTileName="Flagstone";
     // What the build's Combine made and switched off: the cascade reveal draws the pieces themselves while it runs.
     public readonly List<MeshRenderer> BuildChunks=new(), MergedPieces=new();
+    // Each build chunk's own pieces: the cascade puts a chunk back in their place once the last of them has landed.
+    public readonly Dictionary<MeshRenderer,List<MeshRenderer>> PiecesOf=new();
     // keepModes: pieces are grouped by shadow casting and rendering layers too and the chunk keeps them (growth whose
     // small pieces cast no shadow); off, every chunk casts shadows except floor tiles.
     public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false)
@@ -41,8 +43,9 @@ public class DungeonStaticGeometry : MonoBehaviour
             go.GetComponent<MeshFilter>().sharedMesh=mesh;go.GetComponent<MeshRenderer>().sharedMaterial=group.Key.Item1;
             if(keepModes){var chunk=go.GetComponent<MeshRenderer>();chunk.shadowCastingMode=group.Key.Item4;chunk.renderingLayerMask=group.Value[0].GetComponent<MeshRenderer>().renderingLayerMask;}
             else if(group.Value.TrueForAll(f=>f.name==FloorTileName))go.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
-            BuildChunks.Add(go.GetComponent<MeshRenderer>());
-            foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);}
+            var made=go.GetComponent<MeshRenderer>();var its=new List<MeshRenderer>(group.Value.Count);
+            BuildChunks.Add(made);PiecesOf.Add(made,its);
+            foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);its.Add(piece);}
         }
     }
     // propsToo (the late pass over the finished floor, DungeonGenerator.MergeProps): props that move, flicker, glow or

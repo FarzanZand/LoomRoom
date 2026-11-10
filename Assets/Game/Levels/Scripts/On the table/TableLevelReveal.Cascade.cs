@@ -7,8 +7,10 @@ using UnityEngine;
 // squashing on its foot as it lands, in an uneven, patchy front, with every lamp out; a moment of stillness, then the
 // entrance comes down hard (the view shakes, dust is thrown up); the floor's lamps come on one by one; the entrance's
 // torches catch last; then the view flies in (TableLevelReveal.Play). While it runs the build's merged chunks are held
-// off and the pieces they were made of drawn instead; at the end the chunks come back and the pieces go off again, so the
-// floor is exactly as built. Everything is put back however it ends (Restore).
+// off and the pieces they were made of drawn instead; a chunk comes back in its pieces' place as soon as the last of
+// them has landed (Merge As Landed: with every piece drawn apart to the end a floor was over 20,000 draw calls a frame
+// through the lamps coming on), and at the end every chunk is back and the pieces off again, so the floor is exactly
+// as built. Everything is put back however it ends (Restore).
 public sealed partial class TableLevelReveal
 {
     // One falling thing: a wall or floor piece, a ceiling piece, or a prop (with its children).
@@ -26,6 +28,11 @@ public sealed partial class TableLevelReveal
     }
     readonly List<Tile> tiles = new();
     readonly List<(Renderer renderer, bool enabled)> heldChunks = new();
+    // Merge As Landed: the chunks that may come back early with their pieces, how many of each one's pieces have yet to
+    // land, and per tile the chunks its pieces belong to (one entry per piece).
+    readonly List<(MeshRenderer chunk, List<MeshRenderer> pieces)> earlyChunks = new();
+    int[] earlyWaiting;
+    List<int>[] tileChunks;
     readonly List<float> lightStrength = new();
     readonly List<AudioSource> clackSources = new();
     Mesh ghostMesh;
@@ -188,6 +195,52 @@ public sealed partial class TableLevelReveal
         BuildGhost(settings, spawn, span, cell);
     }
 
+    // Which chunks can take over from their pieces before the end. Only one that was drawn before the reveal, isn't
+    // hidden with the start room's near wall or a ceiling's, and whose every piece falls as a shown part of a tile: a
+    // chunk with a piece that stays hidden, or that no tile carries, waits for the end as before, so nothing is seen
+    // sooner than it was. Called once the tiles are final (after HideStartWall).
+    void PlanEarlyChunks(TableLevelRevealSettings settings)
+    {
+        earlyChunks.Clear(); earlyWaiting = null; tileChunks = null;
+        var geometry = dungeon.GetComponent<DungeonStaticGeometry>();
+        if (!settings.mergeAsLanded || geometry == null) return;
+        var held = new HashSet<Renderer>();
+        foreach (var (chunk, enabled) in heldChunks) if (enabled && chunk != null && !chunk.forceRenderingOff) held.Add(chunk);
+        var carrier = new Dictionary<Renderer, (int tile, bool show)>();
+        for (int i = 0; i < tiles.Count; i++)
+            for (int r = 0; r < tiles[i].renderers.Length; r++)
+                if (tiles[i].renderers[r] != null) carrier[tiles[i].renderers[r]] = (i, tiles[i].show[r]);
+        tileChunks = new List<int>[tiles.Count];
+        var waiting = new List<int>();
+        var ceilings = dungeon.Ceilings;
+        foreach (var pair in geometry.PiecesOf)
+        {
+            var chunk = pair.Key;
+            if (chunk == null || !held.Contains(chunk) || (ceilings != null && chunk.transform.IsChildOf(ceilings))) continue;
+            bool whole = true;
+            foreach (var piece in pair.Value)
+                if (piece == null || !carrier.TryGetValue(piece, out var c) || !c.show) { whole = false; break; }
+            if (!whole) continue;
+            int index = earlyChunks.Count;
+            earlyChunks.Add((chunk, pair.Value)); waiting.Add(pair.Value.Count);
+            foreach (var piece in pair.Value) (tileChunks[carrier[piece].tile] ??= new List<int>()).Add(index);
+        }
+        earlyWaiting = waiting.ToArray();
+    }
+
+    // A tile has come to rest where it was built: a chunk whose last piece that was is drawn in its pieces' place.
+    void Landed(List<int> chunks)
+    {
+        foreach (int c in chunks)
+        {
+            if (--earlyWaiting[c] > 0) continue;
+            var (chunk, pieces) = earlyChunks[c];
+            if (chunk == null) continue;
+            chunk.enabled = true;
+            foreach (var piece in pieces) if (piece != null) piece.enabled = false;
+        }
+    }
+
     // 0 for the piece farthest from the entrance .. 1 for the nearest: the share of pieces farther away than distance.
     float[] paceDistances;
     float Pace(float distance)
@@ -284,6 +337,7 @@ public sealed partial class TableLevelReveal
         bool landed = false, entranceLit = false;
         var lightOn = new bool[lights.Count];
         var view = output.transform; var viewRotation = view.rotation;
+        PlanEarlyChunks(settings);
         foreach (var (light, _, _) in lights) if (light != null) light.enabled = false;
         foreach (var (effect, _, _) in effects) if (effect != null) effect.SetActive(false);
         if (ghostMesh != null) PlaySound(settings.footprintSound, settings.footprintVolume);
@@ -306,6 +360,7 @@ public sealed partial class TableLevelReveal
                 {
                     tile.resting = true;
                     tile.transform.SetPositionAndRotation(tile.position, tile.rotation); tile.transform.localScale = tile.scale;
+                    if (tileChunks != null && tileChunks[i] != null) Landed(tileChunks[i]);
                 }
                 else Pose(tile, u, settings, (tile.entrance ? settings.entranceDropHeight : settings.tileDropHeight) * tile.drop * cellHeight);
                 tiles[i] = tile;
@@ -519,6 +574,7 @@ public sealed partial class TableLevelReveal
         tiles.Clear();
         foreach (var (chunk, enabled) in heldChunks) if (chunk != null) chunk.enabled = enabled;
         heldChunks.Clear();
+        earlyChunks.Clear(); earlyWaiting = null; tileChunks = null;
         for (int i = 0; i < lightStrength.Count && i < lights.Count; i++) if (lights[i].light != null) lights[i].light.intensity = lightStrength[i];
         lightStrength.Clear();
         if (ghostMesh != null) Destroy(ghostMesh);
