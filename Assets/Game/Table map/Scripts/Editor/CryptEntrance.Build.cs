@@ -197,11 +197,12 @@ public static partial class CryptEntrance
                 h[i] = Mathf.Min(h[i], floor - down - .12f);
             }
         }
-        // The terrain mesh's vertices are the height grid's points.
+        // The terrain mesh's vertices are the height grid's points, unless its triangles were reduced
+        // (CampaignMapBuilder.ReduceTriangles): then it is laid out as the full grid again, to be reduced again after.
         var mesh = map.terrain.sharedMesh;
         var v = mesh.vertices;
         if (v.Length == h.Length) { for (int i = 0; i < v.Length; i++) v[i].y = h[i]; mesh.vertices = v; mesh.RecalculateNormals(); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh); }
-        else Debug.LogWarning("[Entrance] terrain mesh and height grid differ; mesh left as it is");
+        else { CampaignMapBuilder.RebuildTerrainMesh(map, h); Debug.Log("[Entrance] the ground is its full height grid again: run CampaignMapBuilder.ReduceTriangles() when the map is done"); }
         AssetDatabase.SaveAssets();
         return floor;
     }
