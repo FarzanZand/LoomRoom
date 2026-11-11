@@ -485,18 +485,27 @@ public static class GearSets
     // Tiers 1-4 keep their painted swords and maces; 5-12 are Synty weapons restyled at 128 texels a unit, laid along
     // the tier 4 weapon of their kind (its line from the grip, and the flat of the blade turned as its is, so they sit
     // in the hand and along the hitbox as it does) and as long as it. Tier 8's mace is the Grave Maul, since the Crypt
-    // Warden's Grave mace has that file name already.
+    // Warden's Grave mace has that file name already. Maces have round, flanged or caged heads that look the same however
+    // they turn in the hand (the user, 2026-11-11: hammers sat side-on): Verdant and Dread were hammers until then.
     const string WeaponData = "Assets/Game/Items/Data/Weapons";
     static readonly (int tier, string name, string sword, string mace, string maceName)[] Weapons =
     {
         (5, "Warlord", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Sword_02", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Mace_Blades_01", null),
-        (6, "Verdant", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Sword_03", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Hammer_01", null),
+        (6, "Verdant", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Sword_03", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Hammer_Mace_Spikes_01", null),
         (7, "Shadow", "PolygonDarkFantasy/Prefabs/Weapons/SM_Wep_Sword_01", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Mace_02", null),
         (8, "Grave", "PolygonDarkFantasy/Prefabs/Weapons/SM_Wep_Sword_02", "PolygonDarkFantasy/Prefabs/Weapons/SM_Wep_Mace_01", "Grave Maul"),
         (9, "Blackened", "PolygonFantasyKingdom/Prefabs/Weapons/SM_Wep_Sword_17", "PolygonDarkFortress/Prefabs/Weapons/SM_Wep_Mace_01", null),
         (10, "Gilded", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Ornate_Sword_01", "PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Mace_Medium_01", null),
-        (11, "Dread", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Crystal_Ornate_Straightsword_01", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Goblin_Gem_Hammer_01", null),
+        (11, "Dread", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Crystal_Ornate_Straightsword_01", "PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Mace_Large_05", null),
         (12, "Royal", "PolygonDungeon/Prefabs/Weapons/SM_Wep_Ornate_Sword_02", "PolygonDungeonRealms/Prefabs/Weapons/SM_Wep_Mace_Large_02", null),
+    };
+
+    // A piece whose source has no swatch in its tier's colour takes another swatch of the same Synty atlas: every vertex
+    // at the first UV moves to the second. No Synty mace is green, so the Verdant Mace's spiked ball takes the atlas's
+    // moss green; its spikes stay steel.
+    static readonly Dictionary<string, (Vector2 from, Vector2 to)> SwatchSwaps = new()
+    {
+        ["Verdant Mace"] = (new Vector2(.296f, .330f), new Vector2(.1558f, .330f)),
     };
 
     public static string BuildWeapons(string only = null)
@@ -534,6 +543,14 @@ public static class GearSets
         turn = Quaternion.AngleAxis(roll, refAlong) * turn;
         float scale = refLength / Mathf.Max(.01f, srcLength);
         var placed = Placed(srcMesh, Matrix4x4.TRS(Vector3.zero, turn, Vector3.one * scale) * srcFrame);
+        if (SwatchSwaps.TryGetValue(piece, out var swap))
+        {
+            var uv = new List<Vector2>(); placed.GetUVs(0, uv);
+            int moved = 0;
+            for (int i = 0; i < uv.Count; i++) if ((uv[i] - swap.from).sqrMagnitude < .006f * .006f) { uv[i] = swap.to; moved++; }
+            placed.SetUVs(0, uv);
+            log.Append($"{piece}: {moved} vertices to swatch {swap.to}\n");
+        }
         string dir = $"{PixelRestyle.Root}/Weapons/{srcMesh.name}", path = $"Assets/Game/Items/Prefabs/Weapons/{piece}.prefab";
         ItemDatabaseAuthoring.EnsureFolder(dir);
         float aim = Texels, measured = 0;
@@ -552,7 +569,12 @@ public static class GearSets
         if (prefab == null) { log.Append($"{piece}: restyle failed\n"); return; }
         // A blade that glows at full strength washes itself and its icon out to white: its glow is held lower.
         var glow = prefab.GetComponent<MeshRenderer>().sharedMaterial;
-        if (glow != null && glow.IsKeywordEnabled("_EMISSION")) { glow.SetColor("_EmissionColor", Color.white * .45f); EditorUtility.SetDirty(glow); }
+        // The Dread Mace's slits glow white-hot in Synty's map, which read as pale cream stripes: they glow in the slits' own ember red.
+        if (glow != null && glow.IsKeywordEnabled("_EMISSION"))
+        {
+            glow.SetColor("_EmissionColor", piece == "Dread Mace" ? new Color(.95f, .32f, .2f) * .7f : Color.white * .45f);
+            EditorUtility.SetDirty(glow);
+        }
         Reload($"{dir}/{piece}.asset");
         string dataPath = $"{WeaponData}/{piece}.asset";
         var item = AssetDatabase.LoadAssetAtPath<ItemData>(dataPath);
