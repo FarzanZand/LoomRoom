@@ -183,6 +183,7 @@ public partial class DungeonGenerator
     {
         var go = Box(name, pos, size, material, parent);
         architecturePieces.Add(go.GetComponent<Renderer>());
+        StayOnUndrawn(go);   // on through a sliced build's pauses, not drawn until it ends
         float tile = Mathf.Max(.01f, data.architectureTileSize);
         Vector3 relative = pos - transform.position;
         // Repeat phases are shared across adjacent grid cells, even when grid spacing differs from tile size. They wrap

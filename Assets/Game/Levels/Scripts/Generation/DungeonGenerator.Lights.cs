@@ -23,7 +23,8 @@ public partial class DungeonGenerator
         var merged = new HashSet<Light>();
         foreach (var keep in lights)
         {
-            if (SliceDue) { Pause(); yield return null; Resume(); }
+            // The list is made: the rest works on the floor switched off, so it stays paused from one slice to the next.
+            if (SliceDue) { Pause(); yield return null; GoOnPaused(); }
             if (keep == null || merged.Contains(keep)) continue;
             float added = 0f, reach = 0f;
             foreach (var other in lights)
@@ -44,6 +45,7 @@ public partial class DungeonGenerator
             keep.range += Mathf.Max(0f, reach) * .5f;
             if (keep.TryGetComponent<TorchFlicker>(out var flicker)) flicker.Rebase();
         }
+        Resume();
     }
 
     static bool Mergeable(Light l) => l.GetComponentInParent<Character>(true) == null && l.GetComponentInParent<BossStageLights>(true) == null

@@ -49,10 +49,10 @@ MonoBehaviour:
   equipOnPickup: 1
   statModifiers:
   - stat: 2
-    value: 13
+    value: 11
     type: 0
-  - stat: 7
-    value: -0.15
+  - stat: 16
+    value: 1
     type: 0
   - stat: 20
     value: 0.06
@@ -71,7 +71,7 @@ MonoBehaviour:
     hitStopScale: 1
   damageSpread: 1
   damageSpreadUp: 1
-  scaleWithFloor: 1
+  scaleWithFloor: 0
   effects:
   - type: 99
     trigger: 3

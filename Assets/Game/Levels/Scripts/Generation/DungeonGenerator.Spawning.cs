@@ -861,13 +861,15 @@ public partial class DungeonGenerator
         return character;
     }
 
-    // After navigation exists: enemies, the boss and the merchant at their sockets.
-    void SpawnSocketActors(DungeonExit exitStair)
+    // After navigation exists: enemies, the boss and the merchant at their sockets. A step of the build: in slices it
+    // stops between rooms when the slice's time is up.
+    System.Collections.IEnumerator SpawnSocketActors(DungeonExit exitStair)
     {
         Character boss=null;
         int exitIndex=System.Array.IndexOf(Roles,RoomRole.Exit);
         foreach(var pair in actorSockets)
         {
+            if(SliceDue){Pause();yield return null;Resume();}
             int room=pair.Key;
             foreach(var socket in pair.Value)
             {

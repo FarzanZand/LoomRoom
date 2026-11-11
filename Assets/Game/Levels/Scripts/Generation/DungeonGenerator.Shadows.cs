@@ -14,7 +14,8 @@ public partial class DungeonGenerator
         float tile = data.architectureTileSize;
         foreach (var filter in GetComponentsInChildren<MeshFilter>(true))
         {
-            if (SliceDue) { Pause(); yield return null; Resume(); }
+            // It reads nothing a switched-off floor changes, so it stays paused from one slice to the next.
+            if (SliceDue) { Pause(); yield return null; GoOnPaused(); }
             if (filter == null || filter.sharedMesh == null || !filter.TryGetComponent<MeshRenderer>(out var r)) continue;
             if (r.shadowCastingMode == ShadowCastingMode.Off || r.GetComponentInParent<Character>(true) != null) continue;
             var mount = r.GetComponentInParent<PropMount>(true);
@@ -27,6 +28,7 @@ public partial class DungeonGenerator
             }
             if (off) r.shadowCastingMode = ShadowCastingMode.Off;
         }
+        Resume();
     }
 
     // The world-space size of a mesh's box as it stands.

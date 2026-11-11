@@ -124,16 +124,102 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     // The same build spread over frames (a floor built from the campaign map, while the map folds away): it stops
-    // whenever a slice has run SliceMilliseconds, and between slices the floor is switched off, so nothing of it is
-    // drawn, lit or started half built. The same seed gives the same floor either way.
+    // whenever a slice has run SliceMilliseconds, and between slices nothing of the floor is drawn, lit or started
+    // half built. The same seed gives the same floor either way.
     public IEnumerator BuildSliced(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false) => BuildSteps(level, seed, floorNumber, lastTry, true);
 
-    public const float SliceMilliseconds = 12f;
+    // A slice's time, with what switching the floor on again costs counted in it (12 without it before 2026-11-11, so a
+    // frame's share ran to 13-25 ms and the map burned away at 30-47 fps): 8 ms, about one 60 fps frame with the room
+    // drawn on top. Where the rest of a frame takes longer (a slow computer), up to half of that rest, at most 25 ms, so
+    // the build takes about as many frames as on a fast one and the map's burn (which waits for it) keeps its length.
+    public const float SliceMilliseconds = 8f;
+    const float SliceMostMilliseconds = 25f;
+    float sliceBudget = SliceMilliseconds;
     bool slicing;
     readonly System.Diagnostics.Stopwatch sliceWatch = new();
-    bool SliceDue => slicing && sliceWatch.Elapsed.TotalMilliseconds >= SliceMilliseconds;
-    void Pause() => gameObject.SetActive(false);
-    void Resume() { gameObject.SetActive(true); Physics.SyncTransforms(); sliceWatch.Restart(); }
+    // Every slice does at least 2 ms of work after switching back on (late in a build that alone can take the whole budget).
+    bool SliceDue => slicing && sliceWatch.Elapsed.TotalMilliseconds >= Mathf.Max(sliceBudget, resumeMilliseconds + 2f);
+    float resumeMilliseconds, lastSliceMilliseconds;
+    bool paused;
+
+    // At the start of a slice: the last frame without the build's own slice in it.
+    void BudgetSlice()
+    {
+        float rest = Time.unscaledDeltaTime * 1000f - lastSliceMilliseconds;
+        sliceBudget = Mathf.Clamp(rest * .5f, SliceMilliseconds, SliceMostMilliseconds);
+    }
+
+    // ── Between slices ──
+    // The whole floor was switched off between slices and on again for the next: on a Dungeon1 floor that cost up to
+    // 27 ms a frame by the end (8,000 objects re-enabled, 4,600 colliders put back into physics), more than the slice
+    // itself, so the map burned away at about 20 frames a second (2026-11-11). Now the walls, floors and ceilings (plain
+    // boxes and their merged chunks under Architecture and Ceilings, nine tenths of the floor, no scripts or lights)
+    // stay on and are only kept from being drawn (forceRenderingOff, given back when the build ends); everything else
+    // under the floor is switched off between slices as before, and the components the build put on the floor itself
+    // are disabled. The generator itself stays on.
+    readonly System.Collections.Generic.HashSet<Transform> stayOn = new();
+    readonly System.Collections.Generic.List<Renderer> keptUndrawn = new();
+    readonly System.Collections.Generic.List<GameObject> pausedObjects = new();
+    readonly System.Collections.Generic.List<Behaviour> pausedComponents = new();
+
+    // A box or chunk under Architecture or Ceilings: on through the slices, not drawn until the build ends.
+    void StayOnUndrawn(GameObject piece)
+    {
+        if (!slicing || piece == null) return;
+        var parent = piece.transform.parent;
+        if (parent == null || (parent != geometry && parent != ceiling) || !stayOn.Add(piece.transform)) return;
+        if (piece.TryGetComponent<Renderer>(out var r) && !r.forceRenderingOff) { r.forceRenderingOff = true; keptUndrawn.Add(r); }
+    }
+
+    void Pause()
+    {
+        lastSliceMilliseconds = (float)sliceWatch.Elapsed.TotalMilliseconds;
+        if (paused) return;
+        paused = true;
+        foreach (Transform child in transform)
+        {
+            if (child == geometry || child == ceiling)
+            {
+                foreach (Transform piece in child)
+                    if (piece.gameObject.activeSelf && !stayOn.Contains(piece)) { piece.gameObject.SetActive(false); pausedObjects.Add(piece.gameObject); }
+            }
+            else if (child.gameObject.activeSelf) { child.gameObject.SetActive(false); pausedObjects.Add(child.gameObject); }
+        }
+        // What the build added to the floor itself (a boss encounter, meddling): no Update before the floor is done. The
+        // navigation surface keeps its mesh (no agent on the floor is on), the static geometry has no callbacks.
+        foreach (var b in GetComponents<Behaviour>())
+            if (b != this && b.enabled && !(b is NavMeshSurface) && !(b is DungeonStaticGeometry)) { b.enabled = false; pausedComponents.Add(b); }
+        // As the floor's own OnDisable did when the whole floor was switched off.
+        foreach (var fight in arenaFights) if (fight != null) fight.WatchStopped();
+    }
+
+    // A pass that works on the floor switched off (TrimShadows, MergeNearbyLights) stays paused from one slice to the
+    // next: Pause, yield, then GoOnPaused (the slice's time counts from there); Resume once the pass is done.
+    void GoOnPaused() { BudgetSlice(); sliceWatch.Restart(); resumeMilliseconds = 0; }
+
+    void Resume()
+    {
+        if (!paused) return;
+        paused = false;
+        BudgetSlice();
+        sliceWatch.Restart();   // switching back on counts toward the slice
+        foreach (var go in pausedObjects) if (go != null) go.SetActive(true);
+        pausedObjects.Clear();
+        foreach (var b in pausedComponents) if (b != null) b.enabled = true;
+        pausedComponents.Clear();
+        foreach (var fight in arenaFights) if (fight != null) fight.Watch(this);
+        Physics.SyncTransforms();
+        resumeMilliseconds = (float)sliceWatch.Elapsed.TotalMilliseconds;
+    }
+
+    // The build is over (finished or failed): every kept piece is drawn again and nothing stays switched off.
+    void EndSlicing()
+    {
+        Resume();
+        paused = false;
+        foreach (var r in keptUndrawn) if (r != null) r.forceRenderingOff = false;
+        keptUndrawn.Clear(); stayOn.Clear();
+    }
     // How far the build has got, 0 to 1, by the share of the time each part took on Dungeon1 (layout .04, walls .19,
     // rooms .36, the rest of the dressing .08, navigation .1, enemies and sockets .2): the campaign map folds away at
     // this pace, so it is flat just as the floor is ready.
@@ -141,7 +227,7 @@ public partial class DungeonGenerator : MonoBehaviour
 
     IEnumerator BuildSteps(TableLevelData level, int seed, int floorNumber, bool lastTry, bool sliced)
     {
-        slicing = sliced; sliceWatch.Restart(); BuildProgress = 0;
+        slicing = sliced; sliceWatch.Restart(); BuildProgress = 0; paused = false; resumeMilliseconds = 0; lastSliceMilliseconds = 0; sliceBudget = SliceMilliseconds;
         try
         {
         acceptUnreachable = lastTry;
@@ -181,12 +267,13 @@ public partial class DungeonGenerator : MonoBehaviour
         var lights = MergeNearbyLights();
         while (lights.MoveNext()) yield return lights.Current;
         if (SliceDue) { Pause(); yield return null; Resume(); }
-        MergeProps();
+        var props = MergeProps();
+        while (props.MoveNext()) yield return props.Current;
         }
         finally
         {
             // The table's holes wait for the finished floor (OnEnable skips them while it is built in slices).
-            BuildProgress = 1; if (slicing) { slicing = false; if (isActiveAndEnabled && tableHoles.Count > 0) TableCut.Set(this, tableHoles); }
+            BuildProgress = 1; if (slicing) { EndSlicing(); slicing = false; if (isActiveAndEnabled && tableHoles.Count > 0) TableCut.Set(this, tableHoles); }
         }
     }
 
@@ -198,11 +285,16 @@ public partial class DungeonGenerator : MonoBehaviour
     // Changes). In big squares (32 cells, as Coarsen merges the walls once in play): props of a kind are spread thin, so
     // in the walls' 8-cell squares nearly each stood alone and nothing merged; measured on Dungeon1 seed 4242, floor 7
     // 1,611 to 1,424 draws, floor 1 1,170 to 1,111. A board deals its rooms in one by one, so it keeps its pieces apart.
-    void MergeProps()
+    // A step of the build: in slices it stops when the slice's time is up.
+    IEnumerator MergeProps()
     {
-        if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) return;
-        batching.Combine(geometry, data.cellSize * 32, true, true, IsArchitecture);
-        if (wildsRoot != null) batching.Combine(wildsRoot, data.cellSize * 32, true, true);
+        if (Board || !TryGetComponent<DungeonStaticGeometry>(out var batching)) yield break;
+        System.Func<bool> due = slicing ? () => SliceDue : null;
+        var merging = batching.CombineSteps(geometry, data.cellSize * 32, true, true, IsArchitecture, due);
+        while (merging.MoveNext()) { Pause(); yield return null; Resume(); }
+        if (wildsRoot == null) yield break;
+        merging = batching.CombineSteps(wildsRoot, data.cellSize * 32, true, true, null, due);
+        while (merging.MoveNext()) { Pause(); yield return null; Resume(); }
     }
 
     // A cell of the merchant's room away from the stall (its Merchant socket, else the room's middle), off the walkways
@@ -473,14 +565,24 @@ public partial class DungeonGenerator : MonoBehaviour
         else BuildWilds();   // a walled floor's wild ground, when its biome has it, in place of the walls
         // Board tiles stay separate: they are laid out one by one as rooms are revealed.
         var batching=gameObject.AddComponent<DungeonStaticGeometry>();
-        if (!Board) batching.Combine(geometry,data.cellSize*8);
-        if (wildsRoot != null) batching.Combine(wildsRoot.Find("Banks"),data.cellSize*8);
+        // Merged in slices when the floor is built in slices (the walls' merge held a frame for 30-45 ms).
+        System.Func<bool> mergeDue = slicing ? () => SliceDue : null;
+        var merges = new System.Collections.Generic.List<(Transform root, bool keepModes)>();
+        if (!Board) merges.Add((geometry, false));
+        if (wildsRoot != null) merges.Add((wildsRoot.Find("Banks"), false));
         // The wild ground's growth (thousands of trees, ferns, roots and vines) merged per material as the walls are, each
         // piece keeping its shadow casting; and a board whose rooms are all on the table from the start, its tiles and
         // mounds per room (a board dealt in room by room needs its rooms apart; they are merged within each room).
-        if (wildsRoot != null) batching.Combine(wildsRoot.Find("Growth"),data.cellSize*8,true);
-        if (Board && data.RevealWholeFloor(FloorNumber)) foreach (var region in boardRegions) batching.Combine(region,data.cellSize*8,true);
-        batching.Combine(ceiling,data.cellSize*8);
+        if (wildsRoot != null) merges.Add((wildsRoot.Find("Growth"), true));
+        if (Board && data.RevealWholeFloor(FloorNumber)) foreach (var region in boardRegions) merges.Add((region, true));
+        merges.Add((ceiling, false));
+        foreach (var (mergeRoot, keepModes) in merges)
+        {
+            var merging = batching.CombineSteps(mergeRoot, data.cellSize*8, keepModes, false, null, mergeDue);
+            while (merging.MoveNext()) { Pause(); yield return null; Resume(); }
+            if (SliceDue) { Pause(); yield return null; Resume(); }
+        }
+        foreach (var chunk in batching.BuildChunks) if (chunk != null) StayOnUndrawn(chunk.gameObject);
         // Ceilings also answer to the player's ceiling light (see FirstPersonLighting).
         foreach(var r in ceiling.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= FirstPersonLighting.CeilingLayer;
         BuildProgress = .68f;
@@ -490,7 +592,19 @@ public partial class DungeonGenerator : MonoBehaviour
         Surface.collectObjects = CollectObjects.Children;
         Surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
         Surface.overrideVoxelSize = true; Surface.voxelSize = .12f;
-        Surface.BuildNavMesh();
+        if (!slicing) Surface.BuildNavMesh();
+        else
+        {
+            // Sliced, the same bake runs on worker threads (it held one frame for 50-100 ms): the floor's colliders are
+            // read now, the mesh is made from what was read while the floor waits switched off, then put in as
+            // BuildNavMesh would.
+            var navData = new NavMeshData(Surface.agentTypeID) { name = gameObject.name, position = transform.position, rotation = transform.rotation };
+            var baking = Surface.UpdateNavMesh(navData);
+            Pause();
+            while (!baking.isDone) yield return null;
+            Resume();
+            Surface.RemoveData(); Surface.navMeshData = navData; Surface.AddData();
+        }
         navMeshData = Surface.navMeshData;
         ValidateNavigation();
         BuildProgress = .76f;
@@ -558,12 +672,15 @@ public partial class DungeonGenerator : MonoBehaviour
             if (SliceDue) { Pause(); yield return null; Resume(); }
         }
         if (SliceDue) { Pause(); yield return null; Resume(); }
-        SpawnSocketActors(exitStair);
+        var actors = SpawnSocketActors(exitStair);
+        while (actors.MoveNext()) yield return actors.Current;
         BuildProgress = .97f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
         StockStartingChest();
         FaceStartingChests();
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         FinishRoomEvents();
+        if (SliceDue) { Pause(); yield return null; Resume(); }
         // A pocket is played beside its floor: the floor's own ambience goes on playing.
         if (!data.pocket) gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         gameObject.AddComponent<DungeonHud>().Initialize(this);
