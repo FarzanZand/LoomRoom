@@ -7,7 +7,7 @@ using UnityEngine;
 public class DiceCup : MonoBehaviour, IInteractable
 {
     [Tooltip("How far it jiggles while shaken.")] public float shake = .03f;
-    [Min(0), Tooltip("Width of its outline while it waits to be shaken, in metres.")] public float outlineWidth = .012f;
+    [Min(0), Tooltip("Width of its outline while it waits to be shaken, in metres (.012 was too thin to see).")] public float outlineWidth = .03f;
     DiceEvent dice;
     QuestGlow glow;
     Vector3 rest;

@@ -21,7 +21,10 @@ public class QuestGlow : MonoBehaviour
 
     public void Show(bool on)
     {
-        if (on && shells.Count == 0) Build();
+        // Built when first wanted with something to outline. Switched on while its object wasn't drawn yet (the table's
+        // build hides every piece until it lands) it found nothing; once it can, the outline it builds then must show
+        // (it was made switched off and stayed so: the dice cup, the user, 2026-11-11).
+        if (on && shells.Count == 0) { Build(); if (shown) foreach (var s in shells) if (s != null) s.SetActive(true); }
         if (on == shown) return;
         shown = on;
         foreach (var s in shells) if (s != null) s.SetActive(on);

@@ -127,8 +127,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             var tomes=InventoryManager.Instance.itemCatalog.FindAll(i=>i!=null && i.spell!=null && i.tier>0 && i.lootWeight>0 && InventoryManager.Instance.CanDropLoot(i) && !drops.Exists(d=>d.item==i));
             if(tomes.Count>0)drops.Add(new LootSource.Drop(tomes[rng.Next(tomes.Count)],1));
         }
-        // The key to the bedroom's locked box: every chest after the starting room's holds it until it is picked up.
-        if(chest && ProgressionManager.HasInstance && ProgressionManager.Instance.KeyDueFromChest(startingKit))
+        // The key to the bedroom's locked box: every chest after the starting room's holds it until it is picked up. Not a
+        // chest that holds only its own prize (the Skeleton Party's: the relic and gold, nothing else, the user, 2026-11-11);
+        // the key then comes from the next chest.
+        if(chest && !onlyGuaranteed && ProgressionManager.HasInstance && ProgressionManager.Instance.KeyDueFromChest(startingKit))
         { ProgressionManager.Instance.ClearLooseKeys(); drops.Add(new LootSource.Drop(ProgressionManager.Instance.boxKey,1)); }
         // Spoils for the tally (ProgressionManager): chests only, at their own chance.
         if(chest && !startingKit && !onlyGuaranteed && ProgressionManager.HasInstance){var spoils=ProgressionManager.Instance.RollSpoils(seed,floorNumber,true);if(spoils!=null)drops.Add(new LootSource.Drop(spoils,1));}

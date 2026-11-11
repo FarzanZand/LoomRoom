@@ -310,6 +310,7 @@ MonoBehaviour:
   chestStare: 3
   stareTurnSpeed: 360
   legendaryInChest: 1
+  prizeItem: {fileID: 11400000, guid: 24f63a86e5052b3429ddbaa9cb7b6b71, type: 2}
   prizeMaxTier: 2
   prizeGold: 80
   prizeGoldPiles: 10

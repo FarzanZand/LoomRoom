@@ -27,8 +27,10 @@ public class SkeletonParty : MonoBehaviour
     public float chestStare = 3f;
     [Tooltip("Degrees a second the dancers turn to face the player while they stare.")]
     public float stareTurnSpeed = 360f;
-    [Tooltip("The chest in the middle holds only a random piece of gear rolled Legendary and Prize Gold.")]
+    [Tooltip("The chest in the middle holds only its prize and Prize Gold: Prize Item, or with none a random piece of gear rolled Legendary.")]
     public bool legendaryInChest = true;
+    [Tooltip("The chest's one item (The Party Crasher, the user, 2026-11-11). Empty: a random Legendary piece of the floor's gear.")]
+    public ItemData prizeItem;
     [Range(1, 12), Tooltip("The Legendary prize is of the floor's gear tiers (the level's Gear by floor); on a level with no table, tiers 1 to this.")]
     public int prizeMaxTier = 2;
     [Min(0), Tooltip("Gold in the chest with the Legendary.")] public int prizeGold = 80;
@@ -109,14 +111,15 @@ public class SkeletonParty : MonoBehaviour
             if (!chest.gameObject.activeInHierarchy || !InRoom(chest)) continue;
             waitingChests.RemoveAt(w);
             chests.Add(chest); chest.Opened += _ => Spoil(chestLine, true);
-            // The party's prize: one random piece of gear, Legendary, and a heap of gold, nothing else.
+            // The party's prize: its one item (Prize Item, or a random Legendary piece) and a heap of gold, nothing else.
             if (legendaryInChest)
             {
                 chest.onlyGuaranteed = true; chest.guaranteedItem = null; chest.guaranteedItems.Clear();
                 chest.bonusGold = prizeGold; chest.goldPiles = prizeGoldPiles;
                 var floor = TableManager.Loader != null ? Mathf.Max(1, TableManager.Loader.FloorNumber) : 1;
                 // Seeded from where the chest stands, like every placed chest's loot, so co-op and a reload agree.
-                var prize = InventoryManager.FloorGear(ItemRarity.Legendary, floor, new System.Random(unchecked(dungeon.PlacedSeed(chest.transform.position) * 31 + 524287)), prizeMaxTier);
+                var prize = prizeItem != null ? prizeItem
+                    : InventoryManager.FloorGear(ItemRarity.Legendary, floor, new System.Random(unchecked(dungeon.PlacedSeed(chest.transform.position) * 31 + 524287)), prizeMaxTier);
                 if (prize != null) chest.guaranteedItems.Add(prize);
             }
             // Its front (the lid's opening) toward the player, who comes in from where they are now: the portal's

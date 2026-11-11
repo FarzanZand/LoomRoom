@@ -94,7 +94,11 @@ public class LootBeam : MonoBehaviour
         }
         var eye = PlayerManager.HasInstance ? PlayerManager.Instance.OutputCamera : null;
         float fade = 1f;
-        if (eye != null)
+        // Only while the item itself is drawn: the table's build hides it until its tile lands (a lone beam stood
+        // over an empty tile on the intro's board, the user, 2026-11-11). Not forceRenderingOff: the floor's culling
+        // (DungeonVisibility) sets that right before each frame is drawn, after Update, so a beam would follow a frame late.
+        if (body != null && (!body.enabled || !body.gameObject.activeInHierarchy)) fade = 0f;
+        else if (eye != null)
         {
             // Distance from the camera to the beam's line, not its foot: standing over the item counts as close.
             Vector3 p = eye.transform.position;
