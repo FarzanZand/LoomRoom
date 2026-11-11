@@ -24,6 +24,8 @@ public class TavernKeeper : MonoBehaviour
     public IReadOnlyList<CampaignEncounter> Rumours =>
         CampaignManager.HasInstance ? CampaignManager.Instance.Rumours() : new List<CampaignEncounter>();
     public bool HasRumours => Rumours.Count > 0;
+    // The ! on the Rumour answer while a rumour is left: the yellow of the map's mark over a new place.
+    static readonly Color RumourMarkColor = new(.85f, .72f, 0f);
 
     public Result Eat(TavernDish dish, Player player)
     {
@@ -83,7 +85,11 @@ public class TavernKeeper : MonoBehaviour
         var model = body != null ? body.gameObject : gameObject;
         var welcome = new PortraitLine { speaker = PortraitSpeaker.Other, name = who, model = model, text = words.welcomeLines[Random.Range(0, words.welcomeLines.Length)] };
         welcome.choices.Add(new PortraitChoice { label = words.shopAnswer });
-        var rumour = new PortraitChoice { label = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString()) };
+        // A yellow ! after it while he has a rumour left to sell, none once they are all told (the user, 2026-11-11; the
+        // map's new-place mark's yellow).
+        string rumourLabel = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString());
+        if (place != null) rumourLabel += $" <color=#{ColorUtility.ToHtmlStringRGB(RumourMarkColor)}>!</color>";
+        var rumour = new PortraitChoice { label = rumourLabel };
         rumour.reply.Add(new PortraitReply { speaker = PortraitSpeaker.Other, name = who, model = model, text = rumourReply });
         welcome.choices.Add(rumour);
         welcome.choices.Add(new PortraitChoice { label = words.leaveAnswer });
