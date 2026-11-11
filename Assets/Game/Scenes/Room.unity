@@ -142457,8 +142457,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 44, y: 17.539999, z: 18}
-  m_Center: {x: 0, y: 8.7699995, z: 0}
+  m_Size: {x: 132.49066, y: 17.537548, z: 17.916704}
+  m_Center: {x: 0, y: 8.768774, z: 0}
 --- !u!114 &1205254643
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -345330,9 +345330,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
-  enemyBaseDamage: 1.38
+  enemyBaseDamage: 0.966
   enemyBaseHealth: 1
   boxKey: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
+  classQuestLine:
+    text: Bored of that hero? Pick another at the desk by the bed.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   diceSet: {fileID: 11400000, guid: 7f937215e668f0449bc166ee46693245, type: 2}
   diceTradingBonus: 5
   levelUpReward: 0

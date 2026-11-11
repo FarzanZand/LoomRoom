@@ -443,6 +443,7 @@ public partial class ProgressionManager
         UpdateSheetQuest();
         UpdatePosterQuest();
         UpdateDiceQuest();
+        UpdateClassQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }

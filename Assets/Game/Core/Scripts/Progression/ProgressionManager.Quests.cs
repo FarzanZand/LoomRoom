@@ -26,7 +26,7 @@ public partial class ProgressionManager
     public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == DashQuest || id == RumourQuest;
     // Quests done in the room (the sheet, the trophy wall, the table, the locked box): the log leaves them out while
     // the table player is in a dungeon, where they can't be done.
-    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == BoxKeyQuest || id == PosterQuest || id == DiceQuest;
+    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == BoxKeyQuest || id == PosterQuest || id == DiceQuest || id == ClassQuest;
 
     [FoldoutGroup("Quests"), PropertyOrder(50), LabelText("Quest log lines"), ListDrawerSettings(ShowFoldout = true)]
     [InfoBox("The lines the quest log shows. Each id is used by the game's code, so change only the text. {attack}, {block} and {sprint} become the player's own keys.")]
@@ -47,6 +47,7 @@ public partial class ProgressionManager
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
         new Quest { id = DiceQuest, text = "Put the dice on the big table." },
         new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
+        new Quest { id = ClassQuest, text = "Change your class at the desk by the bed." },
     };
 
     void EnsureBuiltInQuests()
@@ -109,7 +110,15 @@ public partial class ProgressionManager
     }
 
     // The quest's text with the player's keys put in.
-    public string QuestText(Quest q) => q == null ? "" : KeysIn(q.text);
+    // With one trophy carried, the trophy quest says it in the singular ("Hang your trophy on the wall.").
+    public string QuestText(Quest q)
+    {
+        if (q == null) return "";
+        string text = KeysIn(q.text);
+        if (q.id == TrophyQuest && TrophyCount(TrophyState.Carried) == 1)
+            text = text.Replace("trophies", "trophy").Replace("Trophies", "Trophy");
+        return text;
+    }
 
     // {attack}, {block}, {inventory}, {crouch} and {sprint} replaced by the player's own keys (quests, the lesson's lines).
     public static string KeysIn(string text)

@@ -48,9 +48,9 @@ MonoBehaviour:
   dexterity: -1
   constitution: 1
   intelligence: 0
-  health: 30
+  health: 20
   mana: 40
   stamina: 20
   healthPerLevel: 1.5
   manaPerLevel: 1.5
-  skills: 000000000f0000000a00000000000000140000000000000005000000
+  skills: 000000000f0000000a00000000000000140000000000000005000000i

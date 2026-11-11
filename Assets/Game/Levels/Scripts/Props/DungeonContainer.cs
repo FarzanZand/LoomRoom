@@ -10,6 +10,8 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public ItemData guaranteedItem;
     [Tooltip("Always in it, one of each, thrown out with the rest (a boss chest's Chest Items).")]
     public System.Collections.Generic.List<ItemData> guaranteedItems = new();
+    [Tooltip("Also holds a spell tome the table player doesn't have yet, picked as it opens from the tomes loot can drop (tier 1 and up). Set on the starting chest from the level's Starting Chest Tome.")]
+    public bool randomNewTome;
     [Min(0), Tooltip("Gold on top of what the loot rolls (a boss chest's Bonus Gold).")]
     public int bonusGold;
     [Tooltip("Only its Guaranteed Items and Bonus Gold: no rolled loot and no spoils (the Skeleton Party's chest).")]
@@ -116,7 +118,15 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
                 if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
             }
         }
-        if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null)drops.Add(new LootSource.Drop(item,1));
+        // A chest's own items (the starting chest's, a boss's) leave out a spell the table player already has: the starting
+        // chest's Fireball tome came on top of the Wizard's own (the user, 2026-11-11). Shops and altars already skip them.
+        if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null && (item.spell==null || !InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(item)))drops.Add(new LootSource.Drop(item,1));
+        // A tome the player doesn't have, from those loot can drop, picked when it opens (the class's own tome is in the pack by then).
+        if(randomNewTome && InventoryManager.HasInstance && InventoryManager.Instance.itemCatalog!=null)
+        {
+            var tomes=InventoryManager.Instance.itemCatalog.FindAll(i=>i!=null && i.spell!=null && i.tier>0 && i.lootWeight>0 && InventoryManager.Instance.CanDropLoot(i) && !drops.Exists(d=>d.item==i));
+            if(tomes.Count>0)drops.Add(new LootSource.Drop(tomes[rng.Next(tomes.Count)],1));
+        }
         // The key to the bedroom's locked box: every chest after the starting room's holds it until it is picked up.
         if(chest && ProgressionManager.HasInstance && ProgressionManager.Instance.KeyDueFromChest(startingKit))
         { ProgressionManager.Instance.ClearLooseKeys(); drops.Add(new LootSource.Drop(ProgressionManager.Instance.boxKey,1)); }

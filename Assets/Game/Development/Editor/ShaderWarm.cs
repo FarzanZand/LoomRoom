@@ -18,9 +18,12 @@ using UnityEngine.Rendering;
 //
 // What it does: it keeps a list of every variant the editor has drawn (its own tracking, read when Play stops; kept per
 // computer in Library/ShaderWarm, plus the shared list Tools/shader_warm_seed.tsv from the repository), and for each
-// shader it compiles every material keyword set it has seen with every lighting keyword set it has seen, in the
-// background on all cores, while the game is not being played. So a material seen once in any light is ready for
-// every light the game has, and nothing is left to compile in the middle of Play. Nothing in the game changes.
+// shader it compiles every material keyword set it has seen with every lighting keyword set seen on any shader (each
+// cut to the lighting keywords that shader has), in the background on all cores, while the game is not being played.
+// So a material seen once in any light is ready for every light the game has, and nothing is left to compile in the
+// middle of Play. Nothing in the game changes. (Until 2026-11-11 the lighting sets were a shader's own only: the new
+// fireball's lava rock, a particle shader seen only on dungeon floors, froze the intro for two seconds when the intro's
+// killer first threw one in the intro's light, which only the ordinary lit shaders had been seen in.)
 //
 // How: ShaderUtil.CompilePass on a throwaway material, with the lighting keywords switched on globally for the call and
 // put back after. Compiling in the background needs the editor's async setting, so it is switched on only inside the
@@ -333,6 +336,29 @@ public static class ShaderWarm
             }
             group.locals.Add(string.Join(" ", locals));
             group.globals.Add(string.Join(" ", globals));
+        }
+
+        // Every lighting set seen, per kind of pass: each shader borrows the sets seen on the others, cut to the lighting
+        // keywords it has itself (a set it has nothing of becomes the empty set, which every shader can be drawn with).
+        var pooled = new Dictionary<int, HashSet<string>>();
+        foreach (var group in groups.Values)
+        {
+            if (!pooled.TryGetValue(group.passType, out var sets)) pooled[group.passType] = sets = new HashSet<string>();
+            sets.UnionWith(group.globals);
+        }
+        foreach (var group in groups.Values)
+        {
+            var space = group.shader.keywordSpace;
+            foreach (var set in pooled[group.passType])
+            {
+                var kept = new List<string>();
+                foreach (var word in set.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var keyword = space.FindKeyword(word);
+                    if (keyword.isValid && keyword.isOverridable) kept.Add(word);
+                }
+                group.globals.Add(string.Join(" ", kept));
+            }
         }
 
         jobs = new List<Job>();

@@ -251,12 +251,12 @@ public partial class ItemData : ScriptableObject
     // A half-height empty line between an item's own lines and its rolled ones (the user's choice: space, no line).
     const string RolledDivider = "<size=50%> </size>";
 
-    // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's or armour's armour.
+    // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's block, armour's armour.
     public bool TryMainStat(out string label, out float value, out string text)
     {
         StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
-        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armour when blocking" : "Armour";
+        label = main == StatType.AttackDamage ? "Damage" : main == StatType.Block ? "Block" : "Armour";
         text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";
         return main.HasValue && value > 0f;
     }
@@ -270,7 +270,7 @@ public partial class ItemData : ScriptableObject
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
-        StatType? main = IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped ? StatType.Armor : null;
+        StatType? main = MainStatType;
         bool showMain = TryMainStat(out string mainLabel, out float mainValue, out string mainText);
         if (showMain && withMain)
         {
@@ -436,8 +436,8 @@ public partial class ItemData : ScriptableObject
         return new StatModifierEntry { stat = stat, type = type, value = value }.Describe() + (blocking ? " while blocking" : "");
     }
 
-    // A shield's armor only counts when a hit is blocked (CharacterStats.TakeDamage).
-    bool BlockOnly(StatType stat) => itemType == ItemType.Shield && stat == StatType.Armor;
+    // Nothing counts only on a block any more: a shield's Block is its own stat (CharacterStats.AfterBlock).
+    bool BlockOnly(StatType stat) => false;
 
     static bool Worse(StatType stat, float value) => value < 0;
 

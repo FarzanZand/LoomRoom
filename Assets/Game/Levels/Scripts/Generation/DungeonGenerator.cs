@@ -876,8 +876,9 @@ public partial class DungeonGenerator : MonoBehaviour
             // Only the run's first floor has it; the starting room on a new biome's first floor is bare.
             if(FloorNumber>1){DestroyImmediate(chest.gameObject);continue;}
             bool extras=data.startingChestItems!=null && data.startingChestItems.Exists(i=>i!=null);
-            if(data.startingChestConsumable==null && !extras)continue;
+            if(data.startingChestConsumable==null && !extras && !data.startingChestTome)continue;
             chest.startingKit=true;
+            chest.randomNewTome=data.startingChestTome;
             chest.extraRolls=0; chest.rareRollFloors=0;
             if(data.startingChestConsumable!=null && !chest.guaranteedItems.Contains(data.startingChestConsumable))chest.guaranteedItems.Add(data.startingChestConsumable);
             if(extras)foreach(var item in data.startingChestItems)if(item!=null && !chest.guaranteedItems.Contains(item))chest.guaranteedItems.Add(item);

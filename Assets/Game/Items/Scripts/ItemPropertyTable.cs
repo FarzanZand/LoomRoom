@@ -99,7 +99,9 @@ public class ItemPropertyTable : ScriptableObject
         var own = new HashSet<StatType>();
         if (gear.BaseItem.statModifiers != null) foreach (var m in gear.BaseItem.statModifiers) if (m != null) own.Add(m.stat);
         own.Remove(StatType.AttackDamage); own.Remove(StatType.Armor);
-        foreach (var p in properties) if (p != null && p.enabled && p.weight > 0 && (p.slots & slot) != 0 && !string.IsNullOrEmpty(p.id) && !own.Contains(p.stat)) pool.Add(p);
+        // Armour on a shield does nothing since shields block a flat amount (its main number is Block): never rolled there.
+        bool shield = gear.itemType == ItemType.Shield;
+        foreach (var p in properties) if (p != null && p.enabled && p.weight > 0 && (p.slots & slot) != 0 && !string.IsNullOrEmpty(p.id) && !own.Contains(p.stat) && !(shield && p.stat == StatType.Armor)) pool.Add(p);
         var rolled = new List<RolledProperty>();
         for (int i = 0; i < count && pool.Count > 0; i++)
         {

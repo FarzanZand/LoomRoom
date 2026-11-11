@@ -82,14 +82,15 @@ public class EquipmentPanelUI : MonoBehaviour
             case StatTooltipUI.Kind.Armor:
             {
                 float per=CombatManager.ArmorPerPoint;
-                float armorNow=s.ArmorWithoutShield,block=s.BlockArmor;
+                float armorNow=s.ArmorWithoutShield,block=s.Block;
                 title="Armour";
                 var b=new System.Text.StringBuilder();
                 // Against this floor's enemies (floor 1 in the room): the share of a hit it stops. The old flat rule
                 // stops a set amount instead.
                 if(CombatManager.ScaledPlayerArmor)Row(b,$"Floor {CombatManager.CurrentFloor} hits",$"-{CombatManager.ArmorCut(armorNow,CombatManager.CurrentFloor)*100f:0}%");
                 else Row(b,"Per hit",$"-{armorNow*per:0.#}");
-                if(block>0)Row(b,"Blocked hit",$"-{(armorNow+block)*per:0.#}");
+                // A blocked hit: the shield's Block comes off it instead (CharacterStats.AfterBlock).
+                if(block>0)Row(b,"Blocked hit",$"-{block:0.#}");
                 body=b.ToString();
                 return true;
             }
@@ -161,7 +162,7 @@ public class EquipmentPanelUI : MonoBehaviour
             case StatType.ShieldBashDamage:
             {
                 var t=cm!=null?cm.shieldBash:null;
-                float armor=Mathf.Max(0f,s.ArmorWithoutShield+s.BlockArmor);
+                float armor=Mathf.Max(0f,s.ArmorWithoutShield);
                 return Number((t!=null?t.damage+armor*CombatManager.ArmorPerPoint*t.damagePerArmor:0f)+Mathf.Max(0f,v));
             }
             case StatType.HeavyDamage: return $"{(cm!=null?cm.heavyDamageMultiplier:1.65f)*(1f+Mathf.Max(0f,v))*100f:0}%";
@@ -188,7 +189,7 @@ public class EquipmentPanelUI : MonoBehaviour
         var s=player.Stats;
         key[0]=Mathf.CeilToInt(s.CurrentHealth);key[1]=Tenths(s.MaxHealth);key[2]=Mathf.CeilToInt(s.CurrentStamina);key[3]=Tenths(s.MaxStamina);
         key[4]=Mathf.CeilToInt(s.CurrentMana);key[5]=Tenths(s.MaxMana);key[6]=Tenths(s.GetFinal(StatType.AttackDamage));
-        key[7]=Tenths(s.ArmorWithoutShield);key[8]=Tenths(s.BlockArmor);key[9]=Tenths(s.FoodRemaining);key[10]=Tenths(s.FoodHealingPerSecond);
+        key[7]=Tenths(s.ArmorWithoutShield);key[8]=Tenths(s.Block);key[9]=Tenths(s.FoodRemaining);key[10]=Tenths(s.FoodHealingPerSecond);
         for(int i=0;i<Attributes.Length;i++)key[11+i]=Tenths(s.GetFinal(Attributes[i].stat));
         var progress=player.GetComponent<AdventurerProgress>();key[17]=progress!=null?progress.Level*1000+(long)(progress.NextLevelXp>0?progress.Experience/progress.NextLevelXp*200:0):0;
         for(int i=0;i<AdventureSkills.Count;i++){key[18+i]=progress!=null?progress.Ranks[i]:0;key[18+AdventureSkills.Count+i]=progress!=null?(long)(progress.SkillProgress((AdventureSkill)i)*200):0;}
@@ -205,8 +206,8 @@ public class EquipmentPanelUI : MonoBehaviour
         if(stamina!=null)stamina.text=Line("STAMINA",$"<color={Status(UIManager.HasInstance?UIManager.Instance.stamina:Color.green)}>{Mathf.CeilToInt(s.CurrentStamina)}</color><color={ItemData.DimColor}> / {s.MaxStamina:0}</color>");
         if(mana!=null)mana.text=Line("MANA",$"<color={Status(UIManager.HasInstance?UIManager.Instance.mana:Color.blue)}>{Mathf.CeilToInt(s.CurrentMana)}</color><color={ItemData.DimColor}> / {s.MaxMana:0}</color>");
         if(damage!=null)damage.text=Line("DAMAGE",$"<color={ItemData.TextColor}>{DamageText(s)}</color>");
-        // Shield armor counts only on a block: shown apart so the main number is what always applies.
-        if(armor!=null){float block=s.BlockArmor;armor.text=Line("ARMOUR",$"<color={ItemData.TextColor}>{s.ArmorWithoutShield:0.#}</color>"+(block>0?$"<color={ItemData.DimColor}>   +{block:0.#} blocking</color>":""));}
+        // The shield's Block (a flat amount off a blocked hit) beside the armour: armour plays no part in a block.
+        if(armor!=null){float block=s.Block;armor.text=Line("ARMOUR",$"<color={ItemData.TextColor}>{s.ArmorWithoutShield:0.#}</color>"+(block>0?$"<color={ItemData.DimColor}>   block {block:0.#}</color>":""));}
         if(identity!=null){var p=player.GetComponent<AdventurerProgress>();string cls=p!=null && p.selectedClass!=null?p.selectedClass.displayName:"Adventurer";identity.text=$"{cls.ToUpperInvariant()}\n<color={ItemData.DimColor}>LEVEL {(p!=null?p.Level:1)}</color>";}
         if(attributes!=null){var sb=new System.Text.StringBuilder();foreach(var (stat,label) in Attributes)sb.Append(label).Append("<pos=62%>").Append(s.GetFinal(stat).ToString("0")).Append('\n');attributes.text=sb.ToString();}
         if(gearBonuses!=null)gearBonuses.Refresh(player.Equipment);

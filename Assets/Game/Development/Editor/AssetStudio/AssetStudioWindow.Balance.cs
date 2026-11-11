@@ -527,7 +527,7 @@ public partial class AssetStudioWindow
                 }
                 GUILayout.EndHorizontal();
             }
-            GUILayout.Label("Weapons: damage. The rest: armour. Tiers 5-12: GearSets.Build() writes them again.", dim);
+            GUILayout.Label("Weapons: damage. Shields: block (SetShieldBlocks sets them from the enemies' hits). The rest: armour.", dim);
         }, () =>
         {
             GUILayout.BeginHorizontal();

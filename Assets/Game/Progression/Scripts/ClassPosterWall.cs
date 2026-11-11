@@ -50,7 +50,7 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
-        if (!PostersCarried) { CampaignManager.Instance.ChooseHeroInRoom(); return; }
+        if (!PostersCarried) { CampaignManager.Instance.ChooseHeroInRoom(); ProgressionManager.Instance.ClassDeskUsed(); return; }
         var meta = ProgressionManager.Instance;
         int n = 0;
         foreach (var p in posters)
@@ -100,10 +100,19 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
         flash.DOIntensity(0f, flashSeconds).SetEase(Ease.OutQuad).SetLink(flash.gameObject).OnComplete(() => Destroy(flash.gameObject));
     }
 
+    QuestGlow glow;
+
     void Start()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
+        glow = gameObject.AddComponent<QuestGlow>();
         Refresh();
+    }
+
+    // The desk glows while the Change class quest is open (ProgressionManager.ClassQuest), as the sheet's table does for its quests.
+    void Update()
+    {
+        if (glow != null) glow.Show(ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.ClassQuest) == 1);
     }
     void OnDestroy()
     {

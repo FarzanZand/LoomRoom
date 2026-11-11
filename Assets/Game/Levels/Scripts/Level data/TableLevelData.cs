@@ -165,6 +165,8 @@ public partial class TableLevelData : ScriptableObject
     public ItemData startingChestConsumable;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("More items the starting room's chest always holds on top of the gear and the potion (a spell tome, say).")]
     public List<ItemData> startingChestItems = new();
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("The starting room's chest also holds a spell tome the player doesn't have yet, picked at random as it opens from the tomes loot can drop (tier 1 and up: never the Die Throw or the Helping Hand). Dungeon1 has it on (the user, 2026-11-11).")]
+    public bool startingChestTome;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("Zero generates a new seed on each entry.")]
     public int fixedSeed;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Tooltip("A pocket: a room reached through a portal (PortalArch), built beside the floor the player came from. No ladder in and no stairs out; its own portal gate leads back.")]

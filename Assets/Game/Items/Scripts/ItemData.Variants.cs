@@ -8,7 +8,8 @@ using UnityEngine;
 public partial class ItemData
 {
     // The item's main number: a weapon's damage, a shield's or worn armour's armour (trinkets have none).
-    public StatType? MainStatType => IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped && equipSlot != EquipmentSlot.Trinket1 && equipSlot != EquipmentSlot.Trinket2 ? StatType.Armor : null;
+    public StatType? MainStatType => IsWeapon ? StatType.AttackDamage : itemType == ItemType.Shield && canBeEquipped ? StatType.Block
+        : itemType == ItemType.Equipment && canBeEquipped && equipSlot != EquipmentSlot.Trinket1 && equipSlot != EquipmentSlot.Trinket2 ? StatType.Armor : null;
     // The rolled properties of a rolled copy (empty on assets).
     [System.NonSerialized] public RolledProperty[] rolls;
     // How many of statModifiers come from the asset; the rest are the rolled properties.

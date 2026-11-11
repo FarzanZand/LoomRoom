@@ -867,7 +867,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
             if (MenuOpen()) { ContextMenuUI.Instance.Hide(); return; }
             if (!asking && !changingClass && !(heroSelect != null && heroSelect.Open)) cancelled = true;
         }
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
+        if (InputManager.HasInstance) { InputManager.Instance.CancelPressed += OnCancel; InputManager.Instance.WantCancel(this, true); }   // Escape steps back from the map, not the pause menu
         try
         {
             while (!cancelled && !started)
@@ -969,7 +969,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         finally
         {
             InMapView = false;
-            if (InputManager.HasInstance) { InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate; InputManager.Instance.SubmitPressed -= OnSubmit; }
+            if (InputManager.HasInstance) { InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate; InputManager.Instance.SubmitPressed -= OnSubmit; InputManager.Instance.WantCancel(this, false); }
             navigateHandler = submitHandler = null;
             Unhover();
             if (card != null) { card.Hide(); card.ShowHint(false); }

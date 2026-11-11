@@ -47,6 +47,30 @@ public class InputManager : Singleton<InputManager>
     public event Action BindingsChanged;
     public bool CancelHandledThisFrame => cancelFrame == Time.frameCount;
     int cancelFrame = -1;
+
+    // Escape in a cutscene or a conversation (the UI map is live there, so Escape is Cancel) opens the pause menu, as P
+    // and a pad's Start do, so the game can always be left (the user, 2026-11-11: the intro could not be quit). Screens
+    // shown in those states that answer Escape themselves say so while they are up: the map view and the class figures
+    // (Escape steps back), a floor's reveal (Escape skips it). A Dialogue System conversation keeps Escape too: its own
+    // input ends the line or the conversation on it.
+    readonly System.Collections.Generic.HashSet<object> cancelWanted = new();
+    public void WantCancel(object owner, bool wants)
+    {
+        if (owner == null) return;
+        if (wants) cancelWanted.Add(owner); else cancelWanted.Remove(owner);
+    }
+    bool EscapePauses
+    {
+        get
+        {
+            if (!GameManager.HasInstance) return false;
+            var state = GameManager.Instance.State;
+            if (state != GameState.Cutscene && state != GameState.Dialogue) return false;
+            if (PixelCrushers.DialogueSystem.DialogueManager.isConversationActive) return false;
+            cancelWanted.RemoveWhere(o => o == null || o is UnityEngine.Object u && u == null);
+            return cancelWanted.Count == 0;
+        }
+    }
     // A rebind ended this frame (Escape that cancelled it must not also close the settings screen).
     public bool RebindEndedThisFrame => rebindEndFrame == Time.frameCount;
     int rebindEndFrame = -1;
@@ -172,6 +196,7 @@ public class InputManager : Singleton<InputManager>
             // Dismiss a nested item action menu before its underlying inventory.
             if (ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen) ContextMenuUI.Instance.Hide();
             else if (Paused) PausedCancelPressed?.Invoke();
+            else if (EscapePauses) PausePressed?.Invoke();
             else CancelPressed?.Invoke();
         };
 

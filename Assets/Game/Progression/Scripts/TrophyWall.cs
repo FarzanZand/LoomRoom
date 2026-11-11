@@ -34,7 +34,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("A short burst on each new trophy (Items/Effects/Chest burst), scaled up to the room.")] public GameObject trophyEffect;
     [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")] public float trophyEffectScale = 20f;
 
-    public string Prompt => "Hang the trophies";
+    // One trophy or several (the user, 2026-11-11: it said "trophies" with one carried).
+    public string Prompt => Carried == 1 ? "Hang the trophy" : "Hang the trophies";
     public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && Carried > 0;
     // Asked every frame the wall is looked at: counted without making a list.
     static int Carried => ProgressionManager.HasInstance ? ProgressionManager.Instance.TrophyCount(ProgressionManager.TrophyState.Carried) : 0;
