@@ -209,6 +209,7 @@ public static class AssetStudioDialogue
                 line.text = p.FindPropertyRelative("text").stringValue;
                 line.speaker = p.FindPropertyRelative("speaker").intValue;
                 line.speakerName = p.FindPropertyRelative("name").stringValue;
+                line.voice = p.FindPropertyRelative("voice")?.objectReferenceValue;
                 break;
             case Kind.Answer: line.text = p.FindPropertyRelative("label").stringValue; break;
             default: line.text = p.stringValue; break;
@@ -409,6 +410,43 @@ public static class AssetStudioDialogue
         p.FindPropertyRelative("mumble").boolValue = mumble; p.FindPropertyRelative("inPerson").boolValue = inPerson;
         Saved(line.owner, so);
         line.mumble = mumble; line.inPerson = inPerson;
+    }
+
+    // A recorded voice for a Dungeon Master line or a dialogue box, played in place of the mumble or the blips. An
+    // AudioClip is given an AudioData of its own (Audio/Data/Voice/<clip>.asset, made once, then reused), since the
+    // lines play AudioData (volume, pitch).
+    public static bool HasVoice(Line line) => line.rich || line.kind == Kind.Box;
+    public static void SetVoice(Line line, UnityEngine.Object voice)
+    {
+        if (!HasVoice(line)) return;
+        var data = voice as AudioData;
+        if (voice is AudioClip clip) data = VoiceFor(clip);
+        if (voice != null && data == null) return;
+        var so = For(line.owner);
+        var p = so.FindProperty(line.path)?.FindPropertyRelative("voice");
+        if (p == null) return;
+        p.objectReferenceValue = data;
+        Saved(line.owner, so);
+        line.voice = data;
+    }
+
+    public const string VoiceFolder = "Assets/Game/Audio/Data/Voice";
+    public static AudioData VoiceFor(AudioClip clip)
+    {
+        if (clip == null) return null;
+        // One already made for this clip.
+        foreach (var guid in AssetDatabase.FindAssets("t:AudioData", new[] { "Assets/Game/Audio/Data" }))
+        {
+            var d = AssetDatabase.LoadAssetAtPath<AudioData>(AssetDatabase.GUIDToAssetPath(guid));
+            if (d != null && d.clips != null && d.clips.Length == 1 && d.clips[0] == clip) return d;
+        }
+        if (!AssetDatabase.IsValidFolder(VoiceFolder)) AssetDatabase.CreateFolder("Assets/Game/Audio/Data", "Voice");
+        var data = ScriptableObject.CreateInstance<AudioData>();
+        data.clips = new[] { clip };
+        string path = AssetDatabase.GenerateUniqueAssetPath($"{VoiceFolder}/{clip.name}.asset");
+        AssetDatabase.CreateAsset(data, path);
+        AssetDatabase.SaveAssets();
+        return data;
     }
 
     // Moves, adds or removes a line in its list; the owner's lines are read again after.
