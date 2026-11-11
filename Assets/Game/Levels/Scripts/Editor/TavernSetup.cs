@@ -31,7 +31,7 @@ public static class TavernSetup
     const string DoorPath = PropDir + "/Tavern door.prefab";
     const string DungeonDoor = "Assets/Game/Levels/Shared/Doors/Door 128/Dungeon door 128.prefab";   // the door every walled level uses
     const string DishDir = "Assets/Game/Levels/Resources/Tavern dishes";
-    const string Music = "Assets/Game/Audio/Music/Quirky Song 2.mp3";
+    const string Music = "Assets/Game/Audio/Music/Quirky Song 2 loud.mp3";
     const float PropTexels = 128f;
 
     public static string Build()

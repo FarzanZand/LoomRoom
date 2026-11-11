@@ -336,6 +336,11 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
         // The boss arena's blessing: the same, for every blocked hit, spells included.
         if (info.Blocked && blessed) actual = 0;
+        // Every hit is a whole number (the user, 2026-11-11), to the nearest, halves up; a tick of an effect (a burn) that
+        // does anything does at least 1, so a small one is not rounded away.
+        float exact = actual;
+        actual = Mathf.Floor(actual + .5f);
+        if (info.FromEffect && exact > 0f && actual < 1f) actual = 1f;
         if (DiesInOneHit && actual > 0f) actual = Mathf.Max(actual, CurrentHealth);
         // The cheats' 999 damage attacks: every hit the table player lands on someone else does 999.
         if (DevCheats.MightyBlows && info.Source is Player && Character is not Player) actual = Mathf.Max(actual, DevCheats.MightyDamage);
