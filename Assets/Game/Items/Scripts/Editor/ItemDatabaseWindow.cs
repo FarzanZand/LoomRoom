@@ -5,19 +5,22 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
+// The Item Database (Tools > Item Database): every ItemData asset in one window. Laid out again on 2026-11-11 (the user:
+// the list was messy and the window hard to use): one toolbar (New, Save, Tools); on the left a search and filters over
+// the items grouped by kind (Relics, Swords, Maces, Shields, each armour slot, Trinkets, Spell tomes, Scrolls,
+// Consumables, Spoils, Keys, Other), each group folding, its items sorted by tier, each row the icon in a slot with its
+// rarity's bar, the name in its rarity colour, its tier and main number; arrow keys move through it and its edge drags to
+// resize. On the right the picked item: a header card (big icon, name, type line, its file, its actions in one row, the
+// game's own tooltip beside it), its problems, the relic panel for a relic (ItemDatabaseWindow.Relics.cs), then all its
+// fields (its Odin inspector, folding). The list's layout lives in ItemDatabaseWindow.List.cs.
 public partial class ItemDatabaseWindow : EditorWindow
 {
     List<ItemData> items = new();
     readonly Dictionary<ItemData, List<string>> issues = new();
     [SerializeField] ItemData selected;
     Editor inspector;
-    string search = "", tag = "";
-    int typeFilter, slotFilter;
-    bool showArchived, issuesOnly, tooltip;
-    Vector2 listScroll, detailScroll;
-    static GUIStyle tooltipStyle;
-    static readonly string[] Types = new[] { "All types" }.Concat(Enum.GetNames(typeof(ItemType))).ToArray();
-    static readonly string[] Slots = new[] { "All slots" }.Concat(Enum.GetNames(typeof(EquipmentSlot))).ToArray();
+    Vector2 detailScroll;
+    static GUIStyle tooltipStyle, titleStyle, subtitleStyle, linkStyle, sectionStyle, cardStyle;
 
     [MenuItem("Tools/Item Database", false, 0)]
     public static void ShowWindow()
@@ -25,7 +28,12 @@ public partial class ItemDatabaseWindow : EditorWindow
         var window = GetWindow<ItemDatabaseWindow>("Item Database");
         window.minSize = new Vector2(900, 500);
     }
-    void OnEnable() { Rebuild(); Undo.undoRedoPerformed += Rebuild; EditorApplication.projectChanged += Rebuild; }
+    void OnEnable()
+    {
+        wantsMouseMove = true;
+        if (listWidth < 300f) listWidth = 380f;   // a window open before the list could be resized
+        Rebuild(); Undo.undoRedoPerformed += Rebuild; EditorApplication.projectChanged += Rebuild;
+    }
     void OnDisable()
     {
         Undo.undoRedoPerformed -= Rebuild; EditorApplication.projectChanged -= Rebuild;
@@ -44,140 +52,269 @@ public partial class ItemDatabaseWindow : EditorWindow
         if (inspector != null) DestroyImmediate(inspector);
         inspector = item != null ? Editor.CreateEditor(item) : null;
     }
-    IEnumerable<ItemData> Visible() => items.Where(i => i != null &&
-        (showArchived || !ItemDatabaseAuthoring.IsArchived(i)) && RelicShown(i) &&
-        (!issuesOnly || issues[i].Count > 0) &&
-        (typeFilter == 0 || i.itemType.ToString() == Types[typeFilter]) &&
-        (slotFilter == 0 || i.canBeEquipped && i.equipSlot.ToString() == Slots[slotFilter]) &&
-        (string.IsNullOrEmpty(tag) || i.tag == tag) &&
-        (string.IsNullOrWhiteSpace(search) || (i.itemName + " " + i.tag + " " + i.itemType + " " + AssetDatabase.GetAssetPath(i))
-            .IndexOf(search.Trim(), StringComparison.OrdinalIgnoreCase) >= 0));
+
     void OnGUI()
     {
+        Styles();
         using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
         {
             Toolbar();
-            using (new EditorGUILayout.HorizontalScope())
+            // From the window's size, not a layout rect: those are placeholders while Unity measures, and the details'
+            // layout must come out the same in every pass.
+            float top = EditorStyles.toolbar.fixedHeight > 0f ? EditorStyles.toolbar.fixedHeight : 21f;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
-                using (new EditorGUILayout.VerticalScope(GUILayout.Width(310))) List();
-                using (new EditorGUILayout.VerticalScope()) Details();
+                EditorGUI.HelpBox(new Rect(0, top, position.width, 30f), "Exit Play mode to edit the item database.", MessageType.Info);
+                top += 30f;
             }
+            var body = new Rect(0, top, position.width, position.height - top);
+            listWidth = Mathf.Clamp(listWidth, 260f, Mathf.Max(260f, body.width - 420f));
+            var listRect = new Rect(body.x, body.y, listWidth, body.height);
+            var split = new Rect(listRect.xMax, body.y, 5f, body.height);
+            var detailRect = new Rect(split.xMax, body.y, body.width - split.xMax, body.height);
+            // The details first: a click or key in the list picks another item, and the details must be laid out and drawn
+            // for the same item within one event.
+            GUILayout.BeginArea(detailRect);
+            Details(detailRect.width);
+            GUILayout.EndArea();
+            ListPanel(listRect);
+            Splitter(split);
         }
-        if (EditorApplication.isPlayingOrWillChangePlaymode) EditorGUILayout.HelpBox("Exit Play mode to edit the item database.", MessageType.Info);
+        if (Event.current.type == EventType.MouseMove) Repaint();
     }
+
+    void Styles()
+    {
+        if (titleStyle != null) return;
+        titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 18, fixedHeight = 0, wordWrap = false, richText = true };
+        subtitleStyle = new GUIStyle(EditorStyles.label) { fontSize = 12, richText = true };
+        subtitleStyle.normal.textColor = new Color(.72f, .72f, .72f);
+        linkStyle = new GUIStyle(EditorStyles.miniLabel) { richText = false };
+        linkStyle.normal.textColor = new Color(.5f, .62f, .78f);
+        linkStyle.hover.textColor = new Color(.7f, .82f, 1f);
+        sectionStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+        sectionStyle.normal.textColor = new Color(.85f, .74f, .45f);
+        cardStyle = new GUIStyle(EditorStyles.helpBox) { padding = new RectOffset(10, 10, 8, 8), margin = new RectOffset(8, 8, 6, 6) };
+        tooltipStyle = new GUIStyle(EditorStyles.label) { richText = true, wordWrap = true, fontSize = 12, padding = new RectOffset(10, 10, 8, 8) };
+        tooltipStyle.normal.textColor = new Color(.86f, .86f, .86f);
+        listStyles = null;
+    }
+
+    // ── Toolbar ──
+
     void Toolbar()
     {
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
-            if (GUILayout.Button("New item", EditorStyles.toolbarDropDown, GUILayout.Width(85))) NewItemMenu();
-            if (GUILayout.Button(new GUIContent("New relic", "A hand-made Relic with its own name, made with the look of a weapon, shield or armour piece."), EditorStyles.toolbarDropDown, GUILayout.Width(85))) NewRelicMenu();
-            if (GUILayout.Button("Save items", EditorStyles.toolbarButton, GUILayout.Width(85))) { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
-            if (GUILayout.Button("Organize shown", EditorStyles.toolbarButton, GUILayout.Width(115))) Organize();
-            if (GUILayout.Button(new GUIContent("Sync runtime catalog", "Add all active items to InventoryManager's name lookup catalog. Save the scene afterwards."), EditorStyles.toolbarButton, GUILayout.Width(145)))
-                ShowNotification(new GUIContent($"Catalog updated: {ItemDatabaseAuthoring.SyncCatalog()} items. Save the scene."));
-            if (GUILayout.Button(new GUIContent("Generate icons", "Render the bag icons of the shown items from their models (custom icons are kept). Settings: Items/Icons/Item Icon Settings."), EditorStyles.toolbarButton, GUILayout.Width(100)))
-                GenerateIcons(Visible().ToList());
+            if (GUILayout.Button(new GUIContent("New", "A new item of a type, or a Relic with the look of a piece of gear."), EditorStyles.toolbarDropDown, GUILayout.Width(60))) NewMenu();
+            if (GUILayout.Button(new GUIContent("Save", "Write every changed item to disk."), EditorStyles.toolbarButton, GUILayout.Width(50)))
+            { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
+            if (GUILayout.Button("Tools", EditorStyles.toolbarDropDown, GUILayout.Width(60))) ToolsMenu();
             GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Authoring guide", EditorStyles.toolbarButton)) EditorUtility.OpenWithDefaultApp(Path.GetFullPath("Docs/Item-database.md"));
-        }
-        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
-        {
-            search = GUILayout.TextField(search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(130));
-            typeFilter = EditorGUILayout.Popup(typeFilter, Types, GUILayout.Width(115));
-            slotFilter = EditorGUILayout.Popup(slotFilter, Slots, GUILayout.Width(115));
-            var tags = new[] { "All tags" }.Concat(items.Select(i => i.tag).Where(t => !string.IsNullOrEmpty(t)).Distinct().OrderBy(t => t)).ToArray();
-            int tagIndex = Array.IndexOf(tags, tag);
-            int next = EditorGUILayout.Popup(Mathf.Max(0, tagIndex), tags, GUILayout.Width(110)); tag = next == 0 ? "" : tags[next];
-            issuesOnly = GUILayout.Toggle(issuesOnly, "Needs attention", EditorStyles.toolbarButton);
-            showArchived = GUILayout.Toggle(showArchived, "Archived", EditorStyles.toolbarButton);
-            relicsOnly = GUILayout.Toggle(relicsOnly, new GUIContent("Relics", "Only the hand-made Relics."), EditorStyles.toolbarButton);
+            GUILayout.Label($"{items.Count} items", EditorStyles.miniLabel);
         }
     }
-    void List()
+    void NewMenu()
     {
-        var visible = Visible().ToList();
-        using (new EditorGUILayout.HorizontalScope())
+        var menu = new GenericMenu();
+        foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
         {
-            EditorGUILayout.LabelField($"{visible.Count} shown / {items.Count} items", EditorStyles.miniLabel);
-            if (GUILayout.Button(new GUIContent("+ Add item", "Create a new item of the chosen type."), EditorStyles.miniButton, GUILayout.Width(80))) NewItemMenu();
-            using (new EditorGUI.DisabledScope(selected == null))
-                if (GUILayout.Button(new GUIContent("- Delete", "Delete the selected item."), EditorStyles.miniButton, GUILayout.Width(62))) { Delete(selected); GUIUtility.ExitGUI(); }
-        }
-        listScroll = EditorGUILayout.BeginScrollView(listScroll);
-        foreach (var item in visible)
-        {
-            Rect row = GUILayoutUtility.GetRect(290, 52, GUILayout.ExpandWidth(true));
-            if (selected == item) EditorGUI.DrawRect(row, new Color(.22f, .37f, .48f));
-            var icon = item.icon != null ? AssetPreview.GetAssetPreview(item.icon) ?? AssetPreview.GetMiniThumbnail(item.icon) : null;
-            if (icon != null) GUI.DrawTexture(new Rect(row.x + 5, row.y + 5, 40, 40), icon, ScaleMode.ScaleToFit);
-            GUI.Label(new Rect(row.x + 52, row.y + 5, row.width - 57, 22), (issues[item].Count > 0 ? "! " : "") + item.itemName, EditorStyles.boldLabel);
-            string subtitle = (item.rarity == ItemRarity.Relic ? "RELIC / " : "") + item.itemType + (item.canBeEquipped ? " / " + item.equipSlot : "") + (ItemDatabaseAuthoring.IsArchived(item) ? " / ARCHIVED" : "");
-            GUI.Label(new Rect(row.x + 52, row.y + 27, row.width - 57, 20), subtitle, EditorStyles.miniLabel);
-            if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+            var captured = type;
+            menu.AddItem(new GUIContent("Item/" + ObjectNames.NicifyVariableName(type.ToString())), false, () =>
             {
-                Select(item); GUI.FocusControl(null);
-                if (Event.current.button == 1)
-                {
-                    var captured = item;
-                    var menu = new GenericMenu();
-                    menu.AddItem(new GUIContent("Duplicate"), false, () => { Select(ItemDatabaseAuthoring.Duplicate(captured)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); });
-                    menu.AddItem(new GUIContent("Locate asset"), false, () => { Selection.activeObject = captured; EditorGUIUtility.PingObject(captured); });
-                    menu.AddSeparator("");
-                    menu.AddItem(new GUIContent("Delete..."), false, () => Delete(captured));
-                    menu.ShowAsContext();
-                }
-                Event.current.Use();
-            }
+                var item = ItemDatabaseAuthoring.Create(captured);
+                ItemDatabaseAuthoring.SyncCatalog();
+                ClearFilters();
+                Rebuild(); Select(item); revealSelected = true;
+            });
         }
-        EditorGUILayout.EndScrollView();
+        AddRelicItems(menu, "Relic with the look of/");
+        menu.ShowAsContext();
     }
-    void Details()
+    void ToolsMenu()
+    {
+        var menu = new GenericMenu();
+        menu.AddItem(new GUIContent("Generate icons of the shown items"), false, () => GenerateIcons(Visible().ToList()));
+        menu.AddItem(new GUIContent("Move the shown items to their type folders"), false, Organize);
+        menu.AddItem(new GUIContent("Sync the runtime catalog"), false, () =>
+            ShowNotification(new GUIContent($"Catalog updated: {ItemDatabaseAuthoring.SyncCatalog()} items. Save the scene.")));
+        menu.AddSeparator("");
+        menu.AddItem(new GUIContent("Authoring guide"), false, () => EditorUtility.OpenWithDefaultApp(Path.GetFullPath("Docs/Item-database.md")));
+        menu.ShowAsContext();
+    }
+
+    // ── The picked item ──
+
+    void Details(float width)
     {
         if (selected == null)
         {
-            GUILayout.Space(30);
-            EditorGUILayout.LabelField("Select an item to edit", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("These are the real ItemData assets used by loot tables, equipment and pickups. Changes apply everywhere that references an item. Use tags to group content without moving files.", MessageType.Info);
+            GUILayout.Space(40);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(24);
+                using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(520)))
+                {
+                    GUILayout.Label("Pick an item on the left", titleStyle);
+                    GUILayout.Space(6);
+                    EditorGUILayout.LabelField("These are the real item assets that loot, shops, equipment and pickups use: a change here applies everywhere.", EditorStyles.wordWrappedLabel);
+                }
+            }
             return;
         }
         if (inspector == null || inspector.target != selected) Select(selected);
-        using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
-        {
-            if (GUILayout.Button("Locate asset", EditorStyles.toolbarButton)) { Selection.activeObject = selected; EditorGUIUtility.PingObject(selected); }
-            if (GUILayout.Button("Duplicate", EditorStyles.toolbarButton)) { Select(ItemDatabaseAuthoring.Duplicate(selected)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); }
-            if (GUILayout.Button("Move to type folder", EditorStyles.toolbarButton)) { ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected)); Rebuild(); }
-            using (new EditorGUI.DisabledScope(selected.iconSource != null && selected.iconSource.custom))
-                if (GUILayout.Button(new GUIContent("Generate icon", "Render this item's bag icon from its model."), EditorStyles.toolbarButton)) GenerateIcons(new List<ItemData> { selected });
-            bool archived = ItemDatabaseAuthoring.IsArchived(selected);
-            if (GUILayout.Button(archived ? "Restore" : "Archive", EditorStyles.toolbarButton))
-            {
-                if (archived) ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Destination(selected));
-                else if (EditorUtility.DisplayDialog("Archive item", "Move this asset to _Archive? Existing loot/scene references remain valid. It is excluded from future catalog syncs. Remove it from loot tables separately if it should no longer drop.", "Archive", "Cancel"))
-                    ItemDatabaseAuthoring.Move(selected, ItemDatabaseAuthoring.Root + "/_Archive/" + Path.GetFileName(AssetDatabase.GetAssetPath(selected)));
-                Rebuild();
-            }
-            GUILayout.FlexibleSpace();
-            var old = GUI.backgroundColor; GUI.backgroundColor = new Color(1f, .55f, .5f);
-            bool delete = GUILayout.Button("Delete", EditorStyles.toolbarButton);
-            GUI.backgroundColor = old;
-            if (delete) { Delete(selected); GUIUtility.ExitGUI(); }
-        }
         detailScroll = EditorGUILayout.BeginScrollView(detailScroll);
-        EditorGUILayout.SelectableLabel(AssetDatabase.GetAssetPath(selected), EditorStyles.miniLabel, GUILayout.Height(20));
-        if (issues.TryGetValue(selected, out var warnings)) foreach (string warning in warnings) EditorGUILayout.HelpBox(warning, MessageType.Warning);
-        string pickup = selected.pickupVisualPrefab != null ? selected.pickupVisualPrefab.name : selected.worldPrefab != null ? selected.worldPrefab.name : "Equipment loot pouch (InventoryManager default)";
-        EditorGUILayout.LabelField("Pickup visual", pickup);
-        tooltip = EditorGUILayout.Foldout(tooltip, "Tooltip preview", true);
-        if (tooltip)
-        {
-            tooltipStyle ??= new GUIStyle(EditorStyles.helpBox) { richText = true, wordWrap = true };
-            GUILayout.Label(selected.BuildTooltip(), tooltipStyle);
-        }
+        Header(selected, width);
+        if (issues.TryGetValue(selected, out var warnings) && warnings.Count > 0)
+            using (new EditorGUILayout.VerticalScope(new GUIStyle { margin = new RectOffset(8, 8, 0, 4) }))
+                foreach (string warning in warnings) EditorGUILayout.HelpBox(warning, MessageType.Warning);
         if (selected.rarity == ItemRarity.Relic) RelicPanel(selected);
-        EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
-        if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
+
+        // Every field, the item's own inspector.
+        bool relic = selected.rarity == ItemRarity.Relic;
+        string key = relic ? "LoomRoom.ItemDatabase.AllFieldsRelic" : "LoomRoom.ItemDatabase.AllFields";
+        bool open = EditorPrefs.GetBool(key, !relic);
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            GUILayout.Space(8);
+            bool next = EditorGUILayout.Foldout(open, relic ? "All fields" : "Fields", true, new GUIStyle(EditorStyles.foldoutHeader) { fontStyle = FontStyle.Bold });
+            if (next != open) EditorPrefs.SetBool(key, open = next);
+        }
+        if (open)
+            using (new EditorGUILayout.VerticalScope(new GUIStyle { padding = new RectOffset(12, 10, 2, 12) }))
+            {
+                float labelWidth = EditorGUIUtility.labelWidth; bool wide = EditorGUIUtility.wideMode;
+                EditorGUIUtility.labelWidth = 170f; EditorGUIUtility.wideMode = true;
+                EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
+                if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
+                EditorGUIUtility.labelWidth = labelWidth; EditorGUIUtility.wideMode = wide;
+            }
         EditorGUILayout.EndScrollView();
     }
+
+    // The header card: big icon, name in its rarity colour, what it is, its file, its actions; the game's tooltip beside it.
+    void Header(ItemData item, float width)
+    {
+        bool tooltipBeside = width > 900f;
+        using (new EditorGUILayout.HorizontalScope(cardStyle))
+        {
+            Rect slot = GUILayoutUtility.GetRect(84, 84, GUILayout.Width(84), GUILayout.Height(84));
+            DrawSlot(slot, item, 6f);
+            GUILayout.Space(12);
+            using (new EditorGUILayout.VerticalScope())
+            {
+                GUILayout.Label(item.itemName, NameStyle(titleStyle, item));
+                GUILayout.Label(Subtitle(item), subtitleStyle);
+                string path = AssetDatabase.GetAssetPath(item);
+                Rect link = GUILayoutUtility.GetRect(new GUIContent(path), linkStyle);
+                EditorGUIUtility.AddCursorRect(link, MouseCursor.Link);
+                if (GUI.Button(link, new GUIContent(path, "Show it in the Project window."), linkStyle)) { Selection.activeObject = item; EditorGUIUtility.PingObject(item); }
+                GUILayout.Space(8);
+                Actions(item);
+            }
+            if (tooltipBeside)
+            {
+                GUILayout.Space(12);
+                TooltipCard(item, GUILayout.Width(Mathf.Min(360f, width * .34f)));
+            }
+        }
+        if (!tooltipBeside)
+            using (new EditorGUILayout.HorizontalScope()) { GUILayout.Space(8); TooltipCard(item); GUILayout.Space(8); }
+    }
+
+    static string Subtitle(ItemData item)
+    {
+        var parts = new List<string>();
+        if (item.rarity != ItemRarity.Common) parts.Add($"<color=#{ColorUtility.ToHtmlStringRGB(NameColour(item))}>{item.RarityName}</color>");
+        parts.Add(item.TypeLine());
+        if (item.tier > 0) parts.Add("Tier " + item.tier);
+        if (item.value > 0) parts.Add(item.value + " gold");
+        if (ItemDatabaseAuthoring.IsArchived(item)) parts.Add("<color=#d08a4a>archived</color>");
+        return string.Join("   ·   ", parts);
+    }
+
+    void Actions(ItemData item)
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button(new GUIContent("Duplicate", "A copy of it to change."), GUILayout.Width(80)))
+            { Select(ItemDatabaseAuthoring.Duplicate(item)); ItemDatabaseAuthoring.SyncCatalog(); Rebuild(); revealSelected = true; GUIUtility.ExitGUI(); }
+            using (new EditorGUI.DisabledScope(item.iconSource != null && item.iconSource.custom))
+                if (GUILayout.Button(new GUIContent("Make icon", "Render its bag icon from its model."), GUILayout.Width(80))) GenerateIcons(new List<ItemData> { item });
+            bool archived = ItemDatabaseAuthoring.IsArchived(item);
+            if (GUILayout.Button(new GUIContent(archived ? "Restore" : "Archive", archived ? "Back to its type folder." : "Out of the game's catalog; what points at it keeps working."), GUILayout.Width(70)))
+            {
+                if (archived) ItemDatabaseAuthoring.Move(item, ItemDatabaseAuthoring.Destination(item));
+                else if (EditorUtility.DisplayDialog("Archive item", "Move this asset to _Archive? Existing loot/scene references remain valid. It is excluded from future catalog syncs. Remove it from loot tables separately if it should no longer drop.", "Archive", "Cancel"))
+                    ItemDatabaseAuthoring.Move(item, ItemDatabaseAuthoring.Root + "/_Archive/" + Path.GetFileName(AssetDatabase.GetAssetPath(item)));
+                Rebuild(); GUIUtility.ExitGUI();
+            }
+            string path = AssetDatabase.GetAssetPath(item);
+            if (!archived && path.StartsWith(ItemDatabaseAuthoring.Root + "/", StringComparison.Ordinal) && path != ItemDatabaseAuthoring.Destination(item)
+                && GUILayout.Button(new GUIContent("Move to its folder", ItemDatabaseAuthoring.Destination(item)), GUILayout.Width(120)))
+            { ItemDatabaseAuthoring.Move(item, ItemDatabaseAuthoring.Destination(item)); Rebuild(); GUIUtility.ExitGUI(); }
+            GUILayout.FlexibleSpace();
+            var old = GUI.backgroundColor; GUI.backgroundColor = new Color(1f, .5f, .45f);
+            bool delete = GUILayout.Button(new GUIContent("Delete", "To the Recycle Bin, after saying what still uses it."), GUILayout.Width(64));
+            GUI.backgroundColor = old;
+            if (delete) { Delete(item); GUIUtility.ExitGUI(); }
+        }
+    }
+
+    // The tooltip as the game builds it, on a dark card.
+    void TooltipCard(ItemData item, params GUILayoutOption[] options)
+    {
+        string text = $"<size=14><b><color=#{ColorUtility.ToHtmlStringRGB(NameColour(item))}>{item.itemName}</color></b></size>\n" + item.BuildTooltip();
+        var content = new GUIContent(text);
+        float w = options.Length > 0 ? Mathf.Min(360f, position.width * .3f) : position.width - listWidth - 40f;
+        float h = tooltipStyle.CalcHeight(content, Mathf.Max(120f, w));
+        Rect r = GUILayoutUtility.GetRect(content, tooltipStyle, options.Concat(new[] { GUILayout.Height(h) }).ToArray());
+        if (Event.current.type == EventType.Repaint)
+        {
+            EditorGUI.DrawRect(r, new Color(.11f, .1f, .1f));
+            DrawFrame(r, new Color(.36f, .32f, .26f));
+        }
+        GUI.Label(r, content, tooltipStyle);
+    }
+
+    static void DrawFrame(Rect r, Color c)
+    {
+        EditorGUI.DrawRect(new Rect(r.x, r.y, r.width, 1), c);
+        EditorGUI.DrawRect(new Rect(r.x, r.yMax - 1, r.width, 1), c);
+        EditorGUI.DrawRect(new Rect(r.x, r.y, 1, r.height), c);
+        EditorGUI.DrawRect(new Rect(r.xMax - 1, r.y, 1, r.height), c);
+    }
+
+    // An item's icon in a dark slot with its rarity's colour along the left edge, the way a bag slot reads.
+    static void DrawSlot(Rect r, ItemData item, float pad)
+    {
+        if (Event.current.type != EventType.Repaint) return;
+        EditorGUI.DrawRect(r, new Color(.13f, .13f, .14f));
+        DrawFrame(r, new Color(.27f, .27f, .29f));
+        if (item.rarity != ItemRarity.Common) EditorGUI.DrawRect(new Rect(r.x, r.y, Mathf.Max(3f, r.width * .04f), r.height), NameColour(item));
+        var sprite = item.icon;
+        if (sprite == null || sprite.texture == null) return;
+        var inner = new Rect(r.x + pad, r.y + pad, r.width - pad * 2, r.height - pad * 2);
+        Rect sr = sprite.rect;
+        float aspect = sr.width / Mathf.Max(1f, sr.height);
+        Rect fit = aspect >= 1f ? new Rect(inner.x, inner.center.y - inner.width / aspect / 2f, inner.width, inner.width / aspect)
+                                : new Rect(inner.center.x - inner.height * aspect / 2f, inner.y, inner.height * aspect, inner.height);
+        var t = sprite.texture;
+        GUI.DrawTextureWithTexCoords(fit, t, new Rect(sr.x / t.width, sr.y / t.height, sr.width / t.width, sr.height / t.height));
+    }
+
+    // The rarity's colour, a little lighter so it reads on the editor's grey; Common in the editor's own text colour.
+    static Color NameColour(ItemData item) => item.rarity == ItemRarity.Common ? EditorStyles.label.normal.textColor : Color.Lerp(item.RarityColour, Color.white, .2f);
+    static readonly Dictionary<(GUIStyle, Color), GUIStyle> tinted = new();
+    static GUIStyle NameStyle(GUIStyle style, ItemData item)
+    {
+        var c = NameColour(item);
+        if (!tinted.TryGetValue((style, c), out var s)) { s = new GUIStyle(style); s.normal.textColor = s.hover.textColor = c; tinted[(style, c)] = s; }
+        return s;
+    }
+
+    // ── Helpers kept from before ──
+
     void GenerateIcons(List<ItemData> chosen)
     {
         var problems = new List<string>();
@@ -186,23 +323,6 @@ public partial class ItemDatabaseWindow : EditorWindow
         if (problems.Count > 0)
             EditorUtility.DisplayDialog("Generate icons", $"{made} icon(s) made. No icon for:\n\n" + string.Join("\n", problems.Take(20)) + (problems.Count > 20 ? $"\n...and {problems.Count - 20} more." : ""), "OK");
         else ShowNotification(new GUIContent($"{made} icon(s) made"));
-    }
-    void NewItemMenu()
-    {
-        var menu = new GenericMenu();
-        foreach (ItemType type in Enum.GetValues(typeof(ItemType)))
-        {
-            var captured = type;
-            menu.AddItem(new GUIContent(type.ToString()), false, () =>
-            {
-                var item = ItemDatabaseAuthoring.Create(captured);
-                ItemDatabaseAuthoring.SyncCatalog();
-                // Clear the filters so the new item shows in the list.
-                search = ""; typeFilter = 0; slotFilter = 0; tag = ""; issuesOnly = false;
-                Rebuild(); Select(item);
-            });
-        }
-        menu.ShowAsContext();
     }
 
     // Lists what still uses the item, then moves it to the trash (recoverable from the OS).

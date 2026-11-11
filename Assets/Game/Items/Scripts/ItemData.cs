@@ -61,7 +61,7 @@ public partial class ItemData : ScriptableObject
 
     public ItemType itemType = ItemType.Generic;
 
-    [Min(1)] public int maxStackSize = 1;
+    [MinValue(1)] public int maxStackSize = 1;
 
     [Tooltip("Cells it takes in the bag grid, width x height. 0 x 0 picks by kind: swords and maces 1x3, " +
         "knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1.")]
@@ -91,12 +91,12 @@ public partial class ItemData : ScriptableObject
     }
 
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
-    [Min(0)] public int value;
+    [MinValue(0)] public int value;
 
     [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
     [Range(0, 12)] public int tier;
     [Tooltip("How often this item is picked among others of its tier and kind.")]
-    [Min(0)] public float lootWeight = 1;
+    [MinValue(0)] public float lootWeight = 1;
 
     [Tooltip("AudioData preserves the shared pickup setting. Clip or key explicitly overrides the shared pickup sound for this item.")]
     public ItemAudioSource pickupAudioSource;
@@ -118,7 +118,7 @@ public partial class ItemData : ScriptableObject
     [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public EquipmentSlot equipSlot = EquipmentSlot.RightHand;
 
-    [BoxGroup("Equipment"), ShowIf("ShowsInHand"), Min(0.01f)]
+    [BoxGroup("Equipment"), ShowIf("ShowsInHand"), MinValue(0.01)]
     [Tooltip("Visual scale while held (and while eaten or drunk). Does not change the world pickup or combat reach.")]
     public float heldScale = 1f;
 
@@ -144,11 +144,12 @@ public partial class ItemData : ScriptableObject
     [BoxGroup("Weapon"), ShowIf("IsWeapon"), HideLabel]
     public HitProfile weapon = new HitProfile();
 
-    [BoxGroup("Weapon"), ShowIf("IsWeapon"), Min(0)]
+    [BoxGroup("Weapon"), ShowIf("IsWeapon"), MinValue(0)]
     [Tooltip("Each hit rolls this much above or below the weapon's damage (Iron Sword 7 with 2 hits for 5-9).")]
     public int damageSpread;
-    [Min(0), Tooltip("Weapons: this much more on top of the spread at the high end only (13, spread 1, up 1: 12-15).")]
+    [BoxGroup("Weapon"), ShowIf("IsWeapon"), MinValue(0), Tooltip("Weapons: this much more on top of the spread at the high end only (13, spread 1, up 1: 12-15).")]
     public int damageSpreadUp;
+    [BoxGroup("Weapon"), ShowIf("IsWeapon")]
     [Tooltip("Relic weapons: picked up in a dungeon, it hits as hard as a Unique weapon of its kind (mace or sword) of the lowest gear tier that floor drops (floor 3 dropping tiers 2 and 3: a Unique Iron Mace's damage, the Iron Mace's spread; ItemData.RelicScalesAs). Kept with the item (saved as its tier). Its own damage above is used until then.")]
     public bool scaleWithFloor;
 
@@ -181,10 +182,10 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Makes this consumable a scroll of this spell: used from the hotbar or the bag, the spell goes off at once with no mana and no wind-up, " +
         "using one charge; the last charge used, the scroll is gone. A spell that can't be cast now (nothing to aim at, health full) uses none.")]
     public SpellDefinition scrollSpell;
-    [BoxGroup("Consumable"), ShowIf("IsScroll"), Min(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
+    [BoxGroup("Consumable"), ShowIf("IsScroll"), MinValue(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
     public int charges = 1;
 
-    [BoxGroup("Consumable"), ShowIf("UsesAnimation"), Min(.2f)]
+    [BoxGroup("Consumable"), ShowIf("UsesAnimation"), MinValue(.2)]
     [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
     public float eatDuration = 1.3f;
 

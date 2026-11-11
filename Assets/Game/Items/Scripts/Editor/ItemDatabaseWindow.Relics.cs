@@ -5,22 +5,17 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// The Item Database's relics (the user, 2026-11-11): Relics are hand-made gear with names of their own. The Relics
-// filter lists them, New relic makes one with the look of any weapon, shield or armour piece, and a selected relic
-// shows a panel over its inspector with what makes it: name, look, main number (damage with its spread, or armour or
-// block), Scale With Floor, its substats (stat lines, edited in place) and its unique skill (a Custom effect that says
-// so, its text edited in place), with the tooltip as the game shows it.
+// The Item Database's relics (the user, 2026-11-11): Relics are hand-made gear with names of their own. They are listed
+// first, Show > Relics lists only them, New > Relic with the look of makes one from any weapon, shield or armour piece,
+// and a picked relic shows a card under its header with what makes it: name, look, main number (damage with its spread,
+// or armour or block), Scale With Floor, its substats (stat lines, edited in place) and its unique skill (a Custom
+// effect that says so, its text edited in place); the header shows the tooltip as the game does.
 public partial class ItemDatabaseWindow
 {
-    bool relicsOnly;
-
-    bool RelicShown(ItemData i) => !relicsOnly || i.rarity == ItemRarity.Relic;
-
     // ── New relic ──
 
-    void NewRelicMenu()
+    void AddRelicItems(GenericMenu menu, string prefix)
     {
-        var menu = new GenericMenu();
         var gear = items.Where(i => i != null && !ItemDatabaseAuthoring.IsArchived(i) && i.canBeEquipped && i.rarity != ItemRarity.Relic
                 && (i.IsWeapon || i.itemType == ItemType.Shield || i.itemType == ItemType.Equipment) && i.worldPrefab != null)
             .OrderBy(i => i.itemType).ThenBy(i => i.IsWeapon ? (int)i.weaponCategory : 0).ThenBy(i => i.tier).ThenBy(i => i.itemName);
@@ -28,14 +23,13 @@ public partial class ItemDatabaseWindow
         {
             string group = item.IsWeapon ? (item.weaponCategory == WeaponCategory.Mace ? "Mace" : "Sword") : item.itemType == ItemType.Shield ? "Shield" : ItemData.SlotName(item.equipSlot);
             var captured = item;
-            menu.AddItem(new GUIContent($"Look of.../{group}/{item.tier}  {item.itemName}"), false, () =>
+            menu.AddItem(new GUIContent($"{prefix}{group}/Tier {item.tier}  {item.itemName}"), false, () =>
             {
                 var relic = NewRelic(captured);
-                search = ""; typeFilter = 0; slotFilter = 0; tag = ""; issuesOnly = false; relicsOnly = true;
-                Rebuild(); Select(relic);
+                ClearFilters();
+                Rebuild(); Select(relic); revealSelected = true;
             });
         }
-        menu.ShowAsContext();
     }
 
     // A copy of the gear piece as a Relic: its look and numbers, a name to give it, never in loot (tier 0).
@@ -65,9 +59,11 @@ public partial class ItemDatabaseWindow
 
     void RelicPanel(ItemData relic)
     {
-        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        using (new EditorGUILayout.VerticalScope(cardStyle))
+        using (new EditorGUILayout.VerticalScope(GUILayout.MaxWidth(760)))   // fields at a width they read at
         {
-            EditorGUILayout.LabelField("RELIC", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("RELIC", sectionStyle);
+            float labelWidth = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 130f;
             EditorGUI.BeginChangeCheck();
             string name = EditorGUILayout.DelayedTextField("Name", relic.itemName);
             if (EditorGUI.EndChangeCheck() && !string.IsNullOrWhiteSpace(name) && name != relic.itemName)
@@ -93,16 +89,29 @@ public partial class ItemDatabaseWindow
             if (main >= 0)
             {
                 EditorGUI.BeginChangeCheck();
-                float value = EditorGUILayout.FloatField(label, relic.statModifiers[main].value);
+                float value = relic.statModifiers[main].value;
                 int spread = relic.damageSpread, up = relic.damageSpreadUp;
                 bool scale = relic.scaleWithFloor;
-                if (relic.IsWeapon)
+                // Its number, and for a weapon its spread, on one line with the hits they make.
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    spread = EditorGUILayout.IntField(new GUIContent("Spread", "Hits land this much below or above the damage."), relic.damageSpread);
-                    up = EditorGUILayout.IntField(new GUIContent("Spread up", "This much more at the high end only."), relic.damageSpreadUp);
-                    EditorGUILayout.LabelField(" ", $"Hits {Mathf.Max(1f, value - spread):0}-{value + spread + up:0}", EditorStyles.miniLabel);
-                    scale = EditorGUILayout.Toggle(new GUIContent("Scale with floor", "Picked up in a dungeon, it hits as hard as a Unique weapon of its kind at the lowest tier that floor drops."), relic.scaleWithFloor);
+                    EditorGUILayout.PrefixLabel(label);
+                    value = EditorGUILayout.FloatField(value, GUILayout.Width(56));
+                    if (relic.IsWeapon)
+                    {
+                        GUILayout.Space(14);
+                        GUILayout.Label(new GUIContent("Spread", "Hits land this much below or above the damage."), GUILayout.Width(46));
+                        spread = EditorGUILayout.IntField(relic.damageSpread, GUILayout.Width(40));
+                        GUILayout.Space(14);
+                        GUILayout.Label(new GUIContent("Up", "This much more at the high end only."), GUILayout.Width(22));
+                        up = EditorGUILayout.IntField(relic.damageSpreadUp, GUILayout.Width(40));
+                        GUILayout.Space(14);
+                        GUILayout.Label($"hits {Mathf.Max(1f, value - spread):0}-{value + spread + up:0}", subtitleStyle);
+                    }
+                    GUILayout.FlexibleSpace();
                 }
+                if (relic.IsWeapon)
+                    scale = EditorGUILayout.Toggle(new GUIContent("Scale with floor", "Picked up in a dungeon, it hits as hard as a Unique weapon of its kind at the lowest tier that floor drops."), relic.scaleWithFloor);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(relic, "Relic numbers");
@@ -112,8 +121,8 @@ public partial class ItemDatabaseWindow
             }
 
             // Substats: every stat line but the main number.
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Substats", EditorStyles.miniBoldLabel);
+            GUILayout.Space(8);
+            EditorGUILayout.LabelField("SUBSTATS", sectionStyle);
             var mods = (relic.statModifiers ?? Array.Empty<StatModifierEntry>()).ToList();
             int remove = -1;
             for (int i = 0; i < mods.Count; i++)
@@ -125,7 +134,7 @@ public partial class ItemDatabaseWindow
                     var stat = (StatType)EditorGUILayout.EnumPopup(mods[i].stat, GUILayout.Width(150));
                     var kind = (ModifierType)EditorGUILayout.EnumPopup(mods[i].type, GUILayout.Width(110));
                     float v = EditorGUILayout.FloatField(mods[i].value, GUILayout.Width(60));
-                    GUILayout.Label(ItemData.StatLine(stat, kind, v), EditorStyles.miniLabel);
+                    GUILayout.Label(ItemData.StatLine(stat, kind, v), subtitleStyle, GUILayout.Width(190));
                     if (EditorGUI.EndChangeCheck()) { Undo.RecordObject(relic, "Relic substat"); mods[i].stat = stat; mods[i].type = kind; mods[i].value = v; EditorUtility.SetDirty(relic); }
                     if (GUILayout.Button("✕", GUILayout.Width(22))) remove = i;
                 }
@@ -139,8 +148,8 @@ public partial class ItemDatabaseWindow
             }
 
             // Unique skill: a Custom effect that says it is one; its text edited on its asset.
-            GUILayout.Space(4);
-            EditorGUILayout.LabelField("Unique skill", EditorStyles.miniBoldLabel);
+            GUILayout.Space(8);
+            EditorGUILayout.LabelField("UNIQUE SKILL", sectionStyle);
             bool any = false;
             foreach (var e in relic.effects ?? Array.Empty<EffectEntry>())
             {
@@ -163,10 +172,7 @@ public partial class ItemDatabaseWindow
             }
             if (!any) EditorGUILayout.HelpBox("No unique skill: add an effect of type Custom with a skill asset (Items/Effects, Create > Items/Effects/Crit Kill Reward) in Effects below.", MessageType.None);
 
-            GUILayout.Space(4);
-            tooltipStyle ??= new GUIStyle(EditorStyles.helpBox) { richText = true, wordWrap = true };
-            GUILayout.Label($"<b>{relic.itemName}</b>\n" + relic.BuildTooltip(), tooltipStyle);
+            EditorGUIUtility.labelWidth = labelWidth;
         }
-        GUILayout.Space(6);
     }
 }

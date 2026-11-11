@@ -142,16 +142,36 @@ public static class StudioSkin
 
     public static IDisposable Use() => new Scope();
 
+    // Scopes can nest (an inspector drawn inside the window): only the outermost one swaps the styles and puts them back,
+    // or an inner one saves the game's fonts as the originals and they stay in every editor window (the Item Database's
+    // text fields were in the pixel font, the user, 2026-11-11).
+    static int depth;
+
+    // After a reload: any editor style still holding the game's font (left by the bug above) goes back to Unity's own.
+    [InitializeOnLoadMethod]
+    static void RepairLeftFonts() => EditorApplication.delayCall += () =>
+    {
+        foreach (var st in new[] { EditorStyles.label, EditorStyles.miniLabel, EditorStyles.largeLabel, EditorStyles.wordWrappedLabel, EditorStyles.wordWrappedMiniLabel,
+            EditorStyles.textField, EditorStyles.textArea, EditorStyles.numberField, EditorStyles.popup, EditorStyles.objectField, EditorStyles.toggle,
+            EditorStyles.helpBox, EditorStyles.miniButton, EditorStyles.toolbarSearchField, EditorStyles.radioButton, EditorStyles.miniTextField,
+            EditorStyles.boldLabel, EditorStyles.miniBoldLabel, EditorStyles.foldout, EditorStyles.foldoutHeader })
+            if (st != null && st.font != null && st.font.name.StartsWith("Studio PixelOperator", StringComparison.Ordinal))
+            { st.font = null; if (st.fontSize == Size) st.fontSize = 12; }
+    };
+
     sealed class Scope : IDisposable
     {
         readonly GUISkin before;
         readonly Color background;
+        readonly bool outer;
         public Scope()
         {
             before = GUI.skin;
             background = GUI.backgroundColor;
             var s = Skin;
             GUI.skin = s;
+            outer = depth++ == 0;
+            if (!outer) return;
             saved.Clear();
             void Patch(GUIStyle style, Font font)
             {
@@ -172,9 +192,14 @@ public static class StudioSkin
 
         public void Dispose()
         {
-            foreach (var (style, font, size, normal, hover, focused, onNormal, padding) in saved)
-            { style.font = font; style.fontSize = size; style.padding = padding; style.normal.textColor = normal; style.hover.textColor = hover; style.focused.textColor = focused; style.onNormal.textColor = onNormal; }
-            saved.Clear();
+            depth = Mathf.Max(0, depth - 1);
+            if (outer)
+            {
+                // A font of ours saved as an original is a leftover from before: Unity's own default (null) instead.
+                foreach (var (style, font, size, normal, hover, focused, onNormal, padding) in saved)
+                { style.font = font == body || font == bold ? null : font; style.fontSize = size == Size && (font == body || font == bold) ? 12 : size; style.padding = padding; style.normal.textColor = normal; style.hover.textColor = hover; style.focused.textColor = focused; style.onNormal.textColor = onNormal; }
+                saved.Clear();
+            }
             GUI.skin = before;
             GUI.backgroundColor = background;
         }
