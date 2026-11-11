@@ -34,6 +34,8 @@ public static class CoopWorld
     static readonly Dictionary<Character, float> pendingHealth = new();
     static float nextSnapshot;
     static bool hooked;
+    // Host: the culling mode each enemy's animator had before it was set to animate always (KeepAnimating).
+    static readonly Dictionary<Animator, AnimatorCullingMode> culling = new();
 
     const int ContainerScope = 0x100000, DestructibleScope = 0x200000, EnemyScope = 0x300000, DropScope = 0x400000, GeneratedScope = 0x500000;
 
@@ -82,7 +84,7 @@ public static class CoopWorld
     {
         Floor = null; FloorKey = 0;
         enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear(); provokables.Clear();
-        loot.Clear(); lootKeys.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
+        loot.Clear(); lootKeys.Clear(); culling.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0; gathering = null;
         nextSnapshot = nextNoise = 0f;
         hostClock = float.NaN;
@@ -437,12 +439,32 @@ public static class CoopWorld
         {
             var c = enemies[i];
             if (c == null || !c.IsAlive || !c.gameObject.activeInHierarchy) continue;
+            KeepAnimating(c);
             var s = Capture((ushort)i, c);
             int size = SnapshotBytes(s);
             if (batch.Count > 0 && bytes + size > SnapshotBudget) { Send(batch); batch.Clear(); bytes = 0; }
             batch.Add(s); bytes += size;
         }
         if (batch.Count > 0) Send(batch);
+    }
+
+    // An enemy after a guest is animated on the host even where the host can't see it. Hidden renderers (out of the
+    // host's view, or hidden by DungeonVisibility behind walls) stop an animator that culls from writing its bones, so
+    // the hand an archer looses from and a caster casts from stayed where they were last seen: arrows left from the
+    // hip of an archer fighting a guest in another room. Put back as it was once it turns to the host or to no one.
+    static void KeepAnimating(Character c)
+    {
+        var anim = c.Animator;
+        if (anim == null) return;
+        var brain = c.GetComponent<EnemyBrain>();
+        var target = brain != null && brain.Perception != null ? brain.Perception.Target : null;
+        int slot = SlotOf(target);
+        bool guest = slot != Coop.NoSlot && slot != Coop.LocalSlot;
+        if (guest)
+        {
+            if (!culling.ContainsKey(anim)) { culling[anim] = anim.cullingMode; anim.cullingMode = AnimatorCullingMode.AlwaysAnimate; }
+        }
+        else if (culling.TryGetValue(anim, out var mode)) { anim.cullingMode = mode; culling.Remove(anim); }
     }
 
     // What a batch may hold, leaving room for the message's own header under the 1264-byte unreliable limit.
