@@ -111,7 +111,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
             if (i < skillIcons.Length) skillIcons[i].sprite = def != null ? def.icon : null;
         }
 
-        var kit = c.equipment.Concat(c.spells ?? new ItemData[0]).Where(x => x != null && x.icon != null).ToArray();
+        var kit = c.Kit().Concat(c.spells ?? new ItemData[0]).Where(x => x != null && x.icon != null).ToArray();
         for (int i = 0; i < kitIcons.Length; i++)
         {
             bool shown = i < kit.Length;

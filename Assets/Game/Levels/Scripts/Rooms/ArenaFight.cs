@@ -14,6 +14,9 @@ public class ArenaFight : MonoBehaviour
     public float delay = 3.5f;
     [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Arcanist.")]
     public AdventurerClass unlocks;
+    [Min(1f), Tooltip("Every fighter in the room has this many times its health here, full when it is found (the user, 2026-11-11: the duel's Undead Knight at triple health).")]
+    public float healthMultiplier = 3f;
+    readonly HashSet<EnemyBrain> strengthened = new();
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -49,13 +52,27 @@ public class ArenaFight : MonoBehaviour
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
         if (room < 0) yield break;
         // Enemies are put down after the room is built: gather them for a while, then keep to the ones found.
-        for (float t = 0; t < 3f; t += .25f) { Gather(true); yield return new WaitForSeconds(.25f); }
+        for (float t = 0; t < 3f; t += .25f) { Gather(true); Strengthen(); yield return new WaitForSeconds(.25f); }
         var wait = new WaitForSeconds(.25f);
         while (!done && this != null)
         {
             Gather(false);
+            Strengthen();
             if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
             yield return wait;
+        }
+    }
+
+    // Health Multiplier times the health, once each, once its stats are set up (after the floor's balance), and full.
+    void Strengthen()
+    {
+        if (healthMultiplier <= 1f) return;
+        foreach (var b in fighters)
+        {
+            if (b == null || strengthened.Contains(b) || !b.TryGetComponent<CharacterStats>(out var s) || !s.Initialised || !s.IsAlive) continue;
+            strengthened.Add(b);
+            s.AddModifier(new StatModifier(StatType.MaxHealth, healthMultiplier - 1f, ModifierType.PercentMultiply, this));
+            s.SetHealthShare(1f);
         }
     }
 

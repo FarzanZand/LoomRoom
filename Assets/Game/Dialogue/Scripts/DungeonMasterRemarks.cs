@@ -43,6 +43,19 @@ public class DungeonMasterRemarks : MonoBehaviour
         new() { text = "Ow! Aim the {spell} down there, not up here." },
     };
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
+    // The user, 2026-11-11: comments when you cast a spell on yourself, meaning the room player: you standing at the
+    // table while your figure plays. A spell flown up out of the dungeon into your own body there.
+    [TabGroup(Tabs, "Runs"), Tooltip("The player's spell flies up out of the dungeon and hits the room player standing at the table (you). Not during a boss fight or the intro's practice. {spell}, {a spell} and {A spell} as above.")]
+    public List<DungeonMaster.Line> ownSpellHit = new()
+    {
+        new() { text = "Did you just {spell} yourself?" },
+        new() { text = "That's you standing there. You just hit yourself with {a spell}." },
+        new() { text = "{A spell}. At yourself. Bold." },
+        new() { text = "Aim the {spell} down there. You're up here." },
+        new() { text = "The {spell} is for the monsters. You are not a monster." },
+        new() { text = "I'm writing that down. {A spell}, cast on yourself." },
+    };
+    [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he remarks on another spell cast on yourself.")] public float ownSpellGap = 12f;
     [TabGroup(Tabs, "Runs"), InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
     [Range(.05f, .5f), Tooltip("Health left, as a share, that counts as a close call.")] public float closeCallFraction = .25f;
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
@@ -225,6 +238,52 @@ public class DungeonMasterRemarks : MonoBehaviour
         DungeonMaster.Say(line.With(FillSpell(line.text, spell)), null, .4f);
     }
 
+    float lastOwnSpell = -999f;
+    static Player roomPlayer;
+    static readonly List<Renderer> roomBody = new();
+    static float roomBodyRead = -999f;
+
+    // How far along this step of a player's spell its path meets the room player's body, standing at the table while
+    // the table player plays (float.MaxValue: it doesn't). The body has no colliders then (its controller is switched
+    // off with the room player), so its drawn bounds stand in, widened by the spell's radius.
+    public static float RoomSelfAlong(Character caster, Vector3 from, Vector3 direction, float distance, float radius)
+    {
+        if (caster is not Player { kind: PlayerKind.Table } || !PlayerManager.HasInstance) return float.MaxValue;
+        if (roomPlayer == null) roomPlayer = PlayerManager.Instance.GetPlayer(PlayerKind.Room);
+        if (roomPlayer == null || roomPlayer.gameObject.activeInHierarchy || !roomPlayer.ActivationRoot.activeInHierarchy) return float.MaxValue;
+        // The body's renderers, read again now and then (a class or body change swaps them).
+        if (Time.time - roomBodyRead > 1f || roomBody.Count == 0)
+        {
+            roomBodyRead = Time.time;
+            roomBody.Clear();
+            foreach (var r in roomPlayer.ActivationRoot.GetComponentsInChildren<Renderer>(false))
+                if (r.enabled && (r is SkinnedMeshRenderer || r is MeshRenderer)) roomBody.Add(r);
+        }
+        bool any = false; var bounds = new Bounds();
+        foreach (var r in roomBody)
+        {
+            if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds);
+        }
+        if (!any) return float.MaxValue;
+        bounds.Expand(radius * 2f);
+        if (bounds.Contains(from)) return 0f;
+        return bounds.IntersectRay(new Ray(from, direction), out float at) && at <= distance ? at : float.MaxValue;
+    }
+
+    // A player's spell hit the room player at the table (SpellProjectile). Not during a boss fight or the intro's
+    // practice, where he says other things.
+    public static void SpellHitRoomSelf(Character caster, SpellDefinition spell)
+    {
+        if (caster is not Player { kind: PlayerKind.Table } || Hold || BossStageEncounter.Current != null || IntroController.PracticeRunning) return;
+        var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
+        if (remarks == null || Time.time - remarks.lastOwnSpell < remarks.ownSpellGap) return;
+        var line = Pick(remarks.ownSpellHit);
+        if (line == null) return;
+        remarks.lastOwnSpell = Time.time;
+        DungeonMaster.Say(line.With(FillSpell(line.text, spell)), null, .5f);
+    }
+
     // {spell}, {a spell} and {A spell} filled with the spell's name, highlighted ("a *fireball*").
     public static string FillSpell(string text, SpellDefinition spell)
     {
@@ -240,7 +299,7 @@ public class DungeonMasterRemarks : MonoBehaviour
     // While a boss fight is on the stage the DM only comments on the fight (BossStageEncounter); his other remarks wait.
     public static bool Hold { get; set; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetHold() => Hold = false;
+    static void ResetHold() { Hold = false; roomPlayer = null; roomBody.Clear(); roomBodyRead = -999f; }
 
     // The level's Dialogue entries for this trigger: the first that passes its chance (and has not had
     // its one go this run) is said. Spaced out so the DM never chatters.

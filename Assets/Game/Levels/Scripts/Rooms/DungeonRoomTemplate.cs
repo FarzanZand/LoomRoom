@@ -78,6 +78,23 @@ public class DungeonRoomTemplate : MonoBehaviour
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;
 
+    // Done for good in this save: the Skeleton Party once its dancers are all dead (SkeletonParty.ClearedFlag), and any
+    // room whose portal leads to a room that is (the Portal hall). Left out of every floor's pools.
+    public bool Gone
+    {
+        get
+        {
+            if (!ProgressionManager.HasInstance) return false;
+            if (GetComponent<SkeletonParty>() != null && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag)) return true;
+            foreach (var arch in GetComponentsInChildren<PortalArch>(true))
+            {
+                var target = arch.room != null ? arch.room.GetComponent<DungeonRoomTemplate>() : null;
+                if (target != null && target != this && target.GetComponent<SkeletonParty>() != null && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag)) return true;
+            }
+            return false;
+        }
+    }
+
     // The room features this room is built around (a chasm, a sunken court, an archers' ledge, its light, a shrine):
     // a floor whose features switch one of them off leaves the room out.
     public DungeonRoomFeatureMask Requires()

@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-public class ItemDatabaseWindow : EditorWindow
+public partial class ItemDatabaseWindow : EditorWindow
 {
     List<ItemData> items = new();
     readonly Dictionary<ItemData, List<string>> issues = new();
@@ -45,7 +45,7 @@ public class ItemDatabaseWindow : EditorWindow
         inspector = item != null ? Editor.CreateEditor(item) : null;
     }
     IEnumerable<ItemData> Visible() => items.Where(i => i != null &&
-        (showArchived || !ItemDatabaseAuthoring.IsArchived(i)) &&
+        (showArchived || !ItemDatabaseAuthoring.IsArchived(i)) && RelicShown(i) &&
         (!issuesOnly || issues[i].Count > 0) &&
         (typeFilter == 0 || i.itemType.ToString() == Types[typeFilter]) &&
         (slotFilter == 0 || i.canBeEquipped && i.equipSlot.ToString() == Slots[slotFilter]) &&
@@ -70,6 +70,7 @@ public class ItemDatabaseWindow : EditorWindow
         using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
         {
             if (GUILayout.Button("New item", EditorStyles.toolbarDropDown, GUILayout.Width(85))) NewItemMenu();
+            if (GUILayout.Button(new GUIContent("New relic", "A hand-made Relic with its own name, made with the look of a weapon, shield or armour piece."), EditorStyles.toolbarDropDown, GUILayout.Width(85))) NewRelicMenu();
             if (GUILayout.Button("Save items", EditorStyles.toolbarButton, GUILayout.Width(85))) { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
             if (GUILayout.Button("Organize shown", EditorStyles.toolbarButton, GUILayout.Width(115))) Organize();
             if (GUILayout.Button(new GUIContent("Sync runtime catalog", "Add all active items to InventoryManager's name lookup catalog. Save the scene afterwards."), EditorStyles.toolbarButton, GUILayout.Width(145)))
@@ -89,6 +90,7 @@ public class ItemDatabaseWindow : EditorWindow
             int next = EditorGUILayout.Popup(Mathf.Max(0, tagIndex), tags, GUILayout.Width(110)); tag = next == 0 ? "" : tags[next];
             issuesOnly = GUILayout.Toggle(issuesOnly, "Needs attention", EditorStyles.toolbarButton);
             showArchived = GUILayout.Toggle(showArchived, "Archived", EditorStyles.toolbarButton);
+            relicsOnly = GUILayout.Toggle(relicsOnly, new GUIContent("Relics", "Only the hand-made Relics."), EditorStyles.toolbarButton);
         }
     }
     void List()
@@ -109,7 +111,7 @@ public class ItemDatabaseWindow : EditorWindow
             var icon = item.icon != null ? AssetPreview.GetAssetPreview(item.icon) ?? AssetPreview.GetMiniThumbnail(item.icon) : null;
             if (icon != null) GUI.DrawTexture(new Rect(row.x + 5, row.y + 5, 40, 40), icon, ScaleMode.ScaleToFit);
             GUI.Label(new Rect(row.x + 52, row.y + 5, row.width - 57, 22), (issues[item].Count > 0 ? "! " : "") + item.itemName, EditorStyles.boldLabel);
-            string subtitle = item.itemType + (item.canBeEquipped ? " / " + item.equipSlot : "") + (ItemDatabaseAuthoring.IsArchived(item) ? " / ARCHIVED" : "");
+            string subtitle = (item.rarity == ItemRarity.Relic ? "RELIC / " : "") + item.itemType + (item.canBeEquipped ? " / " + item.equipSlot : "") + (ItemDatabaseAuthoring.IsArchived(item) ? " / ARCHIVED" : "");
             GUI.Label(new Rect(row.x + 52, row.y + 27, row.width - 57, 20), subtitle, EditorStyles.miniLabel);
             if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
             {
@@ -171,6 +173,7 @@ public class ItemDatabaseWindow : EditorWindow
             tooltipStyle ??= new GUIStyle(EditorStyles.helpBox) { richText = true, wordWrap = true };
             GUILayout.Label(selected.BuildTooltip(), tooltipStyle);
         }
+        if (selected.rarity == ItemRarity.Relic) RelicPanel(selected);
         EditorGUI.BeginChangeCheck(); inspector.OnInspectorGUI();
         if (EditorGUI.EndChangeCheck()) { EditorUtility.SetDirty(selected); issues[selected] = ItemDatabaseAuthoring.Issues(selected, items); }
         EditorGUILayout.EndScrollView();

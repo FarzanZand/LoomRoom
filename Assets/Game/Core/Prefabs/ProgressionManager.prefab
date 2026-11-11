@@ -360,7 +360,7 @@ MonoBehaviour:
     unit: damage
     secondBonusPerPoint: 2
     secondUnit: shield bash damage
-    thirdBonusPerPoint: 10
+    thirdBonusPerPoint: 5
     thirdUnit: '% heavy attack damage'
     milestones: []
   - id: dexterity

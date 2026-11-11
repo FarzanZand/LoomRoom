@@ -103,6 +103,7 @@ public partial class ItemData
             if (def == null) continue;
             modifiers.Add(new StatModifierEntry { stat = def.stat, type = ModifierType.Flat, value = roll.value * def.statPerPoint });
         }
+        ScaleToTier(copy, modifiers);
         copy.statModifiers = modifiers.ToArray();
         if (step != null) copy.value = Mathf.RoundToInt(copy.value * step.priceMultiplier);
 
@@ -110,6 +111,37 @@ public partial class ItemData
         // Without the InventoryManager a rolled rarity has no bonus or price yet: don't keep that copy.
         else if (InventoryManager.HasInstance) variants[key] = copy;
         return copy;
+    }
+
+    // ── Relics that scale with the floor (ItemData.scaleWithFloor) ──
+    // The tier is kept as a roll the property table doesn't know (no stat of its own), so it is saved in the item's id
+    // like any roll and rebuilt by FromSaveId: "party_crasher~4:tier=3".
+    public const string FloorTierRoll = "tier";
+    public int ScaledTier { get { if (rolls != null) foreach (var r in rolls) if (r.id == FloorTierRoll) return Mathf.RoundToInt(r.value); return 0; } }
+
+    // This item as picked up on this floor: a scaling Relic weapon not scaled yet gets the floor's lowest gear tier.
+    public static ItemData ScaledToFloor(ItemData item, int floor)
+    {
+        if (item == null || !item.BaseItem.scaleWithFloor || !item.IsWeapon || item.ScaledTier > 0) return item;
+        var row = LootSource.FloorGear?.Invoke(Mathf.Max(1, floor));
+        int tier = row != null ? row.LowestTier : 1;
+        var rolls = new List<RolledProperty>(item.rolls ?? System.Array.Empty<RolledProperty>()) { new(FloorTierRoll, tier) };
+        return Variant(item.BaseItem, item.rarity, rolls.ToArray());
+    }
+
+    // Its main number and spread from the Common weapon of its kind at that tier.
+    static void ScaleToTier(ItemData copy, List<StatModifierEntry> modifiers)
+    {
+        int tier = copy.ScaledTier;
+        if (tier <= 0 || !copy.IsWeapon || !InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return;
+        var like = InventoryManager.Instance.itemCatalog.Find(i => i != null && i != copy.baseItem && i.IsWeapon && i.tier == tier
+            && i.weaponCategory == copy.weaponCategory && i.rarity == ItemRarity.Common && i.BaseItem == i);
+        if (like == null || !like.TryMainStat(out _, out float damage, out _)) return;
+        for (int i = 0; i < modifiers.Count; i++)
+            if (modifiers[i] != null && modifiers[i].stat == StatType.AttackDamage && modifiers[i].type == ModifierType.Flat)
+                modifiers[i] = new StatModifierEntry { stat = StatType.AttackDamage, type = ModifierType.Flat, value = damage };
+        copy.damageSpread = like.damageSpread;
+        copy.damageSpreadUp = like.damageSpreadUp;
     }
 
     // A main number raised to a rarity: plus the step's bonus share (InventoryManager > Rarity), rounded to the nearest,

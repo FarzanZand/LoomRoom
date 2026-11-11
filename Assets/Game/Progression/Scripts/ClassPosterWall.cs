@@ -109,11 +109,17 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
         Refresh();
     }
 
-    // The desk glows while the Change class quest is open (ProgressionManager.ClassQuest), as the sheet's table does for its quests.
+    // The wall glows while the Change class quest is open (ProgressionManager.ClassQuest), as the sheet's table does for
+    // its quests, and while a poster is carried home to go up here (the user, 2026-11-11: a room item's place lights up
+    // while it is carried).
     void Update()
     {
-        if (glow != null) glow.Show(ProgressionManager.HasInstance && ProgressionManager.Instance.QuestState(ProgressionManager.ClassQuest) == 1);
+        if (glow == null) return;
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        if (meta != null && Time.frameCount % 15 == 0) postersCarried = meta.PostersCarried > 0;   // a count over the classes: a few times a second
+        glow.Show(meta != null && (postersCarried || meta.QuestState(ProgressionManager.ClassQuest) == 1));
     }
+    bool postersCarried;
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag;

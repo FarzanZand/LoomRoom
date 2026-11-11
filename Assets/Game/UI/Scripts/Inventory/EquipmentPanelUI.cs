@@ -20,7 +20,7 @@ public class EquipmentPanelUI : MonoBehaviour
     // dark stamina green into tan).
     static string Status(Color c){Color.RGBToHSV(c,out float h,out float s,out float v);return "#"+ColorUtility.ToHtmlStringRGB(Color.HSVToRGB(h,s*.8f,Mathf.Max(v,.85f)));}
     // The held weapon's spread makes damage a range (5-9).
-    string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread:0}":$"{dmg:0.#}";}
+    string DamageText(CharacterStats s){var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;int spread=held!=null && held.IsWeapon?held.damageSpread:0,up=held!=null && held.IsWeapon?held.damageSpreadUp:0;float dmg=s.GetFinal(StatType.AttackDamage);return spread+up>0?$"{Mathf.Max(1f,dmg-spread):0}-{dmg+spread+up:0}":$"{dmg:0.#}";}
 
     // A stat line's hover tooltip (StatTooltipUI): the player's own numbers behind the line, one a line, the name dim and
     // the number in colour. No sentences on how things work, and nothing the line beside it already says.
@@ -108,8 +108,9 @@ public class EquipmentPanelUI : MonoBehaviour
         b.Append($"<color={ItemData.DimColor}>{label}</color><pos=62%><color={colour}>{number}</color>");
     }
 
-    // An attribute: each of its gains on a line as the player's real number now and with one more point
-    // ("Damage 5 -> 6", "Heavy attack damage 165% -> 182%"), from the track as the sheet and the level-up cards say it.
+    // An attribute: what its score gives now, each gain on a line ("Damage +2", "Heavy attack damage +20%"), from the track
+    // as the sheet and the level-up cards say it; a score under the base takes away (the user, 2026-11-11: the old now >
+    // with one more point read as the stat twice).
     bool ExplainAttribute(MetaAttribute a,out string title,out string subtitle,out string body)
     {
         title=subtitle=body="";
@@ -129,13 +130,17 @@ public class EquipmentPanelUI : MonoBehaviour
             string name=units[i].Trim().TrimStart('%').Trim();
             if(name.EndsWith("/s"))name=name.Substring(0,name.Length-2).Trim()+" regeneration";
             if(name.Length==0)continue;
-            // Intelligence's third gain is spell power, which is no stat (AdventurerProgress.SpellPower).
+            // Intelligence's third gain is spell power, which is no stat (AdventurerProgress.SpellPower): never below none.
             bool spell=i>=stats.Length;
-            float step=spell?perPoint[i]*.01f:perPoint[i]*ProgressionManager.StatScale(a,stats[i]);
-            string now=spell?SpellPercent(above,step):Total(stats[i],0f),next=spell?SpellPercent(above+1,step):Total(stats[i],step);
+            float points=spell?Mathf.Max(0,above):above;
+            // Points under the base take mana regeneration away at a quarter of the rate (ProgressionManager.ManaRegenBelowBase).
+            float amount=points*perPoint[i]*(!spell && stats[i]==StatType.ManaRegen && points<0?ProgressionManager.ManaRegenBelowBase:1f);
+            string percent=units[i].Trim().StartsWith("%")?"%":"";
+            string value=Mathf.Approximately(amount,0f)?"0"+percent:(amount>0?"+":"")+(Mathf.Approximately(amount,Mathf.Round(amount))?Mathf.RoundToInt(amount).ToString():amount.ToString("0.##"))+percent;
+            string colour=Mathf.Approximately(amount,0f)?ItemData.DimColor:amount>0?ItemData.GoodColor:ItemData.BadColor;
             if(b.Length>0)b.Append('\n');
             b.Append($"<color={ItemData.DimColor}>{char.ToUpperInvariant(name[0])}{name.Substring(1)}</color>")
-             .Append($"<pos=60%><color={ItemData.TextColor}>{now}</color><pos=77%><color={ItemData.DimColor}>></color><pos=82%><color={(next==now?ItemData.DimColor:ItemData.GoodColor)}>{next}</color>");
+             .Append($"<pos=72%><color={colour}>{value}</color>");
         }
         body=b.ToString();
         return body.Length>0;

@@ -29,6 +29,8 @@ public class PlayerVitalsUI : MonoBehaviour
     void StaminaDenied()
     {
         if (Time.unscaledTime < nextStaminaWarning || (GameManager.HasInstance && !GameManager.Instance.GameplayActive)) return;
+        // The stamina readout under the crosshair says it over its segments instead (StaminaReadoutUI).
+        if (StaminaReadoutUI.SaysRefusal) return;
         nextStaminaWarning = Time.unscaledTime + staminaWarningInterval;
         NotificationUI.Show(staminaWarning);
     }

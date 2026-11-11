@@ -4,8 +4,9 @@ using DG.Tweening;
 using UnityEngine;
 
 // The trophy wall right of the table: one mount per skill milestone. A mounted trophy (ProgressionManager) hangs as its
-// item's model; an empty mount shows a faint outline of the trophy to come. Interacting while carrying trophies hangs
-// them all at once. Built by Tools > LoomRoom > Meta > Build Trophy Wall.
+// item's model; an empty mount shows a faint outline of the trophy to come. A carried trophy's plaque glows in the
+// quest outline and is hung by using that plaque (TrophyMountSpot, one at a time; the user, 2026-11-11); with Hang At
+// Plaques off, using the wall hangs them all at once as before. Built by Tools > LoomRoom > Meta > Build Trophy Wall.
 public class TrophyWall : MonoBehaviour, IInteractable
 {
     [Serializable]
@@ -17,6 +18,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
         [NonSerialized] public GameObject model;
         [NonSerialized] public bool showingOutline;
         [NonSerialized] public ItemData shownItem;
+        [NonSerialized] public QuestGlow glow;
     }
 
     public List<Mount> mounts = new();
@@ -34,9 +36,16 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("A short burst on each new trophy (Items/Effects/Chest burst), scaled up to the room.")] public GameObject trophyEffect;
     [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")] public float trophyEffectScale = 20f;
 
+    [Tooltip("Each carried trophy is hung at its own plaque, which glows in the quest outline until it is (the user, 2026-11-11). Off: using the wall anywhere hangs them all at once.")]
+    public bool hangAtPlaques = true;
+    [Min(0), Tooltip("How far the plaque's use box reaches out past its front and round its edges, in room units (about 22 to the metre).")]
+    public float spotMargin = 1.5f;
+    [Min(0), Tooltip("Width of a carried trophy's plaque outline (a flat ring just in front of it), in room units. The plaques stand .5 above their name plates: at the quest outline's usual .7 it ran over the plate (the user, 2026-11-11).")]
+    public float plaqueGlowWidth = .3f;
+
     // One trophy or several (the user, 2026-11-11: it said "trophies" with one carried).
     public string Prompt => Carried == 1 ? "Hang the trophy" : "Hang the trophies";
-    public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && Carried > 0;
+    public bool CanInteract(Character who) => !hangAtPlaques && who is Player p && p.kind == PlayerKind.Room && Carried > 0;
     // Asked every frame the wall is looked at: counted without making a list.
     static int Carried => ProgressionManager.HasInstance ? ProgressionManager.Instance.TrophyCount(ProgressionManager.TrophyState.Carried) : 0;
 
@@ -46,26 +55,100 @@ public class TrophyWall : MonoBehaviour, IInteractable
         var hung = ProgressionManager.Instance.TrophiesIn(ProgressionManager.TrophyState.Carried);
         ProgressionManager.Instance.MountCarried();
         Refresh();
-        if (AudioManager.HasInstance && (AudioManager.Instance.PlayFirstSFX(transform.position, hangKey) == null) && hangClip != null)
-            AudioManager.Instance.PlaySFX(hangClip, transform.position, .9f, .05f);
+        PlayHang();
         // Each new trophy settles onto its bracket, with a sound and a burst, one after another.
         int n = 0;
-        foreach (var (t, m) in hung)
+        foreach (var (t, m) in hung) Settle(mounts.Find(x => x.trackId == t.id && x.value == m.value), n++ * .18f);
+    }
+
+    // ── One plaque at a time (TrophyMountSpot) ─────────────────────────
+
+    (ProgressionManager.MetaTrack track, ProgressionManager.Milestone milestone) Find(Mount mount)
+    {
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        var track = meta != null && mount != null ? meta.Track(mount.trackId) : null;
+        return (track, track?.milestones?.Find(x => x != null && x.value == mount.value));
+    }
+    public ItemData TrophyOf(Mount mount) => Find(mount).milestone?.trophy;
+    public bool IsCarried(Mount mount)
+    {
+        var (t, m) = Find(mount);
+        return m != null && ProgressionManager.Instance.Trophy(t, m) == ProgressionManager.TrophyState.Carried;
+    }
+
+    // This one trophy goes up on its plaque, with the hang sound, the chime and the burst.
+    public void Hang(Mount mount)
+    {
+        var (t, m) = Find(mount);
+        if (m == null || !ProgressionManager.Instance.MountOne(t, m)) return;
+        Refresh();
+        PlayHang();
+        Settle(mount, 0f);
+    }
+
+    void PlayHang()
+    {
+        if (AudioManager.HasInstance && (AudioManager.Instance.PlayFirstSFX(transform.position, hangKey) == null) && hangClip != null)
+            AudioManager.Instance.PlaySFX(hangClip, transform.position, .9f, .05f);
+    }
+
+    // A new trophy settles onto its bracket after `delay`, with the chime and a burst.
+    void Settle(Mount mount, float delay)
+    {
+        if (mount?.model == null) return;
+        var tr = mount.model.transform;
+        var scale = tr.localScale;
+        tr.localScale = scale * .85f;
+        tr.DOScale(scale, .35f).SetEase(Ease.OutBack).SetDelay(delay).SetLink(mount.model);
+        var centre = Measure(mount.model.GetComponentsInChildren<Renderer>(true)) is Bounds b ? b.center : tr.position;
+        var forward = mount.anchor != null && mount.anchor.parent != null ? mount.anchor.parent.forward : transform.forward;
+        DOVirtual.DelayedCall(delay, () =>
         {
-            var mount = mounts.Find(x => x.trackId == t.id && x.value == m.value);
-            if (mount?.model == null) continue;
-            var tr = mount.model.transform;
-            var scale = tr.localScale;
-            float delay = n++ * .18f;
-            tr.localScale = scale * .85f;
-            tr.DOScale(scale, .35f).SetEase(Ease.OutBack).SetDelay(delay).SetLink(mount.model);
-            var centre = Measure(mount.model.GetComponentsInChildren<Renderer>(true)) is Bounds b ? b.center : tr.position;
-            var forward = mount.anchor != null && mount.anchor.parent != null ? mount.anchor.parent.forward : transform.forward;
-            DOVirtual.DelayedCall(delay, () =>
+            if (AudioManager.HasInstance && !string.IsNullOrEmpty(trophyKey)) AudioManager.Instance.PlayUI(trophyKey);
+            if (trophyEffect != null) Burst(centre + forward * restGap * 2f, forward);
+        }).SetLink(gameObject);
+    }
+
+    // Each plaque gets a use box (a trigger round the plaque, reaching out past its front so the plaque itself never
+    // blocks the look at it) with its TrophyMountSpot.
+    void MakeSpots()
+    {
+        if (!hangAtPlaques) return;
+        foreach (var mount in mounts)
+        {
+            var plaque = mount.anchor != null ? mount.anchor.parent : null;
+            if (plaque == null) continue;
+            Bounds? local = null;
+            foreach (var r in plaque.GetComponentsInChildren<Renderer>(true))
             {
-                if (AudioManager.HasInstance && !string.IsNullOrEmpty(trophyKey)) AudioManager.Instance.PlayUI(trophyKey);
-                if (trophyEffect != null) Burst(centre + forward * restGap * 2f, forward);
-            }).SetLink(gameObject);
+                if (mount.model != null && r.transform.IsChildOf(mount.model.transform)) continue;
+                var b = r.bounds;
+                for (int i = 0; i < 8; i++)
+                {
+                    var corner = plaque.InverseTransformPoint(new Vector3(i % 2 == 0 ? b.min.x : b.max.x, (i / 2) % 2 == 0 ? b.min.y : b.max.y, i / 4 == 0 ? b.min.z : b.max.z));
+                    if (local == null) local = new Bounds(corner, Vector3.zero); else { var l = local.Value; l.Encapsulate(corner); local = l; }
+                }
+            }
+            if (local == null) continue;
+            var spot = new GameObject("Hang spot");
+            spot.layer = plaque.gameObject.layer;
+            spot.transform.SetParent(plaque, false);
+            spot.AddComponent<TrophyMountSpot>().Bind(this, mount);
+            var box = spot.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            // Margins are in room units; the plaque may be scaled.
+            var s = plaque.lossyScale;
+            var margin = new Vector3(spotMargin / Mathf.Max(.0001f, Mathf.Abs(s.x)), spotMargin / Mathf.Max(.0001f, Mathf.Abs(s.y)), spotMargin / Mathf.Max(.0001f, Mathf.Abs(s.z)));
+            var bounds = local.Value;
+            bounds.Expand(new Vector3(margin.x, margin.y, 0f) * 2f);
+            // Out past its front (the plaque's forward is out of the wall).
+            bounds.center += new Vector3(0, 0, margin.z * .5f);
+            bounds.size += new Vector3(0, 0, margin.z);
+            box.center = bounds.center; box.size = bounds.size;
+            spot.AddComponent<InteractableTrigger>();
+            mount.glow = plaque.gameObject.AddComponent<QuestGlow>();
+            mount.glow.width = plaqueGlowWidth;
+            mount.glow.flatOn = plaque;   // a flat ring in front of the plaque: the shell round it hid its lower half from below
         }
     }
 
@@ -85,6 +168,8 @@ public class TrophyWall : MonoBehaviour, IInteractable
             ProgressionManager.Instance.MetaChanged += Refresh;
             ProgressionManager.Instance.FlagChanged += OnFlag;
         }
+        Refresh();
+        MakeSpots();
         Refresh();
     }
     void OnDestroy()
@@ -106,7 +191,10 @@ public class TrophyWall : MonoBehaviour, IInteractable
             var track = meta.Track(mount.trackId);
             var milestone = track?.milestones?.Find(x => x != null && x.value == mount.value);
             var item = milestone?.trophy;
-            bool hung = milestone != null && meta.Trophy(track, milestone) == ProgressionManager.TrophyState.Mounted;
+            var state = milestone != null ? meta.Trophy(track, milestone) : ProgressionManager.TrophyState.None;
+            bool hung = state == ProgressionManager.TrophyState.Mounted;
+            // Its place glows while its trophy is carried.
+            if (mount.glow != null) mount.glow.Show(hangAtPlaques && state == ProgressionManager.TrophyState.Carried);
             if (item == null || item.worldPrefab == null || !hung && !emptyOutlines) { if (mount.model != null) Destroy(mount.model); mount.model = null; mount.shownItem = null; continue; }
             if (mount.model != null && mount.shownItem == item && mount.showingOutline == !hung) continue;
             if (mount.model != null) Destroy(mount.model);

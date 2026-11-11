@@ -29,6 +29,12 @@ MonoBehaviour:
   deskProp: {fileID: 8813178666049725722, guid: ba98acb4362514e4b9ac54964dfc6650, type: 3}
   equipment:
   - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  rolledEquipment:
+  - item: {fileID: 11400000, guid: 1ba720940abfc634789e033fabe50259, type: 2}
+    rarity: 6
+    properties:
+    - id: manaregen
+      value: 0.5
   spells:
   - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   supplies:
@@ -51,4 +57,4 @@ MonoBehaviour:
   stamina: 20
   healthPerLevel: 1
   manaPerLevel: 2
-  skills: 000000000000000000000000140000000a0000000a0000000a000000i
+  skills: 000000000000000000000000140000000a0000000000000014000000i

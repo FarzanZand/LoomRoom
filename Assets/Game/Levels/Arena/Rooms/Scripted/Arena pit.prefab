@@ -1199,7 +1199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 225923992619737395, guid: 7b0b469e6f1a87d41a2ee6cdbee1917d, type: 3}
+  overridePrefab: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75

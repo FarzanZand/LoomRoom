@@ -9,7 +9,7 @@ public class SleepingGiantEvent : MonoBehaviour
 {
     [Tooltip("Where the giant sleeps (an Enemy socket of the template marks the same spot).")] public Transform bed;
     [Tooltip("Where the hoard lies: each spot gets a pile of gold or a piece of loot.")] public Transform[] hoard = new Transform[0];
-    [Range(0f, 1f), Tooltip("Share of the hoard spots that hold gear instead of gold.")] public float gearShare = .5f;
+    [Min(0), Tooltip("Pieces of gear in the hoard, each on a hoard spot picked at random; the other spots hold gold (the user, 2026-11-11: 3; it was half the spots, about five).")] public int items = 3;
     [Min(0)] public int goldPerPile = 6;
     [Min(0)] public int goldPerFloor = 3;
     [Tooltip("The rarity the hoard's gear is rolled at.")] public ItemRarity gearRarity = ItemRarity.Rare;
@@ -108,10 +108,15 @@ public class SleepingGiantEvent : MonoBehaviour
         var rng = new System.Random(room.Dungeon.EventSeed(room.Room, 50));
         int gold = goldPerPile + goldPerFloor * (ScriptedEventRoom.Floor - 1);
         var parent = room.Dungeon.transform;
-        foreach (var spot in hoard)
+        // Which spots hold the gear: Items of them, picked at random (the rest hold gold).
+        var spots = new List<Transform>();
+        foreach (var spot in hoard) if (spot != null) spots.Add(spot);
+        var gearSpots = new HashSet<Transform>();
+        var pool = new List<Transform>(spots);
+        for (int i = 0; i < items && pool.Count > 0; i++) { int k = rng.Next(pool.Count); gearSpots.Add(pool[k]); pool.RemoveAt(k); }
+        foreach (var spot in spots)
         {
-            if (spot == null) continue;
-            if (rng.NextDouble() < gearShare)
+            if (gearSpots.Contains(spot))
             {
                 var item = ScriptedEventRoom.Gear(gearRarity, rng, maxTier);
                 if (item != null) { var w = DungeonPickup.Spawn(item, spot.position, parent); if (w != null) loot.Add(w); }

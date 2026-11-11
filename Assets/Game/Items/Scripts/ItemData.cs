@@ -147,6 +147,10 @@ public partial class ItemData : ScriptableObject
     [BoxGroup("Weapon"), ShowIf("IsWeapon"), Min(0)]
     [Tooltip("Each hit rolls this much above or below the weapon's damage (Iron Sword 7 with 2 hits for 5-9).")]
     public int damageSpread;
+    [Min(0), Tooltip("Weapons: this much more on top of the spread at the high end only (13, spread 1, up 1: 12-15).")]
+    public int damageSpreadUp;
+    [Tooltip("Relic weapons: picked up in a dungeon, it hits as hard as the Common weapon of its kind (mace or sword) of the lowest gear tier that floor drops (floor 3 dropping tiers 2 and 3: the Iron Mace's damage and spread). Kept with the item (saved as its tier). Its own damage above is used until then.")]
+    public bool scaleWithFloor;
 
     // ── Effects ───────────────────────────────────────────────────────
 
@@ -247,6 +251,8 @@ public partial class ItemData : ScriptableObject
     // effects and spell, the change against what the player
     // is wearing in that slot (only while a player exists), then the description as flavour and the price.
     public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
+    // A Relic's unique skill line in the tooltip (the user, 2026-11-11: set apart, its own colour, its own line).
+    public const string SkillColor = "#F2C14E";
     public const string FlavourColor = "#B8A27A";
     // A half-height empty line between an item's own lines and its rolled ones (the user's choice: space, no line).
     const string RolledDivider = "<size=50%> </size>";
@@ -257,7 +263,7 @@ public partial class ItemData : ScriptableObject
         StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
         label = main == StatType.AttackDamage ? "Damage" : main == StatType.Block ? "Block" : "Armour";
-        text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";
+        text = IsWeapon && damageSpread + damageSpreadUp > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread + damageSpreadUp:0}" : $"{value:0.#}";
         return main.HasValue && value > 0f;
     }
 
@@ -299,7 +305,16 @@ public partial class ItemData : ScriptableObject
             foreach (var effect in effects)
             {
                 string line = effect?.Describe();
-                if (!string.IsNullOrWhiteSpace(line)) lines.Add($"<color={EffectColor}>{line}</color>");
+                if (!string.IsNullOrWhiteSpace(line) && !effect.UniqueSkill) lines.Add($"<color={EffectColor}>{line}</color>");
+            }
+        // A Relic's unique skill: after its stats and effects, set apart by a gap, in its own colour.
+        if (effects != null)
+            foreach (var effect in effects)
+            {
+                string line = effect != null && effect.UniqueSkill ? effect.Describe() : null;
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (lines.Count > 0) lines.Add(RolledDivider);
+                lines.Add($"<color={SkillColor}>{line}</color>");
             }
         if (spell != null)
         {

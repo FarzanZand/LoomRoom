@@ -660,6 +660,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
                 if (e.openedLine != null && !e.openedLine.IsEmpty) DungeonMaster.Say(e.openedLine);
                 if (fog) StartCoroutine(Rustle(.6f));
                 yield return Map.PopIn(e, .9f);
+                // Its question mark: the marks were laid while it was still off the map (the user, 2026-11-11: a rumoured
+                // Arena had risen with no mark over it).
+                RefreshNewPlaces();
             }
         }
         finally { popping = false; }

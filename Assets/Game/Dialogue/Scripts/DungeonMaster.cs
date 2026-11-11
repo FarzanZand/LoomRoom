@@ -171,8 +171,13 @@ public class DungeonMaster : Singleton<DungeonMaster>
     AudioClip voiceClip;
     public void StopVoice()
     {
-        // A paused voice (the pause menu) reads as not playing, but is stopped all the same.
-        if (voiceSource != null && (voiceSource.isPlaying || voicePaused) && voiceSource.clip == voiceClip) voiceSource.Stop();
+        // A paused voice (the pause menu) reads as not playing, but is stopped all the same (at once: it is silent). A
+        // playing one is faded out over a moment: cut in the middle of its wave it clicked like static.
+        if (voiceSource != null && (voiceSource.isPlaying || voicePaused) && voiceSource.clip == voiceClip)
+        {
+            if (voiceSource.isPlaying && AudioManager.HasInstance) AudioManager.Instance.FadeOutStop(voiceSource);
+            else voiceSource.Stop();
+        }
         if (voiceSource != null && AudioManager.HasInstance) AudioManager.Instance.Hold(voiceSource, false);
         voiceSource = null; voiceClip = null;
         if (AudioManager.HasInstance) AudioManager.Instance.StopMumble();

@@ -69,6 +69,9 @@ public class EffectEntry
     [ShowIf("@type == EffectType.Custom")]
     public ItemEffect customEffect;
 
+    // A Relic's unique skill (a Custom effect that says so, CritKillRewardEffect): set apart in the tooltip.
+    public bool UniqueSkill => type == EffectType.Custom && customEffect != null && customEffect.UniqueSkill;
+
     public string Describe()
     {
         switch (type)

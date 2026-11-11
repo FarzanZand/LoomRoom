@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1df3e06e675ee9d478f0645c78ca80c6, type: 3}
+  m_Name: Party Crasher skill
+  m_EditorClassIdentifier: Assembly-CSharp::CritKillRewardEffect
+  skillText: When you kill someone with a critical hit, the Dungeon Master celebrates you with a gold reward.
+  gold: 1
+  lineChance: 0.15
+  lines:
+  - text: Critical kill. Have a coin.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Now that is how you crash a party.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Bravo. A gold piece, on the house.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Did you see that? I saw that. Here, a coin.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  horn: {fileID: 8300000, guid: 222c5c5b81a53be438fa24551b55bda2, type: 3}
+  hornVolume: 0.5
+  confetti: {fileID: 2080198680516554705, guid: 348a3645e1d990b46af31bd3bb0ed57d, type: 3}
+  confettiSeconds: 3

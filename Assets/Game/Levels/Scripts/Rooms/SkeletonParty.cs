@@ -9,7 +9,9 @@ using UnityEngine.Playables;
 // party turns on the player at once) or opens the chest in the middle (they stop, stand turned to the player for
 // Chest Stare seconds, then attack; a hit cuts the stare short). Opening the chest also slams iron gates across the
 // room's ways out (ScriptedEventRoom's, the ambush's gates), which sink again once every dancer is dead. The Dungeon
-// Master has a word for each moment.
+// Master has a word for each moment. Cleared (every dancer dead), it sets ClearedFlag, and from then on the party and
+// the Portal hall that leads to it are left out of every floor of that save (DungeonRoomTemplate.Gone; the user,
+// 2026-11-11: doable once).
 public class SkeletonParty : MonoBehaviour
 {
     [Tooltip("The dance (any humanoid or rig clip the dancers can play). Empty: they stand where they are.")]
@@ -33,6 +35,9 @@ public class SkeletonParty : MonoBehaviour
     [Min(1), Tooltip("How many piles that gold comes out in.")] public int prizeGoldPiles = 10;
     [Tooltip("Opening the chest shuts the room's ways out with iron gates until every dancer is dead.")]
     public bool gateOnChest = true;
+
+    // Set once every dancer is dead: the party is never dealt again in this save (DungeonRoomTemplate.Gone).
+    public const string ClearedFlag = "event.skeletonParty";
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -131,7 +136,7 @@ public class SkeletonParty : MonoBehaviour
     void Update()
     {
         if (room < 0 || dungeon == null) return;
-        if (spoiled) { LiftGatesWhenCleared(); return; }
+        if (spoiled) { LiftGatesWhenCleared(); MarkClearedWhenAllDead(); return; }
         // Once the first search is over and everyone found has joined, there is nothing left to gather.
         bool gathering = Time.time < scanUntil || waiting.Count > 0 || waitingChests.Count > 0;
         if (gathering && Time.time >= nextGather) { nextGather = Time.time + .5f; Gather(); }
@@ -176,6 +181,15 @@ public class SkeletonParty : MonoBehaviour
             if (eventRoom.GatesShut) { gated = eventRoom; MessageLog.Post("Iron gates slam shut across the way out.", MessageKind.Warning); }
         }
         if (chest && chestStare > 0f) StartCoroutine(StareThenAttack(chestStare)); else ProvokeAll();
+    }
+
+    bool markedCleared;
+    void MarkClearedWhenAllDead()
+    {
+        if (markedCleared || dancers.Count == 0 || !ProgressionManager.HasInstance) return;
+        foreach (var d in dancers) if (d != null && d.Character.IsAlive) return;
+        markedCleared = true;
+        ProgressionManager.Instance.SetFlag(ClearedFlag);
     }
 
     // The gates the chest shut sink back once no dancer is left standing.

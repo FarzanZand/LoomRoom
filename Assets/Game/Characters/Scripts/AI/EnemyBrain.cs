@@ -439,7 +439,11 @@ public class EnemyBrain : MonoBehaviour
         bool inCombat = State == EnemyState.Chase || State == EnemyState.Attack;
         if (inCombat || Entranced) return;
 
-        if (Profile.aggressionMode == AggressionMode.AggressiveWhenHit && Perception.Target != null)
+        // Hurt by its target (the player, seen or not: a spell from the dark, a backstab it survived), it comes for them at
+        // once, Aggressive or Aggressive When Hit (the user, 2026-11-11: an enemy hit while the player was hidden only
+        // went to look). A hit from anything else still sends an Aggressive one to look where it came from.
+        if (Perception.Target != null && (Profile.aggressionMode == AggressionMode.AggressiveWhenHit
+            || Profile.aggressionMode == AggressionMode.Aggressive && info.Source != null && info.Source == Perception.Target))
             EnterCombat();
         else if (Profile.aggressionMode != AggressionMode.Passive)
             // A hit with no attacker (spikes, a fall) has nothing to follow: look where it hurt, not at an old noise.

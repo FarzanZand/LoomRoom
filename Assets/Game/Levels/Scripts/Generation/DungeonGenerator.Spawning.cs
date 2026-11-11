@@ -54,7 +54,7 @@ public partial class DungeonGenerator
         var allowed = new System.Collections.Generic.Dictionary<GameObject, bool>();
         bool Allowed(GameObject t)
         {
-            if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()); }
+            if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()) && !tpl.Gone; }
             return ok;
         }
         // No room template comes up twice on one floor (the Not a witch room, the event rooms): a profile's own
@@ -152,7 +152,7 @@ public partial class DungeonGenerator
         bool Fits(GameObject t, int room)
         {
             var tpl = t.GetComponent<DungeonRoomTemplate>();
-            if (tpl == null || !features.AllowsAll(tpl.Requires())) return false;
+            if (tpl == null || !features.AllowsAll(tpl.Requires()) || tpl.Gone) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
