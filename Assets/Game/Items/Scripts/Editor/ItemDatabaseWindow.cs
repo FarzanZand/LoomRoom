@@ -68,6 +68,7 @@ public partial class ItemDatabaseWindow : EditorWindow
                 top += 30f;
             }
             var body = new Rect(0, top, position.width, position.height - top);
+            if (tableView) { TableView(body); if (Event.current.type == EventType.MouseMove) Repaint(); return; }
             listWidth = Mathf.Clamp(listWidth, 260f, Mathf.Max(260f, body.width - 420f));
             var listRect = new Rect(body.x, body.y, listWidth, body.height);
             var split = new Rect(listRect.xMax, body.y, 5f, body.height);
@@ -110,6 +111,10 @@ public partial class ItemDatabaseWindow : EditorWindow
             if (GUILayout.Button(new GUIContent("Save", "Write every changed item to disk."), EditorStyles.toolbarButton, GUILayout.Width(50)))
             { ItemDatabaseAuthoring.Save(); Rebuild(); ShowNotification(new GUIContent("Items saved")); }
             if (GUILayout.Button("Tools", EditorStyles.toolbarDropDown, GUILayout.Width(60))) ToolsMenu();
+            GUILayout.Space(12);
+            // List: one item at a time. Table: a group of items side by side, every number editable (ItemDatabaseWindow.Table.cs).
+            int view = GUILayout.Toolbar(tableView ? 1 : 0, new[] { new GUIContent("List", "One item at a time, all its fields."), new GUIContent("Table", "A kind or a tier side by side, every stat editable.") }, EditorStyles.toolbarButton, GUILayout.Width(110));
+            if ((view == 1) != tableView) { if (view == 1) OpenTable(); else tableView = false; GUI.FocusControl(null); }
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{items.Count} items", EditorStyles.miniLabel);
         }
