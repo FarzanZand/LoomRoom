@@ -24,9 +24,9 @@ public partial class ProgressionManager
     public const string InventoryOpenedFlag = "story.inventoryOpened";
     // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
     public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == DashQuest || id == RumourQuest;
-    // Quests done in the room (the sheet, the trophy wall, the table, the symbol puzzle): the log leaves them out while
+    // Quests done in the room (the sheet, the trophy wall, the table, the locked box): the log leaves them out while
     // the table player is in a dungeon, where they can't be done.
-    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest || id == DiceQuest;
+    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == BoxKeyQuest || id == PosterQuest || id == DiceQuest;
 
     [FoldoutGroup("Quests"), PropertyOrder(50), LabelText("Quest log lines"), ListDrawerSettings(ShowFoldout = true)]
     [InfoBox("The lines the quest log shows. Each id is used by the game's code, so change only the text. {attack}, {block} and {sprint} become the player's own keys.")]
@@ -43,9 +43,9 @@ public partial class ProgressionManager
         new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
-        new Quest { id = TileQuest, text = "Put the missing tile in the symbol puzzle." },
+        new Quest { id = BoxKeyQuest, text = "Open the locked box on the coffee table." },
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
-        new Quest { id = DiceQuest, text = "Put the dice on the border of the big table." },
+        new Quest { id = DiceQuest, text = "Put the dice on the big table." },
         new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
     };
 

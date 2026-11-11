@@ -744,7 +744,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
                 || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(NoticedPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;
@@ -837,6 +837,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         SayWonLine();
         if (card != null) card.ShowHint(true, Hint);
         InMapView = true;
+        NoticeNewPlaces();
         bool cancelled = false, started = false;
         CampaignEncounter completing = null; bool resetting = false;
         bool MenuOpen() => ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen;

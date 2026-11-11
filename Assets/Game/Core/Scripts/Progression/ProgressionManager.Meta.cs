@@ -403,8 +403,8 @@ public partial class ProgressionManager
         SetFlag(SpoilsFlag, Spoils + tally.total);
         // The carried spoils are spent into the bank: they leave the bag.
         if (player != null) foreach (var inv in new[] { player.Bag, player.Hotbar }) if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) != null && inv.ItemAt(i).itemType == ItemType.Spoils) inv.RemoveAt(i);
-        // The puzzle's missing tile, if found, comes home too.
-        CarryTileHome(player);
+        // The key to the locked box, if found, comes home too.
+        CarryKeyHome(player);
         // The first run that ends (normally a death, sometimes a win) starts the lesson: the DM points to the sheet back
         // in the room and tops the spoils up to the lesson skill's price, since no run starts until it is bought.
         if (!HasFlag(LedgerIntroFlag))

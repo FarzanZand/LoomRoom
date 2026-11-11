@@ -75,16 +75,29 @@ public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryIn
     Coroutine sitting;
     Player sittingPlayer;
     bool ownsDialogue; // this pushed GameState.Dialogue and has not popped it yet
+    // The set of dice on the table's border (a child): while the dice are carried, using the table anywhere puts them
+    // down, before anything else the table does. Aiming at the border itself worked only along its west side, and a
+    // look at the table from anywhere else started a run with the dice still in hand (the user, 2026-11-11).
+    TableDice dice;
+    TableDice DiceToPlace(Character who)
+    {
+        if (!ProgressionManager.HasInstance || !ProgressionManager.Instance.DiceCarried) return null;
+        if (dice == null) dice = GetComponentInChildren<TableDice>(true);
+        return dice != null && dice.isActiveAndEnabled && (who == null || dice.CanInteract(who)) ? dice : null;
+    }
     public string Prompt => IntroController.WaitingForSeat ? "Sit down"
+        : !EndingRunning && DiceToPlace(null) is TableDice toPlace ? toPlace.Prompt
         : ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns
             ? (ProgressionManager.Instance.HasFlag(CharacterSheetTable.OpenedFlag) ? $"Train {ProgressionManager.Instance.LessonSkillName} at the sheet first" : "Look at the character sheet first")
-        : QuickPlayReady ? (CampaignManager.Instance.QuickPlayResumes ? continuePrompt : enterPrompt) : prompt;
+        : QuickPlayReady ? (CampaignManager.Instance.QuickPlayResumes ? continuePrompt : enterPrompt) : prompt + MapNews;
+    // A yellow question mark on the words that open the map while something new lies on it (CampaignManager.Markers).
+    static string MapNews => CampaignManager.Active ? CampaignManager.Instance.NewsMark : "";
     // E plays straight away (no map view) once the map has been seen: not during the intro, the first morning's sheet,
     // the lesson or the win ending.
     bool QuickPlayReady => playWithoutMap && CampaignManager.Active && !IntroController.WaitingForSeat && !IntroController.SheetPending
         && !EndingRunning && !(ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         && CampaignManager.Instance.CanQuickPlay;
-    public string SecondaryPrompt => QuickPlayReady ? mapPrompt : null;
+    public string SecondaryPrompt => QuickPlayReady ? mapPrompt + MapNews : null;
     public string SecondaryAction => "Map";
     // R: the map, as E was before.
     public void SecondaryInteract(Character who)
@@ -130,6 +143,8 @@ public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryIn
         }
         // The tabletop intro: the Dungeon Master is waiting for the player to sit down.
         if (IntroController.HasInstance && IntroController.Instance.TakeSeat()) return;
+        // Carrying the dice: they go on the table, whatever part of it was aimed at.
+        if (DiceToPlace(who) is TableDice toPlace) { toPlace.Interact(who); return; }
         // The lesson: no run until the lesson skill is trained at the sheet (the spend-spoils quest).
         if (ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns)
         {

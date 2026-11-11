@@ -38,7 +38,7 @@ Each biome's loot profile sets which tiers drop: the low tier is most common on 
 
 ## Room and saves
 
-Reaching floor 3 for the first time finds the clue "Shield, flame, hand." (`AdventureRoomPuzzle`). From then on the puzzle is in the room; pressing the tiles in that order unlocks Arcanist. A wrong press resets the sequence. The memorial table shows recent deaths; every memorial stays in the save.
+A locked box stands on the coffee table by the painting (`DiceBox`; since 2026-11-11 in place of the symbol puzzle that stood there, whose tiles pressed in the clue's order once unlocked the Arcanist and later gave the dice). Its key comes out of a dungeon chest and is carried home; the box opened with it holds a set of dice, which go on the big table for +5 Trading. Every death stays in the save as a memorial record (the memorial figures are gone).
 
 `AdventureSave` writes `loomroom-adventure.json` in Unity's persistent data folder, with a `.bak`. A checkpoint holds the floor-entry inventory, equipment, class, skills, XP, health, mana, stamina, gold, food regeneration, run blessings and run totals; memorials and story flags are kept separately. Resuming regenerates the floor from its seed. Death or victory clears the checkpoint.
 

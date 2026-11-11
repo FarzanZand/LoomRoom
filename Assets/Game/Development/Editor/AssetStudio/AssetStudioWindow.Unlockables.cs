@@ -7,8 +7,8 @@ using UnityEngine;
 
 // Asset Studio's Unlockables view (the user, 2026-10-30): everything the player can unlock that is not there from the
 // start, read from the game's own data: classes (AdventurerClass.unlockFlag, and what unlocks each: an item with
-// unlocksClass picked up, a room that drops it, the Arena's win, the room puzzle), places on the campaign map (a rumour,
-// deaths elsewhere, a later act), room key items (the missing tile, the symbol puzzle's dice), abilities (the skill
+// unlocksClass picked up, a room that drops it, the Arena's win), places on the campaign map (a rumour,
+// deaths elsewhere, a later act), room key items (the locked box's key and its dice), abilities (the skill
 // milestones bought at the character sheet), features (revive) and campaign events. Left, the list by type or in the
 // order the game unlocks them; in the middle the picked one (how it is unlocked, what it gives, its flag, its assets)
 // over the whole unlock flow, step by step. Read again with the World model; nothing here changes the game.
@@ -76,8 +76,6 @@ public partial class AssetStudioWindow
                 ways.Add($"win the fight in {room.name}" + (arena != null ? $" ({arena.displayName}" + (arena.rumoured ? ", opened by a rumour" : "") + ")" : ""));
                 u.order = Math.Max(u.order, arena != null && arena.rumoured ? 38 : 36);
             }
-            foreach (var puzzle in UnityEngine.Object.FindObjectsByType<AdventureRoomPuzzle>(FindObjectsInactive.Include).Where(p => !p.givesDice && p.unlockedClass == c))
-            { ways.Add("solve the symbol puzzle in the room"); u.assets.Add(puzzle); u.step = "Back in the room"; u.order = 70; }
             u.how = ways.Count > 0 ? string.Join("; or ", ways) : $"<color=#e0a85a>nothing unlocks it yet</color> (its flag {c.unlockFlag} is never set by the game's data)";
             list.Add(u);
         }
@@ -99,14 +97,14 @@ public partial class AssetStudioWindow
         }
 
         // Room key items that come in play.
-        if (pm != null && pm.missingTile != null)
+        if (pm != null && pm.boxKey != null)
         {
-            var u = new Unlockable { name = pm.missingTile.itemName, type = "Room item", how = "comes out of a chest opened after the starting room's, on any floor of a real run, until carried home", gives = "The class puzzle's missing piece, for the coffee table.", flag = "the tile's state", step = "In the dungeon", order = 22, icon = pm.missingTile.icon != null ? pm.missingTile.icon.texture : null };
-            u.assets.Add(pm.missingTile); list.Add(u);
+            var u = new Unlockable { name = pm.boxKey.itemName, type = "Room item", how = "comes out of a chest opened after the starting room's, on any floor of a real run, until carried home", gives = "Opens the locked box on the coffee table.", flag = "puzzle.tile", step = "In the dungeon", order = 22, icon = pm.boxKey.icon != null ? pm.boxKey.icon.texture : null };
+            u.assets.Add(pm.boxKey); list.Add(u);
         }
         if (pm != null && pm.diceSet != null)
         {
-            var u = new Unlockable { name = pm.diceSet.itemName, type = "Room item", how = "solve the symbol puzzle on the coffee table (it needs the missing tile)", gives = $"Put on the big table's border: +{pm.diceTradingBonus} Trading while they lie there.", flag = "room.dice", step = "Back in the room", order = 70, icon = pm.diceSet.icon != null ? pm.diceSet.icon.texture : null };
+            var u = new Unlockable { name = pm.diceSet.itemName, type = "Room item", how = "open the locked box on the coffee table (it needs its key)", gives = $"Put on the big table's border: +{pm.diceTradingBonus} Trading while they lie there.", flag = "room.dice", step = "Back in the room", order = 70, icon = pm.diceSet.icon != null ? pm.diceSet.icon.texture : null };
             u.assets.Add(pm.diceSet); list.Add(u);
         }
 

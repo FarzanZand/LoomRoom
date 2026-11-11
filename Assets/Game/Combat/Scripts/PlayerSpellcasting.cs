@@ -258,8 +258,10 @@ public class PlayerSpellcasting : MonoBehaviour
         { projectile.HomingTarget = aimed; projectile.HomingTurn = spell.homingTurn; }
         projectile.Launch(player, spell, Power(spell), progress);
 
-        // The flame leaves the hand and relights once the throw has recovered.
-        if (held != null) { held.Stop(); held = null; }
+        // What was held is what flies now: it is gone from the hand at once and relights once the throw has recovered.
+        // (Left to die away where the hand had been, a fireball's lava rock hung in the air beside the arm while the
+        // thrown one flew: a second ball.)
+        if (held != null) { Destroy(held.gameObject); held = null; }
         relightAt = Time.time + spell.recoverySeconds + .1f;
     }
 

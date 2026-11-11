@@ -1,11 +1,14 @@
 using UnityEngine;
 
-// The small banner floating over a place on the realm map not yet visited (CampaignManager.Markers): it turns about its
-// upright to face the view and bobs slowly. On the banner prefab, Resources/Campaign new place banner.
+// The mark floating over a place on the realm map not yet visited (CampaignManager.Markers): it turns to face the view
+// and bobs slowly. On Resources/Campaign new place mark (the yellow question mark, which faces the eye fully so it
+// reads from the raised map view too) and on the older Resources/Campaign new place banner (about its upright only).
 public class CampaignBanner : MonoBehaviour
 {
     [Tooltip("How far it rises and sinks, in the map's units.")] public float bob = .25f;
     [Tooltip("Seconds for one rise and fall.")] public float period = 2.4f;
+    [Tooltip("Faces the eye fully, tipping back when looked down on (a flat mark seen from the raised map view); off, it only turns about its upright.")]
+    public bool faceFully;
 
     Vector3 rest;
     float phase;
@@ -21,6 +24,7 @@ public class CampaignBanner : MonoBehaviour
         transform.localPosition = rest + Vector3.up * (Mathf.Sin(t) * bob);
         var cam = Camera.main;
         if (cam == null) return;
+        if (faceFully) { transform.rotation = Quaternion.LookRotation(cam.transform.forward, cam.transform.up); return; }
         var look = cam.transform.position - transform.position; look.y = 0f;
         if (look.sqrMagnitude > 1e-6f) transform.rotation = Quaternion.LookRotation(-look.normalized, Vector3.up);
     }

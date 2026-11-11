@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9b09d7280cceb3542858f64ad852430d, type: 3}
-  m_Name: Missing tile
+  m_Name: Box key
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  itemName: Missing tile
+  itemName: Small key
   saveId: key.missingTile
   weaponCategory: 0
   spell: {fileID: 0}
   unlocksClass: {fileID: 0}
   rarity: 5
-  description: Key item. A stone tile with a symbol on it.
-  icon: {fileID: 21300000, guid: 07cf60f38dffb7d4b81fc7642be64ed3, type: 3}
+  description: Key item. Opens the locked box in the room.
+  icon: {fileID: 21300000, guid: a0877680fd54de14f82b9d6727a539f9, type: 3}
   iconSource:
-    custom: 0
+    custom: 1
     model: {fileID: 0}
     outfit: 
     turn: {x: 0, y: 0, z: 0}
     flip: 0
   tag: 
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 5724806590113139273, guid: ba51da0f75800974782421525a8ab1c7, type: 3}
   pickupVisualPrefab: {fileID: 0}
   itemType: 5
   maxStackSize: 1
