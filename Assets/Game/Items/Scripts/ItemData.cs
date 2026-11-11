@@ -149,7 +149,7 @@ public partial class ItemData : ScriptableObject
     public int damageSpread;
     [Min(0), Tooltip("Weapons: this much more on top of the spread at the high end only (13, spread 1, up 1: 12-15).")]
     public int damageSpreadUp;
-    [Tooltip("Relic weapons: picked up in a dungeon, it hits as hard as the Common weapon of its kind (mace or sword) of the lowest gear tier that floor drops (floor 3 dropping tiers 2 and 3: the Iron Mace's damage and spread). Kept with the item (saved as its tier). Its own damage above is used until then.")]
+    [Tooltip("Relic weapons: picked up in a dungeon, it hits as hard as a Unique weapon of its kind (mace or sword) of the lowest gear tier that floor drops (floor 3 dropping tiers 2 and 3: a Unique Iron Mace's damage, the Iron Mace's spread; ItemData.RelicScalesAs). Kept with the item (saved as its tier). Its own damage above is used until then.")]
     public bool scaleWithFloor;
 
     // ── Effects ───────────────────────────────────────────────────────

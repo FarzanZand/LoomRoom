@@ -101,7 +101,7 @@ public partial class ItemDatabaseWindow
                     spread = EditorGUILayout.IntField(new GUIContent("Spread", "Hits land this much below or above the damage."), relic.damageSpread);
                     up = EditorGUILayout.IntField(new GUIContent("Spread up", "This much more at the high end only."), relic.damageSpreadUp);
                     EditorGUILayout.LabelField(" ", $"Hits {Mathf.Max(1f, value - spread):0}-{value + spread + up:0}", EditorStyles.miniLabel);
-                    scale = EditorGUILayout.Toggle(new GUIContent("Scale with floor", "Picked up in a dungeon, it hits as hard as the Common weapon of its kind at the lowest tier that floor drops."), relic.scaleWithFloor);
+                    scale = EditorGUILayout.Toggle(new GUIContent("Scale with floor", "Picked up in a dungeon, it hits as hard as a Unique weapon of its kind at the lowest tier that floor drops."), relic.scaleWithFloor);
                 }
                 if (EditorGUI.EndChangeCheck())
                 {

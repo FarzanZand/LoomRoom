@@ -129,7 +129,11 @@ public partial class ItemData
         return Variant(item.BaseItem, item.rarity, rolls.ToArray());
     }
 
-    // Its main number and spread from the Common weapon of its kind at that tier.
+    // A scaled relic hits as this rarity of its kind would (the user, 2026-11-11: the Common number was too low; relics
+    // wear Unique's gold).
+    public const ItemRarity RelicScalesAs = ItemRarity.Unique;
+
+    // Its main number and spread from the weapon of its kind at that tier, raised to RelicScalesAs.
     static void ScaleToTier(ItemData copy, List<StatModifierEntry> modifiers)
     {
         int tier = copy.ScaledTier;
@@ -137,6 +141,7 @@ public partial class ItemData
         var like = InventoryManager.Instance.itemCatalog.Find(i => i != null && i != copy.baseItem && i.IsWeapon && i.tier == tier
             && i.weaponCategory == copy.weaponCategory && i.rarity == ItemRarity.Common && i.BaseItem == i);
         if (like == null || !like.TryMainStat(out _, out float damage, out _)) return;
+        damage = RaisedMain(damage, RelicScalesAs, true);
         for (int i = 0; i < modifiers.Count; i++)
             if (modifiers[i] != null && modifiers[i].stat == StatType.AttackDamage && modifiers[i].type == ModifierType.Flat)
                 modifiers[i] = new StatModifierEntry { stat = StatType.AttackDamage, type = ModifierType.Flat, value = damage };
