@@ -37,40 +37,7 @@ MonoBehaviour:
   spotlightFadeOut: 0.8
   dialogueDelay: 2
   introDialogue: 1
-  bossName: Edgar the Disco King
-  introLines:
-  - speaker: 0
-    name: 
-    model: {fileID: 0}
-    text: Well, well. Someone found my dance floor.
-    choices: []
-  - speaker: 0
-    name: 
-    model: {fileID: 0}
-    text: Nobody has come down those stairs in a hundred years. The music got lonely.
-    choices: []
-  - speaker: 0
-    name: 
-    model: {fileID: 0}
-    text: So tell me. Do you want to party?
-    choices:
-    - label: Yes
-      reply:
-      - speaker: 0
-        name: 
-        model: {fileID: 0}
-        text: Finally, someone with taste! Try to keep up.
-    - label: No
-      reply:
-      - speaker: 0
-        name: 
-        model: {fileID: 0}
-        text: Nobody says no to the disco king. You're dancing anyway!
-  - speaker: 1
-    name: 
-    model: {fileID: 0}
-    text: You heard the king. Dance.
-    choices: []
+  dialogue: {fileID: 11400000, guid: 0310c7a242734b54383b2198be9c7037, type: 2}
   introCard: 1
   title:
     lettersPerSecond: 11
@@ -83,28 +50,6 @@ MonoBehaviour:
     letterVolume: 0.8
     letterPitch: 0.7
     letterPitchVariance: 0.05
-  versus:
-    leftIn: 0.26
-    rightDelay: 0.5
-    rightIn: 0.26
-    slamDelay: 0.22
-    hold: 1.6
-    throwOut: 0.3
-    shake: 18
-    heroAura: {r: 0.88, g: 0.64, b: 0.29, a: 0.5}
-    bossAura: {r: 0.18, g: 0.71, b: 0.68, a: 0.52}
-    bandWhoosh:
-    - {fileID: 8300000, guid: 66c075aeb2dcb4076bdbf11d1776836d, type: 3}
-    bandLand:
-    - {fileID: 8300000, guid: b0c75b87ffdc44a388c2aead54014fad, type: 3}
-    - {fileID: 8300000, guid: b11279cfa37cf42cb98c67f0a74d2082, type: 3}
-    slam:
-    - {fileID: 8300000, guid: b29876153e4b14d4299b75e4f7ef690a, type: 3}
-    - {fileID: 8300000, guid: 762052cce11fab84aaefb239c9c6c910, type: 3}
-    - {fileID: 8300000, guid: dc200c391309841c39b4f134cc7bd26a, type: 3}
-    throwOff:
-    - {fileID: 8300000, guid: d1610b49de30b46439425f9d649e854f, type: 3}
-    volume: 0.9
   fightMusicFade: 0.25
   painting: {fileID: 0}
   changeRoomLighting: 1
@@ -153,17 +98,14 @@ MonoBehaviour:
   - {r: 1, g: 0.8, b: 0.25, a: 1}
   - {r: 0.6, g: 0.4, b: 1, a: 1}
   - {r: 0.4, g: 1, b: 0.5, a: 1}
-  phaseTwoBossLine: Let's turn it up!
   danceFloor: {fileID: 2100000, guid: 2743806b102874944b19636fddc4d606, type: 2}
   discoBall: {fileID: 648832377681289351, guid: 67cb16bee95be49448d672fbd8c5cf77, type: 3}
-  backupDancer: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  backupDancer: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   backupCount: 2
   backupAtHealth: 0.45
   backupDance: {fileID: 7400000, guid: edb3a746d0413f948bfbb5a48380d7ff, type: 2}
   backupOneHit: 1
   backupHealth: 1
-  backupBossLine: Boys! Get in here!
-  backupBrokenLine: Hey! That was my crew!
   backupLine:
     text: Oh, he has a crew.
     voice: {fileID: 0}

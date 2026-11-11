@@ -139,6 +139,8 @@ public class ClassFigures : MonoBehaviour
             InputManager.Instance.NavigatePressed += OnNavigate;
             InputManager.Instance.SubmitPressed += OnSubmit;
             InputManager.Instance.CancelPressed += OnCancel;
+            // Escape stands up here, not the pause menu; where it can't (the intro's one figure), Escape is the pause menu.
+            InputManager.Instance.WantCancel(this, canCancel);
         }
         while (chosen == null && !cancelled)
         {
@@ -157,6 +159,7 @@ public class ClassFigures : MonoBehaviour
             InputManager.Instance.NavigatePressed -= OnNavigate;
             InputManager.Instance.SubmitPressed -= OnSubmit;
             InputManager.Instance.CancelPressed -= OnCancel;
+            InputManager.Instance.WantCancel(this, false);
         }
         ShowCard(false);
         if (card != null) card.Choices = null;
@@ -321,5 +324,6 @@ public class ClassFigures : MonoBehaviour
         InputManager.Instance.NavigatePressed -= OnNavigate;
         InputManager.Instance.SubmitPressed -= OnSubmit;
         InputManager.Instance.CancelPressed -= OnCancel;
+        InputManager.Instance.WantCancel(this, false);
     }
 }

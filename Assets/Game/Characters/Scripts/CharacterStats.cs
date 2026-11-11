@@ -184,11 +184,12 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public bool  HasStat(StatType stat) => baseStats.ContainsKey(stat);
     public float GetBase(StatType stat) => baseStats.TryGetValue(stat, out var v) ? v : 0f;
 
-    public float GetFinal(StatType stat) =>
-        ResolveStat(stat, stat == StatType.Armor && blocker != null && blocker.IsGuarding);
+    // A shield adds no armour (since 2026-11-11 it blocks a flat amount, Block): armour on a shield, rolled before then,
+    // is left out everywhere.
+    public float GetFinal(StatType stat) => ResolveStat(stat, false);
 
-    // Armor a shield adds on a block, and only then.
-    public float BlockArmor => ResolveStat(StatType.Armor, true) - ResolveStat(StatType.Armor, false);
+    // What a raised shield takes off a blocked physical hit (the shield's Block; CharacterStats.AfterBlock).
+    public float Block => Mathf.Max(0f, ResolveStat(StatType.Block, false));
     public float ArmorWithoutShield => ResolveStat(StatType.Armor, false);
 
     float ResolveStat(StatType stat, bool shieldArmor)
@@ -297,11 +298,11 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // The boss arena's blessing (BossBlessing): a successful block stops all of a hit's damage, spells included.
     public bool BlockBlessing { get; set; }
 
-    // What a hit leaves once the target's armour has had its share (armour: the target's Armor stat, with the shield's when
-    // blocked). The player's armour against an unblocked physical hit takes a share off it that depends on the floor
-    // (CombatManager.Armor.cs); otherwise armour comes off the effective share of the hit and the rest always lands, a block
-    // using all of it, and magic ignores it. TakeDamage takes every hit through it; Asset Studio's Balance page reckons
-    // fights with it.
+    // What a hit leaves once the target's armour has had its share (armour: the target's Armor stat). The player's armour
+    // against an unblocked physical hit takes a share off it that depends on the floor (CombatManager.Armor.cs); otherwise
+    // armour comes off the effective share of the hit and the rest always lands, and magic ignores it. A blocked physical
+    // hit does not come here: the shield takes its Block off it as a flat amount (AfterBlock). TakeDamage takes every hit
+    // through these; Asset Studio's Balance page reckons fights with them.
     public static float AfterArmor(float amount, float armour, bool player, bool blocked, bool magic, int floor)
     {
         if (!magic && !blocked && player && CombatManager.ScaledPlayerArmor) return amount * (1f - CombatManager.ArmorCut(armour, floor));
@@ -309,6 +310,12 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         float effective = blocked ? 1f : CombatManager.HasInstance ? CombatManager.Instance.armorEffectiveness : .65f;
         return Mathf.Max(0f, effective * amount - stop) + (1f - effective) * amount;
     }
+
+    // A blocked physical hit (the user, 2026-11-11: a shield lowers a hit by a flat amount instead of adding armour): the
+    // shield's Block comes off it, armour plays no part, and the Blocking skill takes its share off what is left
+    // (blockedMultiplier, AdventurerProgress.BlockedDamageMultiplier). Shields are set so a shield of a floor's usual tier
+    // stops 85% of that floor's average enemy hit (AssetStudioWindow.SetShieldBlocks).
+    public static float AfterBlock(float amount, float block, float blockedMultiplier = 1f) => Mathf.Max(0f, amount - Mathf.Max(0f, block)) * Mathf.Clamp01(blockedMultiplier);
 
     public void TakeDamage(DamageInfo info)
     {
@@ -325,13 +332,19 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         }
 
-        float actual = AfterArmor(info.Amount, ResolveStat(StatType.Armor, info.Blocked), Character is Player, info.Blocked, info.Magic, CombatManager.CurrentFloor);
+        // Blocked: the shield's Block off the hit, then Blocking's share off what is left. Otherwise armour has its share.
+        float actual = info.Blocked && !info.Magic
+            ? AfterBlock(info.Amount, Block, adventurer != null ? adventurer.BlockedDamageMultiplier : 1f)
+            : AfterArmor(info.Amount, ResolveStat(StatType.Armor, false), Character is Player, info.Blocked, info.Magic, CombatManager.CurrentFloor);
         // Legendary Blocking: nothing gets through a successful block.
         if (info.Blocked && adventurer != null && adventurer.BlockAbsorbsAll) actual = 0;
-        // The boss arena's blessing: the same, for every blocked hit.
+        // The boss arena's blessing: the same, for every blocked hit, spells included.
         if (info.Blocked && blessed) actual = 0;
-        // Blocking's second bonus: less of a blocked hit gets through.
-        else if (info.Blocked && adventurer != null) actual *= adventurer.BlockedDamageMultiplier;
+        // Every hit is a whole number (the user, 2026-11-11), to the nearest, halves up; a tick of an effect (a burn) that
+        // does anything does at least 1, so a small one is not rounded away.
+        float exact = actual;
+        actual = Mathf.Floor(actual + .5f);
+        if (info.FromEffect && exact > 0f && actual < 1f) actual = 1f;
         if (DiesInOneHit && actual > 0f) actual = Mathf.Max(actual, CurrentHealth);
         // The cheats' 999 damage attacks: every hit the table player lands on someone else does 999.
         if (DevCheats.MightyBlows && info.Source is Player && Character is not Player) actual = Mathf.Max(actual, DevCheats.MightyDamage);

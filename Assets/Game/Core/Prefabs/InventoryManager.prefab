@@ -103,11 +103,13 @@ MonoBehaviour:
     priceMultiplier: 6
     chance: 0
     chancePerFloor: 0
+  weaponBonusShare: 0.5
   merchantRarity: 1.3
   rarityChanceMultiplier: 0.75
   dropChanceMultiplier: 0.375
   enemyDropMultiplier: 1
   goldMultiplier: 1
+  tomeShare: 0.1
   pickupPrefab: {fileID: 1330799697983367974, guid: 131a9d21a95cf1c4dab3f3341378fd11, type: 3}
   dropDistance: 1.5
   dropHeight: 0.5
@@ -194,7 +196,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 88b9084b9e04dfb4091fe6bdaf6cc7ab, type: 2}
   - {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
   - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
-  - {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   - {fileID: 11400000, guid: 59a5a017e89f89f4aade75a648ed728f, type: 2}
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: 3ccc03954110e164b8f3f33f0846ae33, type: 2}
@@ -219,6 +220,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 69c21311d51852345a5847c75e7d3d78, type: 2}
   - {fileID: 11400000, guid: 489b68072fde09d47ab6e6ac5e28b3c4, type: 2}
   - {fileID: 11400000, guid: da021421336c4e044b8577430b9b244a, type: 2}
+  - {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   - {fileID: 11400000, guid: a8ed3e954e4716c4fb913da5c61cd4df, type: 2}
   - {fileID: 11400000, guid: 9c7bf754f4464bf448c68e619455c04e, type: 2}
   - {fileID: 11400000, guid: f3e174e2d59fe0246986e9033e6d7dcd, type: 2}
@@ -228,6 +230,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 61c18dafe9b3ad248afea7b79da3806b, type: 2}
   - {fileID: 11400000, guid: 0c0d117275fce3a40a6fd1a62eb3aa2c, type: 2}
   - {fileID: 11400000, guid: a3742a86f964b0e419ed25671faaa660, type: 2}
+  - {fileID: 11400000, guid: 24f63a86e5052b3429ddbaa9cb7b6b71, type: 2}
   - {fileID: 11400000, guid: 7c25d4724d339204fbfd32b673b9df2c, type: 2}
   - {fileID: 11400000, guid: 7758fed02f44ccd42ab06b25421c3e77, type: 2}
   - {fileID: 11400000, guid: 90831aebf0e01e341965e527b9268312, type: 2}
@@ -246,3 +249,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d8ea63e7e71106f4c9d1bbeac1ff2cc8, type: 2}
   - {fileID: 11400000, guid: b13160b822d67ac4ea8cedf1a407cbf7, type: 2}
   - {fileID: 11400000, guid: 4bb227fa66d5f074c9d83918eb32cff4, type: 2}
+  - {fileID: 11400000, guid: 498efce1b955ab844942a82518711287, type: 2}

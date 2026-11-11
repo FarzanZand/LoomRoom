@@ -227,7 +227,7 @@ public class Hitbox : MonoBehaviour
         }
         var weapon = owner is Player wielder && wielder.Equipment != null ? wielder.Equipment.Get(EquipmentSlot.RightHand) : null;
         // The weapon's damage range: each hit lands anywhere within its spread (5-9 for a 7 with 2).
-        if (weapon != null && weapon.damageSpread > 0) baseDamage = Mathf.Max(1f, baseDamage + UnityEngine.Random.Range(-weapon.damageSpread, weapon.damageSpread + 1));
+        if (weapon != null && weapon.damageSpread + weapon.damageSpreadUp > 0) baseDamage = Mathf.Max(1f, baseDamage + UnityEngine.Random.Range(-weapon.damageSpread, weapon.damageSpread + weapon.damageSpreadUp + 1));
         var skills = owner is Player trainee ? trainee.GetComponent<AdventurerProgress>() : null;
         if (skills != null) baseDamage = skills.MeleeDamage(baseDamage, weapon, heavy);
         // Gear that hits one kind of creature harder (a mace on skeletons, a Ratcatcher on beasts).

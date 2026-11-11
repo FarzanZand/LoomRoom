@@ -61,7 +61,7 @@ public partial class ItemData : ScriptableObject
 
     public ItemType itemType = ItemType.Generic;
 
-    [Min(1)] public int maxStackSize = 1;
+    [MinValue(1)] public int maxStackSize = 1;
 
     [Tooltip("Cells it takes in the bag grid, width x height. 0 x 0 picks by kind: swords and maces 1x3, " +
         "knives 1x2, shields 2x2, body armour 2x3, helm, gloves, boots and leggings 2x2, the rest 1x1.")]
@@ -91,12 +91,12 @@ public partial class ItemData : ScriptableObject
     }
 
     [Tooltip("Price in gold at a merchant. Selling pays CurrencyManager's sell fraction of this. Zero uses the manager's fallback price.")]
-    [Min(0)] public int value;
+    [MinValue(0)] public int value;
 
     [Tooltip("Random loot tier: 1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal. 0 = never dropped at random (quest items, keys, uniques placed by hand). Biome loot profiles pick gear by tier.")]
     [Range(0, 12)] public int tier;
     [Tooltip("How often this item is picked among others of its tier and kind.")]
-    [Min(0)] public float lootWeight = 1;
+    [MinValue(0)] public float lootWeight = 1;
 
     [Tooltip("AudioData preserves the shared pickup setting. Clip or key explicitly overrides the shared pickup sound for this item.")]
     public ItemAudioSource pickupAudioSource;
@@ -118,7 +118,7 @@ public partial class ItemData : ScriptableObject
     [BoxGroup("Equipment"), ShowIf("canBeEquipped")]
     public EquipmentSlot equipSlot = EquipmentSlot.RightHand;
 
-    [BoxGroup("Equipment"), ShowIf("ShowsInHand"), Min(0.01f)]
+    [BoxGroup("Equipment"), ShowIf("ShowsInHand"), MinValue(0.01)]
     [Tooltip("Visual scale while held (and while eaten or drunk). Does not change the world pickup or combat reach.")]
     public float heldScale = 1f;
 
@@ -144,9 +144,14 @@ public partial class ItemData : ScriptableObject
     [BoxGroup("Weapon"), ShowIf("IsWeapon"), HideLabel]
     public HitProfile weapon = new HitProfile();
 
-    [BoxGroup("Weapon"), ShowIf("IsWeapon"), Min(0)]
+    [BoxGroup("Weapon"), ShowIf("IsWeapon"), MinValue(0)]
     [Tooltip("Each hit rolls this much above or below the weapon's damage (Iron Sword 7 with 2 hits for 5-9).")]
     public int damageSpread;
+    [BoxGroup("Weapon"), ShowIf("IsWeapon"), MinValue(0), Tooltip("Weapons: this much more on top of the spread at the high end only (13, spread 1, up 1: 12-15).")]
+    public int damageSpreadUp;
+    [BoxGroup("Weapon"), ShowIf("IsWeapon")]
+    [Tooltip("Relic weapons: picked up in a dungeon, it hits as hard as a Unique weapon of its kind (mace or sword) of the lowest gear tier that floor drops (floor 3 dropping tiers 2 and 3: a Unique Iron Mace's damage, the Iron Mace's spread; ItemData.RelicScalesAs). Kept with the item (saved as its tier). Its own damage above is used until then.")]
+    public bool scaleWithFloor;
 
     // ── Effects ───────────────────────────────────────────────────────
 
@@ -177,10 +182,10 @@ public partial class ItemData : ScriptableObject
     [Tooltip("Makes this consumable a scroll of this spell: used from the hotbar or the bag, the spell goes off at once with no mana and no wind-up, " +
         "using one charge; the last charge used, the scroll is gone. A spell that can't be cast now (nothing to aim at, health full) uses none.")]
     public SpellDefinition scrollSpell;
-    [BoxGroup("Consumable"), ShowIf("IsScroll"), Min(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
+    [BoxGroup("Consumable"), ShowIf("IsScroll"), MinValue(1), Tooltip("Times the scroll can be read before it is gone (spent charges are kept on its slot and saved).")]
     public int charges = 1;
 
-    [BoxGroup("Consumable"), ShowIf("UsesAnimation"), Min(.2f)]
+    [BoxGroup("Consumable"), ShowIf("UsesAnimation"), MinValue(.2)]
     [Tooltip("Seconds the eating or drinking takes (the clip is played to fit).")]
     public float eatDuration = 1.3f;
 
@@ -247,17 +252,19 @@ public partial class ItemData : ScriptableObject
     // effects and spell, the change against what the player
     // is wearing in that slot (only while a player exists), then the description as flavour and the price.
     public const string TextColor = "#E6E1D6", DimColor = "#9AA3AD", GoodColor = "#80CEA0", BadColor = "#E78787", EffectColor = "#A1C5DE";
+    // A Relic's unique skill line in the tooltip (the user, 2026-11-11: set apart, its own colour, its own line).
+    public const string SkillColor = "#F2C14E";
     public const string FlavourColor = "#B8A27A";
     // A half-height empty line between an item's own lines and its rolled ones (the user's choice: space, no line).
     const string RolledDivider = "<size=50%> </size>";
 
-    // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's or armour's armour.
+    // The item's main number for the tooltip and its compare bars: a weapon's damage, a shield's block, armour's armour.
     public bool TryMainStat(out string label, out float value, out string text)
     {
         StatType? main = MainStatType;
         value = main.HasValue ? FlatBonus(this, main.Value) : 0f;
-        label = main == StatType.AttackDamage ? "Damage" : itemType == ItemType.Shield ? "Armour when blocking" : "Armour";
-        text = IsWeapon && damageSpread > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread:0}" : $"{value:0.#}";
+        label = main == StatType.AttackDamage ? "Damage" : main == StatType.Block ? "Block" : "Armour";
+        text = IsWeapon && damageSpread + damageSpreadUp > 0 ? $"{Mathf.Max(1f, value - damageSpread):0}-{value + damageSpread + damageSpreadUp:0}" : $"{value:0.#}";
         return main.HasValue && value > 0f;
     }
 
@@ -270,7 +277,7 @@ public partial class ItemData : ScriptableObject
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
-        StatType? main = IsWeapon ? StatType.AttackDamage : (itemType == ItemType.Shield || itemType == ItemType.Equipment) && canBeEquipped ? StatType.Armor : null;
+        StatType? main = MainStatType;
         bool showMain = TryMainStat(out string mainLabel, out float mainValue, out string mainText);
         if (showMain && withMain)
         {
@@ -299,7 +306,16 @@ public partial class ItemData : ScriptableObject
             foreach (var effect in effects)
             {
                 string line = effect?.Describe();
-                if (!string.IsNullOrWhiteSpace(line)) lines.Add($"<color={EffectColor}>{line}</color>");
+                if (!string.IsNullOrWhiteSpace(line) && !effect.UniqueSkill) lines.Add($"<color={EffectColor}>{line}</color>");
+            }
+        // A Relic's unique skill: after its stats and effects, set apart by a gap, in its own colour.
+        if (effects != null)
+            foreach (var effect in effects)
+            {
+                string line = effect != null && effect.UniqueSkill ? effect.Describe() : null;
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (lines.Count > 0) lines.Add(RolledDivider);
+                lines.Add($"<color={SkillColor}>{line}</color>");
             }
         if (spell != null)
         {
@@ -436,8 +452,8 @@ public partial class ItemData : ScriptableObject
         return new StatModifierEntry { stat = stat, type = type, value = value }.Describe() + (blocking ? " while blocking" : "");
     }
 
-    // A shield's armor only counts when a hit is blocked (CharacterStats.TakeDamage).
-    bool BlockOnly(StatType stat) => itemType == ItemType.Shield && stat == StatType.Armor;
+    // Nothing counts only on a block any more: a shield's Block is its own stat (CharacterStats.AfterBlock).
+    bool BlockOnly(StatType stat) => false;
 
     static bool Worse(StatType stat, float value) => value < 0;
 

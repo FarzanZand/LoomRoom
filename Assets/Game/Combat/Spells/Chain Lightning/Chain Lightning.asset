@@ -17,7 +17,7 @@ MonoBehaviour:
   description: A bolt that leaps from the enemy you aim at to the ones near it, weaker
     with every jump.
   icon: {fileID: 21300000, guid: 6c1e871a6e542884cb19a0a51fb270e1, type: 3}
-  manaCost: 16
+  manaCost: 13
   power: 14
   castSeconds: 0.55
   recoverySeconds: 0.35

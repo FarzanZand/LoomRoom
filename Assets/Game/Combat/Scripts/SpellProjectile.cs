@@ -107,8 +107,12 @@ public class SpellProjectile : MonoBehaviour
         }
         var hits = Physics.SphereCastAll(transform.position, collisionRadius, transform.forward, distance, collisionMask, QueryTriggerInteraction.Ignore);
         System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        // The room player standing at the table has no colliders while the table player plays (only the body shows):
+        // a player's spell flown up out of the dungeon into them bursts on them, and the Dungeon Master remarks on it.
+        float selfAt = DungeonMasterRemarks.RoomSelfAlong(owner, transform.position, transform.forward, distance, collisionRadius);
         foreach (var hit in hits)
         {
+            if (selfAt <= hit.distance) break;
             if (owner != null && hit.transform.IsChildOf(owner.transform)) continue;
             if (hit.transform.IsChildOf(transform)) continue;
             // Walls that only keep walkers in (the boss stage's edges, a board's rim), and what a placed ball started in.
@@ -126,7 +130,7 @@ public class SpellProjectile : MonoBehaviour
             // Co-op: off a teammate's raised shield too (their stand-in here).
             var struck = hit.collider.GetComponentInParent<Character>();
             if (struck != null && struck != owner && CoopWorld.StandInDeflects(struck, transform.forward)) { Deflect(struck, point); return; }
-            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner);
+            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner, spell);
             // Piercing: through the character, hurting it, on to the next.
             var struckCharacter = hit.collider.GetComponentInParent<Character>();
             if (struckCharacter != null && passed.Contains(struckCharacter)) continue;
@@ -142,6 +146,12 @@ public class SpellProjectile : MonoBehaviour
             }
             var normal = hit.distance <= 0 ? -transform.forward : hit.normal;
             Explode(point, normal);
+            return;
+        }
+        if (selfAt < float.MaxValue)
+        {
+            DungeonMasterRemarks.SpellHitRoomSelf(owner, spell);
+            Explode(transform.position + transform.forward * selfAt, -transform.forward);
             return;
         }
         transform.position += transform.forward * distance;

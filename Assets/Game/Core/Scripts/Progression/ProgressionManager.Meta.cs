@@ -87,6 +87,8 @@ public partial class ProgressionManager
     [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Price of a first level"), Min(1), Tooltip("Spoils the first level bought costs, on any skill or attribute.")]
     [InfoBox("The character sheet on the hobby table in the bedroom. Between runs the player spends spoils there on skills and attributes, and every run starts from what was bought. A skill's milestones unlock abilities (Athletics 15: the dash) and give a trophy for the wall; a hung trophy unlocks it for every class.")] public int firstPrice = 10;
     [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Each next level costs x"), Min(1), Tooltip("Each level costs this many times the one before (1.5: 10, 15, 22...).")] public float priceMultiplier = 1.5f;
+    [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Attributes cost x"), Min(0), Tooltip("Attributes (Strength, Dexterity, Constitution, Intelligence) cost this many times a skill's level at the same step (the user, 2026-11-11: 2, so 20, 30, 45...).")]
+    public float attributePriceMultiplier = 2f;
     [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Skills and attributes for sale"), ListDrawerSettings(ShowFoldout = true, ListElementLabelName = "displayName")]
     [Tooltip("Every row on the sheet: the eight skills and the four attributes, with their levels and milestones.")]
     public List<MetaTrack> tracks = new();
@@ -144,8 +146,10 @@ public partial class ProgressionManager
     public int ValueAtLevels(MetaTrack t, int levels) => t.kind == MetaTrackKind.Skill ? levels * t.perLevel : t.baseScore + levels;
     public bool Maxed(MetaTrack t) => t == null || Levels(t) >= t.levels;
     // The next level's price, or -1 at the top.
-    public int NextPrice(MetaTrack t) => t == null || Maxed(t) ? -1 : Mathf.RoundToInt(firstPrice * Mathf.Pow(priceMultiplier, Bought(t)));
-    public int Spent(MetaTrack t) { int sum = 0; for (int i = 0; i < Bought(t); i++) sum += Mathf.RoundToInt(firstPrice * Mathf.Pow(priceMultiplier, i)); return sum; }
+    public int NextPrice(MetaTrack t) => t == null || Maxed(t) ? -1 : PriceAt(t, Bought(t));
+    public int Spent(MetaTrack t) { int sum = 0; for (int i = 0; i < Bought(t); i++) sum += PriceAt(t, i); return sum; }
+    // A track's level at this step: the first price grown by the multiplier, an attribute's times Attributes Cost x.
+    int PriceAt(MetaTrack t, int step) => Mathf.RoundToInt(firstPrice * Mathf.Pow(priceMultiplier, step) * (t.kind == MetaTrackKind.Attribute ? attributePriceMultiplier : 1f));
 
     // The skill a run starts from, before the class adds its own.
     public int BaseRank(AdventureSkill skill) { var t = Track(skill); return t != null ? Value(t) : 0; }
@@ -176,8 +180,15 @@ public partial class ProgressionManager
         var stats = AttributeStats(t.attribute);
         float[] perPoint = { t.bonusPerPoint, t.secondBonusPerPoint, t.thirdBonusPerPoint };
         for (int i = 0; i < stats.Length; i++)
-            if (perPoint[i] != 0) yield return (stats[i], points * perPoint[i] * StatScale(t.attribute, stats[i]), StatKind(t.attribute, stats[i]));
+            if (perPoint[i] != 0) yield return (stats[i], points * perPoint[i] * StatScale(t.attribute, stats[i]) * BelowBase(stats[i], points), StatKind(t.attribute, stats[i]));
     }
+
+    // Points under the base score take mana regeneration away at a quarter of the rate they add it above (the user,
+    // 2026-11-11: a Warrior's Intelligence 6 left 0 mana a second; it should still regenerate and scale with
+    // Intelligence). With the table player's 0.3 a second: Intelligence 6 0.2, 7 0.25, 8 0.3, 9 0.5, 11 0.9. The stat
+    // also never goes under its floor on TablePlayer's data (ManaRegen min 0.1).
+    public const float ManaRegenBelowBase = .25f;
+    static float BelowBase(StatType stat, float points) => stat == StatType.ManaRegen && points < 0f ? ManaRegenBelowBase : 1f;
     // "+5 health, +5 stamina": what this many points give, in the track's own words. lineBreak puts each on its own line.
     public static string AttributeEffects(MetaTrack t, float points, bool lineBreak = false)
     {
@@ -309,7 +320,7 @@ public partial class ProgressionManager
         return earned.Count;
     }
 
-    // At the wall: everything carried goes up at once.
+    // At the wall: everything carried goes up at once (TrophyWall.hangAtPlaques off).
     public int MountCarried()
     {
         var carried = TrophiesIn(TrophyState.Carried);
@@ -322,6 +333,16 @@ public partial class ProgressionManager
         if (carried.Count > 0) MetaChanged?.Invoke();
         if (lesson) SayLessonLearned();
         return carried.Count;
+    }
+
+    // At its own plaque: one carried trophy goes up. False when it isn't carried.
+    public bool MountOne(MetaTrack t, Milestone m)
+    {
+        if (t == null || m == null || Trophy(t, m) != TrophyState.Carried) return false;
+        SetTrophy(t, m, TrophyState.Mounted);
+        MetaChanged?.Invoke();
+        if (t.skill == lessonSkill && t.milestones.IndexOf(m) == 0) SayLessonLearned();
+        return true;
     }
 
     // "You can dash now", once (the flag's key is from when the lesson ended with the shield bash's trophy).
@@ -408,8 +429,8 @@ public partial class ProgressionManager
         SetFlag(SpoilsFlag, Spoils + tally.total);
         // The carried spoils are spent into the bank: they leave the bag.
         if (player != null) foreach (var inv in new[] { player.Bag, player.Hotbar }) if (inv != null) for (int i = 0; i < inv.SlotCount; i++) if (inv.ItemAt(i) != null && inv.ItemAt(i).itemType == ItemType.Spoils) inv.RemoveAt(i);
-        // The puzzle's missing tile, if found, comes home too.
-        CarryTileHome(player);
+        // The key to the locked box, if found, comes home too.
+        CarryKeyHome(player);
         // The first run that ends (normally a death, sometimes a win) starts the lesson: the DM points to the sheet back
         // in the room and tops the spoils up to the lesson skill's price, since no run starts until it is bought.
         if (!HasFlag(LedgerIntroFlag))
@@ -448,6 +469,7 @@ public partial class ProgressionManager
         UpdateSheetQuest();
         UpdatePosterQuest();
         UpdateDiceQuest();
+        UpdateClassQuest();
         if (lessonRoutine != null) return;
         if (HasFlag(LedgerIntroFlag) && !HasFlag(LedgerSaidFlag) && RoomPlayerFree) lessonRoutine = StartCoroutine(SayLesson());
     }

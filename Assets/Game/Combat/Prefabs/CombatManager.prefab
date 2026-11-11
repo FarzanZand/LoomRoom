@@ -243,7 +243,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   heavyImpactShudder: 0.7
   heavyChargeTime: 0.7
-  heavyDamageMultiplier: 2
+  heavyDamageMultiplier: 1.5
   heavyKnockbackMultiplier: 1.8
   heavyStaminaCost: 11
   heavyStaggerDuration: 0.65

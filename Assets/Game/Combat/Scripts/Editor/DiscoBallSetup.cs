@@ -219,7 +219,9 @@ public static class DiscoBallSetup
 
         var fight = AssetDatabase.LoadAssetAtPath<BossFight>("Assets/Game/Levels/Dungeon1/Biomes/Crypt Lord fight.asset");
         Undo.RecordObject(fight, "Disco show");
-        fight.phaseTwoBossLine = "Let's turn it up!";
+        var words = PortraitDialogueSetup.BossWords(fight);
+        Undo.RecordObject(words, "Disco show");
+        words.phaseTwoLine = "Let's turn it up!";
         // The second phase at 80%; the DM's beam at the boss's health, not on the beat: at 70% and at 20% (the crew is called in at 45%).
         fight.phaseTwoHealth = .8f;
         BossEvent healthBeam = null;
@@ -241,8 +243,9 @@ public static class DiscoBallSetup
         fight.backupDancer = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab");
         fight.backupCount = 2; fight.backupAtHealth = .45f; fight.backupHealth = 1f;
         fight.backupDance = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Skeleton dance.anim");
-        fight.backupBossLine = "Boys! Get in here!";
-        fight.backupBrokenLine = "Hey! That was my crew!";
+        words.backupCallLine = "Boys! Get in here!";
+        words.backupBrokenLine = "Hey! That was my crew!";
+        EditorUtility.SetDirty(words);
         fight.backupLine = new DungeonMaster.Line { text = "Oh, he has a crew.", mumble = true };
         MakeDefeatPose();
         fight.defeatPose = AssetDatabase.LoadAssetAtPath<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/Disco pose.anim");

@@ -99,13 +99,13 @@ public class PortraitDialogueUI : MonoBehaviour
             var line = lines[i];
             if (line == null) continue;
             bool asks = line.choices != null && line.choices.Count > 0;
-            yield return Line(line.speaker, line.name, line.model, line.text, boss, bossName, !asks);
+            yield return Line(line.speaker, line.name, line.model, line.text, boss, bossName, !asks, line.voice);
             if (!asks) continue;
             yield return Choose(line.choices);
             var choice = picked >= 0 && picked < line.choices.Count ? line.choices[picked] : null;
             if (choice?.reply == null) continue;
             foreach (var reply in choice.reply)
-                if (reply != null) yield return Line(reply.speaker, reply.name, reply.model, reply.text, boss, bossName, true);
+                if (reply != null) yield return Line(reply.speaker, reply.name, reply.model, reply.text, boss, bossName, true, reply.voice);
         }
         if (shown) yield return Fade(0f);
         Hide(false);
@@ -171,25 +171,37 @@ public class PortraitDialogueUI : MonoBehaviour
 
     // One line: the Dungeon Master's in his own feed as always (the box steps aside while he
     // speaks), anyone else's in the box. Wait: hold until it is read and pressed on (a line with answers doesn't).
-    IEnumerator Line(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool wait)
+    // voice: a recorded voice for the line (the box's Voice), played instead of the blips or his mumble.
+    IEnumerator Line(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool wait, AudioData voice = null)
     {
         if (speaker == PortraitSpeaker.DungeonMaster)
         {
             if (shown) { yield return Fade(0f); shown = false; }
             Fire();
-            DungeonMaster.Say(new DungeonMaster.Line { text = text, mumble = true, inPerson = true });
+            DungeonMaster.Say(new DungeonMaster.Line { text = text, voice = voice, mumble = voice == null, inPerson = true });
             yield return null;
             while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
             yield break;
         }
-        yield return Box(speaker, name, model, text, boss, bossName);
+        yield return Box(speaker, name, model, text, boss, bossName, voice);
         if (wait) yield return WaitForNext();
+    }
+
+    // The voice of the box on show, stopped when the next box comes or the box goes (only while it is still that
+    // clip on that source: the pool hands finished sources to other sounds).
+    AudioSource boxVoice;
+    AudioClip boxVoiceClip;
+    void StopBoxVoice()
+    {
+        if (boxVoice != null && boxVoice.isPlaying && boxVoice.clip == boxVoiceClip) boxVoice.Stop();
+        boxVoice = null; boxVoiceClip = null;
     }
 
     void Fire() { firstShown?.Invoke(); firstShown = null; }
 
-    IEnumerator Box(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName)
+    IEnumerator Box(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, AudioData voice = null)
     {
+        StopBoxVoice();
         var source = speaker == PortraitSpeaker.Boss ? (boss != null ? boss.gameObject : null) : model;
         stage.Show(source);
         if (portrait != null) { portrait.texture = stage.Texture; portrait.enabled = source != null; }
@@ -201,12 +213,15 @@ public class PortraitDialogueUI : MonoBehaviour
         body.maxVisibleCharacters = 0;
         if (!shown) { yield return Fade(1f); shown = true; Fire(); }
         float pitch = speaker == PortraitSpeaker.Boss ? bossPitch : otherPitch;
-        yield return Type(pitch);
+        // A recorded voice takes the blips' place.
+        var clip = voice != null ? voice.GetClip() : null;
+        if (clip != null && AudioManager.HasInstance) { boxVoice = AudioManager.Instance.PlayUI(clip, voice.volume, voice.RandomPitch()); boxVoiceClip = clip; }
+        yield return Type(pitch, clip == null);
         if (arrow != null) arrow.enabled = true;
     }
 
     // Letter by letter, held after punctuation; a press shows the rest at once.
-    IEnumerator Type(float pitch)
+    IEnumerator Type(float pitch, bool blipping = true)
     {
         body.ForceMeshUpdate();
         int total = body.textInfo.characterCount, since = 0;
@@ -224,7 +239,7 @@ public class PortraitDialogueUI : MonoBehaviour
                 wait += 1f / charactersPerSecond;
                 if (c == '.' || c == '!' || c == '?') wait += punctuationPause;
                 else if (c == ',' || c == ';' || c == ':') wait += punctuationPause * .5f;
-                if (!char.IsWhiteSpace(c) && ++since % blipEvery == 1) Blip(pitch);
+                if (blipping && !char.IsWhiteSpace(c) && ++since % blipEvery == 1) Blip(pitch);
             }
             yield return null;
         }
@@ -335,6 +350,7 @@ public class PortraitDialogueUI : MonoBehaviour
 
     void Hide(bool instant)
     {
+        StopBoxVoice();
         if (group != null) { group.alpha = 0f; group.blocksRaycasts = false; }
         if (choiceColumn != null) choiceColumn.gameObject.SetActive(false);
         if (choiceTemplate != null) choiceTemplate.gameObject.SetActive(false);

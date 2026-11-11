@@ -155,8 +155,8 @@ public class ShieldBash : MonoBehaviour
         var target = enemy.Character;
         // Stunned first, so the hit's hurt reaction plays (a swing in progress would swallow it).
         enemy.Stun(t.stun);
-        // All the player's armour, the shield's own (only counted on a block) included: it is a shield blow.
-        float armor = player.Stats != null ? player.Stats.ArmorWithoutShield + player.Stats.BlockArmor : 0f;
+        // The player's armour and the shield's Block (as damage stopped): it is a shield blow.
+        float armor = player.Stats != null ? player.Stats.ArmorWithoutShield + player.Stats.Block / Mathf.Max(.01f, CombatManager.ArmorPerPoint) : 0f;
         var chest = Chest(target);
         var col = target.GetComponent<Collider>();
         var info = new DamageInfo

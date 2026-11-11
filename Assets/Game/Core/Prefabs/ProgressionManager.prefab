@@ -44,8 +44,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
-  enemyBaseDamage: 1.38
+  enemyBaseDamage: 0.966
   enemyBaseHealth: 1
+  boxKey: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
+  classQuestLine:
+    text: Bored of that hero? Pick another at the desk by the bed.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 1
   diceSet: {fileID: 0}
   diceTradingBonus: 5
   levelUpReward: 0
@@ -152,8 +158,7 @@ MonoBehaviour:
     - value: 25
       ability: {fileID: 0}
       unlock: Crush
-      description: A heavy mace hit knocks 10 armour off the target for the rest
-        of the fight, up to 5 times.
+      description: A heavy mace hit knocks 10 armour off the target for the rest of the fight, up to 5 times.
       icon: {fileID: 21300000, guid: a8349bd2793955c4a9d6546bd65394b4, type: 3}
       trophy: {fileID: 11400000, guid: b1a6850fe492d4643b2c79564b88c087, type: 2}
     - value: 50
@@ -182,8 +187,7 @@ MonoBehaviour:
     - value: 25
       ability: {fileID: 0}
       unlock: Burning
-      description: 'Fireball sets what it hits on fire: a fifth of the hit again
-        every second for 3 seconds.'
+      description: 'Fireball sets what it hits on fire: a fifth of the hit again every second for 3 seconds.'
       icon: {fileID: 21300000, guid: 665feea7fd5b7b94d8b11b1cf07a2fed, type: 3}
       trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
     - value: 50
@@ -356,7 +360,7 @@ MonoBehaviour:
     unit: damage
     secondBonusPerPoint: 2
     secondUnit: shield bash damage
-    thirdBonusPerPoint: 10
+    thirdBonusPerPoint: 5
     thirdUnit: '% heavy attack damage'
     milestones: []
   - id: dexterity
@@ -415,7 +419,6 @@ MonoBehaviour:
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
     text: 'Dash: press {sprint}, holding left, right or back.'
-  missingTile: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   startingPlayer: 1
   skipWakeUp: 1
   startAt: 0

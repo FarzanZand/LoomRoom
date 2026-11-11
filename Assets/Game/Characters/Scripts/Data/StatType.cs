@@ -38,6 +38,7 @@ public enum StatType
     FireCircleOnHit = 34,    // chance a melee hit casts Fire Circle under the target (CombatManager.fireCircleOnHit)
     HeavyDamage = 35,        // charged heavy attacks deal (1 + this) times more (Strength's third gain)
     HealingItems = 36,       // potions and food heal (1 + this) times more (Constitution's third gain)
+    Block = 37,              // damage a raised shield takes off a blocked physical hit, as a flat amount (a shield's main number)
 }
 
 public enum ModifierType
@@ -71,7 +72,7 @@ public class StatModifierEntry
     public float        value;
     public ModifierType type = ModifierType.Flat;
 
-    public static string Label(StatType stat)=>stat switch {StatType.Armor=>"Armour",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",StatType.MaxStamina=>"Stamina",StatType.StaminaRegen=>"Stamina/sec",_=>stat.ToString()};
+    public static string Label(StatType stat)=>stat switch {StatType.Armor=>"Armour",StatType.Block=>"Block",StatType.AttackDamage=>"Damage",StatType.MaxHealth=>"Health",StatType.MaxMana=>"Mana",StatType.ManaRegen=>"Mana/sec",StatType.MaxStamina=>"Stamina",StatType.StaminaRegen=>"Stamina/sec",_=>stat.ToString()};
     public string Describe() => Describe(stat, type, value);
 
     // One stat in plain words: "+6% critical chance", "Kills heal 2", "+1 m light radius".
@@ -104,6 +105,7 @@ public class StatModifierEntry
                 case StatType.MaxMana: return $"{sign}{value:0.#} mana";
                 case StatType.AttackDamage: return $"{sign}{value:0.#} damage";
                 case StatType.Armor: return $"{sign}{value:0.#} armour";
+                case StatType.Block: return $"{sign}{value:0.#} block";
                 case StatType.MaxStamina: return $"{sign}{value:0.#} stamina";
             }
         return type switch

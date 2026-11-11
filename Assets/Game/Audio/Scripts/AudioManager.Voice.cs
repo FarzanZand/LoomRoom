@@ -76,13 +76,37 @@ public partial class AudioManager
         return seconds;
     }
 
-    // A skipped or dropped line takes its mumble with it: the syllables still to come and what is playing now.
+    // A skipped or dropped line takes its mumble with it: the syllables still to come and what is playing now, faded
+    // out over a moment (FadeOutStop) rather than cut, which clicked like static (the user, 2026-11-11).
     public void StopMumble()
     {
         if (mumbleLater != null) { StopCoroutine(mumbleLater); mumbleLater = null; }
         foreach (var (source, clip) in mumblePlaying)
-            if (source != null && source.isPlaying && source.clip == clip) source.Stop();
+            if (source != null && source.isPlaying && source.clip == clip) FadeOutStop(source);
         mumblePlaying.Clear();
+    }
+
+    // Stops a playing sound by bringing its volume down to nothing over `seconds` (real time, so it also ends behind the
+    // pause menu) and only then stopping it: a sound cut off in the middle of its wave clicks. If the pool hands the
+    // source to another sound meanwhile, that sound is left alone.
+    public const float CutFadeSeconds = .06f;
+    public void FadeOutStop(AudioSource source, float seconds = CutFadeSeconds)
+    {
+        if (source == null) return;
+        if (!source.isPlaying || seconds <= 0f || !isActiveAndEnabled) { source.Stop(); return; }
+        StartCoroutine(FadingOut(source, source.clip, seconds));
+    }
+
+    IEnumerator FadingOut(AudioSource source, AudioClip clip, float seconds)
+    {
+        float from = source.volume;
+        for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
+        {
+            if (source == null || source.clip != clip || !source.isPlaying) yield break;
+            source.volume = from * (1f - t / seconds);
+            yield return null;
+        }
+        if (source != null && source.clip == clip) source.Stop();
     }
 
     Coroutine mumbleLater;

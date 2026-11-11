@@ -22,7 +22,7 @@ public partial class AssetStudioWindow
     List<DungeonBiome> BossBiomes() => World.biomes.Concat(World.levels.Where(l => !l.tool && !l.Staged && l.data.baseBiome != null).Select(l => l.data.baseBiome))
         .Where(b => b != null && b.guardian != null && b.guardian.enabled && b.guardian.boss != null).Distinct().ToList();
 
-    static string BossName(DungeonBiome b) => b.guardian.fight != null && !string.IsNullOrWhiteSpace(b.guardian.fight.bossName) ? b.guardian.fight.bossName : b.guardian.boss.name;
+    static string BossName(DungeonBiome b) => b.guardian.fight != null && !string.IsNullOrWhiteSpace(b.guardian.fight.BossName) ? b.guardian.fight.BossName : b.guardian.boss.name;
 
     void DrawBosses(Rect r)
     {

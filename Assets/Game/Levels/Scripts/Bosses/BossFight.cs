@@ -62,11 +62,15 @@ public class BossFight : ScriptableObject
     public float dialogueDelay = 2f;
     [TabGroup(Tabs, "Intro"), Tooltip("Dialogue boxes (PortraitDialogueUI: each speaker's head and shoulders idling beside a box, typed out) in place of his opening and fight lines in the feed.")]
     public bool introDialogue;
-    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), Tooltip("The boss's name on its boxes, its title and the boss bar. Empty: the boss's own name.")]
-    public string bossName;
-    [TabGroup(Tabs, "Intro"), ShowIf(nameof(introDialogue)), ListDrawerSettings(ShowFoldout = true)]
-    public List<PortraitLine> introLines = new();
-    public bool HasIntroDialogue => introDialogue && introLines != null && introLines.Count > 0;
+    [TabGroup(Tabs, "Intro"), Tooltip("The boss's words in the dialogue box (an asset in Dialogue/Conversations): its name on the boxes, the title and the boss bar, the intro conversation and its lines during the fight. Empty: the boss says nothing in the box and keeps its own name.")]
+    public BossDialogueData dialogue;
+    public bool HasIntroDialogue => introDialogue && IntroLines != null && IntroLines.Count > 0;
+    // The boss's words, read from its dialogue asset (null without one).
+    public string BossName => dialogue != null && !string.IsNullOrWhiteSpace(dialogue.bossName) ? dialogue.bossName : null;
+    public List<PortraitLine> IntroLines => dialogue != null ? dialogue.introLines : null;
+    public string PhaseTwoBossLine => dialogue != null ? dialogue.phaseTwoLine : null;
+    public string BackupCallLine => dialogue != null ? dialogue.backupCallLine : null;
+    public string BackupBrokenLine => dialogue != null ? dialogue.backupBrokenLine : null;
     [TabGroup(Tabs, "Intro"), Tooltip("Just before the battle, after the dialogue. Boss Title: the boss's name typed out large in the upper half of the screen (BossTitleUI), its title fading in beneath, the fight's music starting with the first letter. None: straight into the battle.")]
     public BossIntroCard introCard = BossIntroCard.None;
     [TabGroup(Tabs, "Intro"), ShowIf("@introCard == BossIntroCard.BossTitle"), InlineProperty, HideLabel]
@@ -136,8 +140,6 @@ public class BossFight : ScriptableObject
     [TabGroup(Tabs, "Phase two"), Min(0)] public float phaseTwoShake = 1.2f;
     [TabGroup(Tabs, "Phase two"), Tooltip("A light show for the second phase: the stage's fires, moonlight and follow spot step through these colours, one step a beat of the music, each fire a different one. Empty: the stage's own second-phase colours (green fires, red moonlight).")]
     public Color[] phaseTwoDisco = new Color[0];
-    [TabGroup(Tabs, "Phase two"), Tooltip("Said by the boss itself in the portrait box as the second phase begins (the fight goes on under it), in place of the DM's line above. Empty: the DM's line.")]
-    public string phaseTwoBossLine = "";
     [TabGroup(Tabs, "Phase two"), Tooltip("The dance floor (BossDanceFloor): tiles over the stage that light up in the light show's colours on the beat from the second phase on. Empty: none.")]
     public Material danceFloor;
     [TabGroup(Tabs, "Phase two"), Tooltip("A disco ball on a chain (BossDiscoBall) lowered over the stage as the second phase begins, throwing moving spots of light across it. Empty: none.")]
@@ -155,10 +157,6 @@ public class BossFight : ScriptableObject
     public bool backupOneHit = true;
     [TabGroup(Tabs, "Backup"), ShowIf("@backupDancer != null && !backupOneHit"), Range(.05f, 1), Tooltip("Their health, as a share of their own (backup dancers fall to a few blows).")]
     public float backupHealth = .35f;
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box as it calls them in.")]
-    public string backupBossLine = "";
-    [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Tooltip("Said by the boss in the portrait box once the last of them is down.")]
-    public string backupBrokenLine = "";
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer))] public DungeonMaster.Line backupLine = new() { text = "Backup dancers. Break them up or he keeps going." };
 
     // ── Defeat ──

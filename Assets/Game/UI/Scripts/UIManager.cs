@@ -112,7 +112,8 @@ public class UIManager : Singleton<UIManager>
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Legendary gear (red, the highest step; never rolled, only given).")] public Color legendary = DefaultLegendary;
     public static readonly Color DefaultLegendary = new(.58f, .18f, .15f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of Relics (hand-made items).")] public Color relic = DefaultRelic;
-    public static readonly Color DefaultRelic = new(.58f, .17f, .06f);
+    // For now the Unique gold (the user, 2026-11-11: relics in the masterwork colour); the scene's UIManager holds it too.
+    public static readonly Color DefaultRelic = new(.52f, .34f, .06f);
     [PropertyOrder(2), Tooltip("Slot fill, loot beam and name of spoils (the meta currency: monster parts and baubles).")] public Color spoils = DefaultSpoils;
     public static readonly Color DefaultSpoils = new(.58f, .22f, .86f);
 

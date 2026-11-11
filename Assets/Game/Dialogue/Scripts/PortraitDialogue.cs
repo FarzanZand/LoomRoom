@@ -20,6 +20,8 @@ public class PortraitLine
     [ShowIf("@speaker == PortraitSpeaker.Other"), Tooltip("The model whose upper body shows (a character prefab or anything with an Animator).")]
     public GameObject model;
     [TextArea(2, 4), HideLabel] public string text;
+    [Tooltip("A recorded voice played as the box shows, in place of the typing blips (on a Dungeon Master box, in place of his mumble). Empty: the blips.")]
+    public AudioData voice;
     [Tooltip("Answers the player picks from after this box. None: a click moves on.")]
     public List<PortraitChoice> choices = new();
 }
@@ -40,4 +42,6 @@ public class PortraitReply
     public string name;
     [ShowIf("@speaker == PortraitSpeaker.Other")] public GameObject model;
     [TextArea(2, 4), HideLabel] public string text;
+    [Tooltip("A recorded voice played as the box shows, in place of the typing blips (on a Dungeon Master box, in place of his mumble). Empty: the blips.")]
+    public AudioData voice;
 }

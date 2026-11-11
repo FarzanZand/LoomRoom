@@ -290,8 +290,7 @@ MonoBehaviour:
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Dungeon
-  description: 'Twelve floors: the cellars, the catacombs, the crypt, the deep realms
-    and the ruins. The Crypt Lord waits on the fourth.'
+  description: 'Twelve floors: the cellars, the catacombs, the crypt, the deep realms and the ruins. The Crypt Lord waits on the fourth.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages:
@@ -518,8 +517,8 @@ MonoBehaviour:
   startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems:
-  - {fileID: 11400000, guid: 4a4394d85c661094685472112848380d, type: 2}
   - {fileID: 11400000, guid: 0b6e3e8af8b9f7d4b8c9486117de94d5, type: 2}
+  startingChestTome: 1
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
@@ -546,7 +545,7 @@ MonoBehaviour:
   authoredMarkers: []
   baseBiome: {fileID: -5829940429411452592}
   backgroundMusic: {fileID: 8300000, guid: 0396187a27184e445b4342ef6ccfd533, type: 3}
-  backgroundMusicVolume: 1
+  backgroundMusicVolume: 0.5
   dialogue:
   - trigger: 1
     room: 0

@@ -48,8 +48,8 @@ MonoBehaviour:
   heldRotation: {x: 0, y: 90, z: 0}
   equipOnPickup: 0
   statModifiers:
-  - stat: 1
-    value: 90
+  - stat: 37
+    value: 21
     type: 0
   weapon:
     useDefaultEffects: 1

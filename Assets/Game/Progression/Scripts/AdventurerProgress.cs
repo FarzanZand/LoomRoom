@@ -216,7 +216,7 @@ public class AdventurerProgress : MonoBehaviour
         taught.Clear(); crushed.Clear(); visited.Clear(); sprintDistance = healCredit = 0; lastPosition = transform.position;
         player.Equipment.UnequipAll(); player.Bag.Clear(); player.Hotbar.Clear();
         ApplyStats();
-        foreach (var item in selectedClass.equipment)
+        foreach (var item in selectedClass.Kit())
         {
             if (item == null) continue;
             bool hand = item.equipSlot == EquipmentSlot.RightHand || item.equipSlot == EquipmentSlot.LeftHand;
@@ -295,8 +295,7 @@ public class AdventurerProgress : MonoBehaviour
             int athletics = (sheet ? meta.BaseRank(AdventureSkill.Athletics) : 0) + c.StartingRank(AdventureSkill.Athletics);
             stamina += Definition(AdventureSkill.Athletics)?.ExtraAt(Mathf.Clamp(athletics, 0, 100)) ?? 0;
         }
-        if (c.equipment != null)
-            foreach (var item in c.equipment)
+        foreach (var item in c.Kit())
                 if (item != null && item.statModifiers != null)
                     foreach (var m in item.statModifiers) if (m != null && m.type == ModifierType.Flat) Add(m.stat, m.value);
         return (health, mana, stamina);

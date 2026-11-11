@@ -50,7 +50,7 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
-        if (!PostersCarried) { CampaignManager.Instance.ChooseHeroInRoom(); return; }
+        if (!PostersCarried) { CampaignManager.Instance.ChooseHeroInRoom(); ProgressionManager.Instance.ClassDeskUsed(); return; }
         var meta = ProgressionManager.Instance;
         int n = 0;
         foreach (var p in posters)
@@ -100,11 +100,26 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
         flash.DOIntensity(0f, flashSeconds).SetEase(Ease.OutQuad).SetLink(flash.gameObject).OnComplete(() => Destroy(flash.gameObject));
     }
 
+    QuestGlow glow;
+
     void Start()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
+        glow = gameObject.AddComponent<QuestGlow>();
         Refresh();
     }
+
+    // The wall glows while the Change class quest is open (ProgressionManager.ClassQuest), as the sheet's table does for
+    // its quests, and while a poster is carried home to go up here (the user, 2026-11-11: a room item's place lights up
+    // while it is carried).
+    void Update()
+    {
+        if (glow == null) return;
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        if (meta != null && Time.frameCount % 15 == 0) postersCarried = meta.PostersCarried > 0;   // a count over the classes: a few times a second
+        glow.Show(meta != null && (postersCarried || meta.QuestState(ProgressionManager.ClassQuest) == 1));
+    }
+    bool postersCarried;
     void OnDestroy()
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged -= OnFlag;

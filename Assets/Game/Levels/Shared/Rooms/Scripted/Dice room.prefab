@@ -171,9 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 1
-  description: 'His gaming board lies under the opening, a dead gambler at the table
-    beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy,
-    3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.'
+  description: 'His gaming board lies under the opening, a dead gambler at the table beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -235,9 +233,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: dice
-  summary: 'His gaming board lies under the opening, a dead gambler at the table
-    beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy,
-    3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.'
+  summary: 'His gaming board lies under the opening, a dead gambler at the table beside it. Shake the cup and he rolls onto the board: 1 ambush, 2 a tough enemy, 3 nothing, 4 a rest, 5 an iron chest, 6 a gold chest.'
   entrance: {fileID: 2735202646044815998}
   countsAsEvent: 1
 --- !u!114 &4800702698325617781
@@ -1299,6 +1295,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceCup
   shake: 0.03
+  outlineWidth: 0.03
 --- !u!1001 &8093642903286166864
 PrefabInstance:
   m_ObjectHideFlags: 0

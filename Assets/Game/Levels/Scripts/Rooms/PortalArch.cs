@@ -260,8 +260,15 @@ public class PortalArch : MonoBehaviour
     IEnumerator Enter(Player player)
     {
         if (broken) yield break;
-        // A portal set down after the floor was built (the Debug arena's) builds its pocket on first use.
-        if (pocket == null && !TryBuild(GetComponentInParent<DungeonGenerator>(), Random.Range(1, 99999), 1, out _)) yield break;
+        // A portal set down after the floor was built (the Debug arena's) builds its pocket on first use, a frame after
+        // the trigger: building inside the physics callback logged an error for every piece destroyed while building.
+        if (pocket == null)
+        {
+            busy = true;
+            yield return null;
+            busy = false;
+            if (!TryBuild(GetComponentInParent<DungeonGenerator>(), Random.Range(1, 99999), 1, out _)) yield break;
+        }
         if (pocket == null) yield break;
         busy = true;
         cameFrom = transform.position + transform.forward * 1.4f;

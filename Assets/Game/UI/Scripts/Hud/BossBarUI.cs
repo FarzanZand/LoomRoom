@@ -25,7 +25,7 @@ public class BossBarUI : Singleton<BossBarUI>
         if (group != null) group.alpha = 0f;
     }
 
-    // Name: what the bar calls it instead of its own name (a boss fight's dialogue name, BossFight.bossName).
+    // Name: what the bar calls it instead of its own name (a boss fight's dialogue name, BossDialogueData.bossName).
     public void Show(Character character, string title, string name = null)
     {
         Unbind();

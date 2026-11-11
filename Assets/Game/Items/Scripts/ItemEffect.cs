@@ -9,4 +9,7 @@ public abstract class ItemEffect : ScriptableObject
 
     // One line for the tooltip. Default is the asset name.
     public virtual string Describe(EffectEntry entry) => name;
+
+    // A Relic's unique skill: the tooltip sets it apart, on its own line in the unique skill colour (ItemData.SkillColor).
+    public virtual bool UniqueSkill => false;
 }

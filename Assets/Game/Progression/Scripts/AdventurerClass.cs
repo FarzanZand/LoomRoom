@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -46,6 +47,8 @@ public class AdventurerClass : ScriptableObject
 
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();
+    [Tooltip("Gear the class starts with above Common, with properties set here (the Wizard's Rare Leather Helm with mana regeneration): worn like the equipment above. A property is an id from Items/Data/Item Properties (manaregen, mana, crit ...) and its value as the tooltip shows it.")]
+    public KitPiece[] rolledEquipment = Array.Empty<KitPiece>();
     [Tooltip("Spell tomes placed on the hotbar at the start of a run. Others are found in the dungeon.")] public ItemData[] spells = Array.Empty<ItemData>();
     public ItemStack[] supplies = Array.Empty<ItemStack>();
     public LeftHandSpell leftHand;
@@ -58,6 +61,25 @@ public class AdventurerClass : ScriptableObject
 
     [Title("Skills"), InfoBox("Swords, Maces, Blocking, Sorcery, Thaumaturgy, Athletics, Trading")]
     public int[] skills = new int[AdventureSkills.Count];
+
+    // A starting piece at a rarity, with set properties (made at run time: ItemData.Variant, so it saves and shows like
+    // any rolled drop).
+    [Serializable]
+    public class KitPiece
+    {
+        [AssetsOnly] public ItemData item;
+        public ItemRarity rarity = ItemRarity.Rare;
+        public RolledProperty[] properties = Array.Empty<RolledProperty>();
+    }
+
+    // Everything the class starts wearing or holding: the plain equipment, then the rolled pieces.
+    public IEnumerable<ItemData> Kit()
+    {
+        if (equipment != null) foreach (var item in equipment) if (item != null) yield return item;
+        if (rolledEquipment != null)
+            foreach (var piece in rolledEquipment)
+                if (piece != null && piece.item != null) yield return ItemData.Variant(piece.item, piece.rarity, piece.properties);
+    }
 
     public bool Unlocked => string.IsNullOrEmpty(unlockFlag) || (ProgressionManager.HasInstance && ProgressionManager.Instance.GetFlag(unlockFlag) > 0);
     // The class's points in an attribute, on top of the sheet's score.

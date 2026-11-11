@@ -230,6 +230,8 @@ public class InventoryManager : Singleton<InventoryManager>
     public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true, bool announcePickup = true, int used = 0)
     {
         if (item == null || player == null) return false;
+        // A Relic that scales with the floor takes this floor's weapons' strength as it is picked up in a dungeon.
+        if (item.BaseItem.scaleWithFloor && TableManager.Loader != null && TableManager.Loader.Dungeon != null) item = ItemData.ScaledToFloor(item, CombatManager.CurrentFloor);
 
         bool added = false;
         // Consumables and spell tomes go to the hotbar while it has room, so they are one key away.

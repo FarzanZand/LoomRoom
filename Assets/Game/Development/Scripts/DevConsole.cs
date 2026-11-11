@@ -20,7 +20,7 @@ using UnityEngine.InputSystem;
 //   additem <name> [count] [rarity]  an item from the catalog into the table player's pack (gear rolled to that rarity)
 //   addspell <name>|all  a spell's tome into the table player's pack
 //   addroomitem <name>|all  carry home any room key item (ProgressionManager.RoomKeyItems: trophies, class posters, the
-//                   puzzle's tile...), to use in the room
+//                   locked box's key...), to use in the room
 //   help, clear
 // Tab completes the command or the template's name; the names that match what is typed are listed under the line.
 // While it is open the game is in the Menu state, so typing never moves the player or fires hotbar keys.
@@ -253,7 +253,7 @@ public class DevConsole : MonoBehaviour
                 Print("learnspells: a tome of every spell into the table player's pack");
                 Print("additem <name> [count] [rarity]: an item into the table player's pack; gear can be uncommon, rare, unique or legendary (Tab completes the name)");
                 Print("addspell <name>|all: that spell's tome into the table player's pack (Tab completes the name)");
-                Print("addroomitem <name>|all: carry home a room key item (a trophy, a class poster, the puzzle tile...) to use in the room (Tab completes; addroomitem alone lists them)");
+                Print("addroomitem <name>|all: carry home a room key item (a trophy, a class poster, the box's key...) to use in the room (Tab completes; addroomitem alone lists them)");
                 Print("clear: empty this window");
                 break;
             case EventCommand:

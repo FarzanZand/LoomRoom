@@ -43,9 +43,18 @@ public static class DungeonPickup
         _ => DropKey,
     };
 
+    // A Relic's drop plays the UI Library's relicReward instead, as it lands (the user, 2026-11-11).
+    public const string RelicRewardKey = "relicReward";
+
     static void DropSound(ItemData item, Vector3 at, float delay)
     {
         if (!AudioManager.HasInstance) return;
+        if (item != null && item.rarity == ItemRarity.Relic && AudioManager.Instance.HasUI(RelicRewardKey))
+        {
+            if (delay <= 0f) AudioManager.Instance.PlayUI(RelicRewardKey);
+            else DOVirtual.DelayedCall(delay, () => { if (AudioManager.HasInstance) AudioManager.Instance.PlayUI(RelicRewardKey); });
+            return;
+        }
         // The keys keep their old names (Uncommon was Fine, Unique was Masterwork; Rare is the spell tomes' old sound). Rare falls
         // back to Uncommon's and Legendary to Unique's before the plain one.
         string own = DropKeyFor(item), step = item != null && item.rarity == ItemRarity.Rare ? "itemDropFine" : item != null && item.rarity == ItemRarity.Legendary ? "itemDropMasterwork" : DropKey;

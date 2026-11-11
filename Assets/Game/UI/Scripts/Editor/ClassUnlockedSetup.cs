@@ -61,15 +61,6 @@ public static class ClassUnlockedSetup
         so.ApplyModifiedPropertiesWithoutUndo();
 
         string sound = AddSound();
-        // The puzzle names its class: the card shows that class's portrait.
-        var arcanist = AssetDatabase.LoadAssetAtPath<AdventurerClass>("Assets/Game/Characters/Classes/Arcanist.asset");
-        foreach (var puzzle in Object.FindObjectsByType<AdventureRoomPuzzle>(FindObjectsInactive.Include))
-            if (puzzle.unlockedClass == null && arcanist != null && puzzle.unlockFlag == arcanist.unlockFlag)
-            { Undo.RecordObject(puzzle, "Puzzle class"); puzzle.unlockedClass = arcanist; EditorUtility.SetDirty(puzzle); }
-        var burst = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Items/Effects/Chest burst.prefab");
-        foreach (var puzzle in Object.FindObjectsByType<AdventureRoomPuzzle>(FindObjectsInactive.Include))
-            if (puzzle.unlockEffect == null && burst != null) { Undo.RecordObject(puzzle, "Puzzle burst"); puzzle.unlockEffect = burst; EditorUtility.SetDirty(puzzle); }
-
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(root.scene);
         return "built the class unlocked card; " + sound;
     }

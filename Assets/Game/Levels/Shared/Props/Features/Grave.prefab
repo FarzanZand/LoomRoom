@@ -73,7 +73,7 @@ MonoBehaviour:
   wakeChance: 0.3
   lootEvenIfWoken: 1
   occupants:
-  - {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  - {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   - {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
   loot: {fileID: 0}
   mound: {fileID: 8226815657154211491}

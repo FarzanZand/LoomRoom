@@ -47,8 +47,43 @@ public static class StaminaReadoutSetup
         so.FindProperty("template").objectReferenceValue = cell.rectTransform;
         so.ApplyModifiedPropertiesWithoutUndo();
 
+        BuildRefusedText();
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(root.scene);
         return "built the stamina readout";
+    }
+
+    // The readout's "Not enough stamina", just above its segments (StaminaReadoutUI.refusedText). Safe to run again: only
+    // this label is made again, the rest of the readout is left as it is.
+    public static string BuildRefusedText()
+    {
+        var readout = Object.FindAnyObjectByType<StaminaReadoutUI>(FindObjectsInactive.Include);
+        if (readout == null) return "no stamina readout in the open scene (StaminaReadoutSetup.Build)";
+        var old = readout.transform.Find("Refused text");
+        if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+        var go = new GameObject("Refused text", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+        Undo.RegisterCreatedObjectUndo(go, "Build stamina refused text");
+        go.layer = readout.gameObject.layer;
+        var rect = (RectTransform)go.transform;
+        rect.SetParent(readout.transform, false);
+        rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+        rect.sizeDelta = new Vector2(400f, 30f);
+        rect.anchoredPosition = new Vector2(0f, SegmentHeight * .5f + 18f);
+        var text = go.GetComponent<TMPro.TextMeshProUGUI>();
+        text.font = AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
+        var material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator-Bold Outline.mat");
+        if (material != null) text.fontSharedMaterial = material;
+        text.fontSize = 24f;
+        text.alignment = TMPro.TextAlignmentOptions.Center;
+        text.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+        text.color = new Color(.96f, .55f, .48f);
+        text.raycastTarget = false;
+        text.text = "Not enough stamina";
+        text.alpha = 0f;
+        var so = new SerializedObject(readout);
+        so.FindProperty("refusedText").objectReferenceValue = text;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(readout.gameObject.scene);
+        return "built the stamina readout's refused text";
     }
 
     static Image Box(string name, RectTransform parent, Color colour)

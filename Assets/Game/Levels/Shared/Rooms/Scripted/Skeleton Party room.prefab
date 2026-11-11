@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  overridePrefab: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75
@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  overridePrefab: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75
@@ -210,8 +210,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'Behind the Portal hall''s portal: skeletons dance and ignore you.
-    Open the chest (a Legendary piece and gold) or hit one and they all attack.'
+  description: 'Behind the Portal hall''s portal: skeletons dance and ignore you. Open the chest (a Legendary piece and gold) or hit one and they all attack.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -279,7 +278,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c794b347ada32874c9e13b39dd8ad0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomMusic
-  music: {fileID: 8300000, guid: 79111245a78c552499fd5297c7c6e913, type: 3}
+  music: {fileID: 8300000, guid: b966f991c3ff5f948a669154e52b9c6c, type: 3}
   volume: 1
   fade: 1.5
 --- !u!114 &5133322518671636260
@@ -311,9 +310,11 @@ MonoBehaviour:
   chestStare: 3
   stareTurnSpeed: 360
   legendaryInChest: 1
+  prizeItem: {fileID: 11400000, guid: 24f63a86e5052b3429ddbaa9cb7b6b71, type: 2}
   prizeMaxTier: 2
   prizeGold: 80
   prizeGoldPiles: 10
+  gateOnChest: 1
 --- !u!114 &3597618481868803779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -327,9 +328,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: party
-  summary: Six skeletons dance round a chest and ignore you. Hit one or open the
-    chest and they all come for you. The chest holds a Legendary piece and 80 gold.
-    Reached through the Portal hall's portal.
+  summary: Six skeletons dance round a chest and ignore you. Hit one or open the chest and they all come for you. The chest holds a Legendary piece and 80 gold. Reached through the Portal hall's portal.
   entrance: {fileID: 0}
   countsAsEvent: 0
 --- !u!1 &6676549144639257178
@@ -430,7 +429,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  overridePrefab: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75
@@ -527,7 +526,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 3156272704262255611, guid: 7bc7d52c25766fb4a9be1023ae38950e, type: 3}
+  overridePrefab: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75

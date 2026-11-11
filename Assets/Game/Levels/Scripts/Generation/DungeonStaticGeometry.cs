@@ -26,13 +26,25 @@ public class DungeonStaticGeometry : MonoBehaviour
     // walls, and DungeonVisibility swaps a props chunk for its pieces while the player is inside).
     public void Combine(Transform root,float chunkSize,bool keepModes=false,bool propsToo=false,System.Func<Renderer,bool> leaveOut=null)
     {
-        if(root==null)return;
+        var steps=CombineSteps(root,chunkSize,keepModes,propsToo,leaveOut,null);
+        while(steps.MoveNext()){}
+    }
+    // The same, stopping once due() says so (a floor built in slices, DungeonGenerator.BuildSliced, which switches most of
+    // the floor off between slices): the pieces are listed while all is on, then looked up with switched-off parents
+    // counted (the list holds only pieces that were on, so this finds what the plain lookups did), so the chunks come
+    // out the same either way.
+    public System.Collections.IEnumerator CombineSteps(Transform root,float chunkSize,bool keepModes,bool propsToo,System.Func<Renderer,bool> leaveOut,System.Func<bool> due)
+    {
+        if(root==null)yield break;
         var groups=new Dictionary<(Material,int,int,ShadowCastingMode,uint),List<MeshFilter>>();
+        int looked=0;
         foreach(var filter in root.GetComponentsInChildren<MeshFilter>()) {
+            if(due!=null && (++looked&63)==0 && due())yield return null;
+            if(filter==null)continue;
             var renderer=filter.GetComponent<MeshRenderer>();
             if(renderer==null || !renderer.enabled || filter.name=="Static chunk" || filter.sharedMesh==null || !filter.sharedMesh.isReadable || filter.sharedMesh.subMeshCount!=1 || renderer.sharedMaterials.Length!=1 || renderer.sharedMaterial==null)continue;
-            if(filter.GetComponentInParent<Animator>()!=null || filter.GetComponentInParent<Rigidbody>()!=null || filter.GetComponentInParent<DungeonContainer>()!=null
-               || filter.GetComponentInParent<DungeonDestructible>()!=null || filter.GetComponentInParent<KnockDownDecor>()!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
+            if(filter.GetComponentInParent<Animator>(true)!=null || filter.GetComponentInParent<Rigidbody>(true)!=null || filter.GetComponentInParent<DungeonContainer>(true)!=null
+               || filter.GetComponentInParent<DungeonDestructible>(true)!=null || filter.GetComponentInParent<KnockDownDecor>(true)!=null)continue;   // a merged breakable (or knock-down decor) would stay drawn once broken
             if(propsToo && Changes(filter))continue;
             if(leaveOut!=null && leaveOut(renderer))continue;
             var p=root.InverseTransformPoint(filter.transform.position);
@@ -54,6 +66,7 @@ public class DungeonStaticGeometry : MonoBehaviour
             BuildChunks.Add(made);PiecesOf.Add(made,its);
             if(propsToo)PropChunks.Add(made);
             foreach(var f in group.Value){var piece=f.GetComponent<MeshRenderer>();piece.enabled=false;MergedPieces.Add(piece);its.Add(piece);}
+            if(due!=null && due())yield return null;
         }
     }
     // propsToo (the late pass over the finished floor, DungeonGenerator.MergeProps): props that move, flicker, glow or
@@ -61,14 +74,14 @@ public class DungeonStaticGeometry : MonoBehaviour
     // particles and lines, doors and stairs, ambush gates and spike plates, portals, the merchant, anything that can be
     // used or hit, and loose loot.
     static bool Changes(MeshFilter filter) =>
-        filter.GetComponentInParent<TorchFlicker>()!=null || filter.GetComponentInParent<RoomGlow>()!=null
-        || filter.GetComponentInParent<ParticleSystem>()!=null || filter.GetComponentInParent<LineRenderer>()!=null
-        || filter.GetComponentInParent<DungeonDoor>()!=null || filter.GetComponentInParent<DungeonExit>()!=null
-        || filter.GetComponentInParent<DungeonAmbush>()!=null || filter.GetComponentInParent<DungeonSpikeTrap>()!=null
-        || filter.GetComponentInParent<DungeonFloorCut>()!=null || filter.GetComponentInParent<PortalArch>()!=null
-        || filter.GetComponentInParent<Merchant>()!=null || filter.GetComponentInParent<IInteractable>()!=null
-        || filter.GetComponentInParent<IDamageable>()!=null
-        || filter.GetComponentInParent<WorldItem>()!=null || filter.GetComponentInParent<DungeonGoldCache>()!=null;
+        filter.GetComponentInParent<TorchFlicker>(true)!=null || filter.GetComponentInParent<RoomGlow>(true)!=null
+        || filter.GetComponentInParent<ParticleSystem>(true)!=null || filter.GetComponentInParent<LineRenderer>(true)!=null
+        || filter.GetComponentInParent<DungeonDoor>(true)!=null || filter.GetComponentInParent<DungeonExit>(true)!=null
+        || filter.GetComponentInParent<DungeonAmbush>(true)!=null || filter.GetComponentInParent<DungeonSpikeTrap>(true)!=null
+        || filter.GetComponentInParent<DungeonFloorCut>(true)!=null || filter.GetComponentInParent<PortalArch>(true)!=null
+        || filter.GetComponentInParent<Merchant>(true)!=null || filter.GetComponentInParent<IInteractable>(true)!=null
+        || filter.GetComponentInParent<IDamageable>(true)!=null
+        || filter.GetComponentInParent<WorldItem>(true)!=null || filter.GetComponentInParent<DungeonGoldCache>(true)!=null;
 
     // The build's chunks under root merged again into squares of chunkSize (same material, shadow mode and rendering
     // layers); the small chunks are switched off and kept, like the pieces they were made of.

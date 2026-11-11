@@ -54,7 +54,7 @@ public partial class DungeonGenerator
         var allowed = new System.Collections.Generic.Dictionary<GameObject, bool>();
         bool Allowed(GameObject t)
         {
-            if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()); }
+            if (!allowed.TryGetValue(t, out bool ok)) { var tpl = t.GetComponent<DungeonRoomTemplate>(); allowed[t] = ok = tpl == null || features.AllowsAll(tpl.Requires()) && !tpl.Gone; }
             return ok;
         }
         // No room template comes up twice on one floor (the Not a witch room, the event rooms): a profile's own
@@ -152,7 +152,7 @@ public partial class DungeonGenerator
         bool Fits(GameObject t, int room)
         {
             var tpl = t.GetComponent<DungeonRoomTemplate>();
-            if (tpl == null || !features.AllowsAll(tpl.Requires())) return false;
+            if (tpl == null || !features.AllowsAll(tpl.Requires()) || tpl.Gone) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
@@ -875,13 +875,15 @@ public partial class DungeonGenerator
         return character;
     }
 
-    // After navigation exists: enemies, the boss and the merchant at their sockets.
-    void SpawnSocketActors(DungeonExit exitStair)
+    // After navigation exists: enemies, the boss and the merchant at their sockets. A step of the build: in slices it
+    // stops between rooms when the slice's time is up.
+    System.Collections.IEnumerator SpawnSocketActors(DungeonExit exitStair)
     {
         Character boss=null;
         int exitIndex=System.Array.IndexOf(Roles,RoomRole.Exit);
         foreach(var pair in actorSockets)
         {
+            if(SliceDue){Pause();yield return null;Resume();}
             int room=pair.Key;
             foreach(var socket in pair.Value)
             {

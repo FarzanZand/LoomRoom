@@ -660,6 +660,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
                 if (e.openedLine != null && !e.openedLine.IsEmpty) DungeonMaster.Say(e.openedLine);
                 if (fog) StartCoroutine(Rustle(.6f));
                 yield return Map.PopIn(e, .9f);
+                // Its question mark: the marks were laid while it was still off the map (the user, 2026-11-11: a rumoured
+                // Arena had risen with no mark over it).
+                RefreshNewPlaces();
             }
         }
         finally { popping = false; }
@@ -744,7 +747,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         foreach (var kv in PM.AllFlags)
             if (kv.Value != 0 && (kv.Key.StartsWith(DeathsPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(OpenedPrefix, StringComparison.Ordinal)
                 || kv.Key.StartsWith(HintedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(RumourPrefix, StringComparison.Ordinal)
-                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal)))
+                || kv.Key.StartsWith(VisitedPrefix, StringComparison.Ordinal) || kv.Key.StartsWith(NoticedPrefix, StringComparison.Ordinal)))
                 cleared.Add(kv.Key);
         foreach (var key in cleared) PM.SetFlag(key, 0);
         deathCountedIn = null;
@@ -839,6 +842,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         SayWonLine();
         if (card != null) card.ShowHint(true, Hint);
         InMapView = true;
+        NoticeNewPlaces();
         bool cancelled = false, started = false;
         CampaignEncounter completing = null; bool resetting = false;
         bool MenuOpen() => ContextMenuUI.HasInstance && ContextMenuUI.Instance.IsOpen;
@@ -868,7 +872,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
             if (MenuOpen()) { ContextMenuUI.Instance.Hide(); return; }
             if (!asking && !changingClass && !(heroSelect != null && heroSelect.Open)) cancelled = true;
         }
-        if (InputManager.HasInstance) InputManager.Instance.CancelPressed += OnCancel;
+        if (InputManager.HasInstance) { InputManager.Instance.CancelPressed += OnCancel; InputManager.Instance.WantCancel(this, true); }   // Escape steps back from the map, not the pause menu
         try
         {
             while (!cancelled && !started)
@@ -980,7 +984,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         finally
         {
             InMapView = false;
-            if (InputManager.HasInstance) { InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate; InputManager.Instance.SubmitPressed -= OnSubmit; }
+            if (InputManager.HasInstance) { InputManager.Instance.CancelPressed -= OnCancel; InputManager.Instance.NavigatePressed -= OnNavigate; InputManager.Instance.SubmitPressed -= OnSubmit; InputManager.Instance.WantCancel(this, false); }
             navigateHandler = submitHandler = null;
             Unhover();
             if (card != null) { card.Hide(); card.ShowHint(false); }

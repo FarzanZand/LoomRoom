@@ -233,10 +233,14 @@ public struct RunStart : INetworkSerializable
     public int generationLevel;
     public int partySize;
     public bool descend;
+    // The host's save has cleared the Skeleton Party (SkeletonParty.ClearedFlag): every machine leaves it out of the
+    // floor, so the floors match whatever each guest's own save says.
+    public bool partyCleared;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref level); s.SerializeValue(ref seed); s.SerializeValue(ref floor);
         s.SerializeValue(ref generationLevel); s.SerializeValue(ref partySize); s.SerializeValue(ref descend);
+        s.SerializeValue(ref partyCleared);
     }
 }

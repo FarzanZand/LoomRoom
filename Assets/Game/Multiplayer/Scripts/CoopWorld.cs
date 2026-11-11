@@ -320,6 +320,7 @@ public static class CoopWorld
         hit.Died = !enemy.IsAlive;
         CoopMessages.ToRunGuests(CoopMessages.EnemyHit, hit);
         if (hit.Died && slot != Coop.LocalSlot && RunManager.HasInstance) RunManager.Instance.AwardPartyKill(enemy);
+        if (hit.Died && slot != Coop.LocalSlot) CelebrateTeammateKill(info, enemy);
     }
 
     // Guest: the host's result of a hit, played on the puppet (blood, bar, death, loot).
@@ -332,6 +333,23 @@ public static class CoopWorld
         if (hit.Died) Flick.Ground(enemy);
         enemy.Stats.ApplyNetworkDamage(info, hit.health);
         if (hit.Died && hit.slot != Coop.LocalSlot && RunManager.HasInstance) RunManager.Instance.AwardPartyKill(enemy);
+        if (hit.Died && hit.slot != Coop.LocalSlot && hit.slot != Coop.NoSlot) CelebrateTeammateKill(info, enemy);
+    }
+
+    // A teammate's critical kill with a weapon whose unique skill celebrates it (the Party Crasher's CritKillRewardEffect):
+    // the party horn and the confetti go off here too, where the blow landed. The gold and the Dungeon Master's line are
+    // the wielder's own, on their machine.
+    static void CelebrateTeammateKill(DamageInfo info, Character enemy)
+    {
+        if (!info.Critical || info.Weapon == null || info.Weapon.effects == null) return;
+        foreach (var entry in info.Weapon.effects)
+        {
+            if (entry == null || entry.trigger != EffectTrigger.OnHitLanded || entry.customEffect is not CritKillRewardEffect party) continue;
+            Vector3 at = info.HitPoint != Vector3.zero ? info.HitPoint : enemy.transform.position + Vector3.up;
+            if (party.horn != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(party.horn, at, party.hornVolume, 0f);
+            if (party.confetti != null) UnityEngine.Object.Destroy(UnityEngine.Object.Instantiate(party.confetti, at, Quaternion.identity), party.confettiSeconds);
+            return;
+        }
     }
 
     // Owner: an enemy's blow from the host, taken (or blocked) by the local table player.
@@ -629,12 +647,12 @@ public static class CoopWorld
         Tag(piece, lootScope * 64 + Mathf.Min(63, lootCounter++));
     }
 
-    // The room puzzle's missing tile: hidden by each player's own save (ProgressionManager.HidesTile), so it lies only on
-    // the machines of players still looking for it. Never numbered or shared: it stays that player's own.
+    // The locked box's key: a chest holds it by each player's own save (ProgressionManager.KeyDueFromChest), so it lies
+    // only on the machines of players still looking for it. Never numbered or shared: it stays that player's own.
     static bool Personal(GameObject piece)
     {
         var item = piece != null ? piece.GetComponent<WorldItem>() : null;
-        return item != null && ProgressionManager.HasInstance && item.Item != null && item.Item == ProgressionManager.Instance.missingTile;
+        return item != null && ProgressionManager.HasInstance && item.Item != null && item.Item == ProgressionManager.Instance.boxKey;
     }
 
     static void Tag(GameObject piece, int key)

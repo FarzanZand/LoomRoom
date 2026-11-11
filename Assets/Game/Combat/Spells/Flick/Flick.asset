@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Ask the Dungeon Master for a hand. He reaches in and flicks the enemy
     you aim at across the room.
   icon: {fileID: 21300000, guid: b78fb30a53f287a4f8768f48643ded7f, type: 3}
-  manaCost: 30
+  manaCost: 18
   power: 30
   castSeconds: 0.6
   recoverySeconds: 0.4

@@ -25,6 +25,18 @@ public static class FullscreenGameView
             // Game view callback for it still runs after this one (closing it here threw MissingReferenceException).
             else if (state == PlayModeStateChange.ExitingPlayMode) EditorApplication.delayCall += Close;
         };
+        // It never stays without Play (the user, 2026-11-11: "stuck in full screen mode again, happens often"): the close
+        // above is a delayCall, which Unity skips while the editor is not focused and loses in a script reload, and a
+        // reload also forgets the window. So once a second, while not playing, a fullscreen window still open is closed.
+        EditorApplication.update += CloseWithoutPlay;
+    }
+
+    static double nextCheck;
+    static void CloseWithoutPlay()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.timeSinceStartup < nextCheck) return;
+        nextCheck = EditorApplication.timeSinceStartup + 1;
+        if (Find() != null) Close();
     }
 
     [UnityEditor.ShortcutManagement.Shortcut("LoomRoom/Fullscreen Game View", KeyCode.F11)]

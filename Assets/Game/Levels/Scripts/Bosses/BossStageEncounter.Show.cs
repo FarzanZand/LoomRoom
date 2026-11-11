@@ -15,13 +15,14 @@ public partial class BossStageEncounter
     BossDiscoBall discoBall;
     bool backupCalled, backupDanced;
     readonly List<(EnemyBrain brain, PlayableGraph graph)> backup = new();
+    PlayableGraph defeatGraph;   // the boss's last pose; a field so it is freed when the floor or Play ends in the middle of it
 
     // As the boss is set down: its burst waits for the defeat scene.
     void ShowSetup()
     {
         if (fight == null || boss == null) return;
         // Its stage name in every line about it (the kill, the killer, the feed).
-        if (!string.IsNullOrWhiteSpace(fight.bossName)) boss.nameOverride = fight.bossName;
+        if (!string.IsNullOrWhiteSpace(fight.BossName)) boss.nameOverride = fight.BossName;
         if (fight.defeatPose != null && boss.TryGetComponent<DeathBurst>(out var burst)) burst.HoldSeconds = fight.DefeatSeconds;
         // The killing blow (Damaged comes before Died, so before the kill's experience): a level-up waits for the pose.
         if (fight.defeatPose != null)
@@ -37,8 +38,8 @@ public partial class BossStageEncounter
     // The second phase begins: the boss says its line (else the DM his), the floor lights up, the ball comes down.
     void PhaseTwoShow()
     {
-        if (!string.IsNullOrWhiteSpace(fight.phaseTwoBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.phaseTwoBossLine, boss, fight.bossName);
+        if (!string.IsNullOrWhiteSpace(fight.PhaseTwoBossLine) && PortraitDialogueUI.Current != null)
+            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName);
         else Say(fight.phaseTwoLine, true);
         if (fight.danceFloor != null && danceFloor == null)
             danceFloor = BossDanceFloor.Build(dungeon, fight.danceFloor, fight.phaseTwoDisco);
@@ -77,7 +78,7 @@ public partial class BossStageEncounter
         else if (backupDanced)
         {
             backupDanced = false;
-            if (!string.IsNullOrWhiteSpace(fight.backupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.backupBrokenLine, boss, fight.bossName);
+            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName);
         }
     }
 
@@ -113,8 +114,8 @@ public partial class BossStageEncounter
         bool any = false;
         foreach (var (b, _) in backup.ToArray()) if (b != null && b.State != EnemyState.Dead) { BreakUp(b); any = true; }
         if (!any) return;
-        if (!string.IsNullOrWhiteSpace(fight.backupBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.backupBossLine, boss, fight.bossName);
+        if (!string.IsNullOrWhiteSpace(fight.BackupCallLine) && PortraitDialogueUI.Current != null)
+            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName);
         StartCoroutine(SayAfterBark(fight.backupLine));
     }
 
@@ -185,6 +186,7 @@ public partial class BossStageEncounter
     {
         foreach (var (_, graph) in backup) if (graph.IsValid()) graph.Destroy();
         backup.Clear();
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
     }
 
     // The party is over (the fight won or lost): the floor and the ball go dark, and backup still standing when the boss
@@ -228,8 +230,8 @@ public partial class BossStageEncounter
     {
         if (fight == null || fight.defeatPose == null || boss == null) yield break;
         var anim = boss.Animator;
-        var graph = default(PlayableGraph);
-        if (anim != null) AnimationPlayableUtilities.PlayClip(anim, fight.defeatPose, out graph);
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
+        if (anim != null) AnimationPlayableUtilities.PlayClip(anim, fight.defeatPose, out defeatGraph);
         // Nothing else turns or moves it now (its agent would hold its heading through the spin).
         if (boss.TryGetComponent<NavMeshAgent>(out var agent)) agent.enabled = false;
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
@@ -270,6 +272,6 @@ public partial class BossStageEncounter
         if (spot != null) StartCoroutine(Dim(spot, 1.2f));
         yield return null;
         yield return null;
-        if (graph.IsValid()) graph.Destroy();
+        if (defeatGraph.IsValid()) defeatGraph.Destroy();
     }
 }

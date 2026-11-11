@@ -245,9 +245,9 @@ public partial class BossStageEncounter : MonoBehaviour
 
         if (Coop.IsHost) yield return CoopBegin(intro);
         if (boss == null || !boss.IsAlive) yield break;
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.BossName : null);
         // An intro has already named the boss (its dialogue or title): no line in the feed on top.
-        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
+        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.BossName : null), MessageKind.Warning);
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (intro) BossBlessing.Announce();
         if (stageLights != null) stageLights.Follow(boss.transform);
@@ -289,9 +289,9 @@ public partial class BossStageEncounter : MonoBehaviour
             }
             if (fight.spotlightSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.spotlightSound, fight.spotlightVolume);
             yield return new WaitForSeconds(fight.dialogueDelay);
-            if (talk) yield return PortraitDialogueUI.Current.Play(fight.introLines, boss, fight.bossName);
+            if (talk) yield return PortraitDialogueUI.Current.Play(fight.IntroLines, boss, fight.BossName);
             if (boss == null || !boss.IsAlive) yield break;
-            string shownName = !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap;
+            string shownName = !string.IsNullOrWhiteSpace(fight.BossName) ? fight.BossName : boss.TheNameCap;
             if (card == BossIntroCard.BossTitle) yield return BossTitleUI.Current.Play(shownName, milestone.title, fight.title, StartFightMusic);
             else StartFightMusic();
         }
@@ -610,7 +610,7 @@ public partial class BossStageEncounter : MonoBehaviour
         lost = false;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
-        MessageLog.Post($"{(fight != null && !string.IsNullOrWhiteSpace(fight.bossName) ? fight.bossName : boss.TheNameCap)} is dead. The way on is open.", MessageKind.Good);
+        MessageLog.Post($"{(fight != null && !string.IsNullOrWhiteSpace(fight.BossName) ? fight.BossName : boss.TheNameCap)} is dead. The way on is open.", MessageKind.Good);
         Finish(true);
         StartCoroutine(DefeatScene());
     }
@@ -671,7 +671,7 @@ public partial class BossStageEncounter : MonoBehaviour
         CatchUpClocks();
         DarkenRoom();
         LightRoom();
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.BossName : null);
         if (stageLights != null) { stageLights.Follow(boss.transform); if (phaseTwo) stageLights.PhaseTwo(fight != null ? fight.phaseTwoDisco : null); }
         if (seat != null) seat.Focus(StandFor(bossHome), bossHome);
         // A beam cut short by the death can leave the boss kneeling or keeping away.

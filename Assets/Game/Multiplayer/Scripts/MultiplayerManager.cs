@@ -118,6 +118,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public CoopPlayer LocalPlayer { get; private set; }
     public IReadOnlyList<CoopPlayer> Players => players;
     public int PartySize { get; private set; } = 1;
+    // The host's word on whether the Skeleton Party is done for good (RunStart.partyCleared), read by floor generation
+    // in co-op (DungeonRoomTemplate.Gone) so every machine builds the same floor.
+    public bool HostPartyCleared { get; private set; }
     public CoopRules Rules => rules;
     public bool SharedLoot => !Connected || rules.sharedLoot;
     // The party's spoils are pooled and split at a run's end (the host's rule).
@@ -1077,6 +1080,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         {
             level = new Unity.Collections.FixedString128Bytes(runLevel != null ? runLevel.name : ""),
             seed = runSeed, floor = floor, generationLevel = Mathf.Max(1, generation), partySize = PartySize, descend = descend,
+            partyCleared = ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag),
         };
     }
 
@@ -1111,6 +1115,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (level == null) { Debug.LogError($"[Coop] No level {start.level} in the catalog."); yield break; }
         while (loader.Busy) yield return null;
         PartySize = Mathf.Max(1, start.partySize);
+        HostPartyCleared = start.partyCleared;
         if (start.descend && !LocalInRun) yield break;
         LocalInRun = true; LocalReady = true;
         // A ghost comes back on the new floor (the loader revives a dead player who goes down).

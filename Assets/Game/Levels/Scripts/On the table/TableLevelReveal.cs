@@ -134,6 +134,7 @@ public sealed partial class TableLevelReveal : MonoBehaviour
                 skipInput = InputManager.Instance;
                 skipInput.CancelPressed += OnSkipInput;
                 skipInput.SubmitPressed += OnSkipInput;
+                skipInput.WantCancel(this, true);   // Escape skips the reveal, not the pause menu
             }
             skipWindow = settings.allowSkip;
             if (cascade) { yield return Cascade(settings); duration = 0; }
@@ -440,7 +441,7 @@ public sealed partial class TableLevelReveal : MonoBehaviour
         foreach (var entry in roomRenderers) if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forcedOff;
         roomRenderers.Clear();
         skipWindow = false;
-        if (skipInput != null) { skipInput.CancelPressed -= OnSkipInput; skipInput.SubmitPressed -= OnSkipInput; }
+        if (skipInput != null) { skipInput.CancelPressed -= OnSkipInput; skipInput.SubmitPressed -= OnSkipInput; skipInput.WantCancel(this, false); }
         skipInput = null;
         StopSound();
         DestroyClackSources();

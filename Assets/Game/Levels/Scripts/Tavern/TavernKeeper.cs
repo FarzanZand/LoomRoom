@@ -5,10 +5,13 @@ using UnityEngine;
 // The merchant as the tavern's keeper (on the Dungeon merchant prefab, next to Merchant). Talking to him opens the
 // dialogue box (PortraitDialogueUI) with one of his welcomes and three answers: Shop opens the shop screen (his wares and
 // dishes, TavernTabsUI; a dish is eaten once a run and lasts it), Rumour tells of a place off the campaign map
-// (CampaignEncounter.rumoured) for its price and puts it on the map, Never mind walks away. His words are on the Dialogue Manager
-// (TavernKeeperLines, also in Asset Studio's Dialogue view), the dishes and price here, the rumours on their places.
+// (CampaignEncounter.rumoured) for its price and puts it on the map, Never mind walks away. His words are a data asset
+// (dialogue: Dialogue/Conversations/Tavern keeper, also in Asset Studio's Dialogue view), the dishes and price here, the
+// rumours on their places.
 public class TavernKeeper : MonoBehaviour
 {
+    [Tooltip("What he says (an asset in Dialogue/Conversations): his welcomes, the answers and his replies.")]
+    public TavernKeeperDialogueData dialogue;
     [Tooltip("What he serves, in the order the Food tab lists them.")]
     public TavernDish[] dishes = new TavernDish[0];
     [Min(0), Tooltip("Gold for one rumour.")]
@@ -21,6 +24,8 @@ public class TavernKeeper : MonoBehaviour
     public IReadOnlyList<CampaignEncounter> Rumours =>
         CampaignManager.HasInstance ? CampaignManager.Instance.Rumours() : new List<CampaignEncounter>();
     public bool HasRumours => Rumours.Count > 0;
+    // The ! on the Rumour answer while a rumour is left: the yellow of the map's mark over a new place.
+    static readonly Color RumourMarkColor = new(.85f, .72f, 0f);
 
     public Result Eat(TavernDish dish, Player player)
     {
@@ -55,13 +60,13 @@ public class TavernKeeper : MonoBehaviour
     {
         if (talk != null) return true;
         var box = PortraitDialogueUI.Current;
-        var words = TavernKeeperLines.HasInstance ? TavernKeeperLines.Instance : null;
+        var words = dialogue;
         if (box == null || box.Open || words == null || words.welcomeLines == null || words.welcomeLines.Length == 0) return false;
         talk = StartCoroutine(Talking(merchant, player, box, words));
         return true;
     }
 
-    IEnumerator Talking(Merchant merchant, Player player, PortraitDialogueUI box, TavernKeeperLines words)
+    IEnumerator Talking(Merchant merchant, Player player, PortraitDialogueUI box, TavernKeeperDialogueData words)
     {
         if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); pushed = true; }
         var body = Body;
@@ -81,7 +86,11 @@ public class TavernKeeper : MonoBehaviour
         var model = body != null ? body.gameObject : gameObject;
         var welcome = new PortraitLine { speaker = PortraitSpeaker.Other, name = who, model = model, text = words.welcomeLines[Random.Range(0, words.welcomeLines.Length)] };
         welcome.choices.Add(new PortraitChoice { label = words.shopAnswer });
-        var rumour = new PortraitChoice { label = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString()) };
+        // A yellow ! after it while he has a rumour left to sell, none once they are all told (the user, 2026-11-11; the
+        // map's new-place mark's yellow).
+        string rumourLabel = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString());
+        if (place != null) rumourLabel += $" <color=#{ColorUtility.ToHtmlStringRGB(RumourMarkColor)}>!</color>";
+        var rumour = new PortraitChoice { label = rumourLabel };
         rumour.reply.Add(new PortraitReply { speaker = PortraitSpeaker.Other, name = who, model = model, text = rumourReply });
         welcome.choices.Add(rumour);
         welcome.choices.Add(new PortraitChoice { label = words.leaveAnswer });

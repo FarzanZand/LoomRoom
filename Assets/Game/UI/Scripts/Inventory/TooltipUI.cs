@@ -24,7 +24,7 @@ public class TooltipUI : Singleton<TooltipUI>
     [SerializeField, Tooltip("The bars' parent: off for tooltips without them, so they leave no gap.")] GameObject compareBars;
     [SerializeField, Tooltip("The main number (damage, armour) against what is worn.")] CompareBar mainBar = new();
     [SerializeField, Tooltip("A weapon's swing speed against the held weapon's.")] CompareBar speedBar = new();
-    [SerializeField, Tooltip("Under the bars, only when nothing is worn in that slot.")] TextMeshProUGUI compareNote;
+    [SerializeField, Tooltip("Under the bars. Kept hidden since 2026-11-11 (it only said that nothing was worn in that slot).")] TextMeshProUGUI compareNote;
     [SerializeField] Color lineDefault = new(.3f, .3f, .33f);
     [Header("Stone plate: footer and the equipped panel's header")]
     [SerializeField, Tooltip("The footer row (left note, coin and price); hidden for text-only tooltips.")] GameObject footer;
@@ -120,7 +120,7 @@ public class TooltipUI : Singleton<TooltipUI>
         bool wearing = gear != null && gear.IsEquipped(item);
         float worn = wearing ? value : equipped != null && equipped.TryMainStat(out _, out float w, out _) ? w : 0f;
         float scale = Mathf.Max(value, worn, item.IsWeapon || item.itemType == ItemType.Shield ? 16f : item.equipSlot == EquipmentSlot.Body ? 6f : 5f) * 1.1f;
-        Fill(mainBar, label == "Armour when blocking" ? "Block" : label, value / scale, worn / scale, text, value - worn);
+        Fill(mainBar, label, value / scale, worn / scale, text, value - worn);
 
         bool speed = item.IsWeapon && speedBar.root != null;
         if (speedBar.root != null) speedBar.root.SetActive(speed);
@@ -130,14 +130,9 @@ public class TooltipUI : Singleton<TooltipUI>
             // -0.5 (very slow) to +0.5 (very fast) across the bar.
             Fill(speedBar, "Speed", Mathf.Clamp01(mine + .5f), Mathf.Clamp01(theirs + .5f), SpeedWord(mine), (mine - theirs) * 100f, "%");
         }
-        if (compareNote != null)
-        {
-            // Only when there is nothing to compare with: the panel beside it shows what is worn, and the item's own
-            // lines say Equipped.
-            bool nothingWorn = !thisCopy && !wearing && equipped == null;
-            compareNote.gameObject.SetActive(nothingWorn);
-            compareNote.text = nothingWorn ? "Nothing worn there" : "";
-        }
+        // The note under the bars ("Nothing worn there") is not shown: the bars already say there is nothing to compare
+        // with (the user, 2026-11-11: needless).
+        if (compareNote != null) compareNote.gameObject.SetActive(false);
     }
 
     // A swing speed in a word, none for the usual one.
@@ -153,9 +148,10 @@ public class TooltipUI : Singleton<TooltipUI>
         Span(bar.gain, low, mine > worn ? high : low);
         Span(bar.loss, low, mine < worn ? high : low);
         if (bar.label != null) bar.label.text = label;
-        string change = Mathf.Abs(delta) < .01f ? $"<color={ItemData.DimColor}>same</color>"
+        // No change, no word (the user, 2026-11-11: "same" on the worn item itself said nothing).
+        string change = Mathf.Abs(delta) < .01f ? ""
             : $"<color={(delta > 0 ? ItemData.GoodColor : ItemData.BadColor)}>{(delta > 0 ? "+" : "")}{delta:0.#}{unit}</color>";
-        if (bar.value != null) bar.value.text = string.IsNullOrEmpty(text) ? change : $"{text}  {change}";
+        if (bar.value != null) bar.value.text = string.IsNullOrEmpty(text) ? change : string.IsNullOrEmpty(change) ? text : $"{text}  {change}";
     }
 
     static void Span(Image image, float from, float to)

@@ -177,8 +177,8 @@ public partial class BossStageEncounter
         }
         if (introRun != null) CutIntro();
         if (boss == null || !boss.IsAlive) yield break;
-        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.bossName : null);
-        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.bossName : null), MessageKind.Warning);
+        if (BossBarUI.HasInstance) BossBarUI.Instance.Show(boss, milestone.title, fight != null ? fight.BossName : null);
+        if (!intro && !string.IsNullOrWhiteSpace(milestone.introMessage)) MessageLog.Post(milestone.Intro(boss, fight != null ? fight.BossName : null), MessageKind.Warning);
         if (fight != null && !intro) Say(fight.fightLine, true);
         if (intro) BossBlessing.Announce();
         if (stageLights != null) stageLights.Follow(boss.transform);

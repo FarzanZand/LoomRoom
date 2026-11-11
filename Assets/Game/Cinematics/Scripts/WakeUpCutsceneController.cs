@@ -5,6 +5,7 @@ using UnityEngine;
 // music sting runs underneath. The room player is placed at the start marker first.
 // It plays after the intro and after each won table level (the ending), never after a death (the player is back in
 // the room, standing by the table) or when the game is started (StandUp: standing by the bed).
+// The bedside radio's alarm sounds from the radio as it begins (six seconds); StandUp sounds it only with alarmOnStandUp.
 // In the Room scene, this rig and its start marker are children of the bed so
 // designers can move or rotate the bed without retiming the local Timeline animation.
 public class WakeUpCutsceneController : CutsceneController
@@ -25,6 +26,14 @@ public class WakeUpCutsceneController : CutsceneController
     [SerializeField] string musicKey = "groundhog";
     [SerializeField] float musicDelay    = 1f;
     [SerializeField] float musicDuration = 12f;
+
+    [Header("Alarm")]
+    [Tooltip("The bedside radio's alarm, played from the radio as the player wakes up (Audio/Data/Radio alarm: six seconds, from Tools/radio_alarm.py). Empty plays none.")]
+    [SerializeField] AudioData alarm;
+    [Tooltip("Where the alarm sounds from: the bedside radio.")]
+    [SerializeField] Transform alarmFrom;
+    [Tooltip("Also sound it when the game starts with the player already standing by the bed (no wake-up).")]
+    [SerializeField] bool alarmOnStandUp = false;
 
     [Header("Brief (waking again after a death)")]
     [Tooltip("Seconds of the timeline's end that a brief wake-up plays.")]
@@ -75,6 +84,8 @@ public class WakeUpCutsceneController : CutsceneController
 
         PlaceInRoom();
 
+        SoundAlarm();
+
         if (playMusic && !string.IsNullOrEmpty(musicKey))
         {
             if (music != null) StopCoroutine(music);
@@ -124,6 +135,14 @@ public class WakeUpCutsceneController : CutsceneController
     {
         PlaceInRoom();
         if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(0f); ScreenManager.Instance.FadeFromBlack(briefFadeDuration, briefFadeHold); }
+        if (alarmOnStandUp) SoundAlarm();
+    }
+
+    // The radio's alarm: one six-second clip at the radio, so it is heard coming from the bedside.
+    public AudioSource SoundAlarm()
+    {
+        if (alarm == null || alarmFrom == null || !AudioManager.HasInstance) return null;
+        return AudioManager.Instance.PlaySFXData(alarm, alarmFrom.position);
     }
 
     Coroutine music;

@@ -3,9 +3,11 @@ using UnityEngine;
 
 // The set of dice on the big table's border (the symbol puzzle's prize, ProgressionManager.Dice). While the dice are
 // carried, using the border puts them down: one after another with the equip chime, a small burst and a short warm
-// light, while the Dungeon Master says placedLine, where the border was aimed at (so they land in view), and they lie
-// there after a load (flag room.dice.at). Once down they stay, and Trading is higher while they lie there.
-// The dice are plain children placed by hand: move, turn or add them freely. Aiming at the border is caught by
+// light, while the Dungeon Master says placedLine, in their own spot: a small cluster beside the candles at the cap's
+// end (the user, 2026-11-11: there, half as big, close together, not in a line; they went down where the border was
+// aimed at before). While they are carried, Spot Marker (the candles) glows, as every room item's place does. Once down
+// they stay, and Trading is higher while they lie there. The dice are plain children placed by hand: move, turn or add
+// them freely. Aiming at the border is caught by
 // interaction triggers this makes at start along the cap (Reach), each well under half the table's size, so it takes
 // the aim from the table's own Play (InteractController hands a small target on a big one the aim).
 public class TableDice : MonoBehaviour, IInteractable
@@ -24,13 +26,12 @@ public class TableDice : MonoBehaviour, IInteractable
     public Vector3 reachSize = new(5f, 4f, 40f);
     [Tooltip("Where the boxes' middles lie along the cap (local z): together they cover the west side's whole length.")]
     public float[] reachAlong = { 3f, 43f, 83f };
-    [Tooltip("How far along the cap (local z) the dice may go down from where they were placed by hand: they land where the border is aimed at, kept within these.")]
-    public Vector2 spotRange = new(-10f, 96f);
+    [Tooltip("Glows while the dice are carried (QuestGlow), marking where they go: the candles beside their spot.")]
+    public GameObject spotMarker;
+    QuestGlow glow;
 
-    // Where along the cap they went down, in tenths of a unit from where they were placed by hand.
+    // Where along the cap they went down before they had a spot of their own (kept so old saves load; unused).
     public const string SpotFlag = "room.dice.at";
-    Vector3[] rest;
-    float Along => Meta != null ? Meta.GetFlag(SpotFlag) / 10f : 0f;
 
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
 
@@ -40,8 +41,6 @@ public class TableDice : MonoBehaviour, IInteractable
     public void Interact(Character who)
     {
         if (!CanInteract(who)) return;
-        float along = AimedAlong(who);
-        Meta.SetFlag(SpotFlag, Mathf.RoundToInt(along * 10f));
         Meta.PlaceDice();
         Refresh();
         for (int i = 0; i < dice.Length; i++)
@@ -58,18 +57,16 @@ public class TableDice : MonoBehaviour, IInteractable
             }).SetLink(die);
         }
         if (AudioManager.HasInstance && !string.IsNullOrEmpty(putKey)) AudioManager.Instance.PlayUI(putKey);
-        Burst(transform.TransformPoint(Vector3.forward * along) + Vector3.up * 2f);
+        Burst(Middle() + Vector3.up * 2f);
         if (placedLine != null && !placedLine.IsEmpty) DungeonMaster.Say(placedLine);
     }
 
-    // Where the look meets the cap's top, along the cap (local z): the dice go down there.
-    float AimedAlong(Character who)
+    // The middle of the cluster (where the burst goes off).
+    Vector3 Middle()
     {
-        var view = who != null && who.TryGetComponent<InteractController>(out var aim) ? aim.ViewCamera : null;
-        if (view == null) return Along;
-        var ray = new Ray(view.transform.position, view.transform.forward);
-        if (!new Plane(Vector3.up, transform.position).Raycast(ray, out float distance)) return Along;
-        return Mathf.Clamp(transform.InverseTransformPoint(ray.GetPoint(distance)).z, spotRange.x, spotRange.y);
+        Vector3 sum = Vector3.zero; int n = 0;
+        foreach (var die in dice) if (die != null) { sum += die.transform.position; n++; }
+        return n > 0 ? sum / n : transform.position;
     }
 
     // The burst sized for the room (every particle system scales with its transform), and a warm flash that dies away.
@@ -91,8 +88,7 @@ public class TableDice : MonoBehaviour, IInteractable
 
     void Awake()
     {
-        rest = new Vector3[dice.Length];
-        for (int i = 0; i < dice.Length; i++) if (dice[i] != null) rest[i] = dice[i].transform.localPosition;
+        if (spotMarker != null) glow = spotMarker.AddComponent<QuestGlow>();
         for (int i = 0; i < reachAlong.Length; i++)
         {
             var reach = new GameObject($"Dice reach {i + 1}") { layer = gameObject.layer };
@@ -110,6 +106,7 @@ public class TableDice : MonoBehaviour, IInteractable
         Refresh();
     }
     void OnDestroy() { if (Meta != null) Meta.FlagChanged -= OnFlag; }
+    void Update() { if (glow != null) glow.Show(Meta != null && Meta.DiceCarried); }
     void OnFlag(string key, int value) { if (key == ProgressionManager.DiceFlag) Refresh(); }
 
     public void Refresh()
@@ -118,7 +115,6 @@ public class TableDice : MonoBehaviour, IInteractable
         for (int i = 0; i < dice.Length; i++)
         {
             if (dice[i] == null) continue;
-            if (rest != null && i < rest.Length) dice[i].transform.localPosition = rest[i] + Vector3.forward * Along;
             dice[i].SetActive(down);
         }
     }

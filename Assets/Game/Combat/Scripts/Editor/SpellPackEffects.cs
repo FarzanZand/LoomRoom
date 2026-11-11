@@ -34,13 +34,28 @@ public static partial class SpellPackEffects
         public float maxScreen;   // largest a particle may be on screen, as a share of the screen (0: the renderer's own); keeps a hit at point blank from filling the view
     }
 
+    // Fireball (2026-11-11, the user: more like the Molten Boulder, only it flies straight on and bursts on what it
+    // hits): the boulder's own pack effects, a glowing lava rock in the hand and in the air and its burst of fire. The
+    // spell's numbers are untouched: no arc, no fire left on the ground, the fireball's own speed and range. The burst
+    // is a little smaller than the boulder's, as the fireball's blast is (radius 1.5 to its 2.2).
+    static readonly Art[] FireballArts =
+    {
+        new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_4_LWRP.prefab", scale = .08f, charge = true, linger = .35f, remove = new[] { "Flame" } },
+        new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_4_LWRP.prefab", scale = .26f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" } },
+        new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_2_LWRP.prefab", scale = .45f, once = true, life = .5f, maxScreen = .12f, remove = new[] { "Flash", "Flames", "Sparks", "Puff" } },
+    };
+
+    // Only the fireball's three effects, from an eval (Rebuild does every effect of this file).
+    public static void RebuildFireball()
+    {
+        foreach (var art in FireballArts) Build(art);
+        AssetDatabase.SaveAssets();
+    }
+
     public static void Rebuild()
     {
-        var arts = new[]
+        var arts = FireballArts.Concat(new[]
         {
-            new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_LWRP.prefab", scale = .11f, charge = true, linger = .35f, remove = new[] { "Flame" }, drop = new[] { "Expansive Wave" } },
-            new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_LWRP.prefab", scale = .45f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" }, drop = new[] { "Expansive Wave" } },
-            new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_4_LWRP.prefab", scale = .8f, once = true, life = .45f, maxScreen = .08f, lives = new[] { ("Effect", .45f) }, remove = new[] { "Flash", "Flames", "Sparks", "Puff" }, drop = new[] { "Fireballs(Low Quality)" } },
             // Area Radius 2: the ground wave spreads about 4 m across, the burst stands a little over head height.
             new Art { prefab = "Fire Circle/Fire Circle Eruption.prefab", effect = "Prefabs/Spells/Spell_Fire_5_LWRP.prefab", scale = 1f, once = true, life = .7f, maxScreen = .07f, sizes = new[] { ("Effect", .26f), ("Explosion", .4f) }, lives = new[] { ("Explosion", .6f) } },
             // Held heal: a small steady green glow with a few motes, nothing more.
@@ -50,7 +65,7 @@ public static partial class SpellPackEffects
             // The Dungeon Master's beam in a boss fight (DungeonMasterBeam): the glow at his hand, and where it lands on an unguarded player.
             new Art { prefab = "Assets/Game/Combat/Effects/DM beam/DM beam charge.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Light_LWRP.prefab", scale = 1.2f, maxScreen = .2f, charge = true, linger = .4f },
             new Art { prefab = "Assets/Game/Combat/Effects/DM beam/DM beam impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion_Light_LWRP.prefab", scale = .14f, once = true, life = .6f, maxScreen = .2f },
-        };
+        }).ToArray();
         // The eruption was a variant of the fireball's impact: it becomes its own prefab, keeping its SpellVisual,
         // impulse and light.
         Standalone(Spells + "Fire Circle/Fire Circle Eruption.prefab");

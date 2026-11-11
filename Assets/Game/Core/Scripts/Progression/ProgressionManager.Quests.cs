@@ -24,9 +24,9 @@ public partial class ProgressionManager
     public const string InventoryOpenedFlag = "story.inventoryOpened";
     // Quests the log shows only while the table player is in a dungeon (the shield bash guide, the deflect).
     public static bool DungeonOnly(string id) => id == ShieldBashQuest || id == DeflectQuest || id == DashQuest || id == RumourQuest;
-    // Quests done in the room (the sheet, the trophy wall, the table, the symbol puzzle): the log leaves them out while
+    // Quests done in the room (the sheet, the trophy wall, the table, the locked box): the log leaves them out while
     // the table player is in a dungeon, where they can't be done.
-    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == TileQuest || id == PosterQuest || id == DiceQuest;
+    public static bool RoomOnly(string id) => id == SheetQuest || id == SpendQuest || id == TableQuest || id == TrophyQuest || id == BoxKeyQuest || id == PosterQuest || id == DiceQuest || id == ClassQuest;
 
     [FoldoutGroup("Quests"), PropertyOrder(50), LabelText("Quest log lines"), ListDrawerSettings(ShowFoldout = true)]
     [InfoBox("The lines the quest log shows. Each id is used by the game's code, so change only the text. {attack}, {block} and {sprint} become the player's own keys.")]
@@ -43,10 +43,11 @@ public partial class ProgressionManager
         new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
-        new Quest { id = TileQuest, text = "Put the missing tile in the symbol puzzle." },
+        new Quest { id = BoxKeyQuest, text = "Open the locked box on the coffee table." },
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
-        new Quest { id = DiceQuest, text = "Put the dice on the border of the big table." },
+        new Quest { id = DiceQuest, text = "Put the dice on the big table." },
         new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
+        new Quest { id = ClassQuest, text = "Change your class at the desk by the bed." },
     };
 
     void EnsureBuiltInQuests()
@@ -109,7 +110,15 @@ public partial class ProgressionManager
     }
 
     // The quest's text with the player's keys put in.
-    public string QuestText(Quest q) => q == null ? "" : KeysIn(q.text);
+    // With one trophy carried, the trophy quest says it in the singular ("Hang your trophy on the wall.").
+    public string QuestText(Quest q)
+    {
+        if (q == null) return "";
+        string text = KeysIn(q.text);
+        if (q.id == TrophyQuest && TrophyCount(TrophyState.Carried) == 1)
+            text = text.Replace("trophies", "trophy").Replace("Trophies", "Trophy");
+        return text;
+    }
 
     // {attack}, {block}, {inventory}, {crouch} and {sprint} replaced by the player's own keys (quests, the lesson's lines).
     public static string KeysIn(string text)
