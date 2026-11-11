@@ -9,32 +9,47 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Every Dungeon Master line in the game, found where it is kept: each DungeonMaster.Line field (and list of them) and
-// each list of plain line strings (a level's Dialogue tab, a room template's Enter Lines) on the game's scripts, in the
-// open scenes, the prefabs and the data assets under Assets/Game. Each line knows where it plays (its owner and field,
-// the field's tooltip as "when", its place in its list) and writes back through a SerializedObject, so every edit is
-// undoable and lands where the line lives. Read by AssetStudioWindow.Dialogue.
+// Every line of dialogue in the game, found where it is kept: each DungeonMaster.Line field (and list of them), each
+// list of plain line strings (a level's Dialogue tab, a room template's Enter Lines), each conversation of dialogue
+// boxes (PortraitLine: a boss's or the tavern keeper's words, kept in Dialogue/Conversations) with its answers and
+// replies, and the Dialogue Database's conversations (the Dungeon Master's talks at the table), on the game's scripts,
+// in the open scenes, the prefabs and the data assets under Assets/Game. Each line knows where it plays (its owner and
+// field, the field's tooltip as "when", its place in its list) and writes back through a SerializedObject, so every
+// edit is undoable and lands where the line lives. Read by AssetStudioWindow.Dialogue.
 public static class AssetStudioDialogue
 {
+    // Plain: a string. Rich: a DungeonMaster.Line (voice, mumble, in person). Box: a dialogue box (PortraitLine or
+    // PortraitReply: speaker, name, text). Answer: an answer the player picks (PortraitChoice: its label).
+    public enum Kind { Plain, Rich, Box, Answer }
+
     public class Line
     {
         public UnityEngine.Object owner;
         public string source;        // asset path, or the scene's path for scene objects
         public string category;      // where it plays, broadly: Intro, Room and table, Campaign, Dungeons ...
         public string ownerName;
-        public string path;          // property path to the line (a DungeonMaster.Line or a string)
-        public bool rich;            // a DungeonMaster.Line (voice, mumble, in person); else a plain string
+        public string path;          // property path to the line (a DungeonMaster.Line, a box, an answer or a string)
+        public Kind kind;
+        public bool rich => kind == Kind.Rich;
+        public bool Conversation => kind == Kind.Box || kind == Kind.Answer;
         public string arrayPath;     // the list it is in, or null
         public int index = -1;       // its place in that list
         public string field;         // the field, readable ("After Lamp")
-        public string context;       // the list entry it belongs to ("Kill", "Step 3")
+        public string context;       // the list entry it belongs to ("Kill", "Step 3", "Line 3 › Answer 1")
         public string when;          // the field's tooltip
         public int order;            // order within its owner (declaration order)
+        public int depth;            // a box 0, its answers 1, their replies 2
         public string text;
         public bool mumble, inPerson;
         public UnityEngine.Object voice;
+        public int speaker;          // a box's PortraitSpeaker
+        public string speakerName;   // a box's name (empty: the speaker's own)
         public string Where => ownerName + " · " + field + (string.IsNullOrEmpty(context) ? "" : " · " + context);
         public string Key => GlobalObjectId.GetGlobalObjectIdSlow(owner) + "|" + path;
+        // Rows under one header: a conversation's boxes, answers and replies all sit under their list.
+        public string Group => ownerName + "|" + field + "|" + (Conversation ? "" : context);
+        // The field inside the property that holds the text, or null when the property is the string itself.
+        public string TextField => kind == Kind.Answer ? "label" : kind == Kind.Plain ? null : "text";
     }
 
     static readonly Regex Element = new(@"\.Array\.data\[(\d+)\]$");
@@ -59,7 +74,7 @@ public static class AssetStudioDialogue
             {
                 if (f.IsNotSerialized || !f.IsPublic && f.GetCustomAttribute<SerializeField>() == null) continue;
                 var ft = Elem(f.FieldType);
-                if (ft == typeof(DungeonMaster.Line)) return true;
+                if (ft == typeof(DungeonMaster.Line) || ft == typeof(PortraitLine) || ft == typeof(PortraitReply)) return true;
                 if (ft == typeof(string) && (LineName(f.Name) || f.GetCustomAttribute<DialogueTextAttribute>() != null)) return true;
                 if (ft.IsClass && ft != typeof(string) && !typeof(UnityEngine.Object).IsAssignableFrom(ft) && ft.GetCustomAttribute<SerializableAttribute>() != null && Holds(ft, depth + 1)) return true;
             }
@@ -81,6 +96,10 @@ public static class AssetStudioDialogue
             foreach (var guid in AssetDatabase.FindAssets("t:" + t.Name, new[] { "Assets/Game" }))
                 foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
                     if (o != null && t.IsInstanceOfType(o) && seen.Add(o)) Collect(o, lines);
+        // The Dialogue Database (a plugin's type, so not among the game's scripts).
+        foreach (var guid in AssetDatabase.FindAssets("t:DialogueDatabase", new[] { "Assets/Game" }))
+            foreach (var o in AssetDatabase.LoadAllAssetsAtPath(AssetDatabase.GUIDToAssetPath(guid)))
+                if (o is PixelCrushers.DialogueSystem.DialogueDatabase && seen.Add(o)) Collect(o, lines);
         // Prefabs that use one of the scripts (found by the script's GUID in the prefab's text, so nothing else loads).
         var behaviours = dialogueTypes.Where(t => typeof(MonoBehaviour).IsAssignableFrom(t)).ToList();
         var guids = new List<string>();
@@ -121,6 +140,7 @@ public static class AssetStudioDialogue
     // Every line on one object, in declaration order.
     public static void Collect(UnityEngine.Object owner, List<Line> into)
     {
+        if (owner is PixelCrushers.DialogueSystem.DialogueDatabase db) { CollectDatabase(db, into); return; }
         var so = new SerializedObject(owner);
         var p = so.GetIterator();
         int order = 0;
@@ -133,18 +153,41 @@ public static class AssetStudioDialogue
         while (p.Next(enter))
         {
             enter = true;
-            bool rich = p.propertyType == SerializedPropertyType.Generic && p.type == "Line" && p.FindPropertyRelative("text") != null;
+            // (A list reports its elements' type: only the elements themselves count.)
+            bool generic = p.propertyType == SerializedPropertyType.Generic && !p.isArray;
+            bool rich = generic && p.type == "Line" && p.FindPropertyRelative("text") != null;
+            // A conversation's boxes and answers: the box or answer is the line, and its answers and replies, inside
+            // it, are found as the walk goes on into it (their text fields are not lines of their own).
+            bool box = generic && (p.type == nameof(PortraitLine) || p.type == nameof(PortraitReply));
+            bool answer = generic && p.type == nameof(PortraitChoice);
             var marked = p.propertyType == SerializedPropertyType.String ? FieldAt(owner.GetType(), p.propertyPath)?.GetCustomAttribute<DialogueTextAttribute>() : null;
             bool plain = p.propertyType == SerializedPropertyType.String && (LineName(FieldName(p.propertyPath)) || owner is HouseRule && p.propertyPath == "text" || marked != null);
-            if (!rich && !plain) continue;
+            if (!rich && !plain && !box && !answer) continue;
             if (!string.IsNullOrEmpty(marked?.onlyIf) && so.FindProperty(marked.onlyIf) is { propertyType: SerializedPropertyType.Boolean, boolValue: false }) continue;
             if (copy && !p.prefabOverride) { if (rich) enter = false; continue; }
-            var line = new Line { owner = owner, source = source, ownerName = ownerName, path = p.propertyPath, rich = rich, order = order++ };
+            var line = new Line
+            {
+                owner = owner, source = source, ownerName = ownerName, path = p.propertyPath, order = order++,
+                kind = rich ? Kind.Rich : box ? Kind.Box : answer ? Kind.Answer : Kind.Plain,
+            };
             var m = Element.Match(p.propertyPath);
             if (m.Success) { line.arrayPath = p.propertyPath.Substring(0, m.Index); line.index = int.Parse(m.Groups[1].Value); }
-            line.field = ObjectNames.NicifyVariableName(FieldName(p.propertyPath));
-            line.context = Context(so, p.propertyPath);
-            line.when = Tooltip(owner.GetType(), p.propertyPath);
+            if (line.Conversation)
+            {
+                // Under the conversation's own list (Intro lines), with its place in it as the context.
+                int list = p.propertyPath.IndexOf(".Array.data[", StringComparison.Ordinal);
+                string top = list >= 0 ? p.propertyPath.Substring(0, list) : p.propertyPath;
+                line.field = ObjectNames.NicifyVariableName(FieldName(top));
+                line.context = ConversationPlace(p.propertyPath);
+                line.when = Tooltip(owner.GetType(), top);
+                line.depth = Regex.Matches(p.propertyPath, @"\.Array\.data\[").Count - 1;
+            }
+            else
+            {
+                line.field = ObjectNames.NicifyVariableName(FieldName(p.propertyPath));
+                line.context = Context(so, p.propertyPath);
+                line.when = Tooltip(owner.GetType(), p.propertyPath);
+            }
             line.category = !string.IsNullOrEmpty(marked?.category) ? marked.category : Category(owner);
             Read(line, p);
             into.Add(line);
@@ -154,14 +197,76 @@ public static class AssetStudioDialogue
 
     static void Read(Line line, SerializedProperty p)
     {
-        if (line.rich)
+        switch (line.kind)
         {
-            line.text = p.FindPropertyRelative("text").stringValue;
-            line.mumble = p.FindPropertyRelative("mumble")?.boolValue ?? false;
-            line.inPerson = p.FindPropertyRelative("inPerson")?.boolValue ?? false;
-            line.voice = p.FindPropertyRelative("voice")?.objectReferenceValue;
+            case Kind.Rich:
+                line.text = p.FindPropertyRelative("text").stringValue;
+                line.mumble = p.FindPropertyRelative("mumble")?.boolValue ?? false;
+                line.inPerson = p.FindPropertyRelative("inPerson")?.boolValue ?? false;
+                line.voice = p.FindPropertyRelative("voice")?.objectReferenceValue;
+                break;
+            case Kind.Box:
+                line.text = p.FindPropertyRelative("text").stringValue;
+                line.speaker = p.FindPropertyRelative("speaker").intValue;
+                line.speakerName = p.FindPropertyRelative("name").stringValue;
+                break;
+            case Kind.Answer: line.text = p.FindPropertyRelative("label").stringValue; break;
+            default: line.text = p.stringValue; break;
         }
-        else line.text = p.stringValue;
+    }
+
+    // Where a box or answer sits in its conversation: "Line 3", "Line 3 › Answer 1", "Line 3 › Answer 1 › Reply 1".
+    static string ConversationPlace(string path)
+    {
+        var parts = new List<string>();
+        foreach (Match m in Regex.Matches(path, @"(\w+)\.Array\.data\[(\d+)\]"))
+            parts.Add((m.Groups[1].Value == "choices" ? "Answer " : m.Groups[1].Value == "reply" ? "Reply " : "Line ") + (int.Parse(m.Groups[2].Value) + 1));
+        return string.Join(" › ", parts);
+    }
+
+    // The Dialogue Database's conversations: each line's Dialogue Text and each answer's Menu Text that has words, under
+    // its conversation's title (the speaker in the context, the conversation's description as when). Edited in place;
+    // nodes are added, linked and given conditions in the plugin's own Dialogue Editor.
+    static void CollectDatabase(PixelCrushers.DialogueSystem.DialogueDatabase db, List<Line> into)
+    {
+        string source = AssetDatabase.GetAssetPath(db);
+        int order = 0;
+        for (int c = 0; c < db.conversations.Count; c++)
+        {
+            var conversation = db.conversations[c];
+            string title = Field(conversation.fields, "Title") ?? conversation.Title;
+            string description = Field(conversation.fields, "Description");
+            int n = 0;
+            for (int e = 0; e < conversation.dialogueEntries.Count; e++)
+            {
+                var entry = conversation.dialogueEntries[e];
+                string speaker = db.GetActor(entry.ActorID)?.Name ?? "?";
+                // An answer's button is its Menu Text; its Dialogue Text, when the same words, is never shown (the
+                // player's lines get no subtitle), so it is left out rather than listed twice.
+                string menuText = Field(entry.fields, "Menu Text");
+                for (int f = 0; f < entry.fields.Count; f++)
+                {
+                    var field = entry.fields[f];
+                    bool said = field.title == "Dialogue Text", menu = field.title == "Menu Text";
+                    if (!said && !menu || string.IsNullOrEmpty(field.value)) continue;
+                    if (said && field.value == menuText) continue;
+                    if (said) n++;
+                    into.Add(new Line
+                    {
+                        owner = db, source = source, ownerName = db.name, kind = Kind.Plain, order = order++,
+                        path = $"conversations.Array.data[{c}].dialogueEntries.Array.data[{e}].fields.Array.data[{f}].value",
+                        field = title, when = string.IsNullOrEmpty(description) ? null : description,
+                        context = said ? $"Line {n} ({speaker})" : $"Answer ({speaker})",
+                        category = Category(db), text = field.value,
+                    });
+                }
+            }
+        }
+    }
+    static string Field(List<PixelCrushers.DialogueSystem.Field> fields, string title)
+    {
+        foreach (var f in fields) if (f.title == title) return f.value;
+        return null;
     }
 
     // The field a property belongs to, past list elements ("afterLamp.Array.data[2]" -> "afterLamp").
@@ -229,8 +334,9 @@ public static class AssetStudioDialogue
         ["HouseRule"] = "House rules", ["RuleManager"] = "House rules",
         ["TableLevelData"] = "Dungeons", ["DungeonBiome"] = "Dungeons", ["DungeonRoomTemplate"] = "Dungeons", ["ArenaFight"] = "Dungeons",
         ["SkeletonParty"] = "Dungeons", ["PortalArch"] = "Dungeons", ["TableLevelLoader"] = "Dungeons",
-        ["TavernKeeperLines"] = "Tavern", ["TavernRoom"] = "Tavern", ["TavernKeeper"] = "Tavern",
-        ["BossFight"] = "Boss fights", ["BossStageEncounter"] = "Boss fights",
+        ["DialogueDatabase"] = "Room and table",
+        ["TavernKeeperDialogueData"] = "Tavern", ["TavernRoom"] = "Tavern", ["TavernKeeper"] = "Tavern",
+        ["BossFight"] = "Boss fights", ["BossDialogueData"] = "Boss fights", ["BossStageEncounter"] = "Boss fights",
         ["ProvokableNpc"] = "Characters", ["WeepingEnemy"] = "Characters",
         ["RunRecapUI"] = "Runs",
     };
@@ -259,9 +365,39 @@ public static class AssetStudioDialogue
         var so = For(line.owner);
         var p = so.FindProperty(line.path);
         if (p == null) return;
-        if (line.rich) p.FindPropertyRelative("text").stringValue = text; else p.stringValue = text;
+        if (line.TextField != null) p.FindPropertyRelative(line.TextField).stringValue = text; else p.stringValue = text;
         Saved(line.owner, so);
         line.text = text;
+    }
+
+    // A box's speaker (PortraitSpeaker) and the name on it.
+    public static void SetSpeaker(Line line, int speaker, string name)
+    {
+        if (line.kind != Kind.Box) return;
+        var so = For(line.owner);
+        var p = so.FindProperty(line.path);
+        if (p == null) return;
+        p.FindPropertyRelative("speaker").intValue = speaker;
+        p.FindPropertyRelative("name").stringValue = name ?? "";
+        Saved(line.owner, so);
+        line.speaker = speaker; line.speakerName = name;
+    }
+
+    // A new answer at the end of a box's answers (PortraitLine), or a new reply at the end of an answer's replies; the
+    // owner's lines are read again after.
+    public static bool CanAddChild(Line line) => line.kind == Kind.Answer || line.kind == Kind.Box && line.path.EndsWith("]") && !Regex.IsMatch(line.path, @"\.reply\.Array\.data\[\d+\]$");
+    public static void AddChild(Line line)
+    {
+        if (!CanAddChild(line)) return;
+        var so = For(line.owner);
+        var a = so.FindProperty(line.path + (line.kind == Kind.Box ? ".choices" : ".reply"));
+        if (a == null || !a.isArray) return;
+        int i = a.arraySize;
+        a.InsertArrayElementAtIndex(i);
+        var e = a.GetArrayElementAtIndex(i);
+        if (line.kind == Kind.Box) { e.FindPropertyRelative("label").stringValue = ""; e.FindPropertyRelative("reply").ClearArray(); }
+        else e.FindPropertyRelative("text").stringValue = "";
+        Saved(line.owner, so);
     }
 
     public static void SetDelivery(Line line, bool mumble, bool inPerson)
@@ -281,7 +417,9 @@ public static class AssetStudioDialogue
     {
         a.InsertArrayElementAtIndex(line.index);
         var copy = a.GetArrayElementAtIndex(line.index + 1);
-        if (line.rich) copy.FindPropertyRelative("text").stringValue = ""; else copy.stringValue = "";
+        if (line.TextField != null) copy.FindPropertyRelative(line.TextField).stringValue = ""; else copy.stringValue = "";
+        // A new box starts with no answers, a new answer with no replies (the speaker and name are kept).
+        copy.FindPropertyRelative(line.kind == Kind.Answer ? "reply" : "choices")?.ClearArray();
     });
     public static void Remove(Line line) => Change(line, a => a.DeleteArrayElementAtIndex(line.index));
 

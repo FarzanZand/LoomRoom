@@ -6,7 +6,7 @@ using UnityEngine;
 
 // Shields block a flat amount (the user, 2026-11-11): a raised shield takes its Block off a blocked physical hit
 // (CharacterStats.AfterBlock), and the Blocking skill takes its share off what is left. Each tier's shield is set so a
-// Common one stops `share` (80%) of the average enemy hit on the floors where that tier is the usual gear (the level's Gear
+// Common one stops `share` (85%, the user, 2026-11-11; 80% before) of the average enemy hit on the floors where that tier is the usual gear (the level's Gear
 // by floor; enemies weighted as the floor picks them, with the balance the Balance page reckons with: the level's
 // DungeonBalance, each stage's damage, ProgressionManager > Enemy balance). A tier no floor of the level has is carried on
 // from the last two tiers' step. From an eval, with Room.unity open:
@@ -14,7 +14,7 @@ using UnityEngine;
 // Run it again after enemy damage or the gear table changes.
 public partial class AssetStudioWindow
 {
-    public static string SetShieldBlocks(string levelPath, bool apply, float share = .8f)
+    public static string SetShieldBlocks(string levelPath, bool apply, float share = .85f)
     {
         var d = AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
         if (d == null) return "no level " + levelPath;

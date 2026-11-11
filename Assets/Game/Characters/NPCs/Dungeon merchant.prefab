@@ -117,6 +117,7 @@ MonoBehaviour:
   stapleCount: 2
   gearCount: 6
   alwaysTome: 1
+  alwaysWeapon: 1
   stockTable: {fileID: 11400000, guid: 189da2bf30ee76b42878c3065851d4ec, type: 2}
   priceMultiplier: 1.2
   pricePerFloor: 0.1
@@ -141,12 +142,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 52743095f2247b44d9f489b44373568d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TavernKeeper
+  dialogue: {fileID: 11400000, guid: a4816ca10c980dc4dad09890bb97112c, type: 2}
   dishes:
   - {fileID: 11400000, guid: 65cb2593085790a4da8e020ec74318fe, type: 2}
   - {fileID: 11400000, guid: e974a15ff091e4b49b711b717671c607, type: 2}
   rumourPrice: 20
   ateMessage: You eat the {Dish}.
-  rumourMessage: '{Place} is on your campaign map now.'
 --- !u!1 &2864870573407460668
 GameObject:
   m_ObjectHideFlags: 0

@@ -5,10 +5,13 @@ using UnityEngine;
 // The merchant as the tavern's keeper (on the Dungeon merchant prefab, next to Merchant). Talking to him opens the
 // dialogue box (PortraitDialogueUI) with one of his welcomes and three answers: Shop opens the shop screen (his wares and
 // dishes, TavernTabsUI; a dish is eaten once a run and lasts it), Rumour tells of a place off the campaign map
-// (CampaignEncounter.rumoured) for its price and puts it on the map, Never mind walks away. His words are on the Dialogue Manager
-// (TavernKeeperLines, also in Asset Studio's Dialogue view), the dishes and price here, the rumours on their places.
+// (CampaignEncounter.rumoured) for its price and puts it on the map, Never mind walks away. His words are a data asset
+// (dialogue: Dialogue/Conversations/Tavern keeper, also in Asset Studio's Dialogue view), the dishes and price here, the
+// rumours on their places.
 public class TavernKeeper : MonoBehaviour
 {
+    [Tooltip("What he says (an asset in Dialogue/Conversations): his welcomes, the answers and his replies.")]
+    public TavernKeeperDialogueData dialogue;
     [Tooltip("What he serves, in the order the Food tab lists them.")]
     public TavernDish[] dishes = new TavernDish[0];
     [Min(0), Tooltip("Gold for one rumour.")]
@@ -55,13 +58,13 @@ public class TavernKeeper : MonoBehaviour
     {
         if (talk != null) return true;
         var box = PortraitDialogueUI.Current;
-        var words = TavernKeeperLines.HasInstance ? TavernKeeperLines.Instance : null;
+        var words = dialogue;
         if (box == null || box.Open || words == null || words.welcomeLines == null || words.welcomeLines.Length == 0) return false;
         talk = StartCoroutine(Talking(merchant, player, box, words));
         return true;
     }
 
-    IEnumerator Talking(Merchant merchant, Player player, PortraitDialogueUI box, TavernKeeperLines words)
+    IEnumerator Talking(Merchant merchant, Player player, PortraitDialogueUI box, TavernKeeperDialogueData words)
     {
         if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); pushed = true; }
         var body = Body;

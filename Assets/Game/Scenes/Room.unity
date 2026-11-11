@@ -10402,7 +10402,6 @@ GameObject:
   - component: {fileID: 87319284}
   - component: {fileID: 87319287}
   - component: {fileID: 87319290}
-  - component: {fileID: 87319291}
   m_Layer: 0
   m_Name: Dialogue Manager
   m_TagString: Untagged
@@ -10627,19 +10626,27 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   spellHitMe:
-  - text: Did you just throw that at me?
+  - text: Ow! Did you just throw {a spell} at me?
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Careful. I can see you.
+  - text: Hey! The {spell} is for the monsters. Not for me.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: That's not how this game works.
+  - text: Ow. I'm the Dungeon Master, not a target for your {spell}.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Aim at the monsters, not at me.
+  - text: '{A spell}. At me. Really?'
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Ow! That {spell} hit me right in the face.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Ow! Aim the {spell} down there, not up here.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -10647,28 +10654,6 @@ MonoBehaviour:
   closeCallFraction: 0.25
   remarkGap: 15
   runRemarkDelay: 1.5
---- !u!114 &87319291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 83857682}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b3d76b848299c0429a3adc47d2ce190, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TavernKeeperLines
-  welcomeLines:
-  - Welcome in! Wipe your boots. Whatever you stepped in out there, it stays outside.
-  - Ah, a customer who's still breathing. My favourite kind. They pay.
-  - Sit anywhere you like. Don't mind the smell, that's the stew. Mostly.
-  shopAnswer: Shop
-  rumourAnswer: Rumour ({Price} gold)
-  leaveAnswer: Never mind
-  noMoneyLine: A rumour is {Price} gold, friend. You've got {Gold}. I can count, you know.
-  noRumourLine: That's all I know for now. Come back when the world's done something interesting.
-  rumourFallbackLine: I heard of a place. That's all I'll say.
 --- !u!1 &87411797
 GameObject:
   m_ObjectHideFlags: 0
@@ -24318,6 +24303,9 @@ MonoBehaviour:
   musicKey: groundhog
   musicDelay: 1
   musicDuration: 12
+  alarm: {fileID: 11400000, guid: 74338bd92d52a1f46bfe92afcfcbd628, type: 2}
+  alarmFrom: {fileID: 1278652918}
+  alarmOnStandUp: 0
   briefSeconds: 3
   briefFadeDuration: 0.8
   briefFadeHold: 0.4
@@ -178025,7 +178013,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <color=#9E291A>HP</color> 35    <color=#244794>MP</color> 30    <color=#216B45>SP</color> 26
+  m_text: <color=#9E291A>HP</color> 35    <color=#244794>MP</color> 30    <color=#216B45>SP</color> 31
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}

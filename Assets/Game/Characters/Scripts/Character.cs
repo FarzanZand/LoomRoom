@@ -25,7 +25,7 @@ public class Character : MonoBehaviour
 
     // A word in front of the name for this one character (an elite's "Brutal", EliteEnemy). Empty: none.
     [System.NonSerialized] public string namePrefix;
-    // A name this one character goes by in place of its data's (a boss's stage name, BossFight.bossName), said as a
+    // A name this one character goes by in place of its data's (a boss's stage name, BossDialogueData.bossName), said as a
     // proper name. Empty: the data's.
     // A name given for the moment (a boss's stage name): said as it is, never with "the" or "a" in front (ProperNames, read
     // by the death screen and the Dungeon Master's remarks about the killer).

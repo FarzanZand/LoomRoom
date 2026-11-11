@@ -311,7 +311,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     // A blocked physical hit (the user, 2026-11-11: a shield lowers a hit by a flat amount instead of adding armour): the
     // shield's Block comes off it, armour plays no part, and the Blocking skill takes its share off what is left
     // (blockedMultiplier, AdventurerProgress.BlockedDamageMultiplier). Shields are set so a shield of a floor's usual tier
-    // stops 80% of that floor's average enemy hit (AssetStudioWindow.SetShieldBlocks).
+    // stops 85% of that floor's average enemy hit (AssetStudioWindow.SetShieldBlocks).
     public static float AfterBlock(float amount, float block, float blockedMultiplier = 1f) => Mathf.Max(0f, amount - Mathf.Max(0f, block)) * Mathf.Clamp01(blockedMultiplier);
 
     public void TakeDamage(DamageInfo info)

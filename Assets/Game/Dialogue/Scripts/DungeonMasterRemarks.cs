@@ -30,13 +30,17 @@ public class DungeonMasterRemarks : MonoBehaviour
     [TabGroup(Tabs, "Runs"), Tooltip("Run start with the class the player has lost most often.")] public List<DungeonMaster.Line> usualPick = new();
     [TabGroup(Tabs, "Runs"), Tooltip("Run start with a class the player has lost before.")] public List<DungeonMaster.Line> samePick = new();
     [TabGroup(Tabs, "Runs"), Tooltip("Run start with a class none of the figures has.")] public List<DungeonMaster.Line> newPick = new();
-    [TabGroup(Tabs, "Runs"), Tooltip("The player's spell hits him from the dungeon (up through a skylight). Not during the boss fight, which has its own lines.")]
+    // The lines name the spell that hit him (the user, 2026-11-11: the old ones never said what happened, so they didn't
+    // read as his answer to the fireball). The name is filled in between asterisks, so it shows in the highlight colour.
+    [TabGroup(Tabs, "Runs"), Tooltip("The player's spell hits him from the dungeon (up through a skylight). Not during the boss fight, which has its own lines. {spell} is the spell's name in small letters, in the highlight colour (fireball); {a spell} has a or an in front, {A spell} starts a sentence.")]
     public List<DungeonMaster.Line> spellHitMe = new()
     {
-        new() { text = "Did you just throw that at me?" },
-        new() { text = "Careful. I can see you." },
-        new() { text = "That's not how this game works." },
-        new() { text = "Aim at the monsters, not at me." },
+        new() { text = "Ow! Did you just throw {a spell} at me?" },
+        new() { text = "Hey! The {spell} is for the monsters. Not for me." },
+        new() { text = "Ow. I'm the Dungeon Master, not a target for your {spell}." },
+        new() { text = "{A spell}. At me. Really?" },
+        new() { text = "Ow! That {spell} hit me right in the face." },
+        new() { text = "Ow! Aim the {spell} down there, not up here." },
     };
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
     [TabGroup(Tabs, "Runs"), InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
@@ -210,13 +214,25 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     float lastSpellHit = -999f;
     // A player's projectile spell hit the Dungeon Master (SpellProjectile). Not during a boss fight on the stage.
-    public static void SpellHit(Character caster)
+    public static void SpellHit(Character caster, SpellDefinition spell)
     {
         var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
         if (remarks == null || caster is not Player || Hold || BossStageEncounter.Current != null) return;
-        if (Time.time - remarks.lastSpellHit < remarks.spellHitGap || remarks.spellHitMe.Count == 0) return;
+        if (Time.time - remarks.lastSpellHit < remarks.spellHitGap) return;
+        var line = Pick(remarks.spellHitMe);
+        if (line == null) return;
         remarks.lastSpellHit = Time.time;
-        DungeonMaster.Say(remarks.spellHitMe[Random.Range(0, remarks.spellHitMe.Count)], null, .4f);
+        DungeonMaster.Say(line.With(FillSpell(line.text, spell)), null, .4f);
+    }
+
+    // {spell}, {a spell} and {A spell} filled with the spell's name, highlighted ("a *fireball*").
+    public static string FillSpell(string text, SpellDefinition spell)
+    {
+        string name = spell != null && !string.IsNullOrWhiteSpace(spell.displayName) ? spell.displayName.Trim().ToLowerInvariant() : "spell";
+        string article = "aeiou".IndexOf(name[0]) >= 0 ? "an" : "a";
+        return text.Replace("{a spell}", $"{article} *{name}*")
+                   .Replace("{A spell}", $"{char.ToUpperInvariant(article[0])}{article.Substring(1)} *{name}*")
+                   .Replace("{spell}", $"*{name}*");
     }
 
     static bool RunOn => RunManager.HasInstance && RunManager.Instance.Running && !RunManager.Instance.Ended;

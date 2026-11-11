@@ -49,7 +49,7 @@ MonoBehaviour:
   equipOnPickup: 0
   statModifiers:
   - stat: 37
-    value: 28
+    value: 30
     type: 0
   weapon:
     useDefaultEffects: 1

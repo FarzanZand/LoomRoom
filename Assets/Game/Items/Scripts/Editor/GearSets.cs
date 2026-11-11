@@ -411,7 +411,7 @@ public static class GearSets
                 log.Append($"New item {piece}\n");
             }
             item.itemName = piece; item.tier = tier; item.tag = $"{name} equipment"; item.value = ShieldPrice[tier - 1];
-            // A shield's Block is set by AssetStudioWindow.SetShieldBlocks (80% of its floors' average enemy hit), kept here.
+            // A shield's Block is set by AssetStudioWindow.SetShieldBlocks (85% of its floors' average enemy hit), kept here.
             item.worldPrefab = prefab; item.pickupVisualPrefab = null;
             item.heldRotation = new Vector3(0, turn, 0);
             EditorUtility.SetDirty(item);

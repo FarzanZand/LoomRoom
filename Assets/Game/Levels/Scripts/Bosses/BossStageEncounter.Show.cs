@@ -22,7 +22,7 @@ public partial class BossStageEncounter
     {
         if (fight == null || boss == null) return;
         // Its stage name in every line about it (the kill, the killer, the feed).
-        if (!string.IsNullOrWhiteSpace(fight.bossName)) boss.nameOverride = fight.bossName;
+        if (!string.IsNullOrWhiteSpace(fight.BossName)) boss.nameOverride = fight.BossName;
         if (fight.defeatPose != null && boss.TryGetComponent<DeathBurst>(out var burst)) burst.HoldSeconds = fight.DefeatSeconds;
         // The killing blow (Damaged comes before Died, so before the kill's experience): a level-up waits for the pose.
         if (fight.defeatPose != null)
@@ -38,8 +38,8 @@ public partial class BossStageEncounter
     // The second phase begins: the boss says its line (else the DM his), the floor lights up, the ball comes down.
     void PhaseTwoShow()
     {
-        if (!string.IsNullOrWhiteSpace(fight.phaseTwoBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.phaseTwoBossLine, boss, fight.bossName);
+        if (!string.IsNullOrWhiteSpace(fight.PhaseTwoBossLine) && PortraitDialogueUI.Current != null)
+            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName);
         else Say(fight.phaseTwoLine, true);
         if (fight.danceFloor != null && danceFloor == null)
             danceFloor = BossDanceFloor.Build(dungeon, fight.danceFloor, fight.phaseTwoDisco);
@@ -78,7 +78,7 @@ public partial class BossStageEncounter
         else if (backupDanced)
         {
             backupDanced = false;
-            if (!string.IsNullOrWhiteSpace(fight.backupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.backupBrokenLine, boss, fight.bossName);
+            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName);
         }
     }
 
@@ -114,8 +114,8 @@ public partial class BossStageEncounter
         bool any = false;
         foreach (var (b, _) in backup.ToArray()) if (b != null && b.State != EnemyState.Dead) { BreakUp(b); any = true; }
         if (!any) return;
-        if (!string.IsNullOrWhiteSpace(fight.backupBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.backupBossLine, boss, fight.bossName);
+        if (!string.IsNullOrWhiteSpace(fight.BackupCallLine) && PortraitDialogueUI.Current != null)
+            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName);
         StartCoroutine(SayAfterBark(fight.backupLine));
     }
 

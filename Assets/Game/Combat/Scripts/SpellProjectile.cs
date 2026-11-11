@@ -123,7 +123,7 @@ public class SpellProjectile : MonoBehaviour
             // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.
             var struckPlayer = hit.collider.GetComponentInParent<Player>();
             if (struckPlayer != null && struckPlayer != owner && struckPlayer.Combat != null && struckPlayer.Combat.Deflects(transform.forward)) { Deflect(struckPlayer, point); return; }
-            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner);
+            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner, spell);
             // Piercing: through the character, hurting it, on to the next.
             var struckCharacter = hit.collider.GetComponentInParent<Character>();
             if (struckCharacter != null && passed.Contains(struckCharacter)) continue;

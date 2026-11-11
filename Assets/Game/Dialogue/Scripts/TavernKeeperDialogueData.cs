@@ -1,9 +1,11 @@
 using UnityEngine;
 
-// What the tavern keeper says when you talk to him (TavernKeeper.Talk, in the dialogue box): his welcomes, the answers
-// you pick from and his replies. Sits on the Dialogue Manager with the rest of the game's words; Asset Studio's
-// Dialogue view lists and edits them (Tavern).
-public class TavernKeeperLines : Singleton<TavernKeeperLines>
+// What the tavern keeper says when you talk to him (TavernKeeper.Talk, in the dialogue box), one asset in
+// Dialogue/Conversations: his welcomes, the answers you pick from and his replies. The keeper (TavernKeeper on the
+// Dungeon merchant prefab) points at it; a place's rumour is on the place. Asset Studio's Dialogue view lists and edits
+// it (Tavern).
+[CreateAssetMenu(menuName = "LoomRoom/Tavern Keeper Dialogue")]
+public class TavernKeeperDialogueData : ScriptableObject
 {
     [Header("Welcome")]
     [TextArea(1, 3), Tooltip("He says one of these as you walk up to the bar, picked at random.")]

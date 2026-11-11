@@ -195,8 +195,10 @@ public static class PortraitDialogueSetup
         const string Ui = "Assets/ThirdParty/Generic Fantasy UI/";
         fight.title ??= new BossTitleSettings();
         fight.title.letterSound = Load(Ui + "Fantasy_UI_Gen_Discard_Thud_01_mono.wav", Ui + "Fantasy_UI_Gen_Discard_Thud_02_mono.wav");
-        fight.bossName = "Edgar the Disco King";
-        fight.introLines = new List<PortraitLine>
+        var words = BossWords(fight);
+        Undo.RecordObject(words, "Intro dialogue");
+        words.bossName = "Edgar the Disco King";
+        words.introLines = new List<PortraitLine>
         {
             new() { speaker = PortraitSpeaker.Boss, text = "Well, well. Someone found my dance floor." },
             new() { speaker = PortraitSpeaker.Boss, text = "Nobody has come down those stairs in a hundred years. The music got lonely." },
@@ -212,8 +214,27 @@ public static class PortraitDialogueSetup
             new() { speaker = PortraitSpeaker.DungeonMaster, text = "You heard the king. Dance." },
         };
         EditorUtility.SetDirty(fight);
+        EditorUtility.SetDirty(words);
         AssetDatabase.SaveAssetIfDirty(fight);
-        return $"Crypt Lord fight: {fight.introLines.Count} lines, boss name {fight.bossName}, intro card {fight.introCard}";
+        AssetDatabase.SaveAssetIfDirty(words);
+        return $"Crypt Lord fight: {words.introLines.Count} lines, boss name {words.bossName}, intro card {fight.introCard}";
+    }
+
+    // The fight's dialogue asset (Dialogue/Conversations/Edgar the Disco King), made and set on the fight when it has none.
+    public static BossDialogueData BossWords(BossFight fight)
+    {
+        if (fight.dialogue != null) return fight.dialogue;
+        const string Path = "Assets/Game/Dialogue/Conversations/Edgar the Disco King.asset";
+        var words = AssetDatabase.LoadAssetAtPath<BossDialogueData>(Path);
+        if (words == null)
+        {
+            if (!AssetDatabase.IsValidFolder("Assets/Game/Dialogue/Conversations")) AssetDatabase.CreateFolder("Assets/Game/Dialogue", "Conversations");
+            words = ScriptableObject.CreateInstance<BossDialogueData>();
+            AssetDatabase.CreateAsset(words, Path);
+        }
+        fight.dialogue = words;
+        EditorUtility.SetDirty(fight);
+        return words;
     }
 
     // A dark outline on the big Lilita One words, as a material asset (a prefab cannot keep a text's own material copy).

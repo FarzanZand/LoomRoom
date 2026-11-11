@@ -4,8 +4,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Asset Studio's Dialogue view: every Dungeon Master line in the game in one list (AssetStudioDialogue finds them),
-// grouped by where it plays and in the order it is said, edited right there. Search, a filter by where it plays,
+// Asset Studio's Dialogue view: every line of dialogue in the game in one list (AssetStudioDialogue finds them: the
+// Dungeon Master's lines, the conversations in Dialogue/Conversations with their speakers, answers and replies set in
+// under their box, and the Dialogue Database's talks), grouped by where it plays and in the order it is said, edited
+// right there. Search, a filter by where it plays,
 // sorting, empty lines only; each line can be moved, added after or removed in its list, said in Play mode, or its
 // owner selected; CSV out and in for editing many in a spreadsheet. Edits land where the line lives (undoable); a
 // line in the open scene leaves the scene unsaved until Save scene.
@@ -112,6 +114,16 @@ public partial class AssetStudioWindow
     }
 
     const float DialogueButtons = 220;   // the controls at the right of each line
+    static readonly string[] Speakers = { "Boss", "Dungeon Master", "Other" };   // PortraitSpeaker, by number
+
+    // A conversation's answers sit in under their box and the replies under their answer.
+    static float Indent(AssetStudioDialogue.Line l) => l.Conversation ? l.depth * 26 : 0;
+    static string RowLabel(AssetStudioDialogue.Line l) => l.kind switch
+    {
+        AssetStudioDialogue.Kind.Answer => "ans",
+        AssetStudioDialogue.Kind.Box when l.depth > 0 => "reply",
+        _ => l.index >= 0 ? (l.index + 1) + "." : "–",
+    };
 
     // The view: the area right of the library column.
     void DrawDialogue(Rect r)
@@ -177,10 +189,10 @@ public partial class AssetStudioWindow
             {
                 float h = 0;
                 if (grouped && l.category != lastCat) { h += 30; lastCat = l.category; lastField = null; }
-                string fieldKey = l.ownerName + "|" + l.field + "|" + l.context;
+                string fieldKey = l.Group;
                 if (!grouped || fieldKey != lastField) { h += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)); lastField = fieldKey; }
                 string t = dialoguePending.TryGetValue(LineId(l), out var pend) ? pend : l.text;
-                h += Mathf.Max(l.arrayPath != null ? 46 : 26, dialogueArea.CalcHeight(new GUIContent(string.IsNullOrEmpty(t) ? " " : t), textWidth)) + 6;
+                h += Mathf.Max(l.arrayPath != null ? 46 : 26, dialogueArea.CalcHeight(new GUIContent(string.IsNullOrEmpty(t) ? " " : t), textWidth - Indent(l))) + 6;
                 dialogueHeights.Add(h);
             }
         }
@@ -200,12 +212,14 @@ public partial class AssetStudioWindow
                 if (visible) GUI.Label(new Rect(6, cy + 6, list.width - 30, 22), $"<color=#e8c46a>{l.category.ToUpperInvariant()}</color>", dialogueHeader);
                 cy += 30; cat2 = l.category; field2 = null;
             }
-            string fieldKey = l.ownerName + "|" + l.field + "|" + l.context;
+            string fieldKey = l.Group;
             if (!grouped || fieldKey != field2)
             {
                 if (visible)
                 {
-                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (string.IsNullOrEmpty(l.context) ? "" : $"  <color=#a9a49a>› {l.context}</color>") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = 12, normal = { textColor = new Color(.86f, .84f, .8f) } });
+                    // A conversation's rows say their own place (Line 3 › Answer 1) when sorted otherwise.
+                    bool place = !string.IsNullOrEmpty(l.context) && (!l.Conversation || !grouped);
+                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (place ? $"  <color=#a9a49a>› {l.context}</color>" : "") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = 12, normal = { textColor = new Color(.86f, .84f, .8f) } });
                     if (!string.IsNullOrEmpty(l.when)) GUI.Label(new Rect(10, cy + 19, textWidth + DialogueButtons, dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)), l.when, dialogueWhen);
                 }
                 cy += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons));
@@ -214,8 +228,9 @@ public partial class AssetStudioWindow
             if (visible)
             {
                 float rowH = h - (cy - y) - 6;
-                GUI.Label(new Rect(14, cy + 4, 40, 18), l.index >= 0 ? (l.index + 1) + "." : "–", dim);
-                var area = new Rect(52, cy, textWidth, rowH);
+                float indent = Indent(l);
+                GUI.Label(new Rect(14 + indent, cy + 4, 40, 18), RowLabel(l), dim);
+                var area = new Rect(52 + indent, cy, textWidth - indent, rowH);
                 EditorGUI.DrawRect(area, new Color(.13f, .13f, .14f));
                 EditorGUI.DrawRect(new Rect(area.x, area.yMax - 1, area.width, 1), new Color(.32f, .31f, .29f));
                 string current = dialoguePending.TryGetValue(LineId(l), out var p) ? p : l.text ?? "";
@@ -229,11 +244,29 @@ public partial class AssetStudioWindow
                     bool ip = GUI.Toggle(new Rect(bx2 + 76, cy + 3, 80, 20), l.inPerson, new GUIContent(" In person", "Said across the table (paced for reading, he gestures), not as the voice in your head."));
                     if (m != l.mumble || ip != l.inPerson) AssetStudioDialogue.SetDelivery(l, m, ip);
                 }
+                else if (l.kind == AssetStudioDialogue.Kind.Box)
+                {
+                    int who = EditorGUI.Popup(new Rect(bx2, cy + 3, 84, 20), l.speaker, Speakers);
+                    GUI.SetNextControlName("dlg name " + LineId(l));
+                    string name = EditorGUI.DelayedTextField(new Rect(bx2 + 88, cy + 3, 70, 18), l.speakerName ?? "");
+                    if (string.IsNullOrEmpty(name) && GUI.GetNameOfFocusedControl() != "dlg name " + LineId(l))
+                        GUI.Label(new Rect(bx2 + 91, cy + 3, 68, 18), new GUIContent("own name", "The name on the box. Empty: the speaker's own (the boss's name, or Dungeon Master)."), dialogueWhen);
+                    if (who != l.speaker || name != (l.speakerName ?? "")) AssetStudioDialogue.SetSpeaker(l, who, name);
+                }
+                if (AssetStudioDialogue.CanAddChild(l))
+                {
+                    bool box = l.kind == AssetStudioDialogue.Kind.Box;
+                    var at = box ? new Rect(bx2 + 114, cy + 24, 44, 20) : new Rect(bx2, cy + 3, 56, 20);
+                    if (GUI.Button(at, box ? new GUIContent("+ ans", "An answer for the player to pick after this box.") : new GUIContent("+ reply", "A box said after this answer."), dialogueSmall)) { changed = l; action = 5; }
+                }
                 float b = bx2 + 160;
-                GUI.enabled = EditorApplication.isPlaying && DungeonMaster.HasInstance;
-                if (GUI.Button(new Rect(b, cy + 2, 22, 20), new GUIContent("▶", "Play mode: the Dungeon Master says it now."), dialogueSmall))
-                    DungeonMaster.Say(new DungeonMaster.Line { text = current, mumble = l.mumble || !l.rich, inPerson = l.inPerson, voice = l.voice as AudioData });
-                GUI.enabled = true;
+                if (!l.Conversation)
+                {
+                    GUI.enabled = EditorApplication.isPlaying && DungeonMaster.HasInstance;
+                    if (GUI.Button(new Rect(b, cy + 2, 22, 20), new GUIContent("▶", "Play mode: the Dungeon Master says it now."), dialogueSmall))
+                        DungeonMaster.Say(new DungeonMaster.Line { text = current, mumble = l.mumble || !l.rich, inPerson = l.inPerson, voice = l.voice as AudioData });
+                    GUI.enabled = true;
+                }
                 if (GUI.Button(new Rect(b + 24, cy + 2, 22, 20), new GUIContent("◎", "Select the object that holds this line."), dialogueSmall))
                 { if (l.owner is Component c) Selection.activeObject = c.gameObject; else Selection.activeObject = l.owner; EditorGUIUtility.PingObject(l.owner); }
                 if (l.arrayPath != null)
@@ -258,6 +291,7 @@ public partial class AssetStudioWindow
             else if (action == 2) AssetStudioDialogue.Move(changed, changed.index + 1);
             else if (action == 3) AssetStudioDialogue.AddAfter(changed);
             else if (action == 4) AssetStudioDialogue.Remove(changed);
+            else if (action == 5) AssetStudioDialogue.AddChild(changed);
             var owner = changed.owner;
             dialogue.RemoveAll(l => l.owner == owner);
             AssetStudioDialogue.Collect(owner, dialogue);
