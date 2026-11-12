@@ -61,6 +61,9 @@ public partial class AssetStudioWindow
                 case GameObject go when go.GetComponent<Character>() != null || go.GetComponentInChildren<Player>(true) != null:
                     Glance(CharacterDataOf(go), CharacterGlance);
                     break;
+                case GameObject go when go.GetComponent<ScriptedEventRoom>() != null && go.GetComponent<DungeonRoomTemplate>() != null:
+                    EventPage(go);
+                    break;
                 case GameObject go when go.GetComponent<DungeonRoomTemplate>() != null:
                     Glance(go.GetComponent<DungeonRoomTemplate>(), RoomGlance);
                     InPools(go);

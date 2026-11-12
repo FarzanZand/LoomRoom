@@ -352,6 +352,8 @@ public partial class AssetStudioWindow : EditorWindow
         {
             var data = AssetDatabase.LoadAllAssetsAtPath(e.path).OfType<CharacterData>().FirstOrDefault();
             if (data != null) return data;
+            // An event room: its event's own script (its settings and lines), not the room's template.
+            if (go.GetComponent<ScriptedEventRoom>() != null && EventScripts(go).FirstOrDefault() is MonoBehaviour script) return script;
             var template = go.GetComponent<DungeonRoomTemplate>();
             if (template != null) return template;
             if (go.TryGetComponent<DungeonMapTemplate>(out var map)) return map;

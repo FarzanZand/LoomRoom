@@ -290,11 +290,6 @@ MonoBehaviour:
     rooms: 2
     fromFloor: 1
     maxPerFloor: 1
-  - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 2
-    rooms: 10
-    fromFloor: 1
-    maxPerFloor: 2
   - template: {fileID: 4319339982270622999, guid: 67fd8b4db9bb9254884b592221139e3c, type: 3}
     weight: 1
     rooms: 4
@@ -355,11 +350,6 @@ MonoBehaviour:
     rooms: 6
     fromFloor: 1
     maxPerFloor: 2
-  - template: {fileID: 7553172351964380955, guid: fcbc162bfbf65db469e063d14079ed8b, type: 3}
-    weight: 2
-    rooms: 30
-    fromFloor: 1
-    maxPerFloor: 1
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
