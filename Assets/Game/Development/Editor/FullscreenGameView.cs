@@ -33,12 +33,45 @@ public static class FullscreenGameView
         EditorApplication.update += CloseWithoutPlay;
     }
 
+    // ── VSync ──
+    // The game turns VSync on (UserSettings), but the editor's Game view ignores that and has its own VSync switch
+    // (its aspect menu), off by default, so panning fast tore the picture in the editor (the user, 2026-11-12). It is
+    // switched on once per computer; switched off by hand after that (to measure fps past the screen's rate), it stays off.
+    const string VSyncSetKey = "LoomRoom.GameViewVSyncSet";
+
+    static PropertyInfo VSync(System.Type gameView) =>
+        gameView.GetProperty("vSyncEnabled", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+
+    static bool vsyncChecked;   // once a reload
+
+    static void VSyncOnce()
+    {
+        vsyncChecked = true;
+        if (EditorPrefs.GetBool(VSyncSetKey, false)) return;
+        var type = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
+        var vsync = type == null ? null : VSync(type);
+        if (vsync == null) return;
+        var views = Resources.FindObjectsOfTypeAll(type);
+        if (views.Length == 0) return;   // no Game view open yet: tried again after the next reload
+        foreach (var o in views) vsync.SetValue(o, true);
+        EditorPrefs.SetBool(VSyncSetKey, true);
+    }
+
+    static bool DockedVSync(System.Type gameView)
+    {
+        var vsync = VSync(gameView);
+        foreach (var o in Resources.FindObjectsOfTypeAll(gameView))
+            if (((EditorWindow)o).titleContent.text != Title && vsync?.GetValue(o) is bool on) return on;
+        return true;
+    }
+
     static double nextCheck;
     static bool strayChecked;   // once after each reload: a cover tab left in a saved layout
     static void CloseWithoutPlay()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.timeSinceStartup < nextCheck) return;
         nextCheck = EditorApplication.timeSinceStartup + 1;
+        if (!vsyncChecked) VSyncOnce();   // here, not in a delayCall: those wait while the editor is unfocused
         if (Find() != null) Close();
         else if (SessionState.GetString(HiddenKey, "").Length > 0) ShowHiddenViews();   // the window went without its Close (a reload): the views it covered come back
         else if (!strayChecked) { strayChecked = true; foreach (var stray in Resources.FindObjectsOfTypeAll<FullscreenCover>()) RemoveCover(stray); }
@@ -54,13 +87,13 @@ public static class FullscreenGameView
     // A script reload forgets the window this class opened, so it is found again by its title.
     static EditorWindow Find()
     {
-        if (window != null) return window;
+        if (window != null && Hosted(window)) return window;
         var type = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
         if (type == null) return null;
         foreach (var o in Resources.FindObjectsOfTypeAll(type))
         {
             var w = (EditorWindow)o;
-            if (w.titleContent.text == Title) return window = w;
+            if (w.titleContent.text == Title && Hosted(w)) return window = w;
         }
         // A script reload can also give the window back Unity's "Game" title (then it was never closed and stayed on top
         // of everything). It is the only floating Game view with its toolbar hidden, or else the only one that covers the
@@ -71,7 +104,7 @@ public static class FullscreenGameView
         foreach (var o in Resources.FindObjectsOfTypeAll(type))
         {
             var w = (EditorWindow)o;
-            if (w.docked || w.maximized) continue;
+            if (!Hosted(w) || w.docked || w.maximized) continue;
             var r = w.position;
             bool noToolbar = toolbar != null && toolbar.GetValue(w) is bool shown && !shown;
             bool covers = Mathf.Abs(r.x - monitor.x) < 4 && Mathf.Abs(r.y - monitor.y) < 4 && r.width >= monitor.width - 4 && r.height >= monitor.height * .9f;
@@ -83,6 +116,10 @@ public static class FullscreenGameView
         }
         return null;
     }
+
+    // A Game view with no window round it (made and never shown, or left from a torn-down one) is not ours: taken for the
+    // fullscreen window, closing it threw every second (100 errors in the user's console, 2026-11-12).
+    static bool Hosted(EditorWindow w) => w != null && typeof(EditorWindow).GetField("m_Parent", Any)?.GetValue(w) != null;
 
     public static bool OnPlay => EditorPrefs.GetBool(OnPlayKey, false);
 
@@ -102,6 +139,9 @@ public static class FullscreenGameView
         window = (EditorWindow)ScriptableObject.CreateInstance(type);
         // The Game view's own toolbar would take the top of the screen.
         type.GetProperty("showToolbar", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.SetValue(window, false);
+        // VSync as the docked Game view has it (on unless switched off there, say for measuring fps): a new Game view
+        // starts with it off, and panning fast then tears the picture.
+        VSync(type)?.SetValue(window, DockedVSync(type));
         window.titleContent = new GUIContent(Title);
         window.ShowPopup();
         window.position = TargetMonitor();
