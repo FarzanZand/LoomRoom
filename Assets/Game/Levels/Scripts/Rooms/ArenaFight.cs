@@ -90,7 +90,14 @@ public class ArenaFight : MonoBehaviour
         EnemyBrain speaker = fighters.Find(b => b != null && !Down(b));
         if (box == null || hearer == null || speaker == null || talk.introLines == null || talk.introLines.Count == 0) yield break;
         CoopWorld.ArenaTalk(0, CoopWorld.SlotOf(hearer));
-        foreach (var b in fighters) if (b != null && !Down(b)) b.Entranced = true;
+        foreach (var b in fighters)
+        {
+            if (b == null || Down(b)) continue;
+            b.Entranced = true;
+            // Already set on someone (it saw them come in a moment before the say began): it stands, as a trance doesn't
+            // stop a chase. A guest's copy moves as the host's does.
+            if (!Coop.IsGuest && b.State != EnemyState.Idle && b.State != EnemyState.Dead) b.SetState(EnemyState.Idle);
+        }
         if (hearer == (Character)TablePlayer && hearer is Player player)
         {
             if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
