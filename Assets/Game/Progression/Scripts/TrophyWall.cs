@@ -198,8 +198,10 @@ public class TrophyWall : MonoBehaviour, IInteractable
                 : MultiplayerManager.HasInstance && MultiplayerManager.Instance.ShowsHostTrophies ? (ProgressionManager.TrophyState)MultiplayerManager.Instance.HostTrophy(meta.TrophyKey(track, milestone))
                 : meta.Trophy(track, milestone);
             bool hung = state == ProgressionManager.TrophyState.Mounted;
-            // Its place glows while its trophy is carried.
-            if (mount.glow != null) mount.glow.Show(hangAtPlaques && state == ProgressionManager.TrophyState.Carried);
+            // Its place glows while its trophy is carried: this player's own (a co-op guest's wall shows the host's
+            // trophies, but the trophy a guest carries is the guest's to hang, TrophyMountSpot).
+            var own = milestone == null ? ProgressionManager.TrophyState.None : meta.Trophy(track, milestone);
+            if (mount.glow != null) mount.glow.Show(hangAtPlaques && own == ProgressionManager.TrophyState.Carried);
             if (item == null || item.worldPrefab == null || !hung && !emptyOutlines) { if (mount.model != null) Destroy(mount.model); mount.model = null; mount.shownItem = null; continue; }
             if (mount.model != null && mount.shownItem == item && mount.showingOutline == !hung) continue;
             if (mount.model != null) Destroy(mount.model);

@@ -131,6 +131,7 @@ public enum CoopEventKind : byte
     BossIntroDone = 31, // a guest's boss intro (its lines and versus screen) is over: the host's fight waits for everyone's
     BossFightBegun = 32, // host: the stage fight's battle begins (every intro still showing is put away)
     DevSpawn = 33,      // a guest's spawn window: the host makes the enemy (amount = MultiplayerManager.enemyPrefabs index, item = its name)
+    BossBeaten = 34,    // host, only to a player catching up: the stage's boss is dead (position = where it fell; its chest and the way on)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,
@@ -236,11 +237,14 @@ public struct RunStart : INetworkSerializable
     // The host's save has cleared the Skeleton Party (SkeletonParty.ClearedFlag): every machine leaves it out of the
     // floor, so the floors match whatever each guest's own save says.
     public bool partyCleared;
+    // Which run this is (the host picks one as it starts): a guest who left it and sits down again in the same run gets
+    // their adventurer back as they left it (MultiplayerManager.KeepRun).
+    public int runId;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref level); s.SerializeValue(ref seed); s.SerializeValue(ref floor);
         s.SerializeValue(ref generationLevel); s.SerializeValue(ref partySize); s.SerializeValue(ref descend);
-        s.SerializeValue(ref partyCleared);
+        s.SerializeValue(ref partyCleared); s.SerializeValue(ref runId);
     }
 }

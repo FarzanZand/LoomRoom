@@ -342,14 +342,23 @@ public class AdventureSave : MonoBehaviour
     {
         if (!progress.InRun || IntroController.PracticeRunning) return;
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
+        var snapshot = Snapshot();
+        if (snapshot == null) return;
+        Saved.checkpoint = snapshot;
+        Write();
+    }
+    // The run as it is now, as a checkpoint holds it (not written: a co-op guest keeps it in memory when it leaves the
+    // party's run, MultiplayerManager.KeepRun). Null outside a run.
+    public Checkpoint Snapshot()
+    {
+        if (progress == null || player == null || !progress.InRun || !RunManager.HasInstance || RunManager.Instance.Level == null) return null;
         var run = RunManager.Instance;
-        Saved.checkpoint = new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
+        return new Checkpoint { level = run.Level.name, floor = run.Floor, seed = run.Seed, classId = progress.selectedClass.id,
             characterLevel = progress.Level, lootLevel = TableManager.Loader.GenerationLevel, xp = progress.Experience, skillExperience = (float[])progress.SkillExperience.Clone(), ranks = (int[])progress.Ranks.Clone(), attributePoints = (int[])progress.AttributePoints.Clone(), unspentPoints = progress.UnspentPoints,
             health = player.Stats.CurrentHealth, mana = player.Stats.CurrentMana, stamina = player.Stats.CurrentStamina, gold = player.Wallet.Gold,
             bag = Capture(player.Bag), hotbar = Capture(player.Hotbar), equipped = player.Equipment.EquippedItems.Select(x => x.saveId).ToArray(), leftHand = GetComponent<PlayerSpellcasting>().Equipped,
             blessings = player.Stats.Modifiers.Where(m => ReferenceEquals(m.Source, RunManager.BlessingSource)).Select(m => new Blessing { stat=m.Stat, type=m.Type, value=m.Value, duration=m.Duration }).ToArray(),
             foodSeconds=player.Stats.FoodRemaining, foodRate=player.Stats.FoodHealingPerSecond, runSeconds=run.Seconds, kills=run.Kills, bosses=run.BossesSlain, goldFound=run.GoldFound, healthSlain=run.HealthSlain };
-        Write();
     }
     public bool CanRestore(Checkpoint checkpoint)
     {

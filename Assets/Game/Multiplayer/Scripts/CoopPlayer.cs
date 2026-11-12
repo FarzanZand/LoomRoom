@@ -104,6 +104,7 @@ public class CoopPlayer : NetworkBehaviour
         s.ready = manager.LocalReady;
         s.inLobby = manager.LocalInLobby;
         s.ghost = manager.Ghost;
+        s.loading = TableManager.Loader != null && TableManager.Loader.Busy;
         s.mustTrain = ProgressionManager.HasInstance && ProgressionManager.Instance.LessonHoldsRuns;
         s.crouching = active != null && active.Motor != null && active.Motor.IsCrouching;
         s.seated = s.place == CoopPlace.Room ? IntroController.Seated : table != null && TavernHearth.Resting == table;

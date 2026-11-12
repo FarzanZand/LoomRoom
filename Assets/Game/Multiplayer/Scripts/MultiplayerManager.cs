@@ -152,6 +152,39 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     bool runActive;
     TableLevelData runLevel;
     int runSeed, runFloor = 1;
+    // The run this machine plays (RunStart.runId: the host picks one as it starts).
+    int runId;
+
+    // ── A guest's own run, kept when it leaves ──
+    // A guest who leaves the party's run (the pause menu's Leave level, or a dropped connection) keeps their adventurer
+    // as it was on this machine: sitting down again in the same run brings it back (level, points, gold, bag, gear), and
+    // one who left dead is a ghost again on that floor (alive on a later one, as a ghost comes back on the next floor).
+    // Static: kept through going back to the main menu and joining again. Forgotten when that run ends or another starts.
+    static AdventureSave.Checkpoint keptRun;
+    static int keptRunId, keptDeadOnFloor;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetKept() { keptRun = null; keptRunId = keptDeadOnFloor = 0; }
+
+    // A guest leaving the party's run: what it is now is kept here (after its spoils were banked, settled, when the
+    // connection went: its share of the health slain then is not banked twice).
+    public void KeepRun(bool settled = false)
+    {
+        // (Settled: the connection has already gone, Ended, which only calls this for a guest.)
+        if (!settled && (!Connected || IsHost)) return;
+        if (!LocalInRun || runId == 0 || !PlayerManager.HasInstance) return;
+        var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
+        var save = table != null ? table.GetComponent<AdventureSave>() : null;
+        var kept = save != null ? save.Snapshot() : null;
+        if (kept == null) return;
+        if (settled) kept.healthSlain = 0;
+        bool dead = Ghost || !table.IsAlive;
+        keptDeadOnFloor = dead && TableManager.Loader != null ? TableManager.Loader.FloorNumber : 0;
+        // Dead and gone past that floor, it comes back on its feet (as every ghost does on the party's next floor).
+        if (dead) { kept.health = float.MaxValue; kept.mana = float.MaxValue; kept.stamina = float.MaxValue; }
+        keptRun = kept; keptRunId = runId;
+        Debug.Log($"[Coop] Kept this player's run {runId}: level {kept.characterLevel}, {kept.gold} gold, floor {kept.floor}{(dead ? ", dead" : "")}.");
+    }
+
     float countdownEnds = -1f;
     readonly HashSet<int> atExit = new();
     bool runEndSent;
@@ -215,9 +248,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         Application.runInBackground = true;
         if (network == null) network = FindAnyObjectByType<NetworkManager>();
         // Room in the transport's queues for four players' snapshots, arms and events at once (128 filled up once,
-        // on a guest while a floor was loading).
+        // on a guest while a floor was loading; 512 once more, on a guest rejoining a boss floor, 2026-11-12).
         var transport = network != null ? network.GetComponent<UnityTransport>() : null;
-        if (transport != null && transport.MaxPacketQueueSize < 512) transport.MaxPacketQueueSize = 512;
+        if (transport != null && transport.MaxPacketQueueSize < 2048) transport.MaxPacketQueueSize = 2048;
         SyncRules();
         CommandLine();
         // Read here like the command line, so a new game's intro knows to wait for the connection.
@@ -644,6 +677,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             int health = rules.sharedSpoils ? RunManager.Instance.HealthSlain / with : RunManager.Instance.HealthSlain;
             ProgressionManager.Instance.Settle(PlayerManager.Instance.GetPlayer(PlayerKind.Table), RunManager.Instance.Kills, health, false);
         }
+        if (wasGuest && inRun) KeepRun(settled: true);
         EndGhost();
         LocalAtTable = LocalReady = LocalInRun = LocalInLobby = HostInLobby = MenuLobby = false;
         runActive = false; countdownEnds = -1f; atExit.Clear(); runEndSent = false;
@@ -822,6 +856,11 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public static bool PersonalFlag(string key) => key.StartsWith("meta.") || key == ProgressionManager.LedgerIntroFlag || key == ProgressionManager.LedgerSaidFlag
         || key == ProgressionManager.LessonTaughtFlag || key == ProgressionManager.LessonTrophyFlag;
 
+    // The host's campaign map (places opened, beaten, rumoured, the act, where the party stands): the party plays on the
+    // host's map, so every guest's table shows it, with or without the host's adventurer. Not the hero shown on the map
+    // (each player picks their own) nor the gifts an event puts in the next run's pack (the host's, not the guest's).
+    public static bool HostMapFlag(string key) => key.StartsWith("campaign.") && key != CampaignManager.ClassFlag && !key.StartsWith(CampaignManager.GiftPrefix);
+
     FlagSet HostFlags()
     {
         var keys = new List<string>(); var values = new List<int>();
@@ -835,17 +874,29 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         var progression = ProgressionManager.Instance;
         if (ownFlags == null) ownFlags = new Dictionary<string, int>(progression.AllFlags);
         applyingHostFlags = true;
+        bool map = false;
         try
         {
             // Playing someone else's game: their story, so the room and the table behave as they do for the host.
-            // With their own adventurer a guest keeps its own unlocks and takes only the story flags it lacks.
+            // With their own adventurer a guest keeps its own unlocks and takes only the story flags it lacks, and the
+            // host's map.
             for (int i = 0; i < set.keys.Length; i++)
                 if (PersonalFlag(set.keys[i])) continue;
-                else if (rules.hostAdventurer || set.keys[i].StartsWith("story.") || set.keys[i] == ProgressionManager.TableEnteredFlag || set.keys[i] == DungeonMasterRemarks.SatFlag)
+                else if (rules.hostAdventurer || set.keys[i].StartsWith("story.") || set.keys[i] == ProgressionManager.TableEnteredFlag || set.keys[i] == DungeonMasterRemarks.SatFlag || HostMapFlag(set.keys[i]))
+                {
+                    if (HostMapFlag(set.keys[i]) && progression.GetFlag(set.keys[i]) != set.values[i]) map = true;
                     progression.SetFlag(set.keys[i], set.values[i]);
-            if (rules.hostAdventurer && !set.changes) foreach (var pair in ownFlags) if (!PersonalFlag(pair.Key) && System.Array.IndexOf(set.keys, pair.Key) < 0) progression.SetFlag(pair.Key, 0);
+                }
+            if (!set.changes)
+                foreach (var pair in ownFlags)
+                    if (!PersonalFlag(pair.Key) && (rules.hostAdventurer || HostMapFlag(pair.Key)) && System.Array.IndexOf(set.keys, pair.Key) < 0)
+                    {
+                        if (HostMapFlag(pair.Key) && progression.GetFlag(pair.Key) != 0) map = true;
+                        progression.SetFlag(pair.Key, 0);
+                    }
         }
         finally { applyingHostFlags = false; }
+        if (map && CampaignManager.HasInstance) CampaignManager.Instance.HostMapChanged();
     }
 
     void OnFlagChanged(string key, int value)
@@ -854,7 +905,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (network != null && network.IsListening && network.IsServer && key.StartsWith(ProgressionManager.TrophyPrefix)) SendTrophies();
         if (applyingHostFlags || network == null || !network.IsListening || PersonalFlag(key)) return;
         // The host's unlocks and story reach the guests at once (playing the host's adventurer).
-        if (network.IsServer) { if (rules.hostAdventurer) CoopMessages.ToGuests(CoopMessages.Flags, new FlagSet { keys = new[] { key }, values = new[] { value }, changes = true }); return; }
+        if (network.IsServer) { if (rules.hostAdventurer || HostMapFlag(key)) CoopMessages.ToGuests(CoopMessages.Flags, new FlagSet { keys = new[] { key }, values = new[] { value }, changes = true }); return; }
         earnedFlags[key] = value;
     }
 
@@ -970,8 +1021,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
                 if (Time.unscaledTime >= nextNote)
                 {
                     nextNote = Time.unscaledTime + 4f;
-                    // The sheet lesson keeps them from the table until they train Blocking: say so, it isn't a wait for nothing.
-                    NotificationUI.Show(training ? $"Waiting for {waiting} to train Blocking at the sheet ({seated}/{total}). Esc stands up."
+                    // The sheet lesson keeps them from the table until they train its skill (Athletics): say so, it isn't a wait for nothing.
+                    string skill = ProgressionManager.HasInstance ? ProgressionManager.Instance.LessonSkillName : "";
+                    NotificationUI.Show(training ? $"Waiting for {waiting} to train {skill} at the sheet ({seated}/{total}). Esc stands up."
                         : $"Waiting for {waiting} to sit down ({seated}/{total}). Esc stands up.");
                 }
                 yield return null;
@@ -1081,6 +1133,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             level = new Unity.Collections.FixedString128Bytes(runLevel != null ? runLevel.name : ""),
             seed = runSeed, floor = floor, generationLevel = Mathf.Max(1, generation), partySize = PartySize, descend = descend,
             partyCleared = ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag),
+            runId = runId,
         };
     }
 
@@ -1090,6 +1143,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         if (runLevel == null) return;
         runActive = true; runEndSent = false; lateJoinSent.Clear(); atExit.Clear(); countdownEnds = -1f;
         runSeed = runLevel.fixedSeed != 0 ? runLevel.fixedSeed : Random.Range(1, int.MaxValue);
+        runId = Random.Range(1, int.MaxValue);
         runFloor = 1;
         int party = 0;
         foreach (var p in players) if (p != null && (p.IsOwner || p.Current.ready)) party++;
@@ -1117,17 +1171,39 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         PartySize = Mathf.Max(1, start.partySize);
         HostPartyCleared = start.partyCleared;
         if (start.descend && !LocalInRun) yield break;
+        runId = start.runId;
+        // Sitting down again in a run this guest left: its adventurer back as it was (KeepRun). Another run: forgotten.
+        AdventureSave.Checkpoint kept = null;
+        bool ghostAgain = false;
+        if (keptRun != null && !start.descend)
+        {
+            if (!IsHost && keptRunId == start.runId)
+            {
+                kept = keptRun;
+                ghostAgain = keptDeadOnFloor == start.floor;
+                Debug.Log($"[Coop] Back in run {start.runId} as this player left it: level {kept.characterLevel}, {kept.gold} gold{(ghostAgain ? ", a ghost on this floor" : "")}.");
+            }
+            keptRun = null; keptRunId = keptDeadOnFloor = 0;
+        }
         LocalInRun = true; LocalReady = true;
         // A ghost comes back on the new floor (the loader revives a dead player who goes down).
         EndGhost();
         atExit.Clear(); countdownEnds = -1f;
-        loader.CoopLoad(level, start);
+        loader.CoopLoad(level, start, kept);
         if (IsHost) runFloor = start.floor;
         else
         {
             yield return null;
             while (loader.Busy) yield return null;
             CoopMessages.ToHost(CoopMessages.Ready, new CoopInt { a = CoopWorld.FloorKey });
+            if (kept != null) NotificationUI.Show(ghostAgain ? "Back in the run. You are still a ghost on this floor." : "Back in the run as you left it.");
+            // Left dead on this floor: dead here still, a ghost until the party's next floor.
+            var table = ghostAgain && PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+            if (table != null && table.IsAlive && LocalInRun)
+            {
+                table.Stats.RestorePools(0f, table.Stats.CurrentMana, table.Stats.CurrentStamina);
+                StartCoroutine(BecomeGhost(quick: true));
+            }
         }
     }
 
@@ -1304,6 +1380,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // A guest left the level from the pause menu: no longer in the party's run (their state says so to the host).
     public void LeftRun()
     {
+        KeepRun();
         EndGhost();
         LocalInRun = false; LocalReady = false; LocalAtTable = false;
     }
@@ -1343,6 +1420,8 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
 
     void RunEnded(bool victory, int spoilsShare = -1, int sharedWith = 1)
     {
+        // The run is over: a run kept by a guest who left it can't be gone back to.
+        keptRun = null; keptRunId = keptDeadOnFloor = 0;
         if (!LocalInRun) return;
         if (spoilsShare >= 0 && sharedWith > 1 && RunManager.HasInstance) RunManager.Instance.SpoilsShare = (spoilsShare, sharedWith);
         EndGhost();
@@ -1366,13 +1445,14 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     }
 
     // After the death moment the dead player gets up as a ghost where it fell (its body stays for the others).
-    IEnumerator BecomeGhost()
+    // quick: back in a run it left dead on this floor, a ghost at once (no death moment, no fade).
+    IEnumerator BecomeGhost(bool quick = false)
     {
-        yield return new WaitForSecondsRealtime(2.2f);
+        if (!quick) yield return new WaitForSecondsRealtime(2.2f);
         if (!LocalInRun || !Connected || Ghost) yield break;
         var table = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (table == null || table.IsAlive) yield break;
-        if (ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(.35f); yield return new WaitForSecondsRealtime(.4f); }
+        if (!quick && ScreenManager.HasInstance) { ScreenManager.Instance.FadeToBlack(.35f); yield return new WaitForSecondsRealtime(.4f); }
         if (!LocalInRun || table.IsAlive) { if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.3f); yield break; }
         Ghost = true;
         // Player.OnDied pushed Dead; a ghost moves and looks about again.

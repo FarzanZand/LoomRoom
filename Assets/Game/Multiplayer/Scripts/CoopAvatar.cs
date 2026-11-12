@@ -87,7 +87,10 @@ public class CoopAvatar : MonoBehaviour
         Rebuild(false);
         // Still in the lobby (joined, waiting for the host's Begin): not in the room yet.
         // Over the campaign map a teammate seated right in front of the view would cover it: hidden while that lasts.
-        bool inView = !s.inLobby && !InFrontOfMapView();
+        // On the table while no floor is built here (this player is in the room, or out of the run): nothing to stand
+        // on, so neither the body nor its name hangs over the bare table or the campaign map.
+        bool offBoard = s.place == CoopPlace.Table && (TableManager.Loader == null || TableManager.Loader.Dungeon == null);
+        bool inView = !s.inLobby && !InFrontOfMapView() && !offBoard;
         if (model != null && model.activeSelf != inView) model.SetActive(inView);
         if (nameLabel != null && nameLabel.gameObject.activeSelf != inView) nameLabel.gameObject.SetActive(inView);
         // A ghost drifts a little off the floor.

@@ -610,6 +610,8 @@ public partial class BossStageEncounter : MonoBehaviour
         lost = false;
         Comment(fight != null ? fight.victory : null, true);
         if (RunManager.HasInstance) RunManager.Instance.NoteBossSlain();
+        // Co-op: kept for anyone who sits down later (they find the stage beaten, CoopWorld.BossBeaten).
+        if (Coop.IsHost && boss != null) CoopWorld.BossBeaten(boss.transform.position);
         MessageLog.Post($"{(fight != null && !string.IsNullOrWhiteSpace(fight.BossName) ? fight.BossName : boss.TheNameCap)} is dead. The way on is open.", MessageKind.Good);
         Finish(true);
         StartCoroutine(DefeatScene());
@@ -710,6 +712,11 @@ public partial class BossStageEncounter : MonoBehaviour
     IEnumerator BossChest(Vector3 at)
     {
         yield return new WaitForSeconds(1.2f + (fight != null ? fight.DefeatSeconds : 0f));
+        SpawnChest(at);
+    }
+
+    void SpawnChest(Vector3 at)
+    {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
         // Clear of the exit stairs that rise in the middle of the stage.
         if (exit != null)

@@ -151,12 +151,14 @@ public class TableLevelLoader : MonoBehaviour
         return true;
     }
     // Co-op: the host's run, from its seed: a first floor, a deeper one (dead players come back), or the current one
-    // for a player who sat down late.
-    public void CoopLoad(TableLevelData level, RunStart start)
+    // for a player who sat down late. kept: a guest coming back to a run it left, its adventurer as it left it.
+    public void CoopLoad(TableLevelData level, RunStart start, AdventureSave.Checkpoint kept = null)
     {
         if(Busy || level==null) return;
         Initialize();
         coopStart=start;
+        var save=player!=null ? player.GetComponent<AdventureSave>() : null;
+        pendingResume=kept!=null && !start.descend && save!=null && save.CanRestore(kept) ? kept : null;
         StartCoroutine(LoadRoutine(level,start.descend));
     }
     public void Descend()
@@ -190,7 +192,8 @@ public class TableLevelLoader : MonoBehaviour
         pendingStartFloor=1;
         var resume = pendingResume; pendingResume = null;
         if (!descending) Resumed = resume != null;
-        if (resume != null) { FloorNumber = resume.floor; runSeed = resume.seed; }
+        // (A co-op guest's kept run plays the host's floor and seed, not the ones it left on.)
+        if (resume != null && !coop.HasValue) { FloorNumber = resume.floor; runSeed = resume.seed; }
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
         HoldCutscene();
         var revealSettings = WorldManager.HasInstance ? WorldManager.Instance.tableLevelReveal : null;
@@ -257,7 +260,8 @@ public class TableLevelLoader : MonoBehaviour
                     if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
                     // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
                     // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
-                    var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;
+                    // (A co-op guest back in the run on a deeper floor than it left gets that floor's experience.)
+                    var resumedProgress = resume != null && !(coop.HasValue && resume.floor < FloorNumber) ? player.GetComponent<AdventurerProgress>() : null;
                     var floorRules = resumedProgress != null ? resumedProgress.rules : null;
                     float xpPerFloor = floorRules != null ? floorRules.xpPerFloor : 0f;
                     if (floorRules != null) floorRules.xpPerFloor = 0f;

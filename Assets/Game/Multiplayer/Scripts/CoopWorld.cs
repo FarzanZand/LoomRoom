@@ -490,7 +490,7 @@ public static class CoopWorld
     static int SnapshotBytes(EnemySnapshot s) => 40 + 5 * (s.states != null ? s.states.Length : 0) + 4 * (s.floats != null ? s.floats.Length : 0);
 
     static void Send(List<EnemySnapshot> batch) =>
-        CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, time = Time.unscaledTime, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced);
+        CoopMessages.ToRunGuests(CoopMessages.Snapshots, new SnapshotBatch { floorKey = FloorKey, time = Time.unscaledTime, items = batch.ToArray() }, NetworkDelivery.UnreliableSequenced, notLoading: true);
 
     // Guests: this clock less the host's, as the quickest snapshot showed it (a slower one only nudges it up, so a
     // longer way round the network is followed slowly); NaN until the first.
@@ -888,6 +888,14 @@ public static class CoopWorld
         return true;
     }
 
+    // Host: the stage's boss fell (at). Not sent: kept for a player who sits down later (CatchUp), whose floor then shows
+    // the stage beaten (its chest where the boss fell, the way on open) instead of waiting for a boss that is gone.
+    public static void BossBeaten(Vector3 at)
+    {
+        if (!Coop.IsHost || Floor == null) return;
+        history.Add(new CoopEvent { kind = CoopEventKind.BossBeaten, floorKey = FloorKey, position = at, slot = (byte)Coop.LocalSlot });
+    }
+
     // Host: the stage fight's moments for the guests (BossStageEncounter).
     public static void BossStage(CoopEventKind kind, int target, int index, Vector3 position)
     {
@@ -934,8 +942,11 @@ public static class CoopWorld
     {
         if (!Coop.IsHost || floorKey != FloorKey || Floor == null) return;
         foreach (var spawn in spawnHistory) CoopMessages.ToClient(CoopMessages.Spawn, client, spawn);
+        // A stage whose boss is already dead is not opened for them (its fight would wait for a boss that never comes).
+        bool beaten = history.Exists(h => h.kind == CoopEventKind.BossBeaten);
         foreach (var e in history)
         {
+            if (beaten && (e.kind == CoopEventKind.BossStageOpened || e.kind == CoopEventKind.BossFightBegun)) continue;
             var past = e;
             // Gold picked up before they came is not theirs.
             if (past.kind == CoopEventKind.CoinsTaken) past.amount = 0;
@@ -1084,6 +1095,12 @@ public static class CoopWorld
             {
                 var stage = Object.FindAnyObjectByType<BossStageEncounter>();
                 if (stage != null) stage.GuestIntroDone(e.slot);
+                break;
+            }
+            case CoopEventKind.BossBeaten:
+            {
+                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                if (stage != null) stage.BeatenFromHost(e.position);
                 break;
             }
             case CoopEventKind.BossStageOpened: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.BossFightBegun:

@@ -232,9 +232,10 @@ public class PauseMenuUI : MonoBehaviour
     void LeaveLevel()
     {
         Close();
-        if (RunManager.HasInstance) RunManager.Instance.Abandon();
-        // Co-op: out of the party's run (the others play on; sitting down again joins them where they are).
+        // Co-op: out of the party's run (the others play on; sitting down again joins them where they are, as the
+        // adventurer they were: LeftRun keeps it, so before the run is put aside).
         if (Coop.IsGuest) MultiplayerManager.Instance.LeftRun();
+        if (RunManager.HasInstance) RunManager.Instance.Abandon();
         var loader = Loader;
         if (loader != null) StartCoroutine(TableManager.ReturnToRoom(loader, null, context: this));
     }

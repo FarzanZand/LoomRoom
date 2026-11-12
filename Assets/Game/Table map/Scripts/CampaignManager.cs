@@ -334,6 +334,15 @@ public partial class CampaignManager : Singleton<CampaignManager>
 
     float restY;
 
+    // Co-op guest: the host's map changed (MultiplayerManager takes the host's campaign flags): what lies on this table
+    // follows at once, places opened or beaten there showing here. A rumour bought there rises here as the player comes
+    // back to the room (PopPending), as on the host.
+    public void HostMapChanged()
+    {
+        if (Map == null || !Map.gameObject.activeSelf || revealing || popping || rising) return;
+        ShowActs(); RefreshMarker();
+    }
+
     void ShowActs() { Map.Shut = Shut; Map.NotPlayable = NotPlayable; Map.Beaten = Beaten; Map.ShowActs(Mathf.Min(OpenAct, RevealedAct), fog, clothStyle); }
 
     // Test: shows an act under the given cloth, then uncovers it as a won run would.

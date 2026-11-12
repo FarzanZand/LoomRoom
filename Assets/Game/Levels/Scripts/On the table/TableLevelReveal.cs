@@ -339,8 +339,11 @@ public sealed partial class TableLevelReveal : MonoBehaviour
                 Line(center - tangent, center + tangent, settings, settings.blueprintColor);
             }
         }
-        // Entrance marker remains visible while the camera approaches it.
+        // Entrance marker remains visible while the camera approaches it. In co-op it marks where this player lands
+        // (beside the others, MultiplayerManager.SpawnOffset), not the host's spot a step away.
         var p = dungeon.SpawnPoint + Vector3.up * .12f;
+        var landing = Coop.Running && PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        if (landing != null) { p.x = landing.transform.position.x; p.z = landing.transform.position.z; }
         Line(p - Vector3.right, p + Vector3.right, settings, settings.entranceColor, false);
         Line(p - Vector3.forward, p + Vector3.forward, settings, settings.entranceColor, false);
     }

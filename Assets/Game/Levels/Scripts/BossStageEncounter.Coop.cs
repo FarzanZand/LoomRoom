@@ -39,6 +39,19 @@ public partial class BossStageEncounter
 
     static bool AnyoneAlive() { foreach (var _ in CoopWorld.Party()) return true; return false; }
 
+    // Guests who sit down after the host's boss fell (CoopWorld.BossBeaten, sent as they catch up): the stage as it is
+    // on the host, beaten, with none of the fight: the chest where the boss fell (its opening, if it was opened, comes
+    // next in the catch-up) and the way on open.
+    public void BeatenFromHost(Vector3 at)
+    {
+        if (!Coop.IsGuest || started || finished || dungeon == null) return;
+        started = true; finished = true;
+        SpawnChest(at);
+        if (exit != null) { exit.Sealed = false; exit.gameObject.SetActive(true); }
+        string name = fight != null && !string.IsNullOrWhiteSpace(fight.BossName) ? fight.BossName : milestone.boss != null ? milestone.boss.name : "The boss";
+        MessageLog.Post($"{name} is dead. The way on is open.", MessageKind.Good);
+    }
+
     // Guests: what the host's fight does.
     public void FromHost(CoopEventKind kind, int target, int index, Vector3 position)
     {

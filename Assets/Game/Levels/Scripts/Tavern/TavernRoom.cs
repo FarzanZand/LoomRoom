@@ -37,9 +37,10 @@ public class TavernRoom : MonoBehaviour
 
     public DungeonMaster.Line Pick(DungeonGenerator floor)
     {
-        // The first tavern of a save, with a rumour on sale: the quest to buy one, and his word on it.
+        // The first tavern of a save, with a rumour on sale: the quest to buy one, and his word on it. Not for a co-op
+        // guest: only the host buys rumours (the guest's keeper never sells one), so the quest could never be done.
         var pm = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
-        if (pm != null && ProgressionManager.MetaActive && !pm.HasFlag(RumourToldFlag) && CampaignManager.HasInstance && CampaignManager.Instance.Rumours().Count > 0)
+        if (pm != null && ProgressionManager.MetaActive && !Coop.IsGuest && !pm.HasFlag(RumourToldFlag) && CampaignManager.HasInstance && CampaignManager.Instance.Rumours().Count > 0)
         {
             pm.SetFlag(RumourToldFlag);
             pm.GiveQuest(ProgressionManager.RumourQuest);
