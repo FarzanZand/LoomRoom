@@ -531,6 +531,8 @@ MonoBehaviour:
   healthMultiplier: 2
   elite: 1
   eliteTrait: 1
+  duellistName: Little Undead John
+  talk: {fileID: 11400000, guid: c532e6c07fcb0a144a5fe24cc0217e8b, type: 2}
   salute: {fileID: 7400000, guid: ee2f177b14888d74b9f2288838227abd, type: 2}
   saluteSeconds: 1.6
   rule: {fileID: 11400000, guid: 6c4a8fd58be8b2949a19997cc278363a, type: 2}

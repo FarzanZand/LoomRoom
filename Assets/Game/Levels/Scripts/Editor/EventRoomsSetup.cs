@@ -45,8 +45,8 @@ public static class EventRoomsSetup
             (Giant(giant), DungeonRoomRoles.Treasure | DungeonRoomRoles.Combat, Weight),
             (Dice(die), DungeonRoomRoles.Combat | DungeonRoomRoles.Rest, Weight),
         };
-        foreach (var biome in new[] { "Assets/Game/Levels/Shared/Biomes/Cellars1.asset", "Assets/Game/Levels/Shared/Biomes/Cellars2.asset", "Assets/Game/Levels/Shared/Biomes/Cellars3.asset",
-                                      "Assets/Game/Levels/Dungeon1/Biomes/Ruins1.asset", "Assets/Game/Levels/Dungeon1/Biomes/Ruins2.asset", "Assets/Game/Levels/Dungeon1/Biomes/Ruins3.asset" })
+        // Only the first act's biomes for now (the user, 2026-11-12: events on floors 1-4 only; the Realms and Ruins later).
+        foreach (var biome in EventBiomes)
             Pool(biome, rooms);
         AssetDatabase.SaveAssets();
         return log.ToString();
@@ -222,7 +222,7 @@ public static class EventRoomsSetup
         t.replaceGeneratedProps = true; t.replaceGeneratedEnemies = true; t.socketEnemiesOnly = true;
         // The roomier events are dressed from the floor's biome around their own pieces (the Card table was one table in
         // a bare room); the duel's bridge stays clear.
-        if (name != "Duel bridge") { t.replaceGeneratedProps = false; t.addFurnishing = true; }
+        if (name != "Duel bridge" && name != "Troll bridge") { t.replaceGeneratedProps = false; t.addFurnishing = true; }
         t.roomEvent = DungeonRoomEvent.None;
         if (light != DungeonRoomLight.Normal) root.AddComponent<DungeonRoomMood>().kind = light;
         var e = root.AddComponent<ScriptedEventRoom>();
@@ -324,6 +324,72 @@ public static class EventRoomsSetup
             duel.post = post; duel.rule = rule;
             duel.salute = Load<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/RaiseArm.anim");
         });
+
+    static readonly string[] EventBiomes = { "Assets/Game/Levels/Shared/Biomes/Cellars1.asset", "Assets/Game/Levels/Shared/Biomes/Cellars2.asset", "Assets/Game/Levels/Shared/Biomes/Cellars3.asset" };
+
+    // ── The toll bridge ──
+    // The duel's bridge over lava with the Bridge Troll on it (the user, 2026-11-12): pay his toll or fight him
+    // (TollBridgeEvent). He is the Dungeon Realms demon (the Realms' Pit Demon, Chr_Demon_01) as an event enemy, with the duellist's own health, damage and
+    // armour (the event doubles his health as the duel does). BuildTroll() from an eval (safe to run again: it keeps the
+    // room and the troll as they are, and only adds the room to the pools it is not in); his words are
+    // Dialogue/Conversations/The Bridge Troll.asset.
+    const string TrollTalkPath = "Assets/Game/Dialogue/Conversations/The Bridge Troll.asset";
+    // remake: the troll made again from his template and the room rebuilt round him (the room keeps its GUID, so the
+    // pools still point at it).
+    public static string BuildTroll(bool remake = false)
+    {
+        log = new System.Text.StringBuilder();
+        if (remake) { AssetDatabase.DeleteAsset($"{EnemyDir}/Bridge Troll.prefab"); overwrite = true; }
+        try { return BuildTrollRoom(); }
+        finally { overwrite = false; }
+    }
+
+    static string BuildTrollRoom()
+    {
+        Folder(RoomDir); Folder(EnemyDir);
+        var duellist = Load<GameObject>(DuellistPath);
+        var d = duellist != null ? duellist.GetComponent<Character>().data : null;
+        float Of(StatType t, float fallback) { if (d == null) return fallback; int i = d.stats.FindIndex(x => x.stat == t); return i >= 0 ? d.stats[i].baseValue : fallback; }
+        var troll = Enemy("Bridge Troll", "Realms/Pit Demon", -1f, (StatType.MaxHealth, Of(StatType.MaxHealth, 60f)), (StatType.AttackDamage, Of(StatType.AttackDamage, 12f)), (StatType.Armor, Of(StatType.Armor, 6f)));
+        var talk = Load<BossDialogueData>(TrollTalkPath);
+        var room = Room("Troll bridge", "troll",
+            "The Bridge Troll stands on a bridge over lava. Pay his toll of 30 gold to pass, or fight him.",
+            Rows(8, 9, new Vector2Int(4, 0), new Vector2Int(4, 8)), 2, (root, e) =>
+            {
+                var lava = LavaMaterial();
+                foreach (var x in new[] { -5f, 5f })
+                {
+                    var cut = Marker(root, "Chasm", new Vector3(Mid + x, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
+                    cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
+                    cut.fill = lava; cut.fillRepeat = 4f; cut.fillBelow = .9f;
+                    cut.fillLightColour = new Color(1f, .42f, .13f); cut.fillLightIntensity = 22f; cut.fillLightRange = 9f; cut.fillLightEvery = 3;
+                }
+                var post = Marker(root, "Troll post", new Vector3(Mid, 0f, 0f), 180f);
+                var aside = Marker(root, "Troll aside", new Vector3(Mid + 4.4f, 0f, 8f), 270f);
+                var him = Put(root, troll, new Vector3(Mid, 0f, 0f), 180f);
+                if (him != null && him.GetComponent<EventActor>() == null) him.AddComponent<EventActor>();
+                e.entrance = Marker(root, "Entrance", new Vector3(Mid, 0f, -7f));
+                Put(root, $"{Shared}/Furnishing/Bone heap.prefab", new Vector3(Mid - 4.6f, 0f, 8.2f), 30f);
+                Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid - 2.4f, 0f, -7.2f));
+                Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid + 2.4f, 0f, 7.2f));
+                foreach (float z in new[] { -2f, -8f, 8f })
+                {
+                    WallLight(root, new Vector3(Mid - 7f, 0f, z), 270f); WallLight(root, new Vector3(Mid + 7f, 0f, z), 90f);
+                }
+                var ev = root.gameObject.AddComponent<TollBridgeEvent>();
+                ev.post = post; ev.aside = aside; ev.talk = talk;
+            });
+        if (room != null && room.TryGetComponent<TollBridgeEvent>(out var placed) && placed.talk == null && talk != null)
+        {
+            placed.talk = talk; EditorUtility.SetDirty(room); AssetDatabase.SaveAssetIfDirty(room);
+        }
+        var rooms = new List<(GameObject room, DungeonRoomRoles roles, float weight)> { (room, DungeonRoomRoles.Combat, Weight) };
+        // Only the first act's biomes for now (the user, 2026-11-12: events on floors 1-4 only; the Realms and Ruins later).
+        foreach (var biome in EventBiomes)
+            Pool(biome, rooms);
+        AssetDatabase.SaveAssets();
+        return log.ToString();
+    }
 
     // The tuning on the duel room being rebuilt (RebuildDuel), copied onto the new one so a rebuild never resets it.
     static DuelEvent duelTuning;

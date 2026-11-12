@@ -605,8 +605,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'The Arena''s fight: the Arena Champion alone on sand ringed by stands.
-    Kill him and the run ends in victory. Nothing else comes in.'
+  description: 'The Arena''s fight: the Arena Champion alone on sand ringed by stands. Kill him and the run ends in victory. Nothing else comes in.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 0
@@ -668,6 +667,8 @@ MonoBehaviour:
     inPerson: 1
   delay: 3.5
   unlocks: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
+  healthMultiplier: 3
+  talk: {fileID: 11400000, guid: ad8f8e2e3411d7d46bfd8ff34754c2d1, type: 2}
 --- !u!1 &3033825767245881892
 GameObject:
   m_ObjectHideFlags: 0
@@ -1199,7 +1200,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
   type: 0
   chance: 1
-  overridePrefab: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
+  overridePrefab: {fileID: 3698107428023221647, guid: ac1abfe3e0da3db47881c1c4be148ba6, type: 3}
   archer: 0
   faceWall: 0
   wallGap: 0.75

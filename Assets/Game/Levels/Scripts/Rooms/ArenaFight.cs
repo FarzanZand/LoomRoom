@@ -17,6 +17,9 @@ public class ArenaFight : MonoBehaviour
     [Min(1f), Tooltip("Every fighter in the room has this many times its health here, full when it is found (the user, 2026-11-11: the duel's Undead Knight at triple health).")]
     public float healthMultiplier = 3f;
     readonly HashSet<EnemyBrain> strengthened = new();
+    [Tooltip("What its fighter says as the player first walks into the room (Dialogue/Conversations: its intro lines, in the dialogue box at its placement; the Dungeon Master's lines among them go to his feed). The fighters stand still while it is said, then come for the player. Empty: nothing.")]
+    public BossDialogueData talk;
+    bool talked, talkPushed;
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -58,9 +61,47 @@ public class ArenaFight : MonoBehaviour
         {
             Gather(false);
             Strengthen();
+            if (!talked && talk != null && PlayerInRoom()) { talked = true; StartCoroutine(Talk()); }
             if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
             yield return wait;
         }
+    }
+
+    static Player TablePlayer => PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+    bool PlayerInRoom() { var p = TablePlayer; return p != null && p.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(p.transform.position)) == room; }
+
+    // The fighter's say as the player walks in: the fighters held still (entranced) under it, then let go at the player.
+    IEnumerator Talk()
+    {
+        var box = PortraitDialogueUI.Current;
+        var player = TablePlayer;
+        EnemyBrain speaker = fighters.Find(b => b != null && !Down(b));
+        if (box == null || player == null || speaker == null || talk.introLines == null || talk.introLines.Count == 0) yield break;
+        foreach (var b in fighters) if (b != null && !Down(b)) b.Entranced = true;
+        if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
+        if (player.Look != null) StartCoroutine(CameraEase.LookAt(player.Look, speaker.transform.position + Vector3.up * 1.6f, .5f));
+        var who = speaker.GetComponent<Character>();
+        yield return box.Play(talk.introLines, who, !string.IsNullOrWhiteSpace(talk.bossName) ? talk.bossName : who.TheNameCap, null, talk.placement);
+        EndTalk();
+        foreach (var b in fighters)
+            if (b != null && !Down(b)) { ScriptedEventRoom.Free(b); b.Provoke(player.transform.position); }
+    }
+
+    // The talk's Dialogue state, popped once (also when the room goes mid-talk: a stopped coroutine runs no finally).
+    void EndTalk()
+    {
+        if (!talkPushed) return;
+        talkPushed = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
+    }
+
+    // Cut off mid-talk (the floor switched off): the fighters are let go, so none is left standing still.
+    void OnDisable()
+    {
+        if (!talkPushed) return;
+        EndTalk();
+        foreach (var b in fighters) if (b != null) ScriptedEventRoom.Free(b);
     }
 
     // Health Multiplier times the health, once each, once its stats are set up (after the floor's balance), and full.

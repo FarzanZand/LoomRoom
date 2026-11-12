@@ -290,6 +290,8 @@ MonoBehaviour:
     inPerson: 1
   delay: 3.5
   unlocks: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
+  healthMultiplier: 3
+  talk: {fileID: 11400000, guid: ad8f8e2e3411d7d46bfd8ff34754c2d1, type: 2}
 --- !u!1001 &1961152536423531071
 PrefabInstance:
   m_ObjectHideFlags: 0

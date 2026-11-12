@@ -85,6 +85,13 @@ public class GoreManager : Singleton<GoreManager>
         return col != null ? col.bounds.center : c.transform.position + Vector3.up;
     }
 
+    // A spray of the creature's blood from a point (a cut-off limb's stump, LimbLoss), drops times the profile's amount.
+    public void SprayAt(GoreProfile gore, Vector3 at, Vector3 dir, int drops, float speed = 1f)
+    {
+        if (gore == null || gore.kind == BloodKind.None) return;
+        Spray(gore, at, dir.sqrMagnitude > .001f ? dir.normalized : Vector3.up, Mathf.RoundToInt(drops * gore.amount), speed);
+    }
+
     void Spray(GoreProfile gore, Vector3 at, Vector3 dir, int count, float speed)
     {
         var prefab = gore.kind == BloodKind.BoneDust ? dustPrefab : sprayPrefab;

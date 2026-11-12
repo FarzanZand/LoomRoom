@@ -22,6 +22,10 @@ public class DuelEvent : MonoBehaviour
     [Tooltip("He is an elite of this kind in the duel (the user, 2026-11-12: Brutal, the red glow): its name, glow, size, steadiness and double experience. No extra floors of growth: his numbers are Damage and Health Multiplier's. Off: a plain duellist.")]
     public bool elite = true;
     public EliteTrait eliteTrait = EliteTrait.Brutal;
+    [Tooltip("His name in the duel (said as it is, with no \"the\" in front; the elite's word is left off it). Empty: his own (the Realms' Undead Knight keeps his).")]
+    public string duellistName = "Little Undead John";
+    [Tooltip("What he says in the dialogue box as the player walks up, before the salute (its intro lines; its placement). Empty: nothing.")]
+    public BossDialogueData talk;
     [Tooltip("His salute (a humanoid clip played over his animator), and how long he holds it before he fights.")]
     public AnimationClip salute;
     [Min(.2f)] public float saluteSeconds = 1.6f;
@@ -86,6 +90,7 @@ public class DuelEvent : MonoBehaviour
         }
         if (best == null || !best.TryGetComponent(out brain)) return;
         duellist = best;
+        if (!string.IsNullOrWhiteSpace(duellistName)) duellist.nameOverride = duellistName;
         brain.Entranced = true;
         if (brain.Perception != null) brain.Perception.NoCloseAwareness = true;
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) duellist.transform.rotation = Quaternion.LookRotation(f); }
@@ -106,11 +111,17 @@ public class DuelEvent : MonoBehaviour
             s.AddModifier(new StatModifier(StatType.MaxHealth, healthMultiplier - 1f, ModifierType.PercentMultiply, this));
             s.SetHealthShare(1f);
         }
-        if (elite && !duellist.TryGetComponent<EliteEnemy>(out _)) EliteEnemy.Make(duellist, eliteTrait, 0f);
+        if (elite && !duellist.TryGetComponent<EliteEnemy>(out _))
+        {
+            EliteEnemy.Make(duellist, eliteTrait, 0f);
+            // His own name stays whole ("Little Undead John", not "Brutal Little Undead John").
+            if (!string.IsNullOrWhiteSpace(duellistName)) duellist.namePrefix = null;
+        }
     }
 
     void OnDestroy()
     {
+        EndTalk();
         if (duellist != null) { duellist.Damaged -= OnHit; duellist.Died -= OnDied; }
         StopSalute();
     }
@@ -118,12 +129,21 @@ public class DuelEvent : MonoBehaviour
     IEnumerator Salute(Player player)
     {
         phase = Phase.Saluting;
-        ScriptedEventRoom.Say(challengeLine);
-        // He turns to face the player, then raises his blade.
+        // He turns to face the player, then has his say in the box, then the Dungeon Master calls the duel and he
+        // raises his blade.
         var to = player.transform.position - duellist.transform.position; to.y = 0f;
         var face = to.sqrMagnitude > .01f ? Quaternion.LookRotation(to) : duellist.transform.rotation;
         for (float t = 0; t < .35f && duellist != null; t += Time.deltaTime) { duellist.transform.rotation = Quaternion.Slerp(duellist.transform.rotation, face, t / .35f); yield return null; }
         if (duellist == null || phase != Phase.Saluting) yield break;
+        if (talk != null && talk.introLines != null && talk.introLines.Count > 0 && PortraitDialogueUI.Current != null)
+        {
+            if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
+            if (player.Look != null) StartCoroutine(CameraEase.LookAt(player.Look, duellist.transform.position + Vector3.up * 1.5f, .5f));
+            yield return PortraitDialogueUI.Current.Play(talk.introLines, duellist, !string.IsNullOrWhiteSpace(talk.bossName) ? talk.bossName : duellist.TheNameCap, null, talk.placement);
+            EndTalk();
+            if (duellist == null || phase != Phase.Saluting) yield break;
+        }
+        ScriptedEventRoom.Say(challengeLine);
         if (salute != null && duellist.Animator != null)
         {
             var playable = AnimationPlayableUtilities.PlayClip(duellist.Animator, salute, out saluteGraph);
@@ -135,6 +155,16 @@ public class DuelEvent : MonoBehaviour
         phase = Phase.Duel;
         ScriptedEventRoom.Free(brain);
         brain.Provoke(player.transform.position);
+    }
+
+    // The talk's Dialogue state, popped once (also when the room goes mid-talk: a stopped coroutine runs no finally).
+    bool talkPushed;
+    void EndTalk()
+    {
+        if (!talkPushed) return;
+        talkPushed = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
     }
 
     void StopSalute() { if (saluteGraph.IsValid()) saluteGraph.Destroy(); }

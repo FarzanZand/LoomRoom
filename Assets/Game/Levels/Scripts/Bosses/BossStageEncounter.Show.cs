@@ -39,7 +39,7 @@ public partial class BossStageEncounter
     void PhaseTwoShow()
     {
         if (!string.IsNullOrWhiteSpace(fight.PhaseTwoBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName);
+            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName, 1.4f, fight.Placement);
         else Say(fight.phaseTwoLine, true);
         if (fight.danceFloor != null && danceFloor == null)
             danceFloor = BossDanceFloor.Build(dungeon, fight.danceFloor, fight.phaseTwoDisco);
@@ -78,7 +78,7 @@ public partial class BossStageEncounter
         else if (backupDanced)
         {
             backupDanced = false;
-            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName);
+            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName, 1.4f, fight.Placement);
         }
     }
 
@@ -142,7 +142,7 @@ public partial class BossStageEncounter
         foreach (var (b, _) in backup.ToArray()) if (b != null && b.State != EnemyState.Dead) { BreakUp(b); any = true; }
         if (!any) return;
         if (!string.IsNullOrWhiteSpace(fight.BackupCallLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName);
+            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName, 1.4f, fight.Placement);
         StartCoroutine(SayAfterBark(fight.backupLine));
     }
 
