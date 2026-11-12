@@ -61,6 +61,16 @@ def stone_surface(path):
     return filled / mean, colour / np.maximum(filled[..., None], 1e-3)
 
 
+def wall_surface(path):
+    """The style's wall texture as it is, mortar and all (for --joints): luminance relative to its mean, colour per texel.
+    (The Forge's basalt pilaster drawn from the filled stone came out as large pale and dark blotches with no joints,
+    camouflage beside the coursed walls; review 2026-11-12.)"""
+    t = np.asarray(Image.open(path).convert("RGB")).astype(float) / 255
+    lum = t @ [.3, .59, .11]
+    safe = np.maximum(lum, 1e-3)
+    return lum / max(lum.mean(), 1e-3), t / safe[..., None]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("gbuffer"); ap.add_argument("width", type=int); ap.add_argument("height", type=int); ap.add_argument("out")
@@ -69,13 +79,16 @@ def main():
     ap.add_argument("--sat", type=float, default=.5, help="saturation of Synty's colour (1 = as it is)")
     ap.add_argument("--bright", type=float, default=.6, help="the stone's average value")
     ap.add_argument("--contrast", type=float, default=1.0, help="how strongly the stone's light and dark show")
+    ap.add_argument("--joints", action="store_true",
+                    help="keep the wall's mortar and courses (masonry pieces: a pilaster built into the wall); the courses "
+                         "run level round every side face")
     a = ap.parse_args()
     H, W = a.height, a.width
     g = np.fromfile(a.gbuffer, dtype=np.float32).reshape(H, W, 12)[::-1]
     cov = g[..., 8] > .5; nrm = g[..., 1:4]; pos = g[..., 4:7]; ao = np.clip(g[..., 7], 0, 1); own = np.clip(g[..., 9:12], 0, 1)
     ext = np.array([float(v) for v in a.extent.split(",")])
     metres = pos * ext
-    stone, tint = stone_surface(a.tile)
+    stone, tint = stone_surface(a.tile) if not a.joints else wall_surface(a.tile)
     th, tw = stone.shape
 
     # Each texel from the side its face looks to: x faces take (z, y), y faces (x, z), z faces (x, y).
@@ -83,7 +96,8 @@ def main():
     u = np.where(axis == 0, metres[..., 2], metres[..., 0])
     v = np.where(axis == 1, metres[..., 2], metres[..., 1])
     # Each axis its own offset in the tile, so a corner doesn't show the same blotch on both faces.
-    u = u + axis * .37; v = v + axis * .61
+    # (With the joints kept the side faces share their height, so a course meets itself round a corner.)
+    u = u + axis * .37; v = v + (axis == 1) * .61 if a.joints else v + axis * .61
     tx = (np.floor(u * TPM).astype(int)) % tw
     ty = (np.floor(v * TPM).astype(int)) % th
     lum = stone[ty, tx]

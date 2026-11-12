@@ -165,10 +165,17 @@ public class UIManager : Singleton<UIManager>
     void OnEnable() => Apply();
     void OnValidate() => Apply();
 
+    // The kit material is a shared asset, so writing it changed the file on disk (review 2026-11-12: git showed Kit
+    // Palette.mat modified after every Play). Only a manager in a scene writes it: the UIManager prefab asset's own
+    // default theme was written in whenever the prefab loaded (OnValidate after a script reload). What Play writes is
+    // put back when Play stops, so playing never changes the file; Edit mode still previews the scene's theme.
     public void Apply()
     {
-        if (kitMaterial != null)
+        if (kitMaterial != null && gameObject.scene.IsValid())
         {
+#if UNITY_EDITOR
+            if (Application.isPlaying) KitRestore.Remember(kitMaterial);
+#endif
             kitMaterial.SetColor("_ShadowColor", shadow);
             kitMaterial.SetColor("_PanelColor", panel);
             kitMaterial.SetFloat("_PanelShading", panelShading);
@@ -181,3 +188,42 @@ public class UIManager : Singleton<UIManager>
 
 // The HUD look (UIManager.hudStyle). Serialized by integer; append only.
 public enum HudStyle { Pixel = 0, Rugged = 1 }
+
+#if UNITY_EDITOR
+// What Play writes into the shared kit material is put back when Play stops (UIManager.Apply), so the file on disk
+// never changes from playing.
+static class KitRestore
+{
+    static Material kit;
+    static Color shadow, panel, border, highlight;
+    static float shading;
+
+    public static void Remember(Material material)
+    {
+        if (kit == material) return;
+        kit = material;
+        shadow = material.GetColor("_ShadowColor");
+        panel = material.GetColor("_PanelColor");
+        shading = material.GetFloat("_PanelShading");
+        border = material.GetColor("_BorderColor");
+        highlight = material.GetColor("_HighlightColor");
+        UnityEditor.EditorApplication.playModeStateChanged -= Restore;
+        UnityEditor.EditorApplication.playModeStateChanged += Restore;
+    }
+
+    static void Restore(UnityEditor.PlayModeStateChange change)
+    {
+        if (change != UnityEditor.PlayModeStateChange.ExitingPlayMode) return;
+        UnityEditor.EditorApplication.playModeStateChanged -= Restore;
+        if (kit != null)
+        {
+            kit.SetColor("_ShadowColor", shadow);
+            kit.SetColor("_PanelColor", panel);
+            kit.SetFloat("_PanelShading", shading);
+            kit.SetColor("_BorderColor", border);
+            kit.SetColor("_HighlightColor", highlight);
+        }
+        kit = null;
+    }
+}
+#endif

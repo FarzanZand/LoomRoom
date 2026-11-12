@@ -161,8 +161,8 @@ public class EquipmentPanelUI : MonoBehaviour
             case StatType.AttackDamage:
             {
                 var held=player.Equipment!=null?player.Equipment.Get(EquipmentSlot.RightHand):null;
-                int spread=held!=null && held.IsWeapon?held.damageSpread:0;
-                return spread>0?$"{Mathf.Max(1f,v-spread):0}-{v+spread:0}":Number(v);
+                int spread=held!=null && held.IsWeapon?held.damageSpread:0,up=held!=null && held.IsWeapon?held.damageSpreadUp:0;
+                return spread+up>0?$"{Mathf.Max(1f,v-spread):0}-{v+spread+up:0}":Number(v);
             }
             case StatType.ShieldBashDamage:
             {

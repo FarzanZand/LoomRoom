@@ -71,6 +71,7 @@ public class PortraitDialogueUI : MonoBehaviour
     public void Abort()
     {
         StopAllCoroutines();
+        ReleaseLeave();
         barks.Clear();
         Hide(true);
         if (stage != null) stage.Clear();
@@ -280,6 +281,14 @@ public class PortraitDialogueUI : MonoBehaviour
         bool navigated = false;
         void Step() { navigated = true; }
         if (InputManager.HasInstance) InputManager.Instance.NavigatePressed += Step;
+        // A box with an answer that walks away (Never mind) is a menu: Escape picks that answer instead of pausing.
+        int leave = choices.FindIndex(c => c != null && c.leaves);
+        if (leave >= 0 && InputManager.HasInstance)
+        {
+            leaveHook = () => { if (picked < 0) picked = leave; };
+            InputManager.Instance.WantCancel(this, true);
+            InputManager.Instance.CancelPressed += leaveHook;
+        }
         yield return null;
         Vector2 pointer = InputManager.HasInstance ? InputManager.Instance.PointerPosition : Vector2.zero;
         while (picked < 0)
@@ -295,12 +304,24 @@ public class PortraitDialogueUI : MonoBehaviour
             yield return null;
         }
         if (InputManager.HasInstance) InputManager.Instance.NavigatePressed -= Step;
+        ReleaseLeave();
         choiceColumn.gameObject.SetActive(false);
         foreach (var b in choiceButtons) if (b != null) Destroy(b.gameObject);
         choiceButtons.Clear();
         if (UIFeedbackSettings.Shared != null) UIFeedbackSettings.Shared.Hover();
         yield return null;
     }
+
+    // Escape's claim while answers with a leave answer are up (Choose); also given back when the box is aborted mid-choice.
+    Action leaveHook;
+    void ReleaseLeave()
+    {
+        if (leaveHook == null) return;
+        if (InputManager.HasInstance) { InputManager.Instance.WantCancel(this, false); InputManager.Instance.CancelPressed -= leaveHook; }
+        leaveHook = null;
+    }
+
+    void OnDisable() => ReleaseLeave();
 
     // The answer under a screen point, -1 for none.
     int Under(Vector2 point)

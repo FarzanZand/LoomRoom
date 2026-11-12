@@ -28,7 +28,7 @@ MonoBehaviour:
   masterExperienceMultiplier: 2
   perEnemyLimit: 3
   bonusAt100: 1.5
-  bonusText: '{0}% harder to notice while sneaking'
+  bonusText: -{0}% enemy notice range while sneaking
   extraAt100: 2
   extraText: +{0}% backstab damage
   extraFlat: 0

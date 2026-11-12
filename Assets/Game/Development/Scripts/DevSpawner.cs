@@ -167,6 +167,9 @@ public partial class DevSpawner : MonoBehaviour
         panel.SetActive(true);
         if (GameManager.HasInstance) GameManager.Instance.Push(GameState.Menu);
         for (int i = 0; i < kindButtons.Length; i++) if (kindButtons[i] != null) kindButtons[i].gameObject.SetActive(!cheats || i == (int)Kind.Cheats);
+        // F6 is the cheats alone: titled so (review 2026-11-12).
+        var title = Find<TMP_Text>(panel, "Title");
+        if (title != null) title.text = cheats ? "CHEATS" : "SPAWN";
         if (cheats) { SetKind(Kind.Cheats); return; }
         // The first time: room items in the room, items in a run. After that, where it was left.
         if (!openedOnce) fullKind = InRun ? Kind.Items : Kind.RoomItems;
@@ -376,6 +379,15 @@ public partial class DevSpawner : MonoBehaviour
             if (icon != null) { icon.sprite = entry.icon; icon.enabled = entry.icon != null; icon.preserveAspect = true; }
             var preview = Find<RawImage>(cell, "Preview");
             if (preview != null) preview.enabled = false;
+            // Nothing to picture (a cheat, a sound): the name fills the cell instead of an empty picture box over it.
+            if (nameText != null && entry.icon == null && entry.previewOf == null)
+            {
+                var r = nameText.rectTransform;
+                r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = new Vector2(8, 8); r.offsetMax = new Vector2(-8, -8);
+                nameText.alignment = TextAlignmentOptions.Center;
+                nameText.lineSpacing = 0;
+                nameText.fontSize *= 1.2f;
+            }
             var handler = cell.GetComponent<DevSpawnerCell>() ?? cell.AddComponent<DevSpawnerCell>();
             var e = entry;
             handler.clicked = (button, clicks) =>
@@ -475,6 +487,9 @@ public partial class DevSpawner : MonoBehaviour
         detailText.text = picked.about?.Invoke() ?? "";
         if (detailIcon != null) { detailIcon.sprite = picked.icon; detailIcon.enabled = picked.icon != null; detailIcon.preserveAspect = true; }
         if (detailPreview != null) detailPreview.enabled = false;
+        // No picture box for what has none (the cheats).
+        var pictureBox = detailIcon != null ? detailIcon.transform.parent : null;
+        if (pictureBox != null && (detail == null || pictureBox != detail.transform)) pictureBox.gameObject.SetActive(picked.icon != null || picked.previewOf != null);
         FillPreviews();
 
         string why = picked.blocked?.Invoke();
@@ -523,7 +538,7 @@ public partial class DevSpawner : MonoBehaviour
                 foreach (var item in DevGive.CatalogItems(false).Where(i => i.spell == null).OrderBy(i => ItemGroupOrder(i)).ThenBy(i => i.tier).ThenBy(i => i.itemName))
                 {
                     var it = item;
-                    bool gear = it.IsGear;
+                    bool gear = it.IsGear && it.rarity != ItemRarity.Relic;   // a relic's rarity is its own
                     yield return new Entry
                     {
                         key = it.name, name = it.itemName, kind = it.TypeLine() + (it.tier > 0 ? $", tier {it.tier}" : ""), group = ItemGroup(it),

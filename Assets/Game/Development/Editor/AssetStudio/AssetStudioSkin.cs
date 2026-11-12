@@ -149,15 +149,29 @@ public static class StudioSkin
 
     // After a reload: any editor style still holding the game's font (left by the bug above) goes back to Unity's own.
     [InitializeOnLoadMethod]
-    static void RepairLeftFonts() => EditorApplication.delayCall += () =>
+    static void RepairLeftFonts() { repairTries = 0; EditorApplication.delayCall += Repair; }
+    static int repairTries;
+    // The editor's styles may not exist yet on the first call after a domain reload (EditorStyles throws then; seen
+    // with Multiplayer Play Mode): try again on a later call, a few times.
+    static void Repair()
     {
-        foreach (var st in new[] { EditorStyles.label, EditorStyles.miniLabel, EditorStyles.largeLabel, EditorStyles.wordWrappedLabel, EditorStyles.wordWrappedMiniLabel,
-            EditorStyles.textField, EditorStyles.textArea, EditorStyles.numberField, EditorStyles.popup, EditorStyles.objectField, EditorStyles.toggle,
-            EditorStyles.helpBox, EditorStyles.miniButton, EditorStyles.toolbarSearchField, EditorStyles.radioButton, EditorStyles.miniTextField,
-            EditorStyles.boldLabel, EditorStyles.miniBoldLabel, EditorStyles.foldout, EditorStyles.foldoutHeader })
+        GUIStyle[] styles;
+        try
+        {
+            styles = new[] { EditorStyles.label, EditorStyles.miniLabel, EditorStyles.largeLabel, EditorStyles.wordWrappedLabel, EditorStyles.wordWrappedMiniLabel,
+                EditorStyles.textField, EditorStyles.textArea, EditorStyles.numberField, EditorStyles.popup, EditorStyles.objectField, EditorStyles.toggle,
+                EditorStyles.helpBox, EditorStyles.miniButton, EditorStyles.toolbarSearchField, EditorStyles.radioButton, EditorStyles.miniTextField,
+                EditorStyles.boldLabel, EditorStyles.miniBoldLabel, EditorStyles.foldout, EditorStyles.foldoutHeader };
+        }
+        catch (NullReferenceException)
+        {
+            if (++repairTries < 20) EditorApplication.delayCall += Repair;
+            return;
+        }
+        foreach (var st in styles)
             if (st != null && st.font != null && st.font.name.StartsWith("Studio PixelOperator", StringComparison.Ordinal))
             { st.font = null; if (st.fontSize == Size) st.fontSize = 12; }
-    };
+    }
 
     sealed class Scope : IDisposable
     {

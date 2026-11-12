@@ -148,6 +148,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e974a15ff091e4b49b711b717671c607, type: 2}
   rumourPrice: 20
   ateMessage: You eat the {Dish}.
+  markFont: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
 --- !u!1 &2864870573407460668
 GameObject:
   m_ObjectHideFlags: 0

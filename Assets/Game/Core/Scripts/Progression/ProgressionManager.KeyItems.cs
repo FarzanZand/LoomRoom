@@ -43,7 +43,7 @@ public partial class ProgressionManager
                 list.Add(new RoomKeyItem { name = $"{cls.displayName} poster", kind = "Poster", about = $"Unlocks the {cls.displayName} and goes up on the poster wall by the bed.", icon = cls.portrait, carried = PosterCarried(cls), carry = () => CarryPoster(cls) });
             }
         if (diceSet != null)
-            list.Add(new RoomKeyItem { name = diceSet.itemName, kind = "Dice", about = $"From the locked box. Goes on the big table: +{diceTradingBonus} Trading while it lies there.", icon = diceSet.icon, carried = DiceCarried, carry = () => CarryDice() });
+            list.Add(new RoomKeyItem { name = diceSet.itemName, kind = "Dice", about = $"From the locked box. Goes on the big table: +{diceTradingBonus} Trading while they lie there.", icon = diceSet.icon, carried = DiceCarried, carry = () => CarryDice() });
         return list;
     }
 }

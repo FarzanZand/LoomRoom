@@ -41,6 +41,11 @@ public class RunManager : Singleton<RunManager>
     public int HealthSlain { get; private set; }
     // The run's tally, settled as it ends (spoils into the bank).
     public ProgressionManager.Tally LastTally { get; private set; }
+    // What earlier deaths of this run already banked (a revive starts the counts again so nothing is banked twice): the
+    // recap adds it back, so a won run with revives shows the whole run (the review of 2026-11-12: "Enemies slain 0").
+    // Not in the checkpoint: a run continued after a quit shows what came after the quit, as before.
+    ProgressionManager.Tally banked;
+    int deathsBanked;
     public float Seconds { get; private set; }
     public string Killer { get; private set; }
     public bool Ended { get; private set; }
@@ -118,7 +123,7 @@ public class RunManager : Singleton<RunManager>
         deathPending = false;
         Running = true; Ended = false; won = false;
         Level = level; Seed = seed; Floor = 1;
-        Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default;
+        Kills = 0; GoldFound = 0; BossesSlain = 0; HealthSlain = 0; Seconds = 0f; Killer = null; LastTally = default; banked = default; deathsBanked = 0;
         ListenToWallet();
         if (player != null)
         {
@@ -216,7 +221,22 @@ public class RunManager : Singleton<RunManager>
         StopDeathMoment();
         recap?.Hide();
         Ended = false;
-        if (counted) { Kills = 0; HealthSlain = 0; }
+        if (counted)
+        {
+            var t = LastTally;
+            if (t.counted)
+            {
+                banked.counted = true;
+                banked.carried ??= new();
+                if (t.carried != null) banked.carried.AddRange(t.carried);
+                banked.carriedWorth += t.carriedWorth; banked.healthSlain += t.healthSlain; banked.fromHealth += t.fromHealth;
+                banked.total += t.total; banked.toppedUp += t.toppedUp;
+                if (deathsBanked == 0) banked.before = t.before;
+            }
+            banked.kills += Kills;
+            deathsBanked++;
+            Kills = 0; HealthSlain = 0;
+        }
         Killer = null;
         return true;
     }
@@ -295,15 +315,32 @@ public class RunManager : Singleton<RunManager>
         killer = Killer,
         floor = Floor,
         floors = Level != null ? Level.FloorCount : 1,
-        kills = Kills,
+        kills = Kills + banked.kills,
         gold = GoldFound,
         bosses = BossesSlain,
         seconds = Seconds,
         seed = Seed,
-        tally = LastTally,
+        tally = WholeRun(LastTally),
+        deathsBanked = deathsBanked,
         adventurer = Adventurer(out var skills),
         skills = skills,
     };
+
+    // This settle plus what earlier deaths banked: the whole run's spoils, kills and total; the bank before is the run's
+    // start, after is the bank now.
+    ProgressionManager.Tally WholeRun(ProgressionManager.Tally t)
+    {
+        if (deathsBanked == 0) return t;
+        var carried = new System.Collections.Generic.List<(ItemData item, int count)>();
+        if (banked.carried != null) carried.AddRange(banked.carried);
+        if (t.carried != null) carried.AddRange(t.carried);
+        carried.Sort((a, b) => (a.item != null ? a.item.value : 0).CompareTo(b.item != null ? b.item.value : 0));
+        t.carried = carried;
+        t.carriedWorth += banked.carriedWorth; t.kills += banked.kills; t.healthSlain += banked.healthSlain;
+        t.fromHealth += banked.fromHealth; t.total += banked.total;
+        if (banked.counted) t.before = banked.before;
+        return t;
+    }
 
     // Where the run ended, for the recap's sentence ("You conquered the Crypt.", "on floor 2 of the Cellars"): the
     // floor's biome, else the level's name; a win in the campaign names the place on the map ("You conquered Hill
@@ -382,6 +419,8 @@ public struct RunSummary
     public string adventurer, skills;
     public string levelName, killer;
     public int floor, floors, kills, gold, bosses, seed;
+    // Deaths earlier in this run that were revived (their spoils and kills banked then, counted in the totals here).
+    public int deathsBanked;
     public ProgressionManager.Tally tally;
     public float seconds;
 

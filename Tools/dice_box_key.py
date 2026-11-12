@@ -149,22 +149,32 @@ triangles = sum(len(p.vertices) - 2 for p in me.polygons)
 BRASS = np.array([[int(c[i:i + 2], 16) for i in (0, 2, 4)] for c in ('2e200d', '473315', '63491e', '7c5e26', '93732e', 'ad8c3c', 'd6b65c')], float)
 
 
-def blotchy(w, h, base):
-    """Old brass: the tone its place gives it, broken up texel by texel, never a flat fill."""
-    idx = np.full((h, w), base) + rng.choice([-2, -1, -1, 0, 0, 0, 1], size=(h, w))
-    return idx
+def blotchy(w, h, base, cell=(2, 2)):
+    """Old brass: the tone its place gives it in hard-edged clusters a few texels long, laid along the bar (cell: a
+    cluster's width and height in texels), never a flat fill. (Each texel picked on its own read as a checker speckle up
+    close, review 2026-11-12.) Here and there a single texel a step off, where the light catches a nick."""
+    cw, ch = cell
+    coarse = rng.choice([-2, -1, -1, 0, 0, 0, 1], size=(h // ch + 3, w // cw + 3))
+    idx = np.empty((h, w), int)
+    for y in range(h):
+        shift = rng.integers(0, cw)
+        for x in range(w):
+            idx[y, x] = coarse[y // ch, (x + shift) // cw]
+    odd = rng.random((h, w)) < .05
+    idx[odd] += rng.choice([-1, 1], size=odd.sum())
+    return base + idx
 
 
 tex = np.zeros((TH, TW, 3))
 for name, (x, y, w, h) in place.items():
     if name == 'bow':                      # rows go round the bar: top, outer side, underside, the side facing the hole
-        idx = blotchy(w, h, 3)
+        idx = blotchy(w, h, 3, cell=(4, 1))
         rows = np.linspace(0, 1, h, endpoint=False)
         for r, t in enumerate(rows):
             idx[r] += (1 if t < .17 or t > .85 else 0 if t < .4 else -2 if t < .62 else -1)
         idx[0, rng.integers(0, w, 3)] = 6
     elif name in ('shank', 'collar'):      # columns go round it starting on top
-        idx = blotchy(w, h, 3)
+        idx = blotchy(w, h, 3, cell=(1, 4))
         cols = np.linspace(0, 1, w, endpoint=False)
         for c, t in enumerate(cols):
             idx[:, c] += (1 if t < .13 or t > .87 else 0 if t < .3 or t > .7 else -2)
@@ -172,7 +182,7 @@ for name, (x, y, w, h) in place.items():
             idx[0:2, :] -= 1; idx[rng.integers(2, h - 1, 2), 0] = 6
         else: idx[:, 0] = np.maximum(idx[:, 0], 5)
     elif name == 'bit top':
-        idx = blotchy(w, h, 4); idx[0, :] += 1; idx[-1, :] -= 1
+        idx = blotchy(w, h, 4, cell=(3, 2)); idx[0, :] += 1; idx[-1, :] -= 1
     elif name == 'bit under': idx = blotchy(w, h, 1)
     elif name == 'bit edge': idx = blotchy(w, h, 2)
     else: idx = blotchy(w, h, 2)           # the ends of the bars

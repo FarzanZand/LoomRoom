@@ -32,7 +32,7 @@ public partial class AssetStudioWindow
         [ProgressionManager.RumourQuest] = (35, "the first visit to a tavern while a rumour is on sale", "a rumour is bought"),
         [ProgressionManager.BoxKeyQuest] = (40, "the key to the locked box is carried home from a run", "the box on the coffee table is opened with it"),
         [ProgressionManager.PosterQuest] = (45, "a class unlocked in play brings its poster home", "the poster is up on the wall by the bed"),
-        [ProgressionManager.DiceQuest] = (50, "the locked box is opened and its dice carried", "the dice lie on the big table's border"),
+        [ProgressionManager.DiceQuest] = (50, "the locked box is opened and its dice carried", "the dice lie on the big table by the candles"),
         [ProgressionManager.ClassQuest] = (55, "back in the room once the map has been seen and the first lesson is over, outside a run", "the hero select is opened at the desk by the bed"),
     };
 

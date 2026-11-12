@@ -57,7 +57,38 @@ public class AdventureSave : MonoBehaviour
     public event Action Changed;
     Player player; AdventurerProgress progress;
     const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
-    string FilePath => Path.Combine(Application.persistentDataPath, DebugDungeonSession.Active ? DebugFile : SlotFile(Slot));
+    string FilePath => Path.Combine(Folder, DebugDungeonSession.Active ? DebugFile : SlotFile(Slot));
+
+    // ── Save folder ──────────────────────────────────────────────────
+    // Builds and the editor of the master checkout (C:/Game projects/LoomRoom) save in Unity's own folder
+    // (<company>/<product>): the user's saves. Every other copy of the project (the co-op worktree LoomRoom-coop, the
+    // QA copy LoomRoom-qa) and every Multiplayer Play Mode clone has that company and product too, so in the editor each
+    // saves in a folder of its own beside it ("The Table Awaits-coop", "-qa", "-coop-mppm203c33af"): on 2026-11-12 a
+    // test editor was found writing the user's slot 1. Only saves move; PlayerPrefs (settings, the slot in play) stay shared.
+    const string MasterCheckout = "LoomRoom";
+    static string folder;
+    public static string Folder => folder ??= Application.isEditor ? Application.persistentDataPath + CheckoutTag(Application.dataPath) : Application.persistentDataPath;
+    // Whether this is the user's own save folder (old saves are only ever brought over into it).
+    static bool RealFolder => Folder == Application.persistentDataPath;
+    // "" for the master checkout, "-coop" for LoomRoom-coop, "-coop-mppm203c33af" for a clone made under it,
+    // "-<folder>" for a copy of any other name.
+    public static string CheckoutTag(string dataPath)
+    {
+        var project = (dataPath ?? "").Replace('\\', '/').TrimEnd('/');
+        if (project.EndsWith("/Assets", StringComparison.OrdinalIgnoreCase)) project = project.Substring(0, project.Length - "/Assets".Length);
+        string clone = "";
+        int vp = project.IndexOf("/Library/VP/", StringComparison.OrdinalIgnoreCase);
+        if (vp >= 0)
+        {
+            var rest = project.Substring(vp + "/Library/VP/".Length);
+            int cut = rest.IndexOf('/');
+            clone = "-" + (cut >= 0 ? rest.Substring(0, cut) : rest);
+            project = project.Substring(0, vp);
+        }
+        var name = project.Substring(project.LastIndexOf('/') + 1);
+        string tag = name == MasterCheckout ? "" : name.StartsWith(MasterCheckout + "-", StringComparison.Ordinal) ? name.Substring(MasterCheckout.Length) : "-" + name;
+        return tag + clone;
+    }
 
     // ── Save slots ───────────────────────────────────────────────────
     // Three saves side by side; the main menu picks one (New game, Continue, Load game) before the game's scene loads,
@@ -71,7 +102,7 @@ public class AdventureSave : MonoBehaviour
         set { PlayerPrefs.SetInt(SlotPref, Mathf.Clamp(value, 1, SlotCount)); PlayerPrefs.Save(); }
     }
     static string SlotFile(int slot) => slot <= 1 ? AdventureFile : $"loomroom-adventure-{slot}.json";
-    static string SlotPath(int slot) => Path.Combine(Application.persistentDataPath, SlotFile(slot));
+    static string SlotPath(int slot) => Path.Combine(Folder, SlotFile(slot));
     public static bool SlotExists(int slot) => File.Exists(SlotPath(slot)) || File.Exists(SlotPath(slot) + ".bak");
 
     // The name the player gives a new game on the main menu: the save is known by it (the save list, the character
@@ -185,7 +216,7 @@ public class AdventureSave : MonoBehaviour
     }
     public static void MigrateOldSaves()
     {
-        if (PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
+        if (!RealFolder || PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
         MarkMigrated();
         try
         {
@@ -279,8 +310,8 @@ public class AdventureSave : MonoBehaviour
         if (ProgressionManager.HasInstance) Saved.flags = ProgressionManager.Instance.AllFlags.Select(x => new ProgressionManager.FlagEntry { key = x.Key, value = x.Value }).ToList();
         try
         {
-            Directory.CreateDirectory(Application.persistentDataPath);
-            MarkMigrated();   // this folder has saves of its own now
+            Directory.CreateDirectory(Folder);
+            if (RealFolder) MarkMigrated();   // this folder has saves of its own now
             File.WriteAllText(FilePath + ".tmp", JsonUtility.ToJson(Saved, true));
             if (File.Exists(FilePath)) File.Replace(FilePath + ".tmp", FilePath, FilePath + ".bak");
             else File.Move(FilePath + ".tmp", FilePath);

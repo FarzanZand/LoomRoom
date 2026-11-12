@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1df3e06e675ee9d478f0645c78ca80c6, type: 3}
   m_Name: Party Crasher skill
   m_EditorClassIdentifier: Assembly-CSharp::CritKillRewardEffect
-  skillText: When you kill someone with a critical hit, the Dungeon Master celebrates you with a gold reward.
+  skillText: A critical kill gives 1 gold.
   gold: 1
   lineChance: 0.15
   lines:

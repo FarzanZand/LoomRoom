@@ -26,6 +26,16 @@ public class TavernKeeper : MonoBehaviour
     public bool HasRumours => Rumours.Count > 0;
     // The ! on the Rumour answer while a rumour is left: the yellow of the map's mark over a new place.
     static readonly Color RumourMarkColor = new(.85f, .72f, 0f);
+    [Tooltip("The font of the ! after Rumour: the bold one, as the map's mark is (the body font's ! is one pixel wide).")]
+    public TMPro.TMP_FontAsset markFont;
+
+    // The ! in the mark's font. TMP finds a <font> by name among the fonts it has been told of, so this one is told first.
+    string MarkFontTag()
+    {
+        if (markFont == null) return "!";
+        TMPro.MaterialReferenceManager.AddFontAsset(markFont);
+        return "<font=\"" + markFont.name + "\">!</font>";
+    }
 
     public Result Eat(TavernDish dish, Player player)
     {
@@ -88,11 +98,11 @@ public class TavernKeeper : MonoBehaviour
         // A yellow ! after it while he has a rumour left to sell, none once they are all told (the user, 2026-11-11; the
         // map's new-place mark's yellow).
         string rumourLabel = words.rumourAnswer.Replace("{Price}", rumourPrice.ToString());
-        if (place != null) rumourLabel += $" <color=#{ColorUtility.ToHtmlStringRGB(RumourMarkColor)}>!</color>";
+        if (place != null) rumourLabel += " <color=#" + ColorUtility.ToHtmlStringRGB(RumourMarkColor) + ">" + MarkFontTag() + "</color>";
         var rumour = new PortraitChoice { label = rumourLabel };
         rumour.reply.Add(new PortraitReply { speaker = PortraitSpeaker.Other, name = who, model = model, text = rumourReply });
         welcome.choices.Add(rumour);
-        welcome.choices.Add(new PortraitChoice { label = words.leaveAnswer });
+        welcome.choices.Add(new PortraitChoice { label = words.leaveAnswer, leaves = true });
 
         yield return box.Play(new[] { welcome }, null, who);
         int picked = box.Picked;

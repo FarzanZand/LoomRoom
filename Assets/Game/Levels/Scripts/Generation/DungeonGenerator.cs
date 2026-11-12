@@ -126,7 +126,17 @@ public partial class DungeonGenerator : MonoBehaviour
     // The same build spread over frames (a floor built from the campaign map, while the map folds away): it stops
     // whenever a slice has run SliceMilliseconds, and between slices nothing of the floor is drawn, lit or started
     // half built. The same seed gives the same floor either way.
-    public IEnumerator BuildSliced(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false) => BuildSteps(level, seed, floorNumber, lastTry, true);
+    // leastSlice: the shortest slice. Behind a black screen (going down the stairs) nobody sees the frames, so the loader
+    // asks for long slices (BehindBlackSliceMilliseconds): with 8 ms ones the black lasted 3.4 s for about 1 s of work.
+    public IEnumerator BuildSliced(TableLevelData level, int seed, int floorNumber=1, bool lastTry=false, float leastSlice=SliceMilliseconds)
+    {
+        leastSliceBudget = Mathf.Max(SliceMilliseconds, leastSlice);
+        return BuildSteps(level, seed, floorNumber, lastTry, true);
+    }
+    // Long enough that a floor is built in a dozen frames or so, short enough that the music and the fade never stall
+    // (a whole floor in one frame stalled the music for about half a second, 2026-10-31).
+    public const float BehindBlackSliceMilliseconds = 80f;
+    float leastSliceBudget = SliceMilliseconds;
 
     // A slice's time, with what switching the floor on again costs counted in it (12 without it before 2026-11-11, so a
     // frame's share ran to 13-25 ms and the map burned away at 30-47 fps): 8 ms, about one 60 fps frame with the room
@@ -146,7 +156,7 @@ public partial class DungeonGenerator : MonoBehaviour
     void BudgetSlice()
     {
         float rest = Time.unscaledDeltaTime * 1000f - lastSliceMilliseconds;
-        sliceBudget = Mathf.Clamp(rest * .5f, SliceMilliseconds, SliceMostMilliseconds);
+        sliceBudget = Mathf.Clamp(rest * .5f, leastSliceBudget, Mathf.Max(leastSliceBudget, SliceMostMilliseconds));
     }
 
     // ── Between slices ──
@@ -227,7 +237,7 @@ public partial class DungeonGenerator : MonoBehaviour
 
     IEnumerator BuildSteps(TableLevelData level, int seed, int floorNumber, bool lastTry, bool sliced)
     {
-        slicing = sliced; sliceWatch.Restart(); BuildProgress = 0; paused = false; resumeMilliseconds = 0; lastSliceMilliseconds = 0; sliceBudget = SliceMilliseconds;
+        slicing = sliced; sliceWatch.Restart(); BuildProgress = 0; paused = false; resumeMilliseconds = 0; lastSliceMilliseconds = 0; sliceBudget = sliced ? leastSliceBudget : SliceMilliseconds;
         try
         {
         acceptUnreachable = lastTry;

@@ -150,21 +150,101 @@ public class QuestGlow : MonoBehaviour
     static Material[] Fill(Material m, int n) { var a = new Material[n]; for (int i = 0; i < n; i++) a[i] = m; return a; }
     static float Volume(Bounds b) => b.size.x * b.size.y * b.size.z;
 
-    // A copy of the mesh whose normals are averaged over every vertex at the same place.
+    // A copy of the mesh whose normals point out of every face that meets at a place: the sum of the distinct face
+    // normals there, so the shell is pushed out evenly round corners and edges. A vertex lying partway along another
+    // face's edge (a T-junction: the coffee table's top has one a third of the way along its back edge that the back
+    // face doesn't) counts that face too; summing only the vertices at the same place left it pointing straight up, and
+    // the outline stepped in there (review 2026-11-12).
     static Mesh Smoothed(Mesh source)
     {
         Vector3[] v;
         try { v = source.vertices; } catch { return null; }
         var n = source.normals;
         if (n == null || n.Length != v.Length) return null;
-        var sums = new Dictionary<Vector3Int, Vector3>();
         Vector3Int Key(Vector3 p) => Vector3Int.RoundToInt(p * 1000f);
-        for (int i = 0; i < v.Length; i++) { var k = Key(v[i]); sums[k] = (sums.TryGetValue(k, out var s) ? s : Vector3.zero) + n[i]; }
+        Vector3Int Dir(Vector3 d) => Vector3Int.RoundToInt(d * 50f);
+        var faces = new Dictionary<Vector3Int, Dictionary<Vector3Int, Vector3>>();   // place -> distinct face normals
+        var place = new Dictionary<Vector3Int, Vector3>();
+        void Add(Vector3Int k, Vector3 fn)
+        {
+            if (!faces.TryGetValue(k, out var set)) faces[k] = set = new Dictionary<Vector3Int, Vector3>();
+            set[Dir(fn)] = fn;
+        }
+        var edges = new List<(Vector3 a, Vector3 b, Vector3 fn)>();
+        for (int sub = 0; sub < source.subMeshCount; sub++)
+        {
+            if (source.GetTopology(sub) != MeshTopology.Triangles) continue;
+            var t = source.GetTriangles(sub);
+            for (int i = 0; i + 2 < t.Length; i += 3)
+            {
+                Vector3 a = v[t[i]], b = v[t[i + 1]], c = v[t[i + 2]];
+                var fn = Vector3.Cross(b - a, c - a);
+                if (fn.sqrMagnitude < 1e-12f) continue;
+                fn.Normalize();
+                foreach (var p in new[] { a, b, c }) { var k = Key(p); place[k] = p; Add(k, fn); }
+                edges.Add((a, b, fn)); edges.Add((b, c, fn)); edges.Add((c, a, fn));
+            }
+        }
+        // T-junctions (skipped on big meshes, where the search would take too long).
+        if ((long)place.Count * edges.Count <= 4_000_000)
+            foreach (var (k, p) in place)
+                foreach (var (a, b, fn) in edges)
+                {
+                    var ab = b - a; float len2 = ab.sqrMagnitude;
+                    if (len2 < 1e-10f) continue;
+                    float s = Vector3.Dot(p - a, ab) / len2;
+                    if (s <= .001f || s >= .999f) continue;
+                    if ((a + ab * s - p).sqrMagnitude > len2 * 1e-6f) continue;
+                    Add(k, fn);
+                }
         var smooth = new Vector3[v.Length];
-        for (int i = 0; i < v.Length; i++) smooth[i] = sums[Key(v[i])].normalized;
+        for (int i = 0; i < v.Length; i++)
+        {
+            var sum = Vector3.zero;
+            if (faces.TryGetValue(Key(v[i]), out var set)) foreach (var fn in set.Values) sum += fn;
+            // Faces turned against each other (a thin double-sided card) cancel out: then the vertex's own normal.
+            smooth[i] = sum.sqrMagnitude > 1e-4f ? sum.normalized : n[i].normalized;
+        }
+        // Box-shaped furniture (nearly all its faces facing along an axis): a shell point lying within a hair (1.6% of the
+        // object's size) of the object's outer faces is set onto them. Synty's coffee table has chips about 2 cm deep cut
+        // into its top's back edge, and the outline stepped in along them (review 2026-11-12); the outline's outer edge
+        // now runs straight past, while the table itself keeps its chips inside it. Round things are left as they are.
+        // (1.6%: its deepest chip is 2.19 cm in, its legs stand 2.5 cm in and must keep their own outline.)
+        var shellPos = (Vector3[])v.Clone();
+        float axisArea = 0f, allArea = 0f;
+        for (int sub = 0; sub < source.subMeshCount; sub++)
+        {
+            if (source.GetTopology(sub) != MeshTopology.Triangles) continue;
+            var t = source.GetTriangles(sub);
+            for (int i = 0; i + 2 < t.Length; i += 3)
+            {
+                var cross = Vector3.Cross(v[t[i + 1]] - v[t[i]], v[t[i + 2]] - v[t[i]]);
+                float area = cross.magnitude; if (area < 1e-12f) continue;
+                allArea += area;
+                var fn = cross / area;
+                if (Mathf.Max(Mathf.Abs(fn.x), Mathf.Abs(fn.y), Mathf.Abs(fn.z)) > .97f) axisArea += area;
+            }
+        }
+        if (allArea > 0f && axisArea >= allArea * .8f)
+        {
+            Vector3 lo = source.bounds.min, hi = source.bounds.max;
+            float snap = source.bounds.size.magnitude * .016f;
+            for (int i = 0; i < shellPos.Length; i++)
+            {
+                var q = shellPos[i];
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    if (hi[axis] - q[axis] < snap) q[axis] = hi[axis];
+                    else if (q[axis] - lo[axis] < snap) q[axis] = lo[axis];
+                }
+                shellPos[i] = q;
+            }
+        }
         var mesh = Instantiate(source);
         mesh.name = source.name + " outline";
+        mesh.vertices = shellPos;
         mesh.normals = smooth;
+        mesh.RecalculateBounds();
         return mesh;
     }
 

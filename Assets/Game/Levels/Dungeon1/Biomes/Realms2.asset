@@ -433,7 +433,7 @@ MonoBehaviour:
     ambientSky: {r: 0.38, g: 0.2, b: 0.07, a: 1}
     ambientHorizon: {r: 0.29, g: 0.14500001, b: 0.055, a: 1}
     ambientGround: {r: 0.2, g: 0.09, b: 0.04, a: 1}
-    fogColor: {r: 0.5, g: 0.15, b: 0.09, a: 1}
+    fogColor: {r: 0.17, g: 0.06, b: 0.04, a: 1}
   lightingPrefabs:
   - prefab: {fileID: 3904118440429741045, guid: 91efdc5ce7c631c43a3188387ca652aa, type: 3}
     weight: 1

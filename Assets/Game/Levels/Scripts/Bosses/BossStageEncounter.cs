@@ -42,6 +42,8 @@ public partial class BossStageEncounter : MonoBehaviour
     public bool Fighting => fightStart >= 0f && !finished;
     // From the walk-in (the DM coming to the table and setting the boss down) to the end of the fight.
     public bool Busy => started && !finished;
+    // The boss fell (the fight ended won): the floor's lines about the coming fight stop (ShieldCheckChest).
+    public bool Won { get; private set; }
     public float FightTime => fightStart >= 0f ? Time.time - fightStart : 0f;
     // Beats of the fight's music since its first beat (from when the music started).
     public float Beat => musicStart >= 0f && fight != null ? (Time.time - musicStart - fight.firstBeat) / fight.SecondsPerBeat : 0f;
@@ -671,6 +673,7 @@ public partial class BossStageEncounter : MonoBehaviour
     void Finish(bool won)
     {
         finished = true;
+        if (won) Won = true;
         Cleanup(won);
         if (won && dungeon != null && boss != null) StartCoroutine(BossChest(boss.transform.position));
         // The way on rises on the stage, after the boss's last pose (it would come up in front of it).

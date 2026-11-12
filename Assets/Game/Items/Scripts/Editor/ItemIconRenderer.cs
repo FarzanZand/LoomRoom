@@ -30,6 +30,7 @@ public static partial class ItemIconRenderer
         public ItemIconSettings.Outfit outfit; public Cut cut;
         public Mode mode; public Vector3 view, turn; public bool flip, back;
         public Vector2Int cells; public Color tint = Color.white;
+        public bool fitLength;   // framed by its length alone, its sides cropped by the cell (maces)
     }
 
     static ItemIconRenderer()
@@ -72,9 +73,21 @@ public static partial class ItemIconRenderer
         foreach (var item in stale)
         {
             string error = Generate(item, session);
+            // An empty render is tried again a little later (a few times), once the editor has settled.
+            if (error == EmptyRender && (retries.TryGetValue(item, out int tries) ? tries : 0) < 3)
+            {
+                retries[item] = tries + 1;
+                double at = EditorApplication.timeSinceStartup + 2.0;
+                EditorApplication.CallbackFunction later = null;
+                later = () => { if (EditorApplication.timeSinceStartup < at) return; EditorApplication.update -= later; Queue(item); };
+                EditorApplication.update += later;
+                continue;
+            }
+            retries.Remove(item);
             if (error != null) Debug.LogWarning($"[Item icons] {item.itemName}: {error}", item);
         }
     }
+    static readonly Dictionary<ItemData, int> retries = new();
     // Saved prefabs, meshes, textures and the settings can change what an icon shows (ItemData changes arrive
     // through OnValidate); the keys decide which icons really changed.
     class Watcher : AssetPostprocessor
@@ -129,6 +142,15 @@ public static partial class ItemIconRenderer
         return made;
     }
 
+    const string EmptyRender = "The render came out empty (the camera drew nothing); the old icon is kept.";
+    const float MinCovered = .01f;   // share of the icon's pixels the item must cover
+    static float Covered(Texture2D texture)
+    {
+        var px = texture.GetPixels32(); int n = 0;
+        foreach (var c in px) if (c.a > 0) n++;
+        return px.Length == 0 ? 0f : (float)n / px.Length;
+    }
+
     static string Generate(ItemData item, Session session)
     {
         if (Settings == null) return "No icon settings at " + ItemIconSettings.Path + ".";
@@ -141,6 +163,14 @@ public static partial class ItemIconRenderer
         try { texture = session.Render(job); }
         catch (System.Exception e) { Debug.LogException(e); return "Rendering failed: " + e.Message; }
         if (texture == null) return "Nothing visible to render.";
+        // A render the camera drew nothing into is never saved: written with its key it would stay blank for good, as
+        // the key says the icon is current (the coop editor wrote Bronze Sword, Crystal Sword and Dread Mace as empty
+        // 487-byte images, 2026-11-12, most likely drawn before the render pipeline was ready after a script reload).
+        if (Covered(texture) < MinCovered)
+        {
+            Object.DestroyImmediate(texture);
+            return EmptyRender;
+        }
 
         string path = PathFor(item);
         ItemDatabaseAuthoring.EnsureFolder(Folder);
@@ -205,6 +235,9 @@ public static partial class ItemIconRenderer
         else if (tall) { job.mode = Mode.Long; job.view = Vector3.zero; }
         else if (item.itemType == ItemType.Shield) { job.mode = Mode.Face; job.view = Vector3.zero; job.back = true; } // Synty shields face -Z
         else { job.mode = Mode.Auto; job.view = new Vector3(14, 22, 0); }
+        // A mace fills its cells by length, as a sword does, and a wide spiked head is cropped at the cell's sides: fitted
+        // to the width too, the Verdant and Shadow maces came out a third shorter than the rest (review 2026-11-12).
+        job.fitLength = job.mode == Mode.Long && item.itemType == ItemType.Weapon && item.weaponCategory == WeaponCategory.Mace;
         job.turn = source.turn;
         job.view += source.turn;
         return job;
@@ -217,6 +250,7 @@ public static partial class ItemIconRenderer
         string parts = string.Join("|", Version, s.cellPixels, s.supersample, s.alphaCut, s.margin, s.drawOutline, s.outline, s.softEdges, s.sampling, s.sharpen, s.keyAngles, s.keyColor, s.keyIntensity,
             s.fillAngles, s.fillColor, s.fillIntensity, job.cells, job.mode, job.view, job.flip, job.back, job.tint, job.cut,
             Asset(job.prefab), Parts(job.prefab), Asset(job.mesh), Asset(job.material), job.outfit?.name, Asset(job.outfit?.prefab), job.outfit?.renderer, Asset(job.outfit?.mesh), Asset(job.outfit?.material));
+        if (job.fitLength) parts += "|length";
         return Hash128.Compute(parts).ToString();
     }
     // The meshes and textures a prefab draws with (repainted art keeps the prefab file as it is). Material files are
@@ -359,7 +393,7 @@ public static partial class ItemIconRenderer
             float aspect = (float)width / height;
             var extent = (max - min) / 2f; var centre = (min + max) / 2f;
             float pad = s.margin * 2f;
-            camera.orthographicSize = Mathf.Max(extent.y * height / (height - pad), extent.x / aspect * width / (width - pad));
+            camera.orthographicSize = job.fitLength ? extent.y * height / (height - pad) : Mathf.Max(extent.y * height / (height - pad), extent.x / aspect * width / (width - pad));
             camera.aspect = aspect;
             camera.transform.position = new Vector3(centre.x, centre.y, -20f);
 

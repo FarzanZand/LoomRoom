@@ -99,10 +99,20 @@ public class QuestLogUI : MonoBehaviour
             }
             // Done and opened again before its row faded out (the trophies hung, then another one bought): it stays.
             if (state == 1 && doneAt.Remove(q.id)) row.alpha = 1f;
-            string text = progression.QuestText(q);
+            string text = KeepLastWords(progression.QuestText(q));
             row.text = state == 2 ? $"<s>{text}</s>" : text;
             row.color = state == 2 ? doneColour : openColour;
         }
+    }
+
+    // The last two words joined by a no-break space, so a line that wraps never leaves one word alone on its last line
+    // (review 2026-11-12). Only for lines of three words or more.
+    static string KeepLastWords(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        int last = text.LastIndexOf(' ');
+        if (last <= 0 || text.LastIndexOf(' ', last - 1) < 0) return text;
+        return text.Substring(0, last) + ' ' + text.Substring(last + 1);
     }
 
     static void Sound(string key)

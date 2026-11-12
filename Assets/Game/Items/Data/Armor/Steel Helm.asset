@@ -61,6 +61,8 @@ MonoBehaviour:
     knockbackForce: -1
     hitStopScale: 1
   damageSpread: 0
+  damageSpreadUp: 0
+  scaleWithFloor: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}

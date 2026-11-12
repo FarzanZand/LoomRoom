@@ -104,7 +104,7 @@ public partial class AssetStudioWindow
         }
         if (pm != null && pm.diceSet != null)
         {
-            var u = new Unlockable { name = pm.diceSet.itemName, type = "Room item", how = "open the locked box on the coffee table (it needs its key)", gives = $"Put on the big table's border: +{pm.diceTradingBonus} Trading while they lie there.", flag = "room.dice", step = "Back in the room", order = 70, icon = pm.diceSet.icon != null ? pm.diceSet.icon.texture : null };
+            var u = new Unlockable { name = pm.diceSet.itemName, type = "Room item", how = "open the locked box on the coffee table (it needs its key)", gives = $"Put on the big table by the candles: +{pm.diceTradingBonus} Trading while they lie there.", flag = "room.dice", step = "Back in the room", order = 70, icon = pm.diceSet.icon != null ? pm.diceSet.icon.texture : null };
             u.assets.Add(pm.diceSet); list.Add(u);
         }
 

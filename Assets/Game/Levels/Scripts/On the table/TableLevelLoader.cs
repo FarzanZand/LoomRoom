@@ -200,7 +200,7 @@ public class TableLevelLoader : MonoBehaviour
                 // With the reveal (from the room) the floor is built over several frames while the campaign map folds away;
                 // going down the stairs it is too, behind the black, so the game and its music never stall for the build
                 // (not in a toolbar debug session, which skips the fade: the player would stand on the bare table meanwhile).
-                preparing = PrepareRoutine(level, useReveal, useReveal || descending && faded);
+                preparing = PrepareRoutine(level, useReveal, useReveal || descending && faded, !useReveal && faded);
             }
             catch(Exception e) { failure=e; }
             while(failure==null) {
@@ -236,7 +236,7 @@ public class TableLevelLoader : MonoBehaviour
                 if(ProgressionManager.HasInstance) ProgressionManager.Instance.tableEntered=true;
                 if(level.IsDungeon && RunManager.HasInstance)
                 {
-                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
+                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); SkeletonParty.NewRun(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
                     // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
                     // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
                     var resumedProgress = resume != null ? player.GetComponent<AdventurerProgress>() : null;
@@ -273,6 +273,11 @@ public class TableLevelLoader : MonoBehaviour
                     if (lighting != null) lighting.BlendToMood(level.BoardOn(FloorNumber) ? level.BoardLighting(lighting, FloorNumber) : level.DungeonLighting(FloorNumber), reveal.SkipRequested ? .3f : revealSettings.approachSeconds);
                 }));
             }
+            // The reveal is over (or there was none): big chunks for play. Behind the black still when there is one, and
+            // the new floor's first frames (its objects starting, its meshes and shadows drawn the first time: 110-230 ms
+            // on a Dungeon1 floor) are let pass before the black lifts, so the fade-in never hitches.
+            if (ready && Dungeon != null) Dungeon.MergeForPlay();
+            if (faded && ready) yield return SettleBehindBlack();
             if (faded)
             {
                 ScreenManager.Instance.FadeFromBlack(.6f); faded=false;
@@ -286,7 +291,6 @@ public class TableLevelLoader : MonoBehaviour
                 else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);
             }
             completed=ready;
-            if (ready && Dungeon != null) Dungeon.MergeForPlay();   // the reveal is over: big chunks for play
             var floorSave = ready && level.IsDungeon ? player.GetComponent<AdventureSave>() : null;
             if (floorSave != null) floorSave.CaptureFloor();
         }
@@ -306,6 +310,14 @@ public class TableLevelLoader : MonoBehaviour
             if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post(Dungeon.Merchant.GetComponentInParent<TavernKeeper>()!=null || Dungeon.Merchant.GetComponent<TavernKeeper>()!=null ? "There's a tavern on this floor." : "A merchant has set up shop on this floor.", MessageKind.Info);
         }
     }
+    // Waits, black, for the new floor's first frames to pass: two at least, then until one is quick again (under
+    // 50 ms), at most .6 s in all.
+    IEnumerator SettleBehindBlack()
+    {
+        float until = Time.realtimeSinceStartup + .6f;
+        yield return null; yield return null;
+        while (Time.unscaledDeltaTime > .05f && Time.realtimeSinceStartup < until) yield return null;
+    }
     void FailedFromMap()
     {
         NotificationUI.Show("That level couldn't be built");
@@ -322,7 +334,8 @@ public class TableLevelLoader : MonoBehaviour
     public float BuildProgress => building!=null ? building.BuildProgress : 1f;
     // sliced: the floor is built over several frames (DungeonGenerator.BuildSliced), so a floor built from the
     // campaign map never holds the game still while the map folds away.
-    IEnumerator PrepareRoutine(TableLevelData level, bool deferPlayerSwitch, bool sliced)
+    // behindBlack: the screen is black meanwhile (the stairs), so the slices can be long (nobody sees the frames).
+    IEnumerator PrepareRoutine(TableLevelData level, bool deferPlayerSwitch, bool sliced, bool behindBlack=false)
     {
         var previousEnvironment=environment;
         bool previousTown=Current!=null && Current.kind==TableLevelKind.Town;
@@ -353,7 +366,7 @@ public class TableLevelLoader : MonoBehaviour
                 int attemptSeed=unchecked(seed+attempt*7907);
                 Exception error=null;
                 if(sliced) {
-                    var steps=candidateDungeon.BuildSliced(level,attemptSeed,FloorNumber,attempt>=7);
+                    var steps=candidateDungeon.BuildSliced(level,attemptSeed,FloorNumber,attempt>=7,behindBlack ? DungeonGenerator.BehindBlackSliceMilliseconds : DungeonGenerator.SliceMilliseconds);
                     building=candidateDungeon;
                     while(true) {
                         bool more;
@@ -580,7 +593,7 @@ public class TableLevelLoader : MonoBehaviour
             RestoreRoom(.6f);
             // The run is over: its floor leaves the table under the black (after a death and after the win, so the
             // ending's morning has a clear table). Its holes in the table close with it.
-            if(environment!=null) { Destroy(environment); environment=null; Dungeon=null; }
+            if(environment!=null) { RemoveSlowly(environment); environment=null; Dungeon=null; }
             Returned?.Invoke();
             yield return null;
             if(whileDark!=null) { fade=false; whileDark(); }
@@ -592,6 +605,33 @@ public class TableLevelLoader : MonoBehaviour
             ReleaseCutscene();
             Busy=false;
         }
+    }
+    // A finished floor taken off the table without a long frame: it lies sunk under the tabletop by now (the flight back)
+    // or behind the black; the components on the floor itself are switched off at once (its holes in the table close,
+    // the visibility pass stands down), then it is destroyed 2,000 objects a frame. In one Destroy the
+    // 30,000 objects of a Dungeon1 floor cost a 160 ms frame just as the flight back to the room landed, and switched
+    // off in one go first still 50 ms (2026-11-12).
+    const int RemovedPerFrame = 2000;
+    void RemoveSlowly(GameObject floor)
+    {
+        foreach (var behaviour in floor.GetComponents<Behaviour>()) behaviour.enabled = false;
+        StartCoroutine(RemoveSlowlyRoutine(floor));
+    }
+    static IEnumerator RemoveSlowlyRoutine(GameObject floor)
+    {
+        var pieces = new List<Transform>();
+        void Gather(Transform parent) { foreach (Transform child in parent) { if (child.hierarchyCount > RemovedPerFrame) Gather(child); else pieces.Add(child); } }
+        Gather(floor.transform);
+        int count = 0;
+        foreach (var piece in pieces)
+        {
+            if (floor == null) yield break;
+            if (piece == null) continue;
+            count += piece.hierarchyCount;
+            Destroy(piece.gameObject);
+            if (count >= RemovedPerFrame) { count = 0; yield return null; }
+        }
+        if (floor != null) Destroy(floor);
     }
     // Once per visit to the table: later loads (descending, retrying) keep the first snapshot.
     void RememberRoom()

@@ -173,7 +173,7 @@ public partial class AssetStudioWindow
         dialogueSmall = new GUIStyle(EditorStyles.miniButton) { fontSize = 11, padding = new RectOffset(2, 2, 1, 1) };
     }
 
-    const float DialogueButtons = 220;   // the controls at the right of each line
+    const float DialogueButtons = 310;   // the controls at the right of each line
     // PortraitSpeaker, by number. Character (PortraitSpeaker.Other): anyone else, shown by the box's own model (the tavern keeper).
     static readonly GUIContent[] Speakers = { new("Boss", "The fight's boss, in its box."), new("Dungeon Master", "Said in his own feed, not in the box."), new("Character", "Anyone else (the tavern keeper, a dungeon NPC): the box shows the model set on it.") };
 
@@ -379,11 +379,11 @@ public partial class AssetStudioWindow
                 }
                 else if (l.kind == AssetStudioDialogue.Kind.Box)
                 {
-                    int who = EditorGUI.Popup(new Rect(bx2, cy + 3, 84, 20), l.speaker, Speakers);
+                    int who = EditorGUI.Popup(new Rect(bx2, cy + 3, 130, 20), l.speaker, Speakers);
                     GUI.SetNextControlName("dlg name " + LineId(l));
-                    string name = EditorGUI.DelayedTextField(new Rect(bx2 + 88, cy + 3, 70, 18), l.speakerName ?? "");
+                    string name = EditorGUI.DelayedTextField(new Rect(bx2 + 134, cy + 3, 114, 18), l.speakerName ?? "");
                     if (string.IsNullOrEmpty(name) && GUI.GetNameOfFocusedControl() != "dlg name " + LineId(l))
-                        GUI.Label(new Rect(bx2 + 91, cy + 3, 68, 18), new GUIContent("own name", "The name on the box. Empty: the speaker's own (the boss's name, or Dungeon Master)."), dialogueWhen);
+                        GUI.Label(new Rect(bx2 + 137, cy + 3, 110, 18), new GUIContent("own name", "The name on the box. Empty: the speaker's own (the boss's name, or Dungeon Master)."), dialogueWhen);
                     if (who != l.speaker || name != (l.speakerName ?? "")) AssetStudioDialogue.SetSpeaker(l, who, name);
                 }
                 // A recorded voice, played in place of the mumble (his lines) or the typing blips (a box). An AudioClip
@@ -393,7 +393,7 @@ public partial class AssetStudioWindow
                     float vy = cy + (l.arrayPath != null ? 46 : 24);
                     string instead = l.rich ? "his mumble" : "the typing blips";
                     GUI.Label(new Rect(bx2, vy, 40, 18), new GUIContent("Voice", $"A recorded voice, played instead of {instead}. Drop an AudioClip or an AudioData on the field; empty: {instead}."), dialogueWhen);
-                    var at = new Rect(bx2 + 40, vy, 118, 18);
+                    var at = new Rect(bx2 + 40, vy, 208, 18);
                     // An AudioClip dragged onto the field (the field itself only takes AudioData).
                     var ev = Event.current;
                     if ((ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && at.Contains(ev.mousePosition)
@@ -412,7 +412,7 @@ public partial class AssetStudioWindow
                     var at = box ? new Rect(bx2 + 114, cy + 24, 44, 20) : new Rect(bx2, cy + 3, 56, 20);
                     if (GUI.Button(at, box ? new GUIContent("+ ans", "An answer for the player to pick after this box.") : new GUIContent("+ reply", "A box said after this answer."), dialogueSmall)) { changed = l; action = 5; }
                 }
-                float b = bx2 + 160;
+                float b = bx2 + 250;
                 if (!l.Conversation)
                 {
                     GUI.enabled = EditorApplication.isPlaying && DungeonMaster.HasInstance;

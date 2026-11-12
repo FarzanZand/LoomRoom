@@ -481,9 +481,15 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             r.buyLabel.text = price < 0 ? "MAX" : locked ? meta.LessonSkillName + "\n" + "first" : $"Train {price}";
             // The lesson text is two short lines, sized to fit inside the tag (the small attribute tags most of all).
             if (r.buyLabelSize <= 0f) { r.buyLabelSize = r.buyLabel.fontSize; r.buyLabelSpacing = r.buyLabel.lineSpacing; }
-            r.buyLabel.enableAutoSizing = locked;
-            if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap; r.buyLabel.lineSpacing = -20f; }
-            else { r.buyLabel.fontSize = r.buyLabelSize; r.buyLabel.lineSpacing = r.buyLabelSpacing; }
+            // "Train 20" and longer prices shrink to fit the tag too (the attribute tags are small; review 2026-11-12).
+            r.buyLabel.enableAutoSizing = true;
+            // The label's rect runs to the tag's right edge and starts at its string hole: keep the text inside the border
+            // and clear of the hole.
+            float tagHeight = r.buyLabel.rectTransform.rect.height;
+            r.buyLabel.margin = new Vector4(tagHeight * .15f, 0f, tagHeight * .25f, 0f);
+            r.buyLabel.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
+            if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.lineSpacing = -20f; }
+            else { r.buyLabel.fontSizeMax = r.buyLabelSize; r.buyLabel.fontSizeMin = r.buyLabelSize * .5f; r.buyLabel.lineSpacing = r.buyLabelSpacing; }
             r.buyLabel.color = price < 0 || locked ? faint : meta.Spoils < price ? poor : pen;
         }
         if (r.buyIcon != null) r.buyIcon.enabled = price >= 0 && !locked;

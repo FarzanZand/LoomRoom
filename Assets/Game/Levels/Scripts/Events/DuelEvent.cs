@@ -15,6 +15,8 @@ public class DuelEvent : MonoBehaviour
     public Transform post;
     [Min(1f), Tooltip("Metres from the duellist at which he salutes and the duel is called.")]
     public float challengeDistance = 5f;
+    [Range(.1f, 2f), Tooltip("His damage in the duel, times what his own data and the floor give him (the user, 2026-11-12: 25% less). The same enemy elsewhere (the Realms' Undead Knight) keeps his own.")]
+    public float damageMultiplier = .75f;
     [Tooltip("His salute (a humanoid clip played over his animator), and how long he holds it before he fights.")]
     public AnimationClip salute;
     [Min(.2f)] public float saluteSeconds = 1.6f;
@@ -59,6 +61,7 @@ public class DuelEvent : MonoBehaviour
     {
         if (room == null || !room.Find()) return;
         if (duellist == null) { if (Time.time >= nextScan) { nextScan = Time.time + .5f; FindDuellist(); } return; }
+        Weaken();
         if (phase != Phase.Waiting) return;
         var player = ScriptedEventRoom.TablePlayer;
         if (player == null || !player.IsAlive || !duellist.IsAlive) return;
@@ -83,6 +86,15 @@ public class DuelEvent : MonoBehaviour
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) duellist.transform.rotation = Quaternion.LookRotation(f); }
         duellist.Damaged += OnHit;
         duellist.Died += OnDied;
+    }
+
+    // Damage Multiplier on his damage, once, once his stats are set up (after the floor's balance).
+    bool weakened;
+    void Weaken()
+    {
+        if (weakened || Mathf.Approximately(damageMultiplier, 1f) || !duellist.TryGetComponent<CharacterStats>(out var s) || !s.Initialised) return;
+        weakened = true;
+        s.AddModifier(new StatModifier(StatType.AttackDamage, damageMultiplier - 1f, ModifierType.PercentMultiply, this));
     }
 
     void OnDestroy()

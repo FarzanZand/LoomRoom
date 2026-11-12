@@ -381,6 +381,8 @@ public class DevConsole : MonoBehaviour
     // message otherwise.
     ItemData Find(IEnumerable<ItemData> items, System.Func<ItemData, string> nameOf, string name, string kind)
     {
+        // A name typed in quotes finds the same item ("The Party Crasher"; review 2026-11-12).
+        name = name.Replace("\"", "").Trim();
         var list = items.ToList();
         var found = list.Where(i => string.Equals(nameOf(i), name, System.StringComparison.OrdinalIgnoreCase)).ToList();
         if (found.Count == 0) found = list.Where(i => nameOf(i).StartsWith(name, System.StringComparison.OrdinalIgnoreCase)).ToList();
@@ -439,7 +441,7 @@ public class DevConsole : MonoBehaviour
     void AddItem(string args)
     {
         if (args.Length == 0) { Print("additem <name> [count] [rarity]: Tab completes the name."); return; }
-        var words = args.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries).ToList();
+        var words = args.Replace("\"", " ").Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries).ToList();
         int count = 1;
         ItemRarity? rarity = null;
         for (int n = 0; n < 2 && words.Count > 1; n++)

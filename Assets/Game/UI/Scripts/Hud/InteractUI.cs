@@ -46,8 +46,30 @@ public class InteractUI : MonoBehaviour
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, uiCamera, out var local);
             min = Vector2.Min(min, local); max = Vector2.Max(max, local);
         }
-        targetMarker.localPosition = (min + max) * .5f;
-        targetMarker.sizeDelta = Vector2.Max(max - min + Vector2.one * 16, Vector2.one * 32);
+        Vector2 centre = (min + max) * .5f;
+        Vector2 size = Vector2.Max(max - min + Vector2.one * 16, Vector2.one * 32);
+        if (!ClearOfPrompt(parent, ref centre, ref size)) { targetMarker.gameObject.SetActive(false); return; }
+        targetMarker.localPosition = centre;
+        targetMarker.sizeDelta = size;
+    }
+
+    // The frame never crosses the prompt line (its corners cut through "[E] Pick up ..." from 1.5-3 m, review 2026-11-12):
+    // where they overlap, the frame's edge on the prompt's side stops just short of the prompt's box. False when too
+    // little of the frame is left to read as one (the item lies behind the prompt; the prompt names it anyway).
+    readonly Vector3[] promptCorners = new Vector3[4];
+    const float PromptGap = 4f, LeastFrame = 24f;
+    bool ClearOfPrompt(RectTransform parent, ref Vector2 centre, ref Vector2 size)
+    {
+        if (promptRoot == null || !promptRoot.activeInHierarchy) return true;
+        ((RectTransform)promptRoot.transform).GetWorldCorners(promptCorners);
+        Vector2 pMin = parent.InverseTransformPoint(promptCorners[0]), pMax = parent.InverseTransformPoint(promptCorners[2]);
+        Vector2 lo = centre - size * .5f, hi = centre + size * .5f;
+        if (hi.x <= pMin.x || lo.x >= pMax.x || hi.y <= pMin.y - PromptGap || lo.y >= pMax.y + PromptGap) return true;
+        if (centre.y >= (pMin.y + pMax.y) * .5f) lo.y = pMax.y + PromptGap;   // the frame is above the prompt: lift its foot
+        else hi.y = pMin.y - PromptGap;                                       // below it: lower its top
+        if (hi.y - lo.y < LeastFrame) return false;
+        centre.y = (lo.y + hi.y) * .5f; size.y = hi.y - lo.y;
+        return true;
     }
 
     void OnEnable()
