@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e92c5d93d720bb4db75ea233631ccad, type: 3}
+  m_Name: Little Undead John
+  m_EditorClassIdentifier: Assembly-CSharp::BossDialogueData
+  bossName: Little Undead John
+  placement: 0
+  introLines:
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: I only let one person cross at a time. You're not that person.
+    voice: {fileID: 0}
+    choices: []
+  phaseTwoLine: 
+  backupCallLine: 
+  backupBrokenLine: 

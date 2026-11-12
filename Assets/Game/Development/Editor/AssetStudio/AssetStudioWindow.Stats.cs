@@ -25,6 +25,18 @@ public partial class AssetStudioWindow
         return inScene ? ProgressionManager.Instance : AssetDatabase.LoadAssetAtPath<GameObject>(ProgressionManagerPath)?.GetComponent<ProgressionManager>();
     }
 
+    // The Stats view's two panels, Stats (attributes, skills, classes, prices) and Substats (what rolled gear can get),
+    // swapped with the two buttons along its top (the user, 2026-11-12: one view, separate panels).
+    void DrawStatsPanels(Rect r)
+    {
+        const float bar = 34f, buttonW = 220f;
+        var strip = new Rect(r.x, r.y, r.width, bar);
+        if (GUI.Toggle(new Rect(strip.x, strip.y, buttonW, 28), showingStats, "  Stats   <color=#a9a49a>attributes, skills</color>", showingStats ? cellSelected : cell) && !showingStats) OpenStats();
+        if (GUI.Toggle(new Rect(strip.x + buttonW + 6, strip.y, buttonW, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
+        var panel = new Rect(r.x, r.y + bar, r.width, r.height - bar);
+        if (showingSubstats) DrawSubstats(panel); else DrawStats(panel);
+    }
+
     void DrawStats(Rect r)
     {
         GUI.Box(r, GUIContent.none);

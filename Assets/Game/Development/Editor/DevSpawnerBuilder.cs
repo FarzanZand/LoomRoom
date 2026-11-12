@@ -50,7 +50,7 @@ public static class DevSpawnerBuilder
 
         var title = Label("Title", window, "SPAWN", bold, 44, Gold, TextAlignmentOptions.TopLeft);
         Place(title.rectTransform, 34, 24, 220, 50);
-        var keys = Label("Keys", window, "Click picks.  Double-click or Enter uses it.  Right-click: its second button.  Arrows move.  Esc clears the search, then closes.",
+        var keys = Label("Keys", window, "Click picks (a cheat: click uses it).  Double-click or Enter uses it.  Right-click: its second button.  Arrows move.  Esc clears the search, then closes.",
             body, 20, Dim, TextAlignmentOptions.TopLeft);
         Place(keys.rectTransform, 210, 38, 1300, 28);
 
@@ -61,6 +61,7 @@ public static class DevSpawnerBuilder
         var lv = left.GetComponent<VerticalLayoutGroup>();
         lv.spacing = 8; lv.childControlWidth = lv.childControlHeight = true; lv.childForceExpandWidth = true; lv.childForceExpandHeight = false;
         var kinds = new[] { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats" }.Select(n => CountedButton(n, left, n, 56, 28)).ToArray();
+        kinds[5].transform.SetAsFirstSibling();   // Cheats at the top of the list (the window opens on it); the array keeps the kinds' order
         var gap = new GameObject("Gap", typeof(RectTransform), typeof(LayoutElement));
         gap.transform.SetParent(left, false);
         gap.GetComponent<LayoutElement>().preferredHeight = 14;

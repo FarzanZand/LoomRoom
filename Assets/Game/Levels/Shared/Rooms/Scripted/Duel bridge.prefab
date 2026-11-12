@@ -434,7 +434,7 @@ Transform:
   - {fileID: 8997002332794381708}
   - {fileID: 393161608580400982}
   - {fileID: 1109326730074532853}
-  - {fileID: 8586414450471325622}
+  - {fileID: 3153346357035975386}
   - {fileID: 7740499697478052254}
   - {fileID: 6953580915666212355}
   - {fileID: 6722218384378064846}
@@ -489,6 +489,7 @@ MonoBehaviour:
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -531,6 +532,8 @@ MonoBehaviour:
   healthMultiplier: 2
   elite: 1
   eliteTrait: 1
+  duellistName: Little Undead John
+  talk: {fileID: 11400000, guid: c532e6c07fcb0a144a5fe24cc0217e8b, type: 2}
   salute: {fileID: 7400000, guid: ee2f177b14888d74b9f2288838227abd, type: 2}
   saluteSeconds: 1.6
   rule: {fileID: 11400000, guid: 6c4a8fd58be8b2949a19997cc278363a, type: 2}
@@ -539,7 +542,7 @@ MonoBehaviour:
   morePerFloors: 3
   maxTier: 2
   rarity: 3
-  classUnlock: {fileID: 11400000, guid: f0b967a860a918b439a2ea04e4253b85, type: 2}
+  classUnlock: {fileID: 11400000, guid: 673bceaa562503a4d90c46eec6c6c3db, type: 2}
   challengeLine:
     text: He wants a duel. Face him.
     voice: {fileID: 0}
@@ -652,88 +655,6 @@ MonoBehaviour:
   fillLightIntensity: 22
   fillLightRange: 9
   fillLightEvery: 3
---- !u!1001 &3810586823101482561
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 1204588616622053271}
-    m_Modifications:
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: -0.00000004371139
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      propertyPath: m_Name
-      value: Undead Knight
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1922258715756418577}
-  m_SourcePrefab: {fileID: 100100000, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
---- !u!1 &5628351222008662858 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8861403029388774667, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-  m_PrefabInstance: {fileID: 3810586823101482561}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1922258715756418577
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5628351222008662858}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1350342c73f2d2e4ea88ac6d9d442efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EventActor
---- !u!4 &8586414450471325622 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4884434126622444023, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
-  m_PrefabInstance: {fileID: 3810586823101482561}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5262249668869413889
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -795,6 +716,68 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 1462924617496966095, guid: 02b8ded7480c3d84c9092174bb1da78d, type: 3}
   m_PrefabInstance: {fileID: 5262249668869413889}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5980657953608799062
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1204588616622053271}
+    m_Modifications:
+    - target: {fileID: 4616056146098705776, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_Name
+      value: Little Undead John
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.00000004371139
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+--- !u!4 &3153346357035975386 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8736278993580413324, guid: 94ef9a756c9fa6547a81d4e3d8e0e69d, type: 3}
+  m_PrefabInstance: {fileID: 5980657953608799062}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7369682753804492873
 PrefabInstance:

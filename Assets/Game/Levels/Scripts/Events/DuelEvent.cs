@@ -22,6 +22,10 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     [Tooltip("He is an elite of this kind in the duel (the user, 2026-11-12: Brutal, the red glow): its name, glow, size, steadiness and double experience. No extra floors of growth: his numbers are Damage and Health Multiplier's. Off: a plain duellist.")]
     public bool elite = true;
     public EliteTrait eliteTrait = EliteTrait.Brutal;
+    [Tooltip("His name in the duel (said as it is, with no \"the\" in front; the elite's word is left off it). Empty: his own (the Realms' Undead Knight keeps his).")]
+    public string duellistName = "Little Undead John";
+    [Tooltip("What he says in the dialogue box as the player walks up, before the salute (its intro lines; its placement). Empty: nothing.")]
+    public BossDialogueData talk;
     [Tooltip("His salute (a humanoid clip played over his animator), and how long he holds it before he fights.")]
     public AnimationClip salute;
     [Min(.2f)] public float saluteSeconds = 1.6f;
@@ -81,15 +85,21 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         return room.Inside(player.transform.position) && d.magnitude <= challengeDistance;
     }
 
-    // Co-op guests: the host's duel moved on (1: he salutes the player in slot value; 2: it was broken, value 1 = early).
-    public void Used(int what, Character who) { }
+    // Co-op guests: the host's duel moved on (1: he turns to the player in slot value; 2: it was broken, value 1 = early;
+    // 3: his say is over and he salutes). Host: the guest he stopped has finished his say in their box (Used 1).
+    public void Used(int what, Character who) { if (what == 1 && Coop.IsHost) talkDone = true; }
     public void Step(int step, int value, int seed)
     {
         if (duellist == null) FindDuellist();
         if (duellist == null) return;
         if (step == 1 && phase == Phase.Waiting) { var who = CoopWorld.CharacterOf(value); if (who != null) StartCoroutine(Salute(who)); }
-        else if (step == 2 && phase is not (Phase.Broken or Phase.Over)) StartCoroutine(Break(CoopWorld.CharacterOf(value >> 1), (value & 1) != 0));
+        else if (step == 2 && phase is not (Phase.Broken or Phase.Over)) { StartCoroutine(Break(CoopWorld.CharacterOf(value >> 1), (value & 1) != 0)); }
+        else if (step == 3) saluteGo = true;
     }
+    // Co-op: his say is played only in the box of the player he stopped (the others' game goes on); the host waits for
+    // it to be over before he salutes, and the other guests wait for the host's word.
+    bool talkDone, saluteGo;
+    bool HasTalk => talk != null && talk.introLines != null && talk.introLines.Count > 0 && PortraitDialogueUI.Current != null;
 
     // The enemy standing nearest his post in the room. He waits there, facing the way the post faces.
     void FindDuellist()
@@ -103,6 +113,7 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         }
         if (best == null || !best.TryGetComponent(out brain)) return;
         duellist = best;
+        if (!string.IsNullOrWhiteSpace(duellistName)) duellist.nameOverride = duellistName;
         brain.Entranced = true;
         if (brain.Perception != null) brain.Perception.NoCloseAwareness = true;
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) duellist.transform.rotation = Quaternion.LookRotation(f); }
@@ -123,11 +134,17 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
             s.AddModifier(new StatModifier(StatType.MaxHealth, healthMultiplier - 1f, ModifierType.PercentMultiply, this));
             s.SetHealthShare(1f);
         }
-        if (elite && !duellist.TryGetComponent<EliteEnemy>(out _)) EliteEnemy.Make(duellist, eliteTrait, 0f);
+        if (elite && !duellist.TryGetComponent<EliteEnemy>(out _))
+        {
+            EliteEnemy.Make(duellist, eliteTrait, 0f);
+            // His own name stays whole ("Little Undead John", not "Brutal Little Undead John").
+            if (!string.IsNullOrWhiteSpace(duellistName)) duellist.namePrefix = null;
+        }
     }
 
     void OnDestroy()
     {
+        EndTalk();
         if (duellist != null) { duellist.Damaged -= OnHit; duellist.Died -= OnDied; }
         StopSalute();
     }
@@ -136,12 +153,35 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     {
         phase = Phase.Saluting;
         CoopWorld.EventStep(this, 1, CoopWorld.SlotOf(player));
-        ScriptedEventRoom.Say(challengeLine);
-        // He turns to face the player, then raises his blade.
+        // He turns to face the player, then has his say in the box, then the Dungeon Master calls the duel and he
+        // raises his blade.
         var to = player.transform.position - duellist.transform.position; to.y = 0f;
         var face = to.sqrMagnitude > .01f ? Quaternion.LookRotation(to) : duellist.transform.rotation;
         for (float t = 0; t < .35f && duellist != null; t += Time.deltaTime) { duellist.transform.rotation = Quaternion.Slerp(duellist.transform.rotation, face, t / .35f); yield return null; }
         if (duellist == null || phase != Phase.Saluting) yield break;
+        bool mine = !Coop.Running || player == (Character)ScriptedEventRoom.TablePlayer;
+        if (HasTalk && mine && player is Player stopped)
+        {
+            if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
+            if (stopped.Look != null) StartCoroutine(CameraEase.LookAt(stopped.Look, duellist.transform.position + Vector3.up * 1.5f, .5f));
+            yield return PortraitDialogueUI.Current.Play(talk.introLines, duellist, !string.IsNullOrWhiteSpace(talk.bossName) ? talk.bossName : duellist.TheNameCap, null, talk.placement);
+            EndTalk();
+            if (Coop.IsGuest) CoopWorld.EventUsed(this, 1);
+            if (duellist == null || phase != Phase.Saluting) yield break;
+        }
+        else if (HasTalk && Coop.IsHost)
+        {
+            // A guest is reading his say: wait for them (or for them to fall or leave).
+            for (float t = 0; t < 120f && !talkDone && player != null && player.IsAlive && phase == Phase.Saluting; t += Time.deltaTime) yield return null;
+            if (duellist == null || phase != Phase.Saluting) yield break;
+        }
+        else if (HasTalk && Coop.IsGuest)
+        {
+            while (!saluteGo && phase == Phase.Saluting && duellist != null) yield return null;
+            if (duellist == null || phase != Phase.Saluting) yield break;
+        }
+        if (Coop.IsHost) CoopWorld.EventStep(this, 3);
+        ScriptedEventRoom.Say(challengeLine);
         if (salute != null && duellist.Animator != null)
         {
             var playable = AnimationPlayableUtilities.PlayClip(duellist.Animator, salute, out saluteGraph);
@@ -153,6 +193,16 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         phase = Phase.Duel;
         ScriptedEventRoom.Free(brain);
         brain.Provoke(player.transform.position);
+    }
+
+    // The talk's Dialogue state, popped once (also when the room goes mid-talk: a stopped coroutine runs no finally).
+    bool talkPushed;
+    void EndTalk()
+    {
+        if (!talkPushed) return;
+        talkPushed = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
     }
 
     void StopSalute() { if (saluteGraph.IsValid()) saluteGraph.Destroy(); }
@@ -177,6 +227,8 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     {
         phase = Phase.Broken;
         StopSalute();
+        // Co-op: a teammate's blow can break it while his say is still in someone's box.
+        EndTalk();
         CoopWorld.EventStep(this, 2, (Mathf.Max(0, CoopWorld.SlotOf(player)) << 1) | (early ? 1 : 0));
         if (brain != null && player != null) { ScriptedEventRoom.Free(brain); brain.Provoke(player.transform.position); }
         if (early) ScriptedEventRoom.Say(earlyLine);

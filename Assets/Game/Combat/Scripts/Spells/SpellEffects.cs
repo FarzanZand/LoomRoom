@@ -31,6 +31,11 @@ public static class SpellEffects
             // A co-op guest's flick only shows here: the host's copy of it flies the enemy and strikes it (CoopSpells).
             case SpellEffect.Flick: Flick.Cast(player, spell, Coop.IsGuest ? 0f : power, progress); break;
             case SpellEffect.HelpingHand: HelpingHand.Cast(player, spell, power, progress); break;
+            // A co-op guest: the host summons it (CoopSpells) and it comes from there, its rune circle with it.
+            case SpellEffect.Summon:
+                if (Coop.IsGuest) progress?.Practise(spell.Skill, SkillAction.Cast);
+                else SummonSpell.Cast(player, spell, progress);
+                break;
         }
     }
 
@@ -65,6 +70,7 @@ public static class SpellEffects
                 var heap = BoneHeap.Nearest(caster.transform.position, spell.raise.reach);
                 if (heap != null) RaiseTheFallen.Cast(caster, spell, heap, null);
                 break;
+            case SpellEffect.Summon: SummonSpell.Cast(caster, spell, null); break;
         }
     }
 

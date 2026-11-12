@@ -158,7 +158,7 @@ public class ScriptedEventRoom : MonoBehaviour
 
     // An enemy out of a puff of dust, facing the player and after them at once. prefab empty: one the room's pack would
     // have (the biome's mix for this floor), scaled for the floor like every other.
-    public Character Summon(GameObject prefab, Vector3 at, System.Random rng, bool alert = true)
+    public Character Summon(GameObject prefab, Vector3 at, System.Random rng, bool alert = true, EliteTrait? elite = null)
     {
         if (!Ready) return null;
         if (prefab == null) prefab = Dungeon.PickEnemy(Room, rng);
@@ -167,7 +167,7 @@ public class ScriptedEventRoom : MonoBehaviour
         var look = player != null ? player.transform.position - at : transform.position - at; look.y = 0f;
         if (Dungeon.SpawnPuffPrefab != null) PoolManager.SpawnOrInstantiate(Dungeon.SpawnPuffPrefab, at, Quaternion.identity, 3f);
         Play(Dungeon.SpawnAudio, at, .7f);
-        var enemy = Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward));
+        var enemy = Dungeon.SpawnAmbusher(prefab, at, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), elite);
         if (enemy != null && alert && enemy.TryGetComponent<EnemyBrain>(out var brain)) StartCoroutine(AlertSoon(brain));
         return enemy;
     }

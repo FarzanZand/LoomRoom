@@ -20,7 +20,7 @@ public partial class AssetStudioWindow
     static readonly string[] CharacterGlance = { "characterName", "description", "stats", "experience", "attacks", "archer", "caster", "spells", "closesIn" };
     static readonly string[] SpellGlance = { "displayName", "manaCost", "power", "castSeconds", "recoverySeconds", "speed", "lifetime", "homing", "groundArea", "areaRadius", "areaDelay", "description" };
     static readonly string[] SoundGlance = { "clips", "volume", "pitch", "pitchVariance" };
-    static readonly string[] RoomGlance = { "description", "kind", "heightTiles", "roomEvent", "openCeiling", "skylightRadius", "style", "enterLines", "enterChance" };
+    static readonly string[] RoomGlance = { "description", "kind", "heightTiles", "roomEvent", "openCeiling", "skylightRadius", "style", "enterLines", "enterChance", "onlyWhileLocked" };
     static readonly string[] DishGlance = { "displayName", "icon", "price", "effectText", "flavour", "attributes", "modifiers" };
     static readonly string[] StyleGlance = { "floor", "bottomWall", "upperWall", "ceiling", "trim", "hideTrims", "wallBaseWeight", "wallVariants", "floorBaseWeight", "floorVariants" };
 
@@ -60,6 +60,9 @@ public partial class AssetStudioWindow
                     break;
                 case GameObject go when go.GetComponent<Character>() != null || go.GetComponentInChildren<Player>(true) != null:
                     Glance(CharacterDataOf(go), CharacterGlance);
+                    break;
+                case GameObject go when go.GetComponent<ScriptedEventRoom>() != null && go.GetComponent<DungeonRoomTemplate>() != null:
+                    EventPage(go);
                     break;
                 case GameObject go when go.GetComponent<DungeonRoomTemplate>() != null:
                     Glance(go.GetComponent<DungeonRoomTemplate>(), RoomGlance);

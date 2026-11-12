@@ -9,7 +9,7 @@ using UnityEngine;
 // - Levels/Shared/Rooms/Scripted/Skeleton Party room: the Moonlit fountain room (open skylight) without its fountain, four
 //   skeleton dancers in a square round a chest in the middle (Enemy sockets, Crypt Soldier; Socket Enemies Only, so the
 //   floor adds none), RoomMusic and SkeletonParty on the root.
-// - Levels/Shared/Rooms/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
+// - Levels/Shared/Rooms/Scripted/Portal hall: the Gate hall with its first arch swapped for a Portal arch to the party room.
 // - Cellars and Crypt: the Portal hall joins the room pools (at most once a floor); the party room itself is only
 //   behind the portal, never in the pools.
 // Edit the prefabs freely afterwards (the dance clip and the party's track go on the room's root).
@@ -17,7 +17,7 @@ public static class SkeletonPartySetup
 {
     const string Chunks = "Assets/Game/Levels/Shared/Rooms/";
     const string Party = Chunks + "Scripted/Skeleton Party room.prefab";   // a scripted room: Rooms/Scripted
-    const string Portal = Chunks + "Portal hall.prefab";
+    const string Portal = Chunks + "Scripted/Portal hall.prefab";   // a scripted room too (its portal leads to the party)
     const string PocketFolder = "Assets/Game/Levels/Pockets";
     const string Pocket = PocketFolder + "/Pocket.asset";
     const string PortalFolder = "Assets/Game/Levels/Shared/Portal";

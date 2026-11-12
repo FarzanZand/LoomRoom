@@ -51,6 +51,7 @@ public static class AssetStudioCatalog
         Cat("Players & NPCs", "The two players and the people of the world.");
         Cat("Spells", "Spell definitions (SpellDefinition) and what they launch.");
         Cat("Rooms", "Room templates: hand-built chunks, starting rooms, arenas and pockets.");
+        Cat("Events", "Hand-built rooms with an event of their own (ScriptedEventRoom): what happens, who is in it, what they say, where it comes up. Play each from its page.");
         Cat("Styles", "Room styles: the floor, wall, trim and ceiling materials a room is built in, shown as a corner of a room.");
         // Levels, biomes, maps and the defaults are browsed in World; their entries stay for its details and ID search.
         Cat("Levels & biomes", "Table levels, their biomes, boss fights, map templates and the defaults every level shares.", hidden: true);
@@ -136,6 +137,10 @@ public static class AssetStudioCatalog
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (go == null) return null;
             if (go.GetComponent<DungeonMapTemplate>() != null) return Add(C("Levels & biomes"), guid, path, "Map template", Folder(path));
+            // An event room is listed under Events, by what happens in it (the user, 2026-11-12: apart from the rooms).
+            if (go.TryGetComponent<ScriptedEventRoom>(out var ev) && go.GetComponent<DungeonRoomTemplate>() != null)
+                return Add(C("Events"), guid, path, "Event" + (string.IsNullOrWhiteSpace(ev.eventName) ? "" : " · " + ev.eventName.Trim()),
+                    (string.IsNullOrWhiteSpace(ev.summary) ? "" : ev.summary.Trim() + " · ") + Folder(path));
             // A room's own description first (DungeonRoomTemplate.description), then its folder.
             if (go.TryGetComponent<DungeonRoomTemplate>(out var room)) return Add(C("Rooms"), guid, path, "Room template", string.IsNullOrWhiteSpace(room.description) ? Folder(path) : room.description.Trim() + " · " + Folder(path));
             var character = go.GetComponent<Character>();

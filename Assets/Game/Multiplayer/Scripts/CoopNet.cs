@@ -131,7 +131,8 @@ public enum CoopEventKind : byte
     BossIntroDone = 31, // a guest's boss intro (its lines and versus screen) is over: the host's fight waits for everyone's
     BossFightBegun = 32, // host: the stage fight's battle begins (every intro still showing is put away)
     DevSpawn = 33,      // a guest's spawn window: the host makes the enemy (amount = MultiplayerManager.enemyPrefabs index, item = its name)
-    BossBeaten = 34,    // host, only to a player catching up: the stage's boss is dead (position = where it fell; its chest and the way on)
+    BossBeaten = 34,
+    ArenaTalk = 35,     // the Arena fighter's say: host, amount 0, it is said to the player in slot id; a guest, amount 1, theirs is over    // host, only to a player catching up: the stage's boss is dead (position = where it fell; its chest and the way on)
 }
 
 // The owner's arm animation for a teammate's one body (CoopPlayer.SendArms, CoopAvatar.ApplyArms): each layer's state,
@@ -215,6 +216,8 @@ public struct EnemySpawn : INetworkSerializable
     public sbyte elite;              // the host's elite's EliteTrait, -1 a plain one
     public float eliteFloors;
     public bool minion;              // a boss's minion: killing it gives no experience (EnemyBrain.NoExperience)
+    public FixedString64Bytes summonKind; // a summon's spell (Summon.Kind: Raise the Fallen, Summon John): its settings, name and arrival here
+    public float scale;              // its size as the host made it (Summon John's is 0.8 of the prefab's)
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
@@ -222,6 +225,7 @@ public struct EnemySpawn : INetworkSerializable
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
         s.SerializeValue(ref health); s.SerializeValue(ref maxHealth); s.SerializeValue(ref side);
         s.SerializeValue(ref elite); s.SerializeValue(ref eliteFloors); s.SerializeValue(ref minion);
+        s.SerializeValue(ref summonKind); s.SerializeValue(ref scale);
     }
 }
 
@@ -240,11 +244,15 @@ public struct RunStart : INetworkSerializable
     // Which run this is (the host picks one as it starts): a guest who left it and sits down again in the same run gets
     // their adventurer back as they left it (MultiplayerManager.KeepRun).
     public int runId;
+    // The host's flags that decide what a floor deals, as "key=value;" pairs: its classes unlocked (class.*: a room dealt
+    // only while a class is locked, DungeonRoomTemplate.onlyWhileLocked) and the events this run has had (run.event.*,
+    // DungeonGenerator.SeenEarlier). Every machine reads them instead of its own save (MultiplayerManager.HostFlag).
+    public FixedString4096Bytes hostFlags;
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
         s.SerializeValue(ref level); s.SerializeValue(ref seed); s.SerializeValue(ref floor);
         s.SerializeValue(ref generationLevel); s.SerializeValue(ref partySize); s.SerializeValue(ref descend);
-        s.SerializeValue(ref partyCleared); s.SerializeValue(ref runId);
+        s.SerializeValue(ref partyCleared); s.SerializeValue(ref runId); s.SerializeValue(ref hostFlags);
     }
 }

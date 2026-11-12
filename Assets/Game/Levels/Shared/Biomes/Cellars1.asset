@@ -190,7 +190,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 2
+    weight: 0.3
     rooms: 10
     fromFloor: 1
     maxPerFloor: 2
@@ -259,11 +259,6 @@ MonoBehaviour:
     rooms: 6
     fromFloor: 1
     maxPerFloor: 2
-  - template: {fileID: 7553172351964380955, guid: fcbc162bfbf65db469e063d14079ed8b, type: 3}
-    weight: 2
-    rooms: 30
-    fromFloor: 1
-    maxPerFloor: 1
   - template: {fileID: 6686315703612218489, guid: 758a66b51add85c4ea93b7fdca3f3f41, type: 3}
     weight: 0.3
     rooms: 2
@@ -287,6 +282,11 @@ MonoBehaviour:
   - template: {fileID: 7099053262673744381, guid: e320d67a5f4f95741bb43d7aaf1b1316, type: 3}
     weight: 0.3
     rooms: 10
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 7077432717387060681, guid: 313f093accd2c7643ba814393a337706, type: 3}
+    weight: 0.3
+    rooms: 2
     fromFloor: 1
     maxPerFloor: 1
   templateChance: 1

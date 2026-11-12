@@ -306,6 +306,53 @@ public static class NewSpellsSetup
         Debug.Log($"[NewSpellsSetup] Dice Portal made; catalog {ItemDatabaseAuthoring.SyncCatalog()} items.");
     }
 
+    // Summon John (the user, 2026-11-12): a rune circle in front of the caster and a skeleton named John, in the Green
+    // Hood Skeleton's body, gets up out of it and fights for them for half a minute; one at a time, no bones needed. The
+    // Necromancer starts with it in place of Raise Skeletons. Its effects are copies of Raise the Fallen's, and so is its
+    // tome's icon for now. NewSpellsSetup.BuildSummonJohn() from an eval; safe to run again, retune sets its numbers again.
+    public static void BuildSummonJohn(bool retune = false)
+    {
+        const string name = "Summon John";
+        var raise = Load<SpellDefinition>(Spells + "Raise the Fallen/Raise the Fallen.asset");
+        var john = Load<GameObject>("Assets/Game/Characters/Enemies/Sidekick/Green Hood Skeleton.prefab");
+        if (raise == null || john == null) { Debug.LogError("[NewSpellsSetup] Raise the Fallen or the Green Hood Skeleton is missing."); return; }
+        Folder(Spells + name);
+        foreach (var part in new[] { "Hand", "Circle", "Flash", "Aura" }) Copy($"Raise the Fallen/Raise the Fallen {part}.prefab", $"{name}/{name} {part}.prefab");
+        string iconPath = $"{Spells}{name}/{name} Tome icon.png";
+        if (AssetDatabase.LoadMainAssetAtPath(iconPath) == null) AssetDatabase.CopyAsset(Spells + "Raise the Fallen/Raise the Fallen Tome icon.png", iconPath);
+        var spell = Spell(name, raise, retune, s =>
+        {
+            s.spell = LeftHandSpell.SummonJohn; s.effect = SpellEffect.Summon;
+            s.description = "Call up John, a skeleton who fights for you for half a minute. One John at a time.";
+            s.manaCost = 30; s.power = 0; s.castSeconds = 1f; s.recoverySeconds = .4f; s.castMoveSpeed = .6f;
+            s.icon = raise.icon;
+            var c = s.summon;
+            c.prefab = john; c.summonName = "John"; c.size = .8f; c.distance = 2.2f; c.gatherSeconds = .9f; c.riseSeconds = 1.4f;
+            c.circle = Visual($"{name}/{name} Circle.prefab"); c.flash = Visual($"{name}/{name} Flash.prefab");
+            c.gatherSound = raise.raise.gatherSound; c.gatherVolume = raise.raise.gatherVolume;
+            var m = c.summon;
+            m.lifetime = 30f; m.maxAtOnce = 1; m.end = SummonEnd.Collapse; m.followDistance = 3f; m.leash = 18f; m.creditSummoner = true; m.noLoot = true;
+            m.aura = Visual($"{name}/{name} Aura.prefab"); m.endEffect = null;
+            s.chargeSound = raise.chargeSound; s.chargeVolume = raise.chargeVolume;
+            s.releaseSound = raise.releaseSound; s.releaseVolume = raise.releaseVolume; s.impactSound = null;
+        });
+        spell.heldVisual = Visual($"{name}/{name} Hand.prefab");
+        EditorUtility.SetDirty(spell);
+        Tome(spell, name);
+        var tome = Load<ItemData>($"{Spells}{name}/{name} Tome.asset");
+        // The Necromancer starts with it on the hotbar and readied in the left hand.
+        var necromancer = Load<AdventurerClass>("Assets/Game/Characters/Classes/Necromancer.asset");
+        if (necromancer != null && tome != null)
+        {
+            necromancer.spells = new[] { tome };
+            necromancer.leftHand = LeftHandSpell.SummonJohn;
+            necromancer.description = "Sword and a Summon John Tome. A skeleton named John fights for him.";
+            EditorUtility.SetDirty(necromancer);
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[NewSpellsSetup] Summon John made; catalog {ItemDatabaseAuthoring.SyncCatalog()} items.");
+    }
+
     // The name the player sees where it differs from the folder's (the user renamed Raise the Fallen, 2026-10-31).
     static string Shown(string name) => name == "Raise the Fallen" ? "Raise Skeletons" : name;
 

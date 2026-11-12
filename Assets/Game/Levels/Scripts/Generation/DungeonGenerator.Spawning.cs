@@ -61,6 +61,11 @@ public partial class DungeonGenerator
         // template counts as used too. maxPerFloor can only lower that (0 or 1 both mean once).
         for (int i = 0; i < roles.Length && i < chosen.Length; i++)
             if (chosen[i] != null && chosen[i].roomTemplate != null) used[chosen[i].roomTemplate] = 1;
+        // An event played on an earlier floor of the run is not dealt again, until every event this floor could deal has
+        // been played: then the list starts over (the user, 2026-11-12).
+        eventsRefreshed = !System.Linq.Enumerable.Any(choices, c => c != null && c.template != null && IsEvent(c.template)
+            && floorInBiome >= c.fromFloor && Allowed(c.template) && !SeenEarlier(c.template));
+        bool Fresh(GameObject t) => eventsRefreshed || !IsEvent(t) || !SeenEarlier(t);
         // Scripted event rooms (ScriptedEventRoom: the duel, the bell...): the level's Event Rooms Per Floor, at most its
         // most here, and topped up to its fewest below.
         int events = 0, mostEvents = Mathf.Max(0, data.eventRoomsPerFloor.y);
@@ -77,7 +82,7 @@ public partial class DungeonGenerator
             var role = Mask(roles[i]);
             bool eventsLeft = events < mostEvents;
             var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
-                && !used.ContainsKey(c.template) && (eventsLeft || !IsEvent(c.template))
+                && !used.ContainsKey(c.template) && (eventsLeft || !IsEvent(c.template)) && Fresh(c.template)
                 ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;
@@ -104,13 +109,55 @@ public partial class DungeonGenerator
                 if (events >= fewest) break;
                 var role = Mask(roles[i]);
                 var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor
-                    && Allowed(c.template) && !used.ContainsKey(c.template) ? Mathf.Max(0f, c.weight) : 0, top);
+                    && Allowed(c.template) && Fresh(c.template) && !used.ContainsKey(c.template) ? Mathf.Max(0f, c.weight) : 0, top);
                 if (pick == null) continue;
                 if (pool[i] != null) used.Remove(pool[i]);
                 pool[i] = pick.template; used[pick.template] = 1; events++;
             }
         }
         return pool;
+    }
+
+    // ── Events once a run ──
+    // Each event room played in a run is kept as a run flag (run.event.<room>, the floor it first came on), so the save
+    // and a continued run carry it and a new run forgets it (ForgetEventsSeen). A floor leaves out the events of earlier
+    // floors; a floor built again (a checkpoint's) still has its own, since only earlier floors count.
+    public const string SeenPrefix = "run.event.";
+    bool eventsRefreshed;
+    static ProgressionManager Progress => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+    bool SeenEarlier(GameObject t)
+    {
+        if (t == null || !Application.isPlaying || Progress == null) return false;
+        // Co-op: the host's run decides (its flags come with every run start), so every machine deals the same events.
+        int at = Coop.Running && MultiplayerManager.HasInstance ? MultiplayerManager.Instance.HostFlag(SeenPrefix + t.name) : Progress.GetFlag(SeenPrefix + t.name);
+        return at > 0 && at < FloorNumber;
+    }
+
+    // At the end of a built floor (in a run): its event rooms noted with this floor; when this floor started the list
+    // over, the earlier floors' notes go first.
+    public void RecordEventsSeen()
+    {
+        if (!Application.isPlaying || Authored || Progress == null || templates == null) return;
+        if (eventsRefreshed)
+            foreach (var key in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(Progress.AllFlags.Keys, k => k.StartsWith(SeenPrefix))))
+                if (Progress.GetFlag(key) < FloorNumber) Progress.SetFlag(key, 0);
+        for (int i = 0; i < templates.Length; i++)
+        {
+            var t = TemplatePrefab(i);
+            if (t == null || !IsEvent(t)) continue;
+            int at = Progress.GetFlag(SeenPrefix + t.name);
+            if (at == 0 || at > FloorNumber) Progress.SetFlag(SeenPrefix + t.name, FloorNumber);
+        }
+    }
+
+    // A new run: the last run's events forgotten. The new run's first floor is already built by then (TableLevelLoader
+    // begins the run after it), so its own events are noted again.
+    public static void ForgetEventsSeen(DungeonGenerator firstFloor)
+    {
+        var pm = Progress;
+        if (pm == null) return;
+        foreach (var key in System.Linq.Enumerable.ToList(System.Linq.Enumerable.Where(pm.AllFlags.Keys, k => k.StartsWith(SeenPrefix)))) pm.SetFlag(key, 0);
+        if (firstFloor != null) { firstFloor.eventsRefreshed = false; firstFloor.RecordEventsSeen(); }
     }
 
     // A scripted event room dealt from a pool (ScriptedEventRoom: the duel, the bell, the wager, the giant, the dice, and
@@ -153,6 +200,12 @@ public partial class DungeonGenerator
         {
             var tpl = t.GetComponent<DungeonRoomTemplate>();
             if (tpl == null || !features.AllowsAll(tpl.Requires()) || tpl.Gone) return false;
+            // A room built round pits (the duel's and the troll's bridges) needs its ways in where its doors are marked:
+            // the room here was laid out already, and a way in from the side drops the pit on that side (BuildCuts), leaving
+            // the bridge on plain floor (the user, 2026-11-12). So its pits are laid where the room would put them (its
+            // centre and turn, as PlaceTemplate does) and it is taken only if they all stay: wholly in the room, no way in
+            // opening into them, the ways in still joined.
+            if (!PitsHold(t, room)) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
@@ -180,13 +233,33 @@ public partial class DungeonGenerator
                 if (events >= fewest) break;
                 var role = Mask(Roles[i]);
                 var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && IsEvent(c.template) && (pass == 2 || (c.rooms & role) != 0) && floorInBiome >= c.fromFloor
-                    && !used.Contains(c.template) && Fits(c.template, i) ? Mathf.Max(0f, c.weight) : 0, rng);
+                    && !used.Contains(c.template) && (eventsRefreshed || !SeenEarlier(c.template)) && Fits(c.template, i) ? Mathf.Max(0f, c.weight) : 0, rng);
                 if (pick == null) continue;
                 if (pooledTemplates[i] != null) used.Remove(pooledTemplates[i]);
                 pooledTemplates[i] = pick.template; used.Add(pick.template); events++;
             }
         }
     }
+    // Whether a template's pits would all be built in room `room` (BuildCuts leaves out one that falls outside the room or
+    // cuts its ways in apart): laid at the room's centre and turn, as PlaceTemplate places the template.
+    bool PitsHold(GameObject template, int room)
+    {
+        var hole = new System.Collections.Generic.HashSet<Vector2Int>();
+        var at = Cell(Layout.RoomCenter(room));
+        var turn = Quaternion.Euler(0f, 90f * Layout.RoomRotation(room), 0f);
+        foreach (var cut in template.GetComponentsInChildren<DungeonFloorCut>(true))
+        {
+            if (cut.kind != DungeonFloorCut.Kind.Pit) continue;
+            foreach (var p in cut.CellCentres(data.cellSize))
+            {
+                var c = CellOf(at + turn * template.transform.InverseTransformPoint(p));
+                if (!Layout.InRoom(room, c)) return false;
+                hole.Add(c);
+            }
+        }
+        return hole.Count == 0 || KeepsWaysJoined(room, hole);
+    }
+
     DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
 
     void ChooseTemplates()
@@ -863,9 +936,10 @@ public partial class DungeonGenerator
     // Floor scaling for every enemy the generator places. With a loot stream, also the room's rewards
     // (or the floor's loot) and a seed on its loot drop.
     // A creature that comes out of something mid-floor (a crate's rat): floor scaling, loot and the NavMesh, like any
-    // generated enemy. Uses its own random so the level's draw order never shifts.
+    // generated enemy. Uses its own random so the level's draw order never shifts. With an elite trait it always comes
+    // out as that elite (an event's set piece: the bell's third wave), on any floor, the first included.
     int ambushersSpawned;
-    public Character SpawnAmbusher(GameObject prefab,Vector3 pos,Quaternion rotation)
+    public Character SpawnAmbusher(GameObject prefab,Vector3 pos,Quaternion rotation,EliteTrait? elite=null)
     {
         if(!NavMesh.SamplePosition(pos,out var hit,2f,NavMesh.AllAreas))return null;
         var go=Instantiate(prefab,hit.position,rotation,transform);
@@ -874,7 +948,7 @@ public partial class DungeonGenerator
         if(agent!=null && agent.enabled && !agent.isOnNavMesh)agent.Warp(hit.position);
         // Each one rolls its own loot: from the floor's seed, its place and how many came before (the old float-to-int
         // hash overflowed at the table's position, so every ambusher rolled the same).
-        return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(pos)^seed0*31^++ambushersSpawned*486187739))));
+        return SetUpEnemy(go,new System.Random(Scramble(unchecked(PlacedSeed(pos)^seed0*31^++ambushersSpawned*486187739))),elite:elite);
     }
 
     // A hand-placed enemy (TakePlacedEnemies) on the floor where its author put it, switched on. Its loot seed comes from
@@ -892,12 +966,17 @@ public partial class DungeonGenerator
 
     // Elites are rolled on their own stream, so turning them on or off moves no other roll on the floor.
     System.Random eliteRandom;
-    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false,bool mayBeElite=true)
+    Character SetUpEnemy(GameObject enemy,System.Random lootRandom,LootSource rewards=null,bool boss=false,bool mayBeElite=true,EliteTrait? elite=null)
     {
         var character=enemy.GetComponent<Character>();
-        // Now and then an elite (DungeonBiome.eliteChance): never the boss, an event's own actor or a named one.
+        // Now and then an elite (DungeonBiome.eliteChance): never the boss, an event's own actor or a named one, and never
+        // on a run's first floor (the user, 2026-11-12). One asked for (elite) is always made, with the biome's growth
+        // (3 floors with no biome), and draws nothing from the elite stream.
         float eliteFloors=0f;
-        if(mayBeElite && !boss && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
+        var trait=elite;
+        if(trait.HasValue && character!=null)
+            eliteFloors=Biome!=null ? Mathf.Max(0f,Biome.eliteFloors) : 3f;
+        else if(mayBeElite && !boss && FloorNumber>1 && character!=null && Biome!=null && Biome.eliteChance>0f && eliteRandom!=null && character.data is EnemyData { properName: false }
            && enemy.GetComponent<EventActor>()==null && eliteRandom.NextDouble()<Biome.eliteChance)
             eliteFloors=Mathf.Max(0f,Biome.eliteFloors);
         if(character!=null && data.balance!=null)data.balance.Apply(character,FloorNumber,boss,data.ExtraFloors(FloorNumber)+eliteFloors,data.StageDamage(FloorNumber));
@@ -906,7 +985,9 @@ public partial class DungeonGenerator
             character.Stats.AddModifier(new StatModifier(StatType.MaxHealth,(Coop.PartySize-1)*MultiplayerManager.Instance.enemyHealthPerPlayer,ModifierType.PercentAdd,Coop.PartySource));
         // A boss can't be knocked around (or into a pit): it reels harder instead (EnemyMotor.Steadfast). Elites too (EliteEnemy.Make).
         if(boss && enemy.TryGetComponent<EnemyMotor>(out var bossMotor))bossMotor.Steadfast=true;
-        if(eliteFloors>0f)
+        if(trait.HasValue && character!=null)
+            EliteEnemy.Make(character,trait.Value,eliteFloors);
+        else if(eliteFloors>0f)
             EliteEnemy.Make(character,(EliteTrait)eliteRandom.Next(3),eliteFloors);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
         // Its loot rolls at the depth it grew to: an elite drops as if the floor were deeper.

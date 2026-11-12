@@ -18,6 +18,8 @@ public class GoreManager : Singleton<GoreManager>
     [Tooltip("Big blobs that burst from the cut for a few frames, per hit.")]
     [SerializeField, Min(0)] int splashBlobs = 7;
     [SerializeField] Vector2 splashSize = new(.12f, .28f);
+    [Range(.1f, 1f), Tooltip("Every splash blob's size against Splash Size (the user, 2026-11-12: halved, they read as big squares on every hit).")]
+    [SerializeField] float splashScale = .5f;
     [SerializeField, Min(0)] float sprayLifetime = 2.5f;
     [Tooltip("Light hits spray less, criticals and heavy hits more.")]
     [SerializeField, Min(1)] float strongHitMultiplier = 1.6f;
@@ -85,7 +87,18 @@ public class GoreManager : Singleton<GoreManager>
         return col != null ? col.bounds.center : c.transform.position + Vector3.up;
     }
 
-    void Spray(GoreProfile gore, Vector3 at, Vector3 dir, int count, float speed)
+    // A spray of the creature's blood from a point (a cut-off limb's stump, LimbLoss), drops times the profile's amount.
+    // size: the drops' size against the spray's own; blobs: the splash blobs' size (not grown with the speed, as a hit's
+    // are: at a stump's hard spurt they came out a quarter of a metre across).
+    public void SprayAt(GoreProfile gore, Vector3 at, Vector3 dir, int drops, float speed = 1f, float size = 1f, float blobs = 1f)
+    {
+        if (gore == null || gore.kind == BloodKind.None) return;
+        Spray(gore, at, dir.sqrMagnitude > .001f ? dir.normalized : Vector3.up, Mathf.RoundToInt(drops * gore.amount), speed, size, blobs);
+    }
+
+    readonly Dictionary<ParticleSystem, Vector2> sizeRanges = new();
+
+    void Spray(GoreProfile gore, Vector3 at, Vector3 dir, int count, float speed, float size = 1f, float blobScale = -1f)
     {
         var prefab = gore.kind == BloodKind.BoneDust ? dustPrefab : sprayPrefab;
         if (prefab == null || count <= 0) return;
@@ -96,15 +109,19 @@ public class GoreManager : Singleton<GoreManager>
         // Scale the prefab's own speed range (setting the multiplier would replace it).
         if (!speedRanges.TryGetValue(prefab, out var range)) { var m0 = prefab.main.startSpeed; speedRanges[prefab] = range = new Vector2(m0.constantMin, m0.constantMax); }
         main.startSpeed = new ParticleSystem.MinMaxCurve(range.x * speed, range.y * speed);
+        // The drops' size, set each time (the pooled spray keeps what the last one set).
+        if (!sizeRanges.TryGetValue(prefab, out var sizes)) { var s0 = prefab.main.startSize; sizeRanges[prefab] = sizes = new Vector2(s0.constantMin, s0.constantMax); }
+        main.startSize = new ParticleSystem.MinMaxCurve(sizes.x * size, sizes.y * size);
         if (go.TryGetComponent<GoreDroplets>(out var drops)) drops.Color = gore.Stains ? gore.color : Color.clear;
         ps.Emit(count);
         // The splash: a few big blobs that pop out of the cut and are gone in a few frames.
         if (gore.kind == BloodKind.BoneDust) return;
         var blob = new ParticleSystem.EmitParams { applyShapeToPosition = true };
-        int blobs = Mathf.RoundToInt(splashBlobs * gore.amount * speed);
+        float grow = blobScale >= 0f ? blobScale : speed;
+        int blobs = Mathf.RoundToInt(splashBlobs * gore.amount * (blobScale >= 0f ? 1f : speed));
         for (int i = 0; i < blobs; i++)
         {
-            blob.startSize = Random.Range(splashSize.x, splashSize.y) * speed;
+            blob.startSize = Random.Range(splashSize.x, splashSize.y) * grow * splashScale;
             blob.startLifetime = Random.Range(.08f, .2f);
             blob.velocity = (dir + Random.insideUnitSphere * .9f) * Random.Range(.6f, 2f);
             blob.startColor = Color.Lerp(gore.color, gore.color * 1.25f, Random.value);

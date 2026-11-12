@@ -12,11 +12,14 @@ public class ArenaFight : MonoBehaviour
     public DungeonMaster.Line wonLine = new() { text = "That's the fight. Take your bow.", inPerson = true };
     [Min(0), Tooltip("Seconds between the last enemy falling and the run ending (the body falls, the line is read).")]
     public float delay = 3.5f;
-    [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Arcanist.")]
+    [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Necromancer.")]
     public AdventurerClass unlocks;
     [Min(1f), Tooltip("Every fighter in the room has this many times its health here, full when it is found (the user, 2026-11-11: the duel's Undead Knight at triple health).")]
     public float healthMultiplier = 3f;
     readonly HashSet<EnemyBrain> strengthened = new();
+    [Tooltip("What its fighter says as the player first walks into the room (Dialogue/Conversations: its intro lines, in the dialogue box at its placement; the Dungeon Master's lines among them go to his feed). The fighters stand still while it is said, then come for the player. Empty: nothing.")]
+    public BossDialogueData talk;
+    bool talked, talkPushed;
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -58,9 +61,79 @@ public class ArenaFight : MonoBehaviour
         {
             Gather(false);
             Strengthen();
+            // Co-op: the host's word decides who hears it (the first of the party in), the guests follow (CoopTalk).
+            if (!talked && talk != null && !Coop.IsGuest)
+            {
+                var hearer = Coop.Running ? PartyMemberInRoom() : PlayerInRoom() ? TablePlayer : null;
+                if (hearer != null) { talked = true; StartCoroutine(Talk(hearer)); }
+            }
             if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
             yield return wait;
         }
+    }
+
+    static Player TablePlayer => PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+    bool PlayerInRoom() { var p = TablePlayer; return p != null && p.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(p.transform.position)) == room; }
+    Character PartyMemberInRoom()
+    {
+        foreach (var c in CoopWorld.Party()) if (c != null && c.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == room) return c;
+        return null;
+    }
+
+    // The fighter's say as the player walks in: the fighters held still (entranced) under it, then let go at the player.
+    // Co-op: said only in the box of the player who walked in first; the host holds its fighters until that player is
+    // done (a guest tells it, CoopTalk) and then lets them go.
+    bool hearerDone;
+    IEnumerator Talk(Character hearer)
+    {
+        var box = PortraitDialogueUI.Current;
+        EnemyBrain speaker = fighters.Find(b => b != null && !Down(b));
+        if (box == null || hearer == null || speaker == null || talk.introLines == null || talk.introLines.Count == 0) yield break;
+        CoopWorld.ArenaTalk(0, CoopWorld.SlotOf(hearer));
+        foreach (var b in fighters) if (b != null && !Down(b)) b.Entranced = true;
+        if (hearer == (Character)TablePlayer && hearer is Player player)
+        {
+            if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
+            if (player.Look != null) StartCoroutine(CameraEase.LookAt(player.Look, speaker.transform.position + Vector3.up * 1.6f, .5f));
+            var who = speaker.GetComponent<Character>();
+            yield return box.Play(talk.introLines, who, !string.IsNullOrWhiteSpace(talk.bossName) ? talk.bossName : who.TheNameCap, null, talk.placement);
+            EndTalk();
+            if (Coop.IsGuest) { CoopWorld.ArenaTalk(1, Coop.LocalSlot); yield break; }
+        }
+        else if (Coop.IsHost)
+            for (float t = 0; t < 120f && !hearerDone && hearer != null && hearer.IsAlive; t += Time.deltaTime) yield return null;
+        else yield break;
+        foreach (var b in fighters)
+            if (b != null && !Down(b)) { ScriptedEventRoom.Free(b); if (hearer != null) b.Provoke(hearer.transform.position); }
+    }
+
+    // Co-op: 0, the host says the player in slot is to hear the say; 1, a guest's say is over (on the host).
+    public void CoopTalk(int what, int slot)
+    {
+        if (what == 0 && Coop.IsGuest && !talked)
+        {
+            talked = true;
+            var hearer = CoopWorld.CharacterOf(slot);
+            if (hearer != null && dungeon != null) StartCoroutine(Talk(hearer));
+        }
+        else if (what == 1 && Coop.IsHost) hearerDone = true;
+    }
+
+    // The talk's Dialogue state, popped once (also when the room goes mid-talk: a stopped coroutine runs no finally).
+    void EndTalk()
+    {
+        if (!talkPushed) return;
+        talkPushed = false;
+        if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dialogue);
+        if (PortraitDialogueUI.Current != null && PortraitDialogueUI.Current.Open && !PortraitDialogueUI.Current.Barking) PortraitDialogueUI.Current.Abort();
+    }
+
+    // Cut off mid-talk (the floor switched off): the fighters are let go, so none is left standing still.
+    void OnDisable()
+    {
+        if (!talkPushed) return;
+        EndTalk();
+        foreach (var b in fighters) if (b != null) ScriptedEventRoom.Free(b);
     }
 
     // Health Multiplier times the health, once each, once its stats are set up (after the floor's balance), and full.

@@ -12,6 +12,8 @@ public partial class DungeonGenerator
         bool descending=!entrance && (Descends || stage);
         var go=new GameObject(entrance ? "Entrance stair" : descending ? "Stairs down" : "Final exit stair"); go.transform.SetParent(transform,false); go.transform.position=pos;
         var exit=go.AddComponent<DungeonExit>(); exit.entrance=entrance;
+        // A way down on the run's last floor (the boss stage's shaft): walking into it ends the run.
+        exit.completesOnStep=descending && !Descends;
         var col=go.AddComponent<BoxCollider>(); col.isTrigger=true;
         // On a board the way on is always the stone stairwell, and there is no ladder to climb in by.
         // A walled floor that goes on: a spiral stair down a shaft cut into the table (DungeonGenerator.ExitShaft).

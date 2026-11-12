@@ -291,7 +291,7 @@ public partial class BossStageEncounter : MonoBehaviour
             }
             if (fight.spotlightSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.spotlightSound, fight.spotlightVolume);
             yield return new WaitForSeconds(fight.dialogueDelay);
-            if (talk) yield return PortraitDialogueUI.Current.Play(fight.IntroLines, boss, fight.BossName);
+            if (talk) yield return PortraitDialogueUI.Current.Play(fight.IntroLines, boss, fight.BossName, null, fight.Placement);
             if (boss == null || !boss.IsAlive) yield break;
             string shownName = !string.IsNullOrWhiteSpace(fight.BossName) ? fight.BossName : boss.TheNameCap;
             if (card == BossIntroCard.BossTitle) yield return BossTitleUI.Current.Play(shownName, milestone.title, fight.title, StartFightMusic);

@@ -259,7 +259,7 @@ public class TableLevelLoader : MonoBehaviour
                 {
                     // A new run takes the first morning's dice if they wait for one (before Begin, so it starts full on them).
                     if(!descending && resume==null) ProgressionManager.FirstRollNewRun();
-                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); SkeletonParty.NewRun(); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
+                    if(!descending) { RunManager.Instance.BeginRun(level,runSeed); if(MessageLog.HasInstance) MessageLog.Instance.Clear(); if(resume==null) { TavernDish.ForgetEaten(); DungeonMasterMeddling.NewRun(); WagerEvent.NewRun(); SkeletonParty.NewRun(); DungeonGenerator.ForgetEventsSeen(Dungeon); player.GetComponent<AdventurerProgress>()?.ApplyStats(); } }
                     // A continued run's checkpoint already holds this floor's experience (it was taken after the floor
                     // was reached): only the depth is set, with no floor experience and no "+XP" meter at level 1.
                     // (A co-op guest back in the run on a deeper floor than it left gets that floor's experience.)

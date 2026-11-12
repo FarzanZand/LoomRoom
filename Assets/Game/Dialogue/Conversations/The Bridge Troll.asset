@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e92c5d93d720bb4db75ea233631ccad, type: 3}
+  m_Name: The Bridge Troll
+  m_EditorClassIdentifier: Assembly-CSharp::BossDialogueData
+  bossName: The Bridge Troll
+  placement: 0
+  introLines:
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Nobody crosses my bridge for free.
+    voice: {fileID: 0}
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: Thirty gold, and I don't even look at you.
+    voice: {fileID: 0}
+    choices:
+    - label: Pay 30 gold
+      leaves: 0
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: I'm not looking. Go.
+        voice: {fileID: 0}
+    - label: Fight
+      leaves: 0
+      reply:
+      - speaker: 0
+        name: 
+        model: {fileID: 0}
+        text: Now I'm looking.
+        voice: {fileID: 0}
+  phaseTwoLine: 
+  backupCallLine: 
+  backupBrokenLine: 
+  limbLostLine: 
+  notEnoughGoldLine: That's not thirty. That's lunch.

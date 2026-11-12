@@ -68,6 +68,7 @@ public class BossFight : ScriptableObject
     // The boss's words, read from its dialogue asset (null without one).
     public string BossName => dialogue != null && !string.IsNullOrWhiteSpace(dialogue.bossName) ? dialogue.bossName : null;
     public List<PortraitLine> IntroLines => dialogue != null ? dialogue.introLines : null;
+    public DialoguePlacement Placement => dialogue != null ? dialogue.placement : DialoguePlacement.Standard;
     public string PhaseTwoBossLine => dialogue != null ? dialogue.phaseTwoLine : null;
     public string BackupCallLine => dialogue != null ? dialogue.backupCallLine : null;
     public string BackupBrokenLine => dialogue != null ? dialogue.backupBrokenLine : null;

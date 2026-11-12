@@ -32,6 +32,9 @@ public class PortraitDialogueUI : MonoBehaviour
     [Tooltip("The blips' pitch for the boss (a deep voice is lower) and anyone else.")]
     public float bossPitch = .8f, otherPitch = 1f;
     [Min(0)] public float fadeSeconds = .18f;
+    [Tooltip("The Dungeon Master's lines in a conversation are said in this box too: his portrait at its left, his name, the text in his feed's colours, his mumble or voice. Off: in his own feed, the box stepping aside while he speaks.")]
+    public bool dungeonMasterInBox = true;
+    [Tooltip("The name over his lines in the box.")] public string dungeonMasterName = "Dungeon Master";
     [Min(0), Tooltip("Canvas units a line said mid-fight (Bark) sits higher than a conversation's, clear of the hotbar and vitals the HUD keeps showing.")] public float barkRaise = 130f;
     [Header("Portrait")]
     [Tooltip("Pixels across the speaker's portrait (drawn point-filtered, so fewer is chunkier).")] public int portraitResolution = 256;
@@ -60,10 +63,108 @@ public class PortraitDialogueUI : MonoBehaviour
     {
         Current = this;
         if (group != null) { box = (RectTransform)group.transform; boxHome = box.anchoredPosition; }
+        RememberLayout();
         Hide(true);
     }
 
-    void Raise(bool bark) { if (box != null) box.anchoredPosition = boxHome + (bark ? Vector2.up * barkRaise : Vector2.zero); }
+    void Raise(bool bark) { if (box != null) box.anchoredPosition = boxHome + (bark && placedAt == DialoguePlacement.Standard ? Vector2.up * barkRaise : Vector2.zero); }
+
+    // ── Placement ──
+    // The prefab's own layout is Standard. A corner keeps every font size and scales the rest around the text box: the
+    // box Corner Scale as wide (its height kept, so the text has its lines), the portrait Corner Scale as big and in the
+    // same place against the box, the text's left inset (the room beside the portrait) and the name plate scaled with it.
+    [Header("Placement (corners)")]
+    [Range(.3f, 1f), Tooltip("A corner box's width and portrait size against the Standard box's (the text keeps its size).")]
+    public float cornerScale = .5f;
+    [Min(0), Tooltip("Canvas units between a corner box and the screen's side.")] public float cornerMargin = 32f;
+    [Min(0), Tooltip("Canvas units kept clear under the top of the screen for the top bars (experience, boss bar) by the upper corners.")]
+    public float upperTop = 150f;
+    [Min(0), Tooltip("Bottom Left: canvas units from the foot of the screen, clear of the health, mana and stamina bars.")]
+    public float bottomLeftAbove = 180f;
+    [Min(0), Tooltip("Bottom Right: canvas units from the foot of the screen, clear of the hotbar's right end.")] public float bottomRightAbove = 170f;
+    [Min(0), Tooltip("Upper Right: canvas units between the box and the minimap at its right.")] public float mapGap = 24f;
+    [Min(0), Tooltip("Upper Right: canvas units kept clear at the screen's right at least (the quest log under the minimap is wider than the map).")] public float upperRightClear = 610f;
+
+    struct Home { public RectTransform r; public Vector2 aMin, aMax, pivot, pos, size; }
+    readonly List<Home> homes = new();
+    RectTransform frame, portraitRect, lineRect, nameRect, markerRect;
+    DialoguePlacement placedAt = DialoguePlacement.Standard;
+    public DialoguePlacement Placement => placedAt;
+
+    void RememberLayout()
+    {
+        // The text box itself (the Box child); box above is the whole group, which a bark raises.
+        frame = group != null ? group.transform.Find("Box") as RectTransform : null;
+        if (frame == null) return;
+        portraitRect = portrait != null ? portrait.rectTransform : null;
+        lineRect = body != null ? body.rectTransform : null;
+        nameRect = nameText != null ? nameText.rectTransform : null;
+        markerRect = frame.Find("Marker") as RectTransform;
+        foreach (var r in new[] { frame, portraitRect, choiceColumn, lineRect, nameRect, markerRect })
+            if (r != null) homes.Add(new Home { r = r, aMin = r.anchorMin, aMax = r.anchorMax, pivot = r.pivot, pos = r.anchoredPosition, size = r.sizeDelta });
+    }
+
+    Home HomeOf(RectTransform r) { foreach (var h in homes) if (h.r == r) return h; return default; }
+
+    void Restore() { foreach (var h in homes) { h.r.anchorMin = h.aMin; h.r.anchorMax = h.aMax; h.r.pivot = h.pivot; h.r.sizeDelta = h.size; h.r.anchoredPosition = h.pos; } }
+
+    // Lays the box out for a placement (Standard puts the prefab's layout back; the bark's raise is applied after).
+    void Place(DialoguePlacement where)
+    {
+        // Simple has no box of its own: a conversation said Simple (answers need the box) is the Standard box.
+        if (where == DialoguePlacement.Simple) where = DialoguePlacement.Standard;
+        placedAt = where;
+        if (frame == null || homes.Count == 0) return;
+        Restore();
+        if (where == DialoguePlacement.Standard) return;
+        var canvas = (RectTransform)frame.parent;
+        float W = canvas.rect.width, H = canvas.rect.height, s = cornerScale;
+        var hb = HomeOf(frame);
+        float boxW = hb.size.x * s, boxH = hb.size.y;
+        // The portrait against the box as the prefab has it (both anchored to the same point), scaled.
+        float dx = 0f, dy = 0f; Vector2 portraitSize = Vector2.zero;
+        if (portraitRect != null)
+        {
+            var hp = HomeOf(portraitRect);
+            float boxLeft = hb.pos.x - hb.size.x * hb.pivot.x, boxBottom = hb.pos.y - hb.size.y * hb.pivot.y;
+            dx = (hp.pos.x - hp.size.x * hp.pivot.x - boxLeft) * s;
+            dy = (hp.pos.y - hp.size.y * hp.pivot.y - boxBottom) * s;
+            portraitSize = hp.size * s;
+        }
+        float nameTop = nameRect != null ? HomeOf(nameRect).pos.y + HomeOf(nameRect).size.y : 0f;
+        // The whole group against the box's bottom-left corner.
+        float left = Mathf.Min(0f, dx), right = Mathf.Max(boxW, dx + portraitSize.x);
+        float bottom = Mathf.Min(0f, dy), top = Mathf.Max(boxH + nameTop, dy + portraitSize.y);
+        float mapRight = upperRightClear;
+        if (DungeonHud.Map != null && DungeonHud.Map.isActiveAndEnabled)
+        {
+            var map = DungeonHud.Map.rectTransform;
+            mapRight = Mathf.Max(mapRight, -map.anchoredPosition.x + map.rect.width + mapGap);
+        }
+        bool upper = where is DialoguePlacement.UpperLeft or DialoguePlacement.UpperRight;
+        bool atLeft = where is DialoguePlacement.BottomLeft or DialoguePlacement.UpperLeft;
+        float x = atLeft ? cornerMargin - left : W - (where == DialoguePlacement.UpperRight ? mapRight : cornerMargin) - right;
+        float y = upper ? H - upperTop - top : (where == DialoguePlacement.BottomLeft ? bottomLeftAbove : bottomRightAbove) - bottom;
+
+        void Put(RectTransform r, Vector2 pivot, Vector2 at, Vector2 size)
+        {
+            r.anchorMin = r.anchorMax = Vector2.zero; r.pivot = pivot; r.sizeDelta = size; r.anchoredPosition = at;
+        }
+        Put(frame, Vector2.zero, new Vector2(x, y), new Vector2(boxW, boxH));
+        if (portraitRect != null) Put(portraitRect, Vector2.zero, new Vector2(x + dx, y + dy), portraitSize);
+        // The text's left inset is the room beside the portrait: scaled with it. The name plate and its marker too.
+        if (lineRect != null) { var h = HomeOf(lineRect); lineRect.offsetMin = new Vector2((h.pos.x - h.size.x * h.pivot.x) * s, lineRect.offsetMin.y); }
+        foreach (var r in new[] { nameRect, markerRect })
+            if (r != null) { var h = HomeOf(r); r.anchoredPosition = new Vector2(h.pos.x * s, h.pos.y); }
+        // Answers stand over the box's right end, or under it in an upper corner.
+        if (choiceColumn != null)
+        {
+            var hc = HomeOf(choiceColumn);
+            float inset = hb.pos.x + hb.size.x * (1f - hb.pivot.x) - hc.pos.x;
+            if (upper) Put(choiceColumn, new Vector2(1f, 1f), new Vector2(x + boxW - inset, y + bottom - 16f), hc.size);
+            else Put(choiceColumn, new Vector2(1f, 0f), new Vector2(x + boxW - inset, y + top + 16f), hc.size);
+        }
+    }
     void OnDestroy() { if (Current == this) Current = null; }
 
     // Put away at once (the fight whose lines these were was cancelled: the caller's coroutine stopped mid-line). A bark
@@ -81,11 +182,13 @@ public class PortraitDialogueUI : MonoBehaviour
 
     // Plays the lines. The boss is the fight's boss (its look and, unless a line names someone, its name); firstShown
     // runs as the first box appears. Push the Dialogue state around it (BossStageEncounter does).
-    public IEnumerator Play(IReadOnlyList<PortraitLine> lines, Character boss, string bossName, Action firstShown = null)
+    // where: the box's placement (the speaker's BossDialogueData.placement).
+    public IEnumerator Play(IReadOnlyList<PortraitLine> lines, Character boss, string bossName, Action firstShown = null, DialoguePlacement where = DialoguePlacement.Standard)
     {
         picked = -1;
         if (lines == null || lines.Count == 0) yield break;
         Open = true;
+        Place(where);
         Raise(false);
         // The Dungeon Master's lines among them keep the conversation's pace (his feed's reading pause held the next
         // line a few seconds on a line already read). Put back by the end or Abort (a
@@ -134,21 +237,27 @@ public class PortraitDialogueUI : MonoBehaviour
     // fight goes on under it. Ignored while the box is up for anything else.
     // A bark said while another is up waits for it (one quick after another: the boss's crew broken up while its call
     // for them still shows).
-    public void Bark(string text, Character speaker, string speakerName, float hold = 1.4f)
+    // where: Standard follows UIManager > Boss Bark Style as before; a corner says it in the box in that corner, out of
+    // the middle of the view.
+    // inBox: always in this box, whatever the Boss Bark Style (a conversation asset's speaker, LimbLoss).
+    public void Bark(string text, Character speaker, string speakerName, float hold = 1.4f, DialoguePlacement where = DialoguePlacement.Standard, bool inBox = false)
     {
         if (string.IsNullOrWhiteSpace(text) || !isActiveAndEnabled) return;
         // Said without the box, so nothing covers the fight (UIManager > Boss Bark Style).
-        if (UIManager.BossBark != BossBarkStyle.Box && BossBarkUI.Instance != null) { BossBarkUI.Instance.Say(text, speaker, speakerName, UIManager.BossBark); return; }
+        // Simple: as a subtitle, never in the box.
+        if (where == DialoguePlacement.Simple && BossBarkUI.Instance != null) { BossBarkUI.Instance.Say(text, speaker, speakerName, BossBarkStyle.Subtitle); return; }
+        if (!inBox && where == DialoguePlacement.Standard && UIManager.BossBark != BossBarkStyle.Box && BossBarkUI.Instance != null) { BossBarkUI.Instance.Say(text, speaker, speakerName, UIManager.BossBark); return; }
         if (Barking) { barks.Enqueue((text, speaker, speakerName, hold)); return; }
         if (Open) return;
-        StartCoroutine(BarkRun(text, speaker, speakerName, hold));
+        StartCoroutine(BarkRun(text, speaker, speakerName, hold, where));
     }
 
     readonly Queue<(string text, Character speaker, string name, float hold)> barks = new();
 
-    IEnumerator BarkRun(string text, Character speaker, string speakerName, float hold)
+    IEnumerator BarkRun(string text, Character speaker, string speakerName, float hold, DialoguePlacement where)
     {
         Open = true; Barking = true;
+        Place(where);
         Raise(true);
         stage ??= new GameObject("Portrait stage").AddComponent<PortraitStage>();
         stage.resolution = portraitResolution; stage.turn = portraitTurn; stage.bodyBelow = portraitBodyBelow; stage.roomAbove = portraitRoomAbove;
@@ -170,11 +279,19 @@ public class PortraitDialogueUI : MonoBehaviour
         Open = false; Barking = false;
     }
 
-    // One line: the Dungeon Master's in his own feed as always (the box steps aside while he
-    // speaks), anyone else's in the box. Wait: hold until it is read and pressed on (a line with answers doesn't).
-    // voice: a recorded voice for the line (the box's Voice), played instead of the blips or his mumble.
+    // One line in the box, the Dungeon Master's too (his portrait, his colours; the user, 2026-11-12), or with Dungeon
+    // Master In Box off his in his own feed (the box steps aside while he speaks). Wait: hold until it is read and
+    // pressed on (a line with answers doesn't). voice: a recorded voice for the line (the box's Voice), played instead
+    // of the blips or his mumble.
     IEnumerator Line(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool wait, AudioData voice = null)
     {
+        var dm = TableManager.HasInstance ? TableManager.Instance.DM : null;
+        if (speaker == PortraitSpeaker.DungeonMaster && dungeonMasterInBox && dm != null)
+        {
+            yield return Box(speaker, !string.IsNullOrWhiteSpace(name) ? name : dungeonMasterName, dm, text, boss, bossName, voice);
+            if (wait) yield return WaitForNext();
+            yield break;
+        }
         if (speaker == PortraitSpeaker.DungeonMaster)
         {
             if (shown) { yield return Fade(0f); shown = false; }
@@ -192,8 +309,11 @@ public class PortraitDialogueUI : MonoBehaviour
     // clip on that source: the pool hands finished sources to other sounds).
     AudioSource boxVoice;
     AudioClip boxVoiceClip;
+    bool mumbling;
     void StopBoxVoice()
     {
+        if (mumbling && AudioManager.HasInstance) AudioManager.Instance.StopMumble();
+        mumbling = false;
         if (boxVoice != null && boxVoice.isPlaying && boxVoice.clip == boxVoiceClip) boxVoice.Stop();
         boxVoice = null; boxVoiceClip = null;
     }
@@ -210,14 +330,17 @@ public class PortraitDialogueUI : MonoBehaviour
             : speaker == PortraitSpeaker.Boss ? (!string.IsNullOrWhiteSpace(bossName) ? bossName : boss != null ? boss.TheNameCap : "")
             : model != null ? model.name : "").ToUpperInvariant();
         if (arrow != null) arrow.enabled = false;
-        body.text = text ?? "";
+        bool master = speaker == PortraitSpeaker.DungeonMaster;
+        // His lines in his feed's colours (cyan, the *marked* part white), everyone else's as the box has them.
+        body.text = master ? DungeonMaster.Colored(text ?? "") : text ?? "";
         body.maxVisibleCharacters = 0;
         if (!shown) { yield return Fade(1f); shown = true; Fire(); }
         float pitch = speaker == PortraitSpeaker.Boss ? bossPitch : otherPitch;
-        // A recorded voice takes the blips' place.
+        // A recorded voice takes the blips' place; the Dungeon Master without one mumbles, as in his feed.
         var clip = voice != null ? voice.GetClip() : null;
         if (clip != null && AudioManager.HasInstance) { boxVoice = AudioManager.Instance.PlayUI(clip, voice.volume, voice.RandomPitch()); boxVoiceClip = clip; }
-        yield return Type(pitch, clip == null);
+        else if (master && AudioManager.HasInstance) { AudioManager.Instance.Mumble(DungeonMaster.Plain(text ?? "")); mumbling = true; }
+        yield return Type(pitch, clip == null && !master);
         if (arrow != null) arrow.enabled = true;
     }
 

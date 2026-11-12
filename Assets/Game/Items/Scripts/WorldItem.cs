@@ -15,6 +15,9 @@ public class WorldItem : MonoBehaviour, IInteractable
     bool visualSpawned;
     bool claimed;
     GameObject sparkle;
+    ParticleSystem[] sparkleSystems;
+    Renderer body;
+    bool sparkleShown = true;
 
     public ItemData Item  => itemData;
     public int      Count => count;
@@ -54,11 +57,34 @@ public class WorldItem : MonoBehaviour, IInteractable
         var bounds = renderers[0].bounds;
         foreach (var r in renderers) bounds.Encapsulate(r.bounds);
         sparkle = Instantiate(InventoryManager.Instance.pickupSparkle, bounds.center, Quaternion.identity, transform);
-        foreach (var ps in sparkle.GetComponentsInChildren<ParticleSystem>())
+        sparkleSystems = sparkle.GetComponentsInChildren<ParticleSystem>();
+        foreach (var ps in sparkleSystems)
         {
             var shape = ps.shape;
             shape.scale = Vector3.Max(bounds.size, Vector3.one * .15f);
             shape.scale = new Vector3(shape.scale.x / sparkle.transform.lossyScale.x, shape.scale.y / sparkle.transform.lossyScale.y, shape.scale.z / sparkle.transform.lossyScale.z);
+        }
+        foreach (var r in renderers) if (!(r is LineRenderer) && !(r is ParticleSystemRenderer)) { body = r; break; }
+        SyncSparkle();
+    }
+
+    void Update() { if (sparkleSystems != null) SyncSparkle(); }
+
+    // The sparkle glints only while the item itself is drawn: the table's build hides floor loot until its tile lands,
+    // and the sparkle, added after the build gathered the floor's effects, glinted alone over an empty tile of the
+    // intro's landing (the user, 2026-11-12), as the loot beam did (LootBeam). forceRenderingOff (the floor's culling)
+    // is left out for the same reason as there: it is set after Update, right before each frame is drawn.
+    void SyncSparkle()
+    {
+        bool shown = body == null || (body.enabled && body.gameObject.activeInHierarchy);
+        if (shown == sparkleShown) return;
+        sparkleShown = shown;
+        foreach (var ps in sparkleSystems)
+        {
+            if (ps == null) continue;
+            // Each system on its own (no children): the list already holds every nested one.
+            if (shown) ps.Play(false);
+            else ps.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
     }
 

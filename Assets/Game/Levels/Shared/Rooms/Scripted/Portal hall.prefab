@@ -374,6 +374,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3599917296579880249}
   - component: {fileID: 4167180725130540876}
+  - component: {fileID: 172074730952062365}
   m_Layer: 0
   m_Name: Portal hall
   m_TagString: Untagged
@@ -427,8 +428,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: Holds a portal to the Skeleton Party room. Step through for the side
-    room, and come back the same way.
+  description: Holds a portal to the Skeleton Party room. Step through for the side room, and come back the same way.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -464,6 +464,22 @@ MonoBehaviour:
   enterInPerson: 0
   previewLevel: {fileID: 0}
   previewCellSize: 2
+--- !u!114 &172074730952062365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7553172351964380955}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b17f92738f1035446adfbf73d1eba8d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
+  eventName: portal
+  summary: A gate hall with a portal arch. The portal leads to the Skeleton Party.
+  entrance: {fileID: 0}
+  countsAsEvent: 1
 --- !u!1 &8254986924670627300
 GameObject:
   m_ObjectHideFlags: 0

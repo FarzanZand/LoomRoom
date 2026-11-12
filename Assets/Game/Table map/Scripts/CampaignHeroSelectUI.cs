@@ -30,7 +30,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
     {
         if (cardTemplate != null) cardTemplate.gameObject.SetActive(false);
         if (group != null) { group.alpha = 0f; group.blocksRaycasts = false; group.interactable = false; }
-        choose?.onClick.AddListener(() => taken = true);
+        choose?.onClick.AddListener(Take);
         back?.onClick.AddListener(() => cancelled = true);
         // The buttons never keep the selection (a click on Next then Enter would press Next again as the class is taken,
         // and the arrow keys would wander over them while they choose the class).
@@ -74,6 +74,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
         finally { Unlisten(); }
         var result = taken ? progress.selectedClass : null;
         if (result == null && before != null) progress.SelectClass(before);
+        else if (result != null) DungeonMasterRemarks.PlayerPickedClass(progress);
         Sync();
         // Aborted from outside: it is already off screen.
         if (Open) for (float t = 1; t > 0; t -= Time.unscaledDeltaTime / .15f) { Fade(t); yield return null; }
@@ -85,7 +86,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
     InputManager listening;
     // Down the column (or Tab) is the next one, up the one before.
     void OnNavigate() => details.Cycle(InputManager.Instance.NavigateStep);
-    void OnSubmit() => taken = true;
+    void OnSubmit() => Take();
     void OnCancel() => cancelled = true;
     void Listen(InputManager input)
     {
@@ -113,9 +114,17 @@ public class CampaignHeroSelectUI : MonoBehaviour
 
     void OnDisable() => Unlisten();
 
+    // Taking the class (Choose, Enter or a second click) plays the UI's button click (the user, 2026-11-12).
+    void Take()
+    {
+        if (taken || cancelled) return;
+        taken = true;
+        if (AudioManager.HasInstance) AudioManager.Instance.PlayUI(AttributeCellUI.ClickKey);
+    }
+
     void Clicked(CampaignHeroCard card)
     {
-        if (card.Class == progress.selectedClass) { taken = true; return; }
+        if (card.Class == progress.selectedClass) { Take(); return; }
         progress.SelectClass(card.Class);
         UIFeedbackSettings.Shared?.Hover();
     }

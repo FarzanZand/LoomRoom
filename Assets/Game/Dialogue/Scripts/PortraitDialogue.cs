@@ -8,6 +8,14 @@ using UnityEngine;
 // number: append only.
 public enum PortraitSpeaker { Boss = 0, DungeonMaster = 1, Other = 2 }
 
+// Where the dialogue box sits (PortraitDialogueUI). Standard: the wide box along the foot of the screen with the big
+// portrait at its left. The corners are a box half as wide with a portrait half as big (the text keeps its size), out
+// of the middle of the view, for lines said while the fight goes on: Bottom Left above the health bars, Bottom Right
+// above the hotbar's right end, Upper Left and Upper Right below the top bars (Upper Right left of the minimap and the quest log). Serialized by
+// number: append only. Simple: no box, the line as a subtitle in the lower middle with the speaker's name in front (a
+// line said in the middle of a fight; a conversation with answers set Simple still uses the Standard box).
+public enum DialoguePlacement { Standard = 0, BottomLeft = 1, BottomRight = 2, UpperLeft = 3, UpperRight = 4, Simple = 5 }
+
 // One box of a portrait dialogue: the speaker's upper body idles at its left, their name on a plate above it, the text
 // typed out. A line can end with answers for the player to pick; each answer has its own reply boxes, and the
 // dialogue goes on with the next line after them.

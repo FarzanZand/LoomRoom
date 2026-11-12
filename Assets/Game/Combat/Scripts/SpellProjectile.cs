@@ -130,7 +130,13 @@ public class SpellProjectile : MonoBehaviour
             // Co-op: off a teammate's raised shield too (their stand-in here).
             var struck = hit.collider.GetComponentInParent<Character>();
             if (struck != null && struck != owner && CoopWorld.StandInDeflects(struck, transform.forward)) { Deflect(struck, point); return; }
-            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner, spell);
+            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform))
+            {
+                DungeonMasterRemarks.SpellHit(owner, spell);
+                // He flinches away from it (the user, 2026-11-12).
+                // Co-op: a teammate's spell too (cast again here by their stand-in), so everyone sees him flinch.
+                if (owner is Player || owner != null && CoopWorld.SlotOf(owner) != Coop.NoSlot) SpellStagger.HitDungeonMaster(transform.forward);
+            }
             // Piercing: through the character, hurting it, on to the next.
             var struckCharacter = hit.collider.GetComponentInParent<Character>();
             if (struckCharacter != null && passed.Contains(struckCharacter)) continue;
@@ -151,6 +157,7 @@ public class SpellProjectile : MonoBehaviour
         if (selfAt < float.MaxValue)
         {
             DungeonMasterRemarks.SpellHitRoomSelf(owner, spell);
+            SpellStagger.HitRoomSelf(transform.forward);
             Explode(transform.position + transform.forward * selfAt, -transform.forward);
             return;
         }

@@ -204,6 +204,16 @@ public class DungeonMasterRemarks : MonoBehaviour
         foreach (var c in unlocked) SetFlag(OfferedPrefix + c.id);
     }
 
+    // The player took a class themselves (the hero select, from the map's figure or the poster wall): every class open
+    // now counts as offered, so sitting down never swaps their pick for a newly unlocked one (the user, 2026-11-12: picked
+    // the Wizard at the desk, then E at the table started a run as the Rogue the Arena had just unlocked).
+    public static void PlayerPickedClass(AdventurerProgress progress)
+    {
+        var classes = progress != null && progress.rules != null ? progress.rules.classes : null;
+        if (classes == null) return;
+        foreach (var c in classes) if (c != null && c.Unlocked) SetFlag(OfferedPrefix + c.id);
+    }
+
     // The killer, when the last two deaths came from the same enemy.
     string LastTwoKiller()
     {
@@ -235,7 +245,8 @@ public class DungeonMasterRemarks : MonoBehaviour
         var line = Pick(remarks.spellHitMe);
         if (line == null) return;
         remarks.lastSpellHit = Time.time;
-        DungeonMaster.Say(line.With(FillSpell(line.text, spell)), null, .4f);
+        // Said at once, cutting off whatever he was saying or had queued: it answers the hit.
+        DungeonMaster.CutIn(line.With(FillSpell(line.text, spell)), null, .3f);
     }
 
     float lastOwnSpell = -999f;

@@ -582,6 +582,8 @@ public static class CoopWorld
             elite = c.TryGetComponent<EliteEnemy>(out var el) ? (sbyte)el.trait : (sbyte)-1, eliteFloors = el != null ? el.extraFloors : 0f,
             minion = c.TryGetComponent<EnemyBrain>(out var minionBrain) && minionBrain.NoExperience,
             side = c.TryGetComponent<Summon>(out var summon) && summon.Summoner != null && summon.Summoner.Faction == Faction.Player ? (byte)(1 + Mathf.Clamp(SlotOf(summon.Summoner), 0, 250)) : (byte)0,
+            summonKind = new Unity.Collections.FixedString64Bytes(summon != null && summon.Kind != null ? summon.Kind : ""),
+            scale = c.transform.localScale.x,
         };
         spawnHistory.Add(spawn);
         CoopMessages.ToGuests(CoopMessages.Spawn, spawn);
@@ -603,14 +605,28 @@ public static class CoopWorld
             c.Stats.AddModifier(new StatModifier(StatType.MaxHealth, spawn.maxHealth / c.Stats.MaxHealth - 1f, ModifierType.PercentMultiply, Coop.PartySource));
         pendingHealth[c] = spawn.health;
         if (spawn.minion && go.TryGetComponent<EnemyBrain>(out var minionBrain)) minionBrain.NoExperience = true;
-        // Raised for a player (Raise the Fallen): on the players' side here too, with its aura, so it isn't fought.
+        if (spawn.scale > 0f && go.transform.localScale.x > 0f && Mathf.Abs(spawn.scale - go.transform.localScale.x) > .001f)
+            go.transform.localScale *= spawn.scale / go.transform.localScale.x;
+        // Raised or summoned for a player (Raise the Fallen, Summon John): on the players' side here too, with its aura, so
+        // it isn't fought. A summon gets up out of its rune circle here as it does on the host; raised bones are taken up.
         if (spawn.side > 0)
         {
             c.FactionOverride = Faction.Player;
             var by = CharacterOf(spawn.side - 1);
-            var spell = CoopSpells.RaiseSpell();
-            if (by != null && spell != null) Summon.Bind(c, by, spell.raise.summon, spell.name)?.ShowAura();
-            CoopSpells.TakeBones(spawn.position);
+            var spell = CoopSpells.Spell(spawn.summonKind.ToString());
+            if (spell == null || spell.effect is not (SpellEffect.Summon or SpellEffect.RaiseTheFallen)) spell = CoopSpells.RaiseSpell();
+            bool summoned = spell != null && spell.effect == SpellEffect.Summon;
+            var bound = by != null && spell != null ? Summon.Bind(c, by, summoned ? spell.summon.summon : spell.raise.summon, spell.name) : null;
+            if (summoned)
+            {
+                if (!string.IsNullOrWhiteSpace(spell.summon.summonName)) { c.nameOverride = spell.summon.summonName; go.name = spell.summon.summonName + " (summoned)"; }
+                SummonSpell.ArriveHere(c, spell, bound);
+            }
+            else
+            {
+                bound?.ShowAura();
+                CoopSpells.TakeBones(spawn.position);
+            }
         }
         while (enemies.Count < spawn.id) enemies.Add(null);
         if (enemies.Count == spawn.id) { enemies.Add(c); enemyIds[c] = spawn.id; }
@@ -813,6 +829,13 @@ public static class CoopWorld
         chest.Opened += OnContainerOpened;
     }
 
+    // The Arena fighter's say (ArenaFight): the host names who hears it (0, slot), a guest says theirs is over (1).
+    public static void ArenaTalk(int what, int slot)
+    {
+        if (!Coop.Running || Floor == null) return;
+        Send(new CoopEvent { kind = CoopEventKind.ArenaTalk, amount = what, id = slot });
+    }
+
     public static void SpikeSprung(DungeonSpikeTrap trap)
     {
         if (Applying || !Coop.Running) return;
@@ -935,7 +958,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: case CoopEventKind.ArenaTalk: return;
         }
         history.Add(e);
     }
@@ -1095,6 +1118,12 @@ public static class CoopWorld
             case CoopEventKind.AmbushCleared:
                 if (e.id >= 0 && e.id < ambushes.Count && ambushes[e.id] != null) ambushes[e.id].ClearedOnHost();
                 break;
+            case CoopEventKind.ArenaTalk:
+            {
+                var arena = Floor != null ? Floor.GetComponentInChildren<ArenaFight>(true) : null;
+                if (arena != null) arena.CoopTalk(e.amount, e.amount == 0 ? e.id : e.slot);
+                break;
+            }
             case CoopEventKind.BossIntroDone:
             {
                 var stage = CurrentStage();

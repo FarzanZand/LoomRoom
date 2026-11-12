@@ -3,7 +3,8 @@ using UnityEngine;
 
 // The bell (on the Bell room template's root, with a ScriptedEventRoom): a great bell hangs over the middle of the room
 // with its rope down to the floor, and a plain chest waits on a step at the back. Pull the rope and the bell tolls,
-// iron gates slam across the ways out and three waves come, one after another, out of the room's edge; clear them and the gates sink and the chest comes back a tier
+// iron gates slam across the ways out and three waves come, one after another, out of the room's edge, the last with an
+// elite in it (eliteInLastWave); clear them and the gates sink and the chest comes back a tier
 // better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut while a ring's waves are coming
 // (DungeonContainer.HeldShut). Ring again or open the chest: opening it ends the game,
 // and the rope can't be pulled once the last ring is done.
@@ -16,6 +17,8 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     [Tooltip("Enemies in each of a ring's waves, first ring first; the number of entries is how many times it can be rung.")]
     public int[] waves = { 2, 3, 4, 5 };
     [Range(1, 5), Tooltip("Waves a ring brings, each once the last is down.")] public int wavesPerRing = 3;
+    [Tooltip("The last wave of every ring brings one elite (a random trait; the user, 2026-11-12), on every floor, the run's first included: ringing is the player's choice.")]
+    public bool eliteInLastWave = true;
     [Tooltip("The last ring's chest also holds a random piece of gear rolled Legendary.")]
     public bool legendaryLast = true;
     [Tooltip("Highest gear tier of its prize on a level with no Gear by floor table; otherwise the prize is of the floor's tiers.")] [Range(1, 12)] public int maxTier = 2;
@@ -160,7 +163,9 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
             for (int i = 0; i < count; i++)
             {
                 var at = points.Count > 0 ? points[i % far] : transform.position;
-                var enemy = room.Summon(null, at, rng);
+                // The last one out of a ring's last wave is an elite.
+                bool elite = eliteInLastWave && w == wavesPerRing - 1 && i == count - 1;
+                var enemy = room.Summon(null, at, rng, true, elite ? (EliteTrait?)(EliteTrait)rng.Next(3) : null);
                 if (enemy != null) wave.Add(enemy);
                 yield return new WaitForSeconds(.35f);
             }

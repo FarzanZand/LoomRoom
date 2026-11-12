@@ -20,6 +20,9 @@ public static class CoopSpells
         CoopWorld.Send(new CoopEvent { kind = CoopEventKind.PlayerSpell, item = spell.name, position = a, direction = b, extra = eye, id = id, target = Coop.NoSlot, amount = Mathf.RoundToInt(power * 100f) });
     }
 
+    // A spell by its asset's name (a summon's kind), or null.
+    public static SpellDefinition Spell(string name) => string.IsNullOrEmpty(name) ? null : Find(name);
+
     static SpellDefinition Find(string name)
     {
         if (spells == null || !spells.ContainsKey(name))
@@ -68,6 +71,8 @@ public static class CoopSpells
             // A guest's flick is the host's to carry out, with the guest's power (its blow counts as theirs).
             case SpellEffect.Flick: if (target != null) Flick.Echo(caster, spell, target, Coop.IsHost ? e.amount / 100f : 0f); return;
             case SpellEffect.HelpingHand: HelpingHand.Echo(caster, spell, e.direction); return;
+            // A summon is the host's to make (its enemies fight it), for the caster; it comes to the others as a spawn.
+            case SpellEffect.Summon: if (Coop.IsHost) SummonSpell.Cast(caster, spell, null); return;
         }
         if (spell.groundArea) { GroundAreaSpell.Cast(caster, spell, 0f, e.direction, null); return; }
         if (spell.projectile == null || e.direction.sqrMagnitude < .0001f) return;

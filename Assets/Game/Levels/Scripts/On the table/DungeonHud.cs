@@ -37,6 +37,7 @@ public class DungeonHud : MonoBehaviour
         var dotImage=dots.GetComponent<RawImage>();dotImage.texture=markers;dotImage.raycastTarget=false;
         var dr=dotImage.rectTransform;dr.anchorMin=Vector2.zero;dr.anchorMax=Vector2.one;dr.offsetMin=dr.offsetMax=Vector2.zero;
         gameObject.AddComponent<DungeonCombatFeedback>().Initialize(generator,canvasRoot.GetComponent<RectTransform>());
+        if(isActiveAndEnabled)Map=mapImage;
     }
 
     void Update()
@@ -194,5 +195,10 @@ public class DungeonHud : MonoBehaviour
         return false;
     }
 
-    void OnDestroy(){if(map!=null)Destroy(map);if(markers!=null)Destroy(markers);}
+    void OnDestroy(){if(Map==mapImage)Map=null;if(map!=null)Destroy(map);if(markers!=null)Destroy(markers);}
+    // The minimap on screen (the dialogue box's Upper Right placement stands to its left); null while no floor has one.
+    public static RawImage Map { get; private set; }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => Map = null;
+    void OnEnable(){if(mapImage!=null)Map=mapImage;}
+    void OnDisable(){if(Map==mapImage)Map=null;}
 }

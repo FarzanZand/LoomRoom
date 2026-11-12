@@ -39,7 +39,7 @@ public partial class BossStageEncounter
     void PhaseTwoShow()
     {
         if (!string.IsNullOrWhiteSpace(fight.PhaseTwoBossLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName);
+            PortraitDialogueUI.Current.Bark(fight.PhaseTwoBossLine, boss, fight.BossName, 1.4f, fight.Placement);
         else Say(fight.phaseTwoLine, true);
         if (fight.danceFloor != null && danceFloor == null)
             danceFloor = BossDanceFloor.Build(dungeon, fight.danceFloor, fight.phaseTwoDisco);
@@ -78,7 +78,7 @@ public partial class BossStageEncounter
         else if (backupDanced)
         {
             backupDanced = false;
-            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName);
+            if (!string.IsNullOrWhiteSpace(fight.BackupBrokenLine) && PortraitDialogueUI.Current != null) PortraitDialogueUI.Current.Bark(fight.BackupBrokenLine, boss, fight.BossName, 1.4f, fight.Placement);
         }
     }
 
@@ -93,10 +93,10 @@ public partial class BossStageEncounter
         var back = dm - home; back.y = 0f;
         back = back.sqrMagnitude > .01f ? back.normalized : -boss.transform.forward;
         var side = Vector3.Cross(Vector3.up, back);
+        var spots = DancerSpots(home, back, side, fight.backupCount);
         for (int i = 0; i < fight.backupCount; i++)
         {
-            float across = fight.backupCount > 1 ? (i / (fight.backupCount - 1f) - .5f) * 6.4f : 0f;
-            var spot = DancerSpot(home, back * 3.6f, side * across);
+            var spot = spots[i];
             var go = Instantiate(fight.backupDancer, spot, Quaternion.LookRotation(-back), dungeon.transform);
             go.name = fight.backupDancer.name + " (backup)";
             if (dungeon.LevelData.ambushSpawnPuff != null) Destroy(Instantiate(dungeon.LevelData.ambushSpawnPuff, spot, Quaternion.identity, dungeon.transform), 4f);
@@ -109,7 +109,42 @@ public partial class BossStageEncounter
         }
     }
 
-    // A dancer's spot on the stage: behind where the boss was set down (behind: toward the Dungeon Master) and to its side.
+    // Every dancer's spot, worked out together so they stand in one even line, the same distance apart and the same step
+    // behind the boss (the user, 2026-11-12: each one giving way to the stage's edge on its own left them uneven, one far
+    // out and one at the boss's side). The line steps in from the back and narrows only as far as the stage needs, and may
+    // slide sideways along the stage when the boss stands off its middle; only when no line fits does each find its own.
+    Vector3[] DancerSpots(Vector3 home, Vector3 back, Vector3 side, int count)
+    {
+        var spots = new Vector3[count];
+        var across = new float[count];
+        for (int i = 0; i < count; i++) across[i] = count > 1 ? (i / (count - 1f) - .5f) * 6.4f : 0f;
+        var layout = dungeon != null ? dungeon.Layout : null;
+        int room = dungeon != null ? dungeon.StageRoom : -1;
+        if (layout != null && room >= 0 && count > 0)
+        {
+            const float margin = .4f;
+            bool Fits(Vector3 p) => layout.InRoom(room, dungeon.CellOf(p)) && layout.InRoom(room, dungeon.CellOf(p + back * margin))
+                && layout.InRoom(room, dungeon.CellOf(p + side * margin)) && layout.InRoom(room, dungeon.CellOf(p - side * margin));
+            float[] slides = { 0f, .5f, -.5f, 1f, -1f, 1.5f, -1.5f, 2f, -2f, 2.5f, -2.5f };
+            for (float a = 1f; a >= .45f; a -= .1f)
+                for (float b = 1f; b >= -.01f; b -= .1f)
+                    foreach (float s in slides)
+                    {
+                        bool all = true;
+                        for (int i = 0; i < count && all; i++)
+                        {
+                            var p = home + back * (3.6f * Mathf.Max(0f, b)) + side * (across[i] * a + s);
+                            if (!Fits(p) || !NavMesh.SamplePosition(p, out var hit, .6f, NavMesh.AllAreas) || Mathf.Abs(hit.position.y - home.y) > .5f) all = false;
+                            else spots[i] = new Vector3(p.x, hit.position.y, p.z);
+                        }
+                        if (all) return spots;
+                    }
+        }
+        for (int i = 0; i < count; i++) spots[i] = DancerSpot(home, back * 3.6f, side * across[i]);
+        return spots;
+    }
+
+    // A dancer's spot on the stage on its own (when no even line fits): behind where the boss was set down (behind: toward the Dungeon Master) and to its side.
     // The step behind gives way first, then the step aside, until the spot is on the stage's own walkable floor, a little
     // in from its edge. (His hand lets go at the end of his reach, about half a metre inside the stage's back edge, so the
     // full step behind went past it: the dancers landed on the table's frame behind the stage, or, held back, all on the
@@ -142,7 +177,7 @@ public partial class BossStageEncounter
         foreach (var (b, _) in backup.ToArray()) if (b != null && b.State != EnemyState.Dead) { BreakUp(b); any = true; }
         if (!any) return;
         if (!string.IsNullOrWhiteSpace(fight.BackupCallLine) && PortraitDialogueUI.Current != null)
-            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName);
+            PortraitDialogueUI.Current.Bark(fight.BackupCallLine, boss, fight.BossName, 1.4f, fight.Placement);
         StartCoroutine(SayAfterBark(fight.backupLine));
     }
 

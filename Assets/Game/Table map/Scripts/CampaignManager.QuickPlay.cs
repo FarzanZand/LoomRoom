@@ -1,7 +1,7 @@
 using System.Collections;
 
 // E at the table plays straight away, with no map view (TableManager.playWithoutMap; R opens the map instead): the run
-// saved on quit is continued, else the place the figure stands at is played as the class last picked, and the map
+// saved on quit is continued, else the dungeon (home, the Crypt) is played as the class last picked, and the map
 // sinks into the table as it does after a click on a place. The view goes to the map's own view meanwhile (QuickStep:
 // the middle of the map's near side, raised, the whole table and the Dungeon Master in frame) and stays there while
 // the floor is built and shown, so it is never seen from the side the player happened to stand at.
@@ -19,7 +19,9 @@ public partial class CampaignManager
             return true;
         }
         bool Playable(CampaignEncounter e) => e != null && e.kind == CampaignEncounterKind.Level && e.level != null && IsOpen(e);
-        place = Playable(At) ? At : Playable(home) ? home : null;
+        // Always the dungeon (home, the Crypt), wherever the figure last stood (the user, 2026-11-12: after the Arena, E
+        // started the Arena again). Other places are played from the map.
+        place = Playable(home) ? home : Playable(At) ? At : null;
         return place != null && progress != null && progress.selectedClass != null;
     }
 

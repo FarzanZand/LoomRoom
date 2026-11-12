@@ -58,13 +58,19 @@ public static class FullscreenGameView
             if (w.titleContent.text == Title) return window = w;
         }
         // A script reload can also give the window back Unity's "Game" title (then it was never closed and stayed on top
-        // of everything). It is the only Game view that covers the whole monitor from its corner.
+        // of everything). It is the only floating Game view with its toolbar hidden, or else the only one that covers the
+        // monitor from its corner: at least nine tenths of its height, since Unity may report it fitted to the monitor
+        // less the taskbar (1032 points of 1080; asked to cover all of it, the clean-up missed it, the user, 2026-11-12).
         var monitor = TargetMonitor();
+        var toolbar = type.GetProperty("showToolbar", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
         foreach (var o in Resources.FindObjectsOfTypeAll(type))
         {
             var w = (EditorWindow)o;
+            if (w.docked || w.maximized) continue;
             var r = w.position;
-            if (!w.maximized && Mathf.Abs(r.x - monitor.x) < 4 && Mathf.Abs(r.y - monitor.y) < 4 && r.width >= monitor.width - 4 && r.height >= monitor.height - 4)
+            bool noToolbar = toolbar != null && toolbar.GetValue(w) is bool shown && !shown;
+            bool covers = Mathf.Abs(r.x - monitor.x) < 4 && Mathf.Abs(r.y - monitor.y) < 4 && r.width >= monitor.width - 4 && r.height >= monitor.height * .9f;
+            if (noToolbar || covers)
             {
                 w.titleContent = new GUIContent(Title);
                 return window = w;

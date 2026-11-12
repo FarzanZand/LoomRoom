@@ -9,10 +9,10 @@ using UnityEngine.UI;
 // F7, Editor and development builds only: the spawn window. F6 opens it on Cheats alone, the other kinds hidden, so
 // the cheats can be used without the loot and the rest, in every build, release builds too (the user, 2026-11-02:
 // there only the Cheats are compiled in; Items, Spells, Room items, Enemies and Rooms are development only). The window: laid out like Asset Studio in the inventory's look. Left:
-// the kinds (Items, Spells, Room items, Enemies, Rooms, Cheats, Audio) and the groups of the one picked, each with its count. Middle: a
+// the kinds (Cheats at the top, where F7 opens; then Items, Spells, Room items, Enemies, Rooms, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
-// Click picks, double-click or Enter does the first button, right-click the second. Typing always goes to the search;
+// Click picks (a cheat: click uses it), double-click or Enter does the first button, right-click the second. Typing always goes to the search;
 // Esc clears it, then closes. While it is open the game is in the Menu state. Development/Resources/Dev Spawner.prefab is
 // built by DevSpawnerBuilder.Build() (from an eval; edit the prefab freely after), its lists for builds by RefreshLists().
 // Audio (DevSpawner.Audio.cs): every sound effect, sorted by category or by when it was last heard, to play and to set its
@@ -83,8 +83,7 @@ public partial class DevSpawner : MonoBehaviour
     readonly string[] group = { All, All, All, All, All, All, All };
     Entry picked;
     int count = 1, rarity;
-    bool open, openedOnce, cheatsOnly;
-    Kind fullKind = Kind.Items;   // where F7's full window was left (F6's cheats-only window doesn't move it)
+    bool open, cheatsOnly;
     int openedFrame = -10;
     float nextPreviewCheck;
 
@@ -171,10 +170,8 @@ public partial class DevSpawner : MonoBehaviour
         var title = Find<TMP_Text>(panel, "Title");
         if (title != null) title.text = cheats ? "CHEATS" : "SPAWN";
         if (cheats) { SetKind(Kind.Cheats); return; }
-        // The first time: room items in the room, items in a run. After that, where it was left.
-        if (!openedOnce) fullKind = InRun ? Kind.Items : Kind.RoomItems;
-        openedOnce = true;
-        SetKind(fullKind);
+        // F7 opens on the cheats every time, the top of its list (the user, 2026-11-12).
+        SetKind(Kind.Cheats);
     }
 
     void Close()
@@ -287,7 +284,6 @@ public partial class DevSpawner : MonoBehaviour
     {
         if (cheatsOnly && k != Kind.Cheats) return;
         kind = k;
-        if (!cheatsOnly) fullKind = k;
         entries.Clear();
         entries.AddRange(Build(k));
         search.SetTextWithoutNotify("");
@@ -400,7 +396,9 @@ public partial class DevSpawner : MonoBehaviour
             {
                 Pick(e);
                 if (button == PointerEventData.InputButton.Right) Do(e.secondary ?? e.primary);
-                else if (clicks >= 2) Do(e.primary);
+                // A cheat goes off on one click (the user, 2026-11-12); the rest need two. A double click on a cheat
+                // uses it once.
+                else if (kind == Kind.Cheats ? clicks == 1 : clicks >= 2) Do(e.primary);
                 Refocus();
             };
             cells.Add((cell, entry));

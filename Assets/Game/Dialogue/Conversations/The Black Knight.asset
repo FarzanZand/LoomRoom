@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e92c5d93d720bb4db75ea233631ccad, type: 3}
+  m_Name: The Black Knight
+  m_EditorClassIdentifier: Assembly-CSharp::BossDialogueData
+  bossName: The Black Knight
+  placement: 0
+  introLines:
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: I move for no one.
+    voice: {fileID: 0}
+    choices: []
+  - speaker: 1
+    name: 
+    model: {fileID: 0}
+    text: He's in the middle of an arena. Nobody asked him to move.
+    voice: {fileID: 0}
+    choices: []
+  - speaker: 0
+    name: 
+    model: {fileID: 0}
+    text: And I shall not.
+    voice: {fileID: 0}
+    choices: []
+  phaseTwoLine: 
+  backupCallLine: 
+  backupBrokenLine: 
+  limbLostLine: '''Tis but a scratch.'
+  notEnoughGoldLine: 

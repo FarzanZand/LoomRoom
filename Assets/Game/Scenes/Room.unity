@@ -54859,7 +54859,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 64, y: 20}
-  m_SizeDelta: {x: 320, y: 0}
+  m_SizeDelta: {x: 380, y: 0}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &464978266
 MonoBehaviour:
@@ -114831,7 +114831,7 @@ MonoBehaviour:
   m_IgnoreLayout: 0
   m_MinWidth: -1
   m_MinHeight: -1
-  m_PreferredWidth: 320
+  m_PreferredWidth: 380
   m_PreferredHeight: 124
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
@@ -126720,7 +126720,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Arcanist
+  m_text: Necromancer
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}
   m_sharedMaterial: {fileID: -3994158253959666376, guid: 1059071829aebad468d2482393fe7bac, type: 2}
@@ -265904,7 +265904,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 128, y: 0}
-  m_SizeDelta: {x: 180, y: 40}
+  m_SizeDelta: {x: 240, y: 40}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &2100986689
 MonoBehaviour:
@@ -295762,6 +295762,7 @@ MonoBehaviour:
   dropsPerKill: 110
   splashBlobs: 7
   splashSize: {x: 0.05, y: 0.14}
+  splashScale: 0.5
   sprayLifetime: 2.5
   strongHitMultiplier: 1.6
   stainMaterial: {fileID: 2100000, guid: 945db09c5ef15bf4cb5551efce10cc0e, type: 2}
@@ -357584,6 +357585,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0fc4ea10ef14e314f8e3503aadcfb21c, type: 2}
   - {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
   - {fileID: 11400000, guid: 59a5a017e89f89f4aade75a648ed728f, type: 2}
+  - {fileID: 11400000, guid: 673bceaa562503a4d90c46eec6c6c3db, type: 2}
   - {fileID: 11400000, guid: e4e9de3d3ed801b44bcef84d0ed5ccc8, type: 2}
   - {fileID: 11400000, guid: 3ccc03954110e164b8f3f33f0846ae33, type: 2}
   - {fileID: 11400000, guid: c94488e517e3d7d4f9bb0817226b113b, type: 2}
@@ -357616,6 +357618,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 536dd7828fd360c489ce345f2f4405b9, type: 2}
   - {fileID: 11400000, guid: 61c18dafe9b3ad248afea7b79da3806b, type: 2}
   - {fileID: 11400000, guid: 0c0d117275fce3a40a6fd1a62eb3aa2c, type: 2}
+  - {fileID: 11400000, guid: 47fcfb6bdb65c924bb72b6aae1cb9704, type: 2}
   - {fileID: 11400000, guid: a3742a86f964b0e419ed25671faaa660, type: 2}
   - {fileID: 11400000, guid: 24f63a86e5052b3429ddbaa9cb7b6b71, type: 2}
   - {fileID: 11400000, guid: 7c25d4724d339204fbfd32b673b9df2c, type: 2}
@@ -368557,9 +368560,9 @@ MonoBehaviour:
     pitch: 1
   - key: skillUp
     source: 0
-    clip: {fileID: 8300000, guid: 705c0bdc027704260a45c492970ec2a5, type: 3}
+    clip: {fileID: 8300000, guid: e40042cc2c17afc4da56602cdc9ea824, type: 3}
     data: {fileID: 0}
-    volume: 0.7
+    volume: 1
     pitch: 1
   - key: levelUp
     source: 0

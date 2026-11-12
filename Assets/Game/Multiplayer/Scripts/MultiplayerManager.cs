@@ -121,6 +121,37 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     // The host's word on whether the Skeleton Party is done for this run (RunStart.partyCleared), read by floor generation
     // in co-op (DungeonRoomTemplate.Gone) so every machine builds the same floor.
     public bool HostPartyCleared { get; private set; }
+    // The host's flags that decide what a floor deals (RunStart.hostFlags): read on every machine so the floors match.
+    // On the host its own save.
+    readonly Dictionary<string, int> hostFlags = new();
+    public int HostFlag(string key)
+    {
+        if (IsHost || !Connected) return ProgressionManager.HasInstance ? ProgressionManager.Instance.GetFlag(key) : 0;
+        return hostFlags.TryGetValue(key, out var v) ? v : 0;
+    }
+    public bool HostUnlocked(AdventurerClass c) => c == null || string.IsNullOrEmpty(c.unlockFlag) || HostFlag(c.unlockFlag) > 0;
+    static string HostFlagsString()
+    {
+        if (!ProgressionManager.HasInstance) return "";
+        var sb = new System.Text.StringBuilder();
+        foreach (var kv in ProgressionManager.Instance.AllFlags)
+            if (kv.Value != 0 && (kv.Key.StartsWith("class.") || kv.Key.StartsWith(DungeonGenerator.SeenPrefix)))
+            {
+                var pair = kv.Key + "=" + kv.Value + ";";
+                if (System.Text.Encoding.UTF8.GetByteCount(pair) + sb.Length > 4000) { Debug.LogWarning("[Coop] Too many host flags for one run start; the rest are left out."); break; }
+                sb.Append(pair);
+            }
+        return sb.ToString();
+    }
+    void ReadHostFlags(string text)
+    {
+        hostFlags.Clear();
+        foreach (var pair in text.Split(';'))
+        {
+            int eq = pair.LastIndexOf('=');
+            if (eq > 0 && int.TryParse(pair.Substring(eq + 1), out var v)) hostFlags[pair.Substring(0, eq)] = v;
+        }
+    }
     public CoopRules Rules => rules;
     public bool SharedLoot => !Connected || rules.sharedLoot;
     // The party's spoils are pooled and split at a run's end (the host's rule).
@@ -1134,6 +1165,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             seed = runSeed, floor = floor, generationLevel = Mathf.Max(1, generation), partySize = PartySize, descend = descend,
             partyCleared = ProgressionManager.HasInstance && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag),
             runId = runId,
+            hostFlags = new Unity.Collections.FixedString4096Bytes(HostFlagsString()),
         };
     }
 
@@ -1173,6 +1205,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         while (loader.Busy) yield return null;
         PartySize = Mathf.Max(1, start.partySize);
         HostPartyCleared = start.partyCleared;
+        ReadHostFlags(start.hostFlags.ToString());
         if (start.descend && !LocalInRun) yield break;
         runId = start.runId;
         // Sitting down again in a run this guest left: its adventurer back as it was (KeepRun). Another run: forgotten.

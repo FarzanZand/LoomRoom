@@ -3,9 +3,9 @@ using UnityEngine;
 
 // The sleeping giant (on the Giant's hoard template's root, with a ScriptedEventRoom): a giant sleeps in the middle of
 // its hoard, gold and gear lying about it and a chest at its back. It sleeps like any sleeper (EnemySleep): a crouching
-// step is never heard, a walking one close by wakes it, a hit wakes it. Take what you can and get out quietly, or wake
-// it and fight for the rest.
-public class SleepingGiantEvent : MonoBehaviour
+// step is never heard, a walking one close by wakes it, a hit wakes it, and so does taking a piece of its gear. Its gold
+// can be taken quietly; its gear has to be fought for.
+public class SleepingGiantEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("Where the giant sleeps (an Enemy socket of the template marks the same spot).")] public Transform bed;
     [Tooltip("Where the hoard lies: each spot gets a pile of gold or a piece of loot.")] public Transform[] hoard = new Transform[0];
@@ -25,13 +25,14 @@ public class SleepingGiantEvent : MonoBehaviour
     public DungeonMaster.Line enterLine = new() { text = "It's asleep. Crouch." };
     [Tooltip("Said when a step woke it.")] public DungeonMaster.Line wokeLine = new() { text = "Should have crouched." };
     [Tooltip("Said when a blow woke it.")] public DungeonMaster.Line struckLine = new() { text = "You hit it. It's awake now." };
+    [Tooltip("Said when taking a piece of its gear woke it.")] public DungeonMaster.Line lootedLine = new() { text = "It felt that." };
     public DungeonMaster.Line quietLine = new() { text = "Not a sound. I'm impressed." };
     public DungeonMaster.Line killedLine = new() { text = "That was a lot of giant." };
 
     ScriptedEventRoom room;
     Character giant;
     EnemyBrain brain;
-    bool laid, entered, woke, praised, took, struck;
+    bool laid, entered, woke, praised, took, struck, looted;
     int goldAtEntry = -1;
     float nextScan;
     readonly List<WorldItem> loot = new();
@@ -59,9 +60,18 @@ public class SleepingGiantEvent : MonoBehaviour
         if (!woke && giant.IsAlive && !brain.Asleep && brain.State != EnemyState.Dead)
         {
             woke = true;
-            ScriptedEventRoom.Say(struck ? struckLine : wokeLine);
+            ScriptedEventRoom.Say(struck ? struckLine : looted ? lootedLine : wokeLine);
         }
-        if (!took) foreach (var item in loot) if (item == null) { took = true; break; }
+        // A piece of its gear picked up wakes it, crouching or not (the user, 2026-11-12); its gold can still be taken quietly.
+        foreach (var item in loot)
+            if (item == null)
+            {
+                took = true;
+                // Co-op: a guest's giant is the host's, so the host is told who took it (Used) and wakes its own.
+                if (Coop.IsGuest) { if (!lootSent) { lootSent = true; CoopWorld.EventUsed(this, 0); } }
+                else if (player != null) WakeFromLoot(player.transform.position);
+                break;
+            }
         // Its gold counts too (picked up as it is walked over).
         if (!took && inside && goldAtEntry >= 0 && player != null && player.Wallet != null && player.Wallet.Gold > goldAtEntry) took = true;
         // Out of the room with something of the hoard, and it never stirred.
@@ -71,6 +81,24 @@ public class SleepingGiantEvent : MonoBehaviour
             ScriptedEventRoom.Say(quietLine);
         }
     }
+
+    void WakeFromLoot(Vector3 at)
+    {
+        if (woke || giant == null || !giant.IsAlive || !brain.Asleep) return;
+        looted = true;
+        if (giant.TryGetComponent<EnemySleep>(out var sleep)) brain.Wake(sleep.riseSeconds); else brain.Wake(riseSeconds);
+        brain.Provoke(at);
+    }
+
+    // ── Co-op ──
+    // A guest picked up a piece of its gear (each player's hoard is their own unless the loot is shared): the host's
+    // giant wakes and comes for them. Nothing is stepped on the guests: their giant moves as the host's does.
+    bool lootSent;
+    public void Used(int what, Character who)
+    {
+        if (what == 0 && Coop.IsHost && who != null) WakeFromLoot(who.transform.position);
+    }
+    public void Step(int step, int value, int seed) { }
 
     void FindGiant()
     {
