@@ -96,16 +96,43 @@ public partial class BossStageEncounter
         for (int i = 0; i < fight.backupCount; i++)
         {
             float across = fight.backupCount > 1 ? (i / (fight.backupCount - 1f) - .5f) * 6.4f : 0f;
-            var spot = home + back * 3.6f + side * across;
-            // On the stage, on its floor: out past its edge or into a pillar is pulled back to the nearest walkable ground.
-            if (NavMesh.SamplePosition(spot, out var hit, 2.5f, NavMesh.AllAreas)) spot = hit.position;
+            var spot = DancerSpot(home, back * 3.6f, side * across);
             var go = Instantiate(fight.backupDancer, spot, Quaternion.LookRotation(-back), dungeon.transform);
             go.name = fight.backupDancer.name + " (backup)";
             if (dungeon.LevelData.ambushSpawnPuff != null) Destroy(Instantiate(dungeon.LevelData.ambushSpawnPuff, spot, Quaternion.identity, dungeon.transform), 4f);
             var brain = go.GetComponent<EnemyBrain>();
             if (brain != null) brain.NoExperience = true;
+            // In a trance from the start: given a frame later, its first look could already set it chasing a player in
+            // sight, and a trance doesn't stop a chase (the user, 2026-11-12: they walked to the player and never swung).
+            if (brain != null) brain.Entranced = true;
             if (brain != null) StartCoroutine(StartDancer(brain, i));
         }
+    }
+
+    // A dancer's spot on the stage: behind where the boss was set down (behind: toward the Dungeon Master) and to its side.
+    // The step behind gives way first, then the step aside, until the spot is on the stage's own walkable floor, a little
+    // in from its edge. (His hand lets go at the end of his reach, about half a metre inside the stage's back edge, so the
+    // full step behind went past it: the dancers landed on the table's frame behind the stage, or, held back, all on the
+    // boss's own spot: the user, 2026-11-12.)
+    Vector3 DancerSpot(Vector3 home, Vector3 behind, Vector3 aside)
+    {
+        var layout = dungeon != null ? dungeon.Layout : null;
+        int room = dungeon != null ? dungeon.StageRoom : -1;
+        var full = home + behind + aside;
+        if (layout == null || room < 0) return NavMesh.SamplePosition(full, out var any, 2.5f, NavMesh.AllAreas) ? any.position : full;
+        var back = behind; back.y = 0f; back = back.sqrMagnitude > .0001f ? back.normalized : Vector3.zero;
+        var side = aside; side.y = 0f; side = side.sqrMagnitude > .0001f ? side.normalized : Vector3.zero;
+        const float margin = .4f;
+        bool Fits(Vector3 p) => layout.InRoom(room, dungeon.CellOf(p)) && layout.InRoom(room, dungeon.CellOf(p + back * margin)) && layout.InRoom(room, dungeon.CellOf(p + side * margin));
+        for (float a = 1f; a >= 0f; a -= .25f)
+            for (float b = 1f; b >= -.01f; b -= .1f)
+            {
+                var spot = home + behind * Mathf.Max(0f, b) + aside * a;
+                if (!Fits(spot)) continue;
+                if (NavMesh.SamplePosition(spot, out var hit, 1f, NavMesh.AllAreas) && Fits(hit.position) && Mathf.Abs(hit.position.y - home.y) < .5f)
+                    return hit.position;
+            }
+        return home;
     }
 
     // The boss calls them in: they stop dancing and come for the player.
@@ -139,6 +166,8 @@ public partial class BossStageEncounter
             character.Stats.DiesInOneHit = fight.backupOneHit;
         }
         brain.Entranced = true;
+        // Already set on someone: stands and dances.
+        if (brain.State != EnemyState.Idle && brain.State != EnemyState.Dead) brain.SetState(EnemyState.Idle);
         var graph = default(PlayableGraph);
         if (fight.backupDance != null && character.Animator != null)
         {
