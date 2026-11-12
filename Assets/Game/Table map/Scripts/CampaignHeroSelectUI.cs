@@ -74,6 +74,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
         finally { Unlisten(); }
         var result = taken ? progress.selectedClass : null;
         if (result == null && before != null) progress.SelectClass(before);
+        else if (result != null) DungeonMasterRemarks.PlayerPickedClass(progress);
         Sync();
         // Aborted from outside: it is already off screen.
         if (Open) for (float t = 1; t > 0; t -= Time.unscaledDeltaTime / .15f) { Fade(t); yield return null; }

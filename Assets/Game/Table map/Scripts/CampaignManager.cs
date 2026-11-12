@@ -1224,7 +1224,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         finally { figures.SilentTake = false; changingClass = false; }
         holder.position = oldPos;
         figuresHome = null;
-        if (picked != null) { progress?.SelectClass(picked); RememberClass(); }
+        if (picked != null) { progress?.SelectClass(picked); RememberClass(); DungeonMasterRemarks.PlayerPickedClass(progress); }
         PlaceFigure(At);
     }
 

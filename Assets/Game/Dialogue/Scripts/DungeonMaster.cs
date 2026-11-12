@@ -74,7 +74,12 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     // Lines waiting their turn, oldest first: a new line never cuts off the one being said. clip: a recorded voice
     // given with the line (Say(text, clip)).
-    readonly List<(Line line, AudioClip clip, float delay)> queue = new();
+    // delay counts from when the line was asked for (at), not from when it reaches the front: queued behind others, a
+    // line's wait was added to theirs (the user, 2026-11-12: the biome's line, 5 s after arriving, came 10 s after the line
+    // before it).
+    readonly List<(Line line, AudioClip clip, float delay, float at)> queue = new();
+    // When the last cutscene ended (a floor's reveal): a line asked for during one waits its delay from here.
+    float cutsceneEndedAt = -999f;
     // Oldest first. hex is the colour's RGB, worked out once when the line is added.
     // marked: a Dungeon Master line, whose *asterisked* parts take the highlight colour. typing: seconds it takes to type
     // out (0: shown whole); its hold and fade come after.
@@ -151,6 +156,16 @@ public class DungeonMaster : Singleton<DungeonMaster>
         Instance.Enqueue(line, clip, delay);
     }
 
+    // A line that answers what just happened and can't wait its turn (a spell hitting him in the face): the line being
+    // said and those queued behind it are dropped, and this one is said now (the user, 2026-11-12: his "Ow!" came
+    // 13 s after the hit, behind two queued lines).
+    public static void CutIn(Line line, AudioClip clip = null, float delay = 0)
+    {
+        if (!HasInstance || line == null || string.IsNullOrWhiteSpace(line.text)) return;
+        Instance.Silence();
+        Instance.Enqueue(line, clip, delay);
+    }
+
     // Each line as it appears (DungeonMasterSeat gestures on the ones said in person).
     public static event Action<Line> Spoke;
 
@@ -200,7 +215,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
     void Enqueue(Line line, AudioClip clip, float delay)
     {
         if (clip != null) line = new Line { text = line.text, mumble = false, inPerson = line.inPerson };
-        queue.Add((line, clip, delay));
+        queue.Add((line, clip, delay, Time.unscaledTime));
         if (running == null && isActiveAndEnabled) running = StartCoroutine(Run());
     }
 
@@ -208,10 +223,13 @@ public class DungeonMaster : Singleton<DungeonMaster>
     {
         while (queue.Count > 0)
         {
-            var (line, clip, delay) = queue[0];
+            var (line, clip, delay, at) = queue[0];
             queue.RemoveAt(0);
-            if (delay > 0) yield return new WaitForSecondsRealtime(delay);
             // The label sits on the HUD canvas, which cutscenes and the pause menu hide: hold the line until it can be read.
+            while (Cutscene || Paused) yield return null;
+            // What is left of its delay, from when it was asked for or the last cutscene ended, whichever is later.
+            float left = delay - (Time.unscaledTime - Mathf.Max(at, cutsceneEndedAt));
+            if (left > 0f) yield return new WaitForSecondsRealtime(left);
             while (Cutscene || Paused) yield return null;
             float speaking = Speak(line, clip, out float typing);
             // The next line waits until this one has been heard, typed out and read.
@@ -231,7 +249,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
                         StopVoice();
                         string shown = line.text.Trim();
                         lines.RemoveAll(l => l.marked && l.text == shown); dirty = true;
-                        queue.Insert(0, (line, clip, 0f));
+                        queue.Insert(0, (line, clip, 0f, Time.unscaledTime));
                     }
                     break;
                 }
@@ -413,6 +431,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
         // A cutscene (the descent into a table level) leaves the lines from before it behind.
         bool cutscene = GameManager.HasInstance && GameManager.Instance.State == GameState.Cutscene;
         if (cutscene && !wasCutscene && lines.Count > 0) { lines.Clear(); dirty = true; }
+        if (!cutscene && wasCutscene) cutsceneEndedAt = Time.unscaledTime;
         wasCutscene = cutscene;
         bool fading = false, typing = false;
         foreach (var l in lines) { float age = now - l.shown; if (age > l.typing + hold) fading = true; else if (age < l.typing) typing = true; }

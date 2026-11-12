@@ -127,7 +127,12 @@ public class SpellProjectile : MonoBehaviour
             // Deflect: off a raised shield, back at its caster (or straight back), now the defender's spell.
             var struckPlayer = hit.collider.GetComponentInParent<Player>();
             if (struckPlayer != null && struckPlayer != owner && struckPlayer.Combat != null && struckPlayer.Combat.Deflects(transform.forward)) { Deflect(struckPlayer, point); return; }
-            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform)) DungeonMasterRemarks.SpellHit(owner, spell);
+            if (TableManager.HasInstance && TableManager.Instance.DM != null && hit.transform.IsChildOf(TableManager.Instance.DM.transform))
+            {
+                DungeonMasterRemarks.SpellHit(owner, spell);
+                // He flinches away from it (the user, 2026-11-12).
+                if (owner is Player) SpellStagger.HitDungeonMaster(transform.forward);
+            }
             // Piercing: through the character, hurting it, on to the next.
             var struckCharacter = hit.collider.GetComponentInParent<Character>();
             if (struckCharacter != null && passed.Contains(struckCharacter)) continue;
@@ -148,6 +153,7 @@ public class SpellProjectile : MonoBehaviour
         if (selfAt < float.MaxValue)
         {
             DungeonMasterRemarks.SpellHitRoomSelf(owner, spell);
+            SpellStagger.HitRoomSelf(transform.forward);
             Explode(transform.position + transform.forward * selfAt, -transform.forward);
             return;
         }

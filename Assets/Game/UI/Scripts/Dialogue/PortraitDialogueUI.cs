@@ -32,6 +32,9 @@ public class PortraitDialogueUI : MonoBehaviour
     [Tooltip("The blips' pitch for the boss (a deep voice is lower) and anyone else.")]
     public float bossPitch = .8f, otherPitch = 1f;
     [Min(0)] public float fadeSeconds = .18f;
+    [Tooltip("The Dungeon Master's lines in a conversation are said in this box too: his portrait at its left, his name, the text in his feed's colours, his mumble or voice. Off: in his own feed, the box stepping aside while he speaks.")]
+    public bool dungeonMasterInBox = true;
+    [Tooltip("The name over his lines in the box.")] public string dungeonMasterName = "Dungeon Master";
     [Min(0), Tooltip("Canvas units a line said mid-fight (Bark) sits higher than a conversation's, clear of the hotbar and vitals the HUD keeps showing.")] public float barkRaise = 130f;
     [Header("Portrait")]
     [Tooltip("Pixels across the speaker's portrait (drawn point-filtered, so fewer is chunkier).")] public int portraitResolution = 256;
@@ -276,11 +279,19 @@ public class PortraitDialogueUI : MonoBehaviour
         Open = false; Barking = false;
     }
 
-    // One line: the Dungeon Master's in his own feed as always (the box steps aside while he
-    // speaks), anyone else's in the box. Wait: hold until it is read and pressed on (a line with answers doesn't).
-    // voice: a recorded voice for the line (the box's Voice), played instead of the blips or his mumble.
+    // One line in the box, the Dungeon Master's too (his portrait, his colours; the user, 2026-11-12), or with Dungeon
+    // Master In Box off his in his own feed (the box steps aside while he speaks). Wait: hold until it is read and
+    // pressed on (a line with answers doesn't). voice: a recorded voice for the line (the box's Voice), played instead
+    // of the blips or his mumble.
     IEnumerator Line(PortraitSpeaker speaker, string name, GameObject model, string text, Character boss, string bossName, bool wait, AudioData voice = null)
     {
+        var dm = TableManager.HasInstance ? TableManager.Instance.DM : null;
+        if (speaker == PortraitSpeaker.DungeonMaster && dungeonMasterInBox && dm != null)
+        {
+            yield return Box(speaker, !string.IsNullOrWhiteSpace(name) ? name : dungeonMasterName, dm, text, boss, bossName, voice);
+            if (wait) yield return WaitForNext();
+            yield break;
+        }
         if (speaker == PortraitSpeaker.DungeonMaster)
         {
             if (shown) { yield return Fade(0f); shown = false; }
@@ -298,8 +309,11 @@ public class PortraitDialogueUI : MonoBehaviour
     // clip on that source: the pool hands finished sources to other sounds).
     AudioSource boxVoice;
     AudioClip boxVoiceClip;
+    bool mumbling;
     void StopBoxVoice()
     {
+        if (mumbling && AudioManager.HasInstance) AudioManager.Instance.StopMumble();
+        mumbling = false;
         if (boxVoice != null && boxVoice.isPlaying && boxVoice.clip == boxVoiceClip) boxVoice.Stop();
         boxVoice = null; boxVoiceClip = null;
     }
@@ -316,14 +330,17 @@ public class PortraitDialogueUI : MonoBehaviour
             : speaker == PortraitSpeaker.Boss ? (!string.IsNullOrWhiteSpace(bossName) ? bossName : boss != null ? boss.TheNameCap : "")
             : model != null ? model.name : "").ToUpperInvariant();
         if (arrow != null) arrow.enabled = false;
-        body.text = text ?? "";
+        bool master = speaker == PortraitSpeaker.DungeonMaster;
+        // His lines in his feed's colours (cyan, the *marked* part white), everyone else's as the box has them.
+        body.text = master ? DungeonMaster.Colored(text ?? "") : text ?? "";
         body.maxVisibleCharacters = 0;
         if (!shown) { yield return Fade(1f); shown = true; Fire(); }
         float pitch = speaker == PortraitSpeaker.Boss ? bossPitch : otherPitch;
-        // A recorded voice takes the blips' place.
+        // A recorded voice takes the blips' place; the Dungeon Master without one mumbles, as in his feed.
         var clip = voice != null ? voice.GetClip() : null;
         if (clip != null && AudioManager.HasInstance) { boxVoice = AudioManager.Instance.PlayUI(clip, voice.volume, voice.RandomPitch()); boxVoiceClip = clip; }
-        yield return Type(pitch, clip == null);
+        else if (master && AudioManager.HasInstance) { AudioManager.Instance.Mumble(DungeonMaster.Plain(text ?? "")); mumbling = true; }
+        yield return Type(pitch, clip == null && !master);
         if (arrow != null) arrow.enabled = true;
     }
 

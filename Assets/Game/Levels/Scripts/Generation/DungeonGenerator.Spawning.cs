@@ -199,6 +199,12 @@ public partial class DungeonGenerator
         {
             var tpl = t.GetComponent<DungeonRoomTemplate>();
             if (tpl == null || !features.AllowsAll(tpl.Requires()) || tpl.Gone) return false;
+            // A room built round pits (the duel's and the troll's bridges) needs its ways in where its doors are marked:
+            // the room here was laid out already, and a way in from the side drops the pit on that side (BuildCuts), leaving
+            // the bridge on plain floor (the user, 2026-11-12). So its pits are laid where the room would put them (its
+            // centre and turn, as PlaceTemplate does) and it is taken only if they all stay: wholly in the room, no way in
+            // opening into them, the ways in still joined.
+            if (!PitsHold(t, room)) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
@@ -233,6 +239,26 @@ public partial class DungeonGenerator
             }
         }
     }
+    // Whether a template's pits would all be built in room `room` (BuildCuts leaves out one that falls outside the room or
+    // cuts its ways in apart): laid at the room's centre and turn, as PlaceTemplate places the template.
+    bool PitsHold(GameObject template, int room)
+    {
+        var hole = new System.Collections.Generic.HashSet<Vector2Int>();
+        var at = Cell(Layout.RoomCenter(room));
+        var turn = Quaternion.Euler(0f, 90f * Layout.RoomRotation(room), 0f);
+        foreach (var cut in template.GetComponentsInChildren<DungeonFloorCut>(true))
+        {
+            if (cut.kind != DungeonFloorCut.Kind.Pit) continue;
+            foreach (var p in cut.CellCentres(data.cellSize))
+            {
+                var c = CellOf(at + turn * template.transform.InverseTransformPoint(p));
+                if (!Layout.InRoom(room, c)) return false;
+                hole.Add(c);
+            }
+        }
+        return hole.Count == 0 || KeepsWaysJoined(room, hole);
+    }
+
     DungeonRoomTemplate TemplateOf(int i) { var p=TemplatePrefab(i); return p!=null ? p.GetComponent<DungeonRoomTemplate>() : null; }
 
     void ChooseTemplates()
