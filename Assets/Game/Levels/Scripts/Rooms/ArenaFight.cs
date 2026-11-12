@@ -77,7 +77,14 @@ public class ArenaFight : MonoBehaviour
         var player = TablePlayer;
         EnemyBrain speaker = fighters.Find(b => b != null && !Down(b));
         if (box == null || player == null || speaker == null || talk.introLines == null || talk.introLines.Count == 0) yield break;
-        foreach (var b in fighters) if (b != null && !Down(b)) b.Entranced = true;
+        foreach (var b in fighters)
+        {
+            if (b == null || Down(b)) continue;
+            b.Entranced = true;
+            // Already set on the player (it saw them come in a moment before the say began): it stands, as a trance
+            // doesn't stop a chase.
+            if (b.State != EnemyState.Idle) b.SetState(EnemyState.Idle);
+        }
         if (GameManager.HasInstance) { GameManager.Instance.Push(GameState.Dialogue); talkPushed = true; }
         if (player.Look != null) StartCoroutine(CameraEase.LookAt(player.Look, speaker.transform.position + Vector3.up * 1.6f, .5f));
         var who = speaker.GetComponent<Character>();

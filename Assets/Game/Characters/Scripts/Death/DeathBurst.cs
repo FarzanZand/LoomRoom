@@ -34,9 +34,26 @@ public class DeathBurst : MonoBehaviour
     float burstAt;
 
     void Awake() => character = GetComponent<Character>();
+
+    // The first body of each kind on a floor starts working out its split as it appears, a little each frame, so even
+    // the first kill of that kind in a run needs no working out (claimed per mesh, so only one body of a kind does it).
+    void Start()
+    {
+        var smr = GetComponentInChildren<SkinnedMeshRenderer>();
+        if (smr == null || smr.sharedMesh == null) return;
+        var key = (smr.sharedMesh, character.Animator != null ? character.Animator.avatar : null);
+        if (!worked.ContainsKey(key) && claimed.Add(key) && plans == null && planning == null) planning = MakePlans();
+    }
     void OnEnable() { character.Damaged += Remember; character.Died += OnDied; }
     void OnDisable() { character.Damaged -= Remember; character.Died -= OnDied; }
-    void Remember(DamageInfo info) => lastHit = info;
+    void Remember(DamageInfo info)
+    {
+        lastHit = info;
+        // The first blow starts working out the split (if no body of its kind has yet) a little each frame (PlanAheadMilliseconds), so the kill a few blows
+        // later only bakes the pose and fills the pieces: worked out in the death frame, a skeleton's burst took 23 ms in
+        // one frame on the 4090 (2026-11-12, the user's stutter in fights).
+        if (!HasBurst && !pending && plans == null && planning == null) planning = MakePlans();
+    }
 
     bool pending;
 
@@ -47,12 +64,12 @@ public class DeathBurst : MonoBehaviour
         burstAt = Time.time + HoldSeconds;
         // Hold the current pose: with the Animator running, the Dead flag and death trigger would move it first.
         if (HoldSeconds <= 0f && character.Animator != null) character.Animator.enabled = false;
-        else planning = MakePlans();
+        else planning ??= plans == null ? MakePlans() : null;
     }
 
     void LateUpdate()
     {
-        if (!pending) return;
+        if (!pending) { StepPlans(PlanAheadMilliseconds); return; }
         if (Time.time < burstAt) { StepPlans(PlanMillisecondsPerFrame); return; }
         pending = false;
         if (character.Animator != null) character.Animator.enabled = false;
@@ -128,16 +145,23 @@ public class DeathBurst : MonoBehaviour
     // (HoldSeconds), so the burst itself only bakes the pose and fills the pieces: the Crypt Lord's burst took 156 ms in
     // one frame (2026-11-12). With no hold it is all done in the death frame, as before. The pieces come out the same.
     const float PlanMillisecondsPerFrame = 3f;
+    const float PlanAheadMilliseconds = .5f;   // while it still stands: a frame may hold several hurt enemies
     const int PlanStep = 4096;   // triangles or vertices between checks of the frame's time
+    // A group only names its bone and its submeshes, so one worked out for a mesh serves every body wearing it (each kind
+    // of skeleton is worked out once a session, not once a kill: it made about 2 MB of garbage a kill, 2026-11-12).
     sealed class Group
     {
-        public Transform bone;
+        public string bone;
         public int[] vertices;               // the baked mesh's vertex for each of the piece's
         public Vector2[] uvs;
         public readonly List<int[]> triangles = new();   // per submesh the piece has, in the piece's numbering
-        public readonly List<Material> materials = new();
+        public readonly List<int> submeshes = new();     // the source submesh of each, for its material
     }
-    sealed class Plan { public SkinnedMeshRenderer smr; public readonly List<Group> groups = new(); }
+    sealed class Plan { public SkinnedMeshRenderer smr; public List<Group> groups = new(); }
+    static readonly Dictionary<(Mesh, Avatar), List<Group>> worked = new();
+    static readonly HashSet<(Mesh, Avatar)> claimed = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { worked.Clear(); claimed.Clear(); }
     List<Plan> plans;
     IEnumerator<bool> planning;
     readonly System.Diagnostics.Stopwatch planWatch = new();
@@ -159,6 +183,8 @@ public class DeathBurst : MonoBehaviour
             if (!smr.enabled || smr.sharedMesh == null) continue;
             var plan = new Plan { smr = smr };
             plans.Add(plan);
+            var key = (smr.sharedMesh, character.Animator != null ? character.Animator.avatar : null);
+            if (worked.TryGetValue(key, out var known)) { plan.groups = known; continue; }
             var baked = new Mesh();
             // The pose doesn't matter here: only the UVs and the triangles are taken from this bake. From a bake because
             // the source mesh (Synty FBX) is not readable, so its UVs come back empty.
@@ -204,14 +230,13 @@ public class DeathBurst : MonoBehaviour
                 }
             }
 
-            var materials = smr.sharedMaterials;
             var remap = new Dictionary<int, int>();
             foreach (var bone in order)
             {
                 var lists = groups[bone];
                 remap.Clear();
                 var vertices = new List<int>(); var uv = new List<Vector2>();
-                var group = new Group { bone = bone };
+                var group = new Group { bone = bone.name };
                 for (int sub = 0; sub < lists.Length; sub++)
                 {
                     if (lists[sub] == null) continue;
@@ -230,13 +255,14 @@ public class DeathBurst : MonoBehaviour
                         if (k % PlanStep == 0) yield return true;
                     }
                     group.triangles.Add(local);
-                    group.materials.Add(sub < materials.Length ? materials[sub] : materials[materials.Length - 1]);
+                    group.submeshes.Add(sub);
                 }
                 if (vertices.Count == 0) continue;
                 group.vertices = vertices.ToArray(); group.uvs = uv.ToArray();
                 plan.groups.Add(group);
                 yield return true;
             }
+            worked[key] = plan.groups;
         }
     }
 
@@ -271,16 +297,18 @@ public class DeathBurst : MonoBehaviour
             mesh.subMeshCount = group.triangles.Count;
             for (int s = 0; s < group.triangles.Count; s++) mesh.SetTriangles(group.triangles[s], s, false);
             mesh.RecalculateBounds();
-            var mats = group.materials;
+            var materials = smr.sharedMaterials;
+            var mats = new Material[group.submeshes.Count];
+            for (int s = 0; s < mats.Length; s++) { int sub = group.submeshes[s]; mats[s] = materials[sub < materials.Length ? sub : materials.Length - 1]; }
 
-            var go = new GameObject(name + " - " + group.bone.name);
+            var go = new GameObject(name + " - " + group.bone);
             go.layer = smr.gameObject.layer;
             go.transform.SetParent(parent, false);
             go.transform.position = centre;
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<OwnedMesh>().mesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterials = mats.ToArray();
+            mr.sharedMaterials = mats;
             mr.renderingLayerMask = smr.renderingLayerMask;
             mr.shadowCastingMode = smr.shadowCastingMode;
             var box = go.AddComponent<BoxCollider>();

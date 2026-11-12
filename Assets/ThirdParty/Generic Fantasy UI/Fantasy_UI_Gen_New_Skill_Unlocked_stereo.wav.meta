@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: b44d85f4b2b8d41b7a51bc152b60a2b1
+AssetOrigin:
+  serializedVersion: 1
+  productId: 394850
+  packageName: Generic Fantasy UI Sound Effects Pack
+  packageVersion: 1.0
+  assetPath: Assets/Generic Fantasy UI/Fantasy_UI_Gen_New_Skill_Unlocked_stereo.wav
+  uploadId: 957726
 AudioImporter:
   externalObjects: {}
   serializedVersion: 8
@@ -11,7 +18,7 @@ AudioImporter:
     compressionFormat: 1
     quality: 1
     conversionMode: 0
-    preloadAudioData: 0
+    preloadAudioData: 1
   platformSettingOverrides: {}
   forceToMono: 0
   normalize: 1
@@ -21,10 +28,3 @@ AudioImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 394850
-  packageName: Generic Fantasy UI Sound Effects Pack
-  packageVersion: 1.0
-  assetPath: Assets/Generic Fantasy UI/Fantasy_UI_Gen_New_Skill_Unlocked_stereo.wav
-  uploadId: 957726
