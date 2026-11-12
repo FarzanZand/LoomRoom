@@ -77,14 +77,18 @@ public class DungeonRoomTemplate : MonoBehaviour
     public bool socketEnemiesOnly;
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;
+    [Tooltip("Dealt only while this class is still locked: once it is unlocked the room is left out of every floor (the Duel bridge: Little Undead John only until the Necromancer is unlocked, the user, 2026-11-12). Empty: always.")]
+    public AdventurerClass onlyWhileLocked;
 
     // Done for this run: the Skeleton Party once its dancers are all dead or its chest is opened (SkeletonParty.ClearedFlag), and any
-    // room whose portal leads to a room that is (the Portal hall). Left out of every floor's pools.
+    // room whose portal leads to a room that is (the Portal hall). Done for good: a room whose class (Only While Locked)
+    // is unlocked. Left out of every floor's pools.
     public bool Gone
     {
         get
         {
             if (!ProgressionManager.HasInstance) return false;
+            if (onlyWhileLocked != null && onlyWhileLocked.Unlocked) return true;
             if (GetComponent<SkeletonParty>() != null && ProgressionManager.Instance.HasFlag(SkeletonParty.ClearedFlag)) return true;
             foreach (var arch in GetComponentsInChildren<PortalArch>(true))
             {

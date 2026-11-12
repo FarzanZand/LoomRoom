@@ -489,6 +489,7 @@ MonoBehaviour:
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
