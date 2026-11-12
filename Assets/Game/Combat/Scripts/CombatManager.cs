@@ -241,8 +241,10 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(0), Tooltip("Stamina spent on each successfully blocked hit.")]
     public float blockStaminaCost = 6f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Block")]
-    [Min(0), Tooltip("Stamina drained each second while holding the shield up.")]
-    public float shieldStaminaPerSecond = 2f;
+    [Range(0, 1), Tooltip("Stamina comes back at this share of its usual rate while the shield is up (0.5 = half as fast). Holding the shield costs nothing: only a blocked hit does.")]
+    public float shieldRegenMultiplier = .5f;
+    // shieldStaminaPerSecond (a drain while the shield was held, 4 a second) was retired on 2026-11-12 (the user): holding
+    // block only slows stamina's return now.
 
     // ── Player: Shield bash ──
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Shield bash")]
@@ -404,6 +406,9 @@ public partial class CombatManager : Singleton<CombatManager>
     public float critHitStopScale = 2.5f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     public AudioData critAudio;
+    [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
+    [Tooltip("Play Crit Audio on top of the hit sound. Off (the user, 2026-11-12: it sounded like a triple slash; a new one later): a critical hit sounds like any other hit.")]
+    public bool playCritAudio;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Critical hits and backstabs")]
     [Tooltip("Hitting an enemy that is not chasing or attacking, or one facing away, is a backstab.")]
     public bool backstabsEnabled = true;
@@ -697,7 +702,7 @@ public partial class CombatManager : Singleton<CombatManager>
         var body = !info.Blocked && defaults && victim.data != null ? victim.data.audio : null;
         if (body != null && body.impact != null && body.impact.Length > 0) body.PlayAt(body.impact, info.HitPoint, body.impactVolume);
         else if(audio != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(audio,info.HitPoint);
-        var special = info.Blocked ? null : info.Backstab ? backstabAudio : info.Critical ? critAudio : null;
+        var special = info.Blocked ? null : info.Backstab ? backstabAudio : info.Critical && playCritAudio ? critAudio : null;
         if(special != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(special,info.HitPoint);
         GameObject prefab = info.Blocked ? blockParticlePrefab : defaults ? GetRandomHitParticle() : profile.hitParticle;
         if(prefab != null)

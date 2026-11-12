@@ -66,15 +66,27 @@ public class AdventureClassSelectionUI : MonoBehaviour
         { (MetaAttribute.Strength, "STR"), (MetaAttribute.Dexterity, "DEX"), (MetaAttribute.Constitution, "CON"), (MetaAttribute.Intelligence, "INT") };
 
     // "STR +1  DEX +1  CON 0  INT -2": the class's own points, added to the sheet's scores once the run starts.
+    // While the first morning's dice wait for their run (ProgressionManager.FirstRoll), the scores the run starts at instead,
+    // the rolls with the class's points added ("STR 15  DEX 9  CON 12  INT 7"), a number the class raises or lowers in
+    // Raised or Lowered Color.
     string AttributeLine(AdventurerClass c)
     {
+        var meta = ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
+        bool rolled = false;
+        if (meta != null && progress != null && !progress.InRun)
+            foreach (var (attribute, _) in Attributes) rolled |= meta.FirstRoll(attribute, false, out _);
         var line = new System.Text.StringBuilder();
         foreach (var (attribute, label) in Attributes)
         {
             int bonus = c.Attribute(attribute);
             if (line.Length > 0) line.Append("   ");
             line.Append($"<color=#{Hex(tierColor)}>{label}</color> ");
-            line.Append(bonus == 0 ? "0" : $"<color=#{Hex(bonus > 0 ? raisedColor : loweredColor)}>{bonus:+0;-0}</color>");
+            if (rolled)
+            {
+                int score = meta.StartingScore(attribute, false) + bonus;
+                line.Append(bonus == 0 ? score.ToString() : $"<color=#{Hex(bonus > 0 ? raisedColor : loweredColor)}>{score}</color>");
+            }
+            else line.Append(bonus == 0 ? "0" : $"<color=#{Hex(bonus > 0 ? raisedColor : loweredColor)}>{bonus:+0;-0}</color>");
         }
         return line.ToString();
     }

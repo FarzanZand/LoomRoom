@@ -61,7 +61,7 @@ Defaults below are the values on `Combat/Prefabs/CombatManager.prefab`.
 - `attackFromBlock` (on), `simpleSwings` (on), `ikSwingCameraRotation`, `ikSwingCameraCurve`: see above.
 - `weaponSweepSteps` (12): samples per frame along the weapon's path.
 - `heavyChargeTime`, `heavyDamageMultiplier`, `heavyStaminaCost`: charge threshold, damage, and stamina.
-- `blockStaminaCost`, `shieldStaminaPerSecond`, `blockFrontalDot`: shield cost and which hits count as frontal. Blocking does not cancel the enemy attack.
+- `blockStaminaCost`, `shieldRegenMultiplier`, `blockFrontalDot`: the stamina a blocked hit costs, how fast stamina comes back while the shield is up (holding it costs nothing), and which hits count as frontal. Blocking does not cancel the enemy attack.
 - `enemyAttackCommitTime`, `enemyRecoveryTime`, `enemyCooldownMultiplier`, `enemyMinimumWindup`: normal attack cadence.
 - `lightFlinchDuration` (0.25), `heavyStaggerDuration`, `enemyStaggerImmunity` (1.5): how long hits stop an enemy.
 - `hitsInterruptWindup` (off), `interruptWindow` (0.45): windup interrupts.

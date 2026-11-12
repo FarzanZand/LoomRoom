@@ -432,8 +432,16 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         if (!initialised || !IsAlive || !HasStat(StatType.MaxStamina)) return;
         if (GameManager.HasInstance && !GameManager.Instance.SimulationActive) return;
         if (staminaRegenDelayTimer > 0) { staminaRegenDelayTimer -= Time.deltaTime; return; }
-        RestoreStamina(GetFinal(StatType.StaminaRegen) * Time.deltaTime);
+        RestoreStamina(GetFinal(StatType.StaminaRegen) * StaminaRegenScale * Time.deltaTime);
     }
+
+    // A share of the usual stamina regeneration (a raised shield gives half). It holds for this frame and the next only, so
+    // it is asked for every frame it applies and a caller that stops asking (the shield lowered, the player switched off)
+    // leaves the rate whole.
+    float staminaRegenScale = 1f;
+    int staminaRegenScaleFrame = -10;
+    public void ScaleStaminaRegen(float scale) { staminaRegenScale = Mathf.Max(0f, scale); staminaRegenScaleFrame = Time.frameCount; }
+    public float StaminaRegenScale => Time.frameCount - staminaRegenScaleFrame <= 1 ? staminaRegenScale : 1f;
 
     public bool TryUseStamina(float amount, float regenDelay = .6f)
     {

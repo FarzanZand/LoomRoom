@@ -767,6 +767,6 @@ MonoBehaviour:
   toCeiling: 0
   fromCeiling: 0
   ceilingGap: 0
-  sides: 3
-  top: 3
+  sides: 0
+  top: 0
   solid: 0

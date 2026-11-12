@@ -484,7 +484,7 @@ public partial class DungeonGenerator
                 {
                     var prefab=socket.overridePrefab;
                     if(prefab==null){var f=PickFeature(index);prefab=f!=null ? f.prefab : null;}
-                    if(prefab!=null)SpawnFeature(prefab,t.position,t.rotation);
+                    if(prefab!=null)ClearOrDrop(SpawnFeature(prefab,t.position,t.rotation));
                     break;
                 }
                 default:
@@ -632,12 +632,12 @@ public partial class DungeonGenerator
             var free=available.GetRange(cursor,available.Count-cursor);
             var open=new System.Collections.Generic.HashSet<Vector2Int>(free);
             open.ExceptWith(furnished);
-            if(FindSpot(feature.placement,Vector2Int.one,index,free,open,out var spot,out var turn))BackToWall(SpawnFeature(feature.prefab,spot,turn),feature.placement,Vector2Int.one);
+            if(FindSpot(feature.placement,Vector2Int.one,index,free,open,out var spot,out var turn)){var placed=SpawnFeature(feature.prefab,spot,turn);BackToWall(placed,feature.placement,Vector2Int.one);ClearOrDrop(placed);}
         }
         else if(feature!=null && cursor<available.Count)
         {
             var pos=Cell(available[cursor++]);
-            SpawnFeature(feature.prefab,pos,FaceCenter(pos,index));
+            ClearOrDrop(SpawnFeature(feature.prefab,pos,FaceCenter(pos,index)));
         }
         return cursor;
     }
@@ -700,12 +700,58 @@ public partial class DungeonGenerator
     DungeonDestructible SpawnDestructible(GameObject prefab,Vector3 pos,Quaternion rotation,LootSource rewardOverride,int seed)
     {
         var go=Instantiate(prefab,pos,rotation,transform);
-        AddBody(go);
         var d=go.GetComponent<DungeonDestructible>();
+        // One standing on the floor never cuts into a wall or a room's piece (a corner piece hangs against the walls).
+        if((d==null || d.placement==DestructiblePlacement.Floor) && !KeepClear(go)){DestroyImmediate(go);return null;}
+        AddBody(go);
         if(d==null){SeedGroup(go,seed,rewardOverride);return go.GetComponentInChildren<DungeonDestructible>();}
         d.loot=First(rewardOverride,FloorLoot);
         d.seed=seed;d.floorNumber=FloorNumber;
         return d;
+    }
+
+    // A breakable just set down is pushed out sideways from the walls, kit blocks and pieces it cuts into (the user,
+    // 2026-11-12: a crate on the Pillared hall's niche socket stood half inside the niche's ledge and jamb); one that
+    // still cuts into something after a few pushes, or would have to move further than ClearMostPush, is left out.
+    // Whatever it only touches from above or below (the floor, a platform it stands on) doesn't count. No random draws,
+    // so the floor's seeds stay as they were.
+    static readonly Collider[] clearHits=new Collider[32];
+    const float ClearMostPush=.9f, ClearMargin=.02f;
+    bool KeepClear(GameObject go)
+    {
+        var own=new System.Collections.Generic.List<Collider>();
+        foreach(var c in go.GetComponentsInChildren<Collider>())if(c.enabled && !c.isTrigger)own.Add(c);
+        if(own.Count==0)return true;
+        var start=go.transform.position;
+        for(int step=0;step<6;step++)
+        {
+            Physics.SyncTransforms();
+            Vector3 push=Vector3.zero; bool cuts=false;
+            foreach(var c in own)
+            {
+                var b=c.bounds;
+                int n=Physics.OverlapBoxNonAlloc(b.center,b.extents,clearHits,Quaternion.identity,Physics.DefaultRaycastLayers,QueryTriggerInteraction.Ignore);
+                for(int i=0;i<n;i++)
+                {
+                    var o=clearHits[i];
+                    if(o==null || o.transform.IsChildOf(go.transform) || o.GetComponentInParent<Character>()!=null)continue;
+                    if(!Physics.ComputePenetration(c,c.transform.position,c.transform.rotation,o,o.transform.position,o.transform.rotation,out var dir,out float dist))continue;
+                    if(Mathf.Abs(dir.y)>.7f)continue;   // the floor under it, or what it stands on
+                    var flat=new Vector3(dir.x,0f,dir.z);
+                    if(flat.sqrMagnitude<1e-6f)continue;
+                    var need=flat.normalized*(dist/flat.magnitude+ClearMargin);
+                    // The larger push per axis, so two blocks on one side don't add up.
+                    push.x=Mathf.Abs(need.x)>Mathf.Abs(push.x) ? need.x : push.x;
+                    push.z=Mathf.Abs(need.z)>Mathf.Abs(push.z) ? need.z : push.z;
+                    cuts=true;
+                }
+            }
+            if(!cuts)return true;
+            go.transform.position+=push;
+            var moved=go.transform.position-start; moved.y=0f;
+            if(moved.magnitude>ClearMostPush)return false;
+        }
+        return false;
     }
 
     // A group (barrels stacked, a crate with sacks) holds several breakables: each gets the floor's loot and its own
@@ -719,6 +765,10 @@ public partial class DungeonGenerator
             part.seed=unchecked(seed*31+(++i)*7919);part.floorNumber=FloorNumber;
         }
     }
+
+    // A feature (an altar, a shrine, a fountain) keeps clear of what stands in the room as breakables do: a random pick may be
+    // bigger than the spot it was given (an altar stood 35 cm into the guard post's barrels). Left out when it can't.
+    void ClearOrDrop(GameObject feature){if(feature!=null && !KeepClear(feature))DestroyImmediate(feature);}
 
     GameObject SpawnFeature(GameObject prefab,Vector3 pos,Quaternion rotation)
     {

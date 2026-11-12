@@ -266,7 +266,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
                     foreach (var m in t.milestones)
                         if (meta.Reached(t, m) && !before.Contains(m))
                         {
-                            ShowUnlock(m.Known ? $"Unlocked: {m.Name}" : $"{t.displayName} {m.value}", "A trophy for the wall");
+                            // What it does, not its trophy ("A trophy for the wall" under "Unlocked: Dash" read as if the
+                            // dash were the trophy; the user, 2026-11-12).
+                            ShowUnlock(m.Known ? $"Unlocked: {m.Name}" : $"{t.displayName} {m.value}", m.Known ? m.Description ?? "" : "");
                             if (AudioManager.HasInstance) AudioManager.Instance.PlayLevelUp();
                         }
                 break;
@@ -279,6 +281,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (unlockBanner == null) return;
         if (unlockTitle != null) unlockTitle.text = title;
         if (unlockSub != null) unlockSub.text = sub;
+        FitBanner();
         unlockBanner.gameObject.SetActive(true);
         // The hover card under the resting cursor would lie over it: it goes while the banner shows.
         HideTip();
@@ -290,6 +293,29 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             .Append(unlockBanner.DOScale(1f, .22f).SetEase(Ease.OutBack))
             .AppendInterval(3.2f)
             .AppendCallback(() => unlockBanner.gameObject.SetActive(false));
+    }
+
+    // The line under the title says what the unlock does (the user, 2026-11-12), which can be longer than the banner is
+    // wide: it wraps inside the banner, and the banner grows downward and upward by the extra lines, title kept at its top.
+    Vector2? bannerSize, fillSize, titlePos, subPos, subSize;
+    void FitBanner()
+    {
+        if (unlockSub == null) return;
+        var subRect = unlockSub.rectTransform;
+        var fill = unlockBanner.Find("Fill") as RectTransform;
+        bannerSize ??= unlockBanner.sizeDelta; subSize ??= subRect.sizeDelta; subPos ??= subRect.anchoredPosition;
+        if (fill != null) fillSize ??= fill.sizeDelta;
+        if (unlockTitle != null) titlePos ??= unlockTitle.rectTransform.anchoredPosition;
+        unlockSub.textWrappingMode = TMPro.TextWrappingModes.Normal;
+        float lineHeight = subSize.Value.y;
+        float height = string.IsNullOrEmpty(unlockSub.text) ? lineHeight : Mathf.Max(lineHeight, Mathf.Ceil(unlockSub.GetPreferredValues(unlockSub.text, subSize.Value.x, 0f).y));
+        float extra = height - lineHeight;
+        unlockBanner.sizeDelta = bannerSize.Value + new Vector2(0f, extra);
+        if (fill != null) fill.sizeDelta = fillSize.Value + new Vector2(0f, extra);
+        if (unlockTitle != null) unlockTitle.rectTransform.anchoredPosition = titlePos.Value + new Vector2(0f, extra * .5f);
+        subRect.sizeDelta = new Vector2(subSize.Value.x, height);
+        // Its middle stays put: its top moves up with the banner's top, its bottom down with the banner's bottom.
+        subRect.anchoredPosition = subPos.Value;
     }
 
     void Refund()
@@ -517,7 +543,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         if (tip == null || meta == null || t == null || t.milestones == null || index >= t.milestones.Count) return;
         var m = t.milestones[index];
         bool got = meta.Reached(t, m);
-        string state = got ? (meta.Trophy(t, m) == ProgressionManager.TrophyState.Mounted ? "On the wall." : "A trophy to hang.") : $"At {t.displayName} {m.value}.";
+        // What it does and when, never its trophy (the user, 2026-11-12).
+        string state = got ? "Learned." : $"At {t.displayName} {m.value}.";
         string name = m.Known ? m.Name : "?";
         string body = string.IsNullOrEmpty(m.Description) ? state : $"{m.Description}\n<color=#{ColorUtility.ToHtmlStringRGB(got ? pen : faint)}>{state}</color>";
         ShowCard(name, body, near);

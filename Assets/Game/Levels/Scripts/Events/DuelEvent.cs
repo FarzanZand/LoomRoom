@@ -15,8 +15,13 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     public Transform post;
     [Min(1f), Tooltip("Metres from the duellist at which he salutes and the duel is called.")]
     public float challengeDistance = 5f;
-    [Range(.1f, 2f), Tooltip("His damage in the duel, times what his own data and the floor give him (the user, 2026-11-12: 25% less). The same enemy elsewhere (the Realms' Undead Knight) keeps his own.")]
-    public float damageMultiplier = .75f;
+    [Range(.1f, 2f), Tooltip("His damage in the duel, times what his own data and the floor give him (the user, 2026-11-12: 25% less, then .55 so that as a Brutal elite, +35%, he still hits as he did at .75). The same enemy elsewhere (the Realms' Undead Knight) keeps his own.")]
+    public float damageMultiplier = .55f;
+    [Range(.1f, 5f), Tooltip("His health in the duel, times what his own data and the floor give him, full when he is found (the user, 2026-11-12: double). The Realms' Undead Knight elsewhere keeps his own.")]
+    public float healthMultiplier = 2f;
+    [Tooltip("He is an elite of this kind in the duel (the user, 2026-11-12: Brutal, the red glow): its name, glow, size, steadiness and double experience. No extra floors of growth: his numbers are Damage and Health Multiplier's. Off: a plain duellist.")]
+    public bool elite = true;
+    public EliteTrait eliteTrait = EliteTrait.Brutal;
     [Tooltip("His salute (a humanoid clip played over his animator), and how long he holds it before he fights.")]
     public AnimationClip salute;
     [Min(.2f)] public float saluteSeconds = 1.6f;
@@ -105,13 +110,20 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         duellist.Died += OnDied;
     }
 
-    // Damage Multiplier on his damage, once, once his stats are set up (after the floor's balance).
+    // Damage Multiplier on his damage and Health Multiplier on his health (full), once, once his stats are set up
+    // (after the floor's balance).
     bool weakened;
     void Weaken()
     {
-        if (weakened || Mathf.Approximately(damageMultiplier, 1f) || !duellist.TryGetComponent<CharacterStats>(out var s) || !s.Initialised) return;
+        if (weakened || !duellist.TryGetComponent<CharacterStats>(out var s) || !s.Initialised) return;
         weakened = true;
-        s.AddModifier(new StatModifier(StatType.AttackDamage, damageMultiplier - 1f, ModifierType.PercentMultiply, this));
+        if (!Mathf.Approximately(damageMultiplier, 1f)) s.AddModifier(new StatModifier(StatType.AttackDamage, damageMultiplier - 1f, ModifierType.PercentMultiply, this));
+        if (!Mathf.Approximately(healthMultiplier, 1f) && s.IsAlive)
+        {
+            s.AddModifier(new StatModifier(StatType.MaxHealth, healthMultiplier - 1f, ModifierType.PercentMultiply, this));
+            s.SetHealthShare(1f);
+        }
+        if (elite && !duellist.TryGetComponent<EliteEnemy>(out _)) EliteEnemy.Make(duellist, eliteTrait, 0f);
     }
 
     void OnDestroy()

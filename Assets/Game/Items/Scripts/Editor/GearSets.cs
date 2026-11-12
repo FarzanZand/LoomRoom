@@ -508,6 +508,32 @@ public static class GearSets
         ["Verdant Mace"] = (new Vector2(.296f, .330f), new Vector2(.1558f, .330f)),
     };
 
+    // Every tier 5-12 mace's model again, as BuildWeapons makes it, leaving the items' data (price, damage, icon setup)
+    // as it is: for a change to how the maces are sized or laid in the hand.
+    public static string RebuildMaceModels()
+    {
+        var log = new System.Text.StringBuilder();
+        var items = new List<ItemData>();
+        keepItemData = true;
+        try { foreach (var (tier, name, _, mace, maceName) in Weapons) BuildWeapon(tier, maceName ?? $"{name} Mace", name, $"Assets/Synty/{mace}.prefab", "Crystal Mace", 1, log, items); }
+        finally { keepItemData = false; }
+        AssetDatabase.SaveAssets();
+        return log.ToString();
+    }
+    static bool keepItemData;
+
+    // How far a mace reaches above the grip: the Bronze Mace's (the user, 2026-11-12: the taller maces held the head
+    // above the top of the screen; the tier 1 mace shows its head, and every mace now reaches as far as it does).
+    const string MaceReachFrom = "Bronze Mace";
+    static float MaceReach()
+    {
+        var bronze = AssetDatabase.LoadAssetAtPath<ItemData>($"{WeaponData}/{MaceReachFrom}.asset");
+        if (bronze == null || bronze.worldPrefab == null) return 0f;
+        var (mesh, frame, _) = MeshOf(bronze.worldPrefab);
+        var (along, _, _) = Line(mesh, frame);
+        return mesh.vertices.Max(p => Vector3.Dot(frame.MultiplyPoint3x4(p), along));
+    }
+
     public static string BuildWeapons(string only = null)
     {
         var log = new System.Text.StringBuilder();
@@ -542,6 +568,13 @@ public static class GearSets
         if (roll > 90) roll -= 180; else if (roll < -90) roll += 180;
         turn = Quaternion.AngleAxis(roll, refAlong) * turn;
         float scale = refLength / Mathf.Max(.01f, srcLength);
+        // A mace reaches as far above the grip as the Bronze Mace does, whatever its own length.
+        if (reference == "Crystal Mace" && MaceReach() is float reach && reach > 0f)
+        {
+            var srcVerts = srcMesh.vertices;
+            float top = srcVerts.Max(p => Vector3.Dot(turn * srcFrame.MultiplyPoint3x4(p), refAlong));
+            if (top > .01f) scale = reach / top;
+        }
         var placed = Placed(srcMesh, Matrix4x4.TRS(Vector3.zero, turn, Vector3.one * scale) * srcFrame);
         if (SwatchSwaps.TryGetValue(piece, out var swap))
         {
@@ -576,6 +609,7 @@ public static class GearSets
             EditorUtility.SetDirty(glow);
         }
         Reload($"{dir}/{piece}.asset");
+        if (keepItemData) { log.Append($"{piece}: model only, {measured:F1} texels a unit, scale {scale:F2}{System.Environment.NewLine}"); return; }
         string dataPath = $"{WeaponData}/{piece}.asset";
         var item = AssetDatabase.LoadAssetAtPath<ItemData>(dataPath);
         if (item == null)

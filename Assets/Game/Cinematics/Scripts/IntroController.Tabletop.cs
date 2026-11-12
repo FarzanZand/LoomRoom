@@ -9,8 +9,8 @@ public enum IntroOpening { Lamp = 0, Tabletop = 1 }
 // The tabletop opening: no eyes in the dark, no waking in the chair. The player wakes in bed at night; the
 // only warm light is the desk lamp at the game table, where the Dungeon Master is waiting. They walk over
 // themselves (he calls, and nudges if they wander); sitting down, he slides a pencil character sheet
-// across and they roll dice for it, one attribute at a time. The numbers are flavour, except that at the
-// first morning's table the figures for the two highest (Sheet Classes) are the ones set out. Then the
+// across and they roll dice for it, one attribute at a time. The figures for the two highest (Sheet Classes) are
+// the ones set out, and the next run plays the rolls as its scores (ProgressionManager.FirstRoll). Then the
 // practice figure, the same practice board, and afterwards the figure goes on the memorial shelf.
 public partial class IntroController
 {
@@ -194,6 +194,7 @@ public partial class IntroController
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= ClearDiceForRun; RunManager.Instance.RunStarted += ClearDiceForRun; }
         if (InputManager.HasInstance) InputManager.Instance.SubmitPressed -= OnSubmit;
         PickFigures();
+        KeepRolls();
         // The figures come out while the closing line is up.
         yield return SayAll(afterRolls, false);
     }
@@ -313,8 +314,17 @@ public partial class IntroController
     bool rollRequested, submitted, lastTriple;
     int[] rolls = new int[3];
 
-    // The rolls are flavour: written on the sheet, never applied to the character. They only choose
-    // which figures come out.
+    // The rolls choose which figures come out, and the next run plays them as its scores (the class's points on
+    // top), only that one (ProgressionManager.FirstRoll).
+    void KeepRolls()
+    {
+        if (!ProgressionManager.HasInstance) return;
+        var kept = new List<(MetaAttribute, int)>();
+        for (int i = 0; i < rolledAttributes.Length && i < rolls.Length; i++)
+            if (ProgressionManager.AttributeFromLabel(rolledAttributes[i], out var a)) kept.Add((a, rolls[i]));
+        ProgressionManager.Instance.KeepFirstRolls(kept);
+    }
+
     static string SheetText(int total) => total.ToString();
 
     // Throws the dice now, as a click would (other input, tests).

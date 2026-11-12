@@ -89,6 +89,30 @@ public partial class DungeonGenerator
         return shape;
     }
 
+    // The stage's one way in is on its front, the side away from the Dungeon Master (the user, 2026-11-12: always come up
+    // to the boss facing him, never from his side or the flanks): its door marks are the middle cells of that edge, so the
+    // corridor in is dug to them (DungeonLayout.Connect keeps to a room's door marks) and the stair is cut there. A copy;
+    // the shape's own marks, if it has any, stay too.
+    DungeonShape FrontDoorOnly(DungeonShape shape)
+    {
+        var toward = TowardDungeonMaster();
+        if (StageTemplate == null || toward == null || shape == null) return shape;
+        var s = shape.Mirrored().Mirrored();
+        var away = -toward.Value;
+        var across = new Vector2Int(away.y, away.x);
+        int front = int.MinValue;
+        for (int x = 0; x < s.width; x++) for (int y = 0; y < s.height; y++)
+            if (s.IsFloor(x, y)) front = Mathf.Max(front, x * away.x + y * away.y);
+        if (front == int.MinValue) return shape;
+        int mid = s.center.x * across.x + s.center.y * across.y;
+        bool any = false;
+        for (int pass = 0; pass < 2 && !any; pass++)
+            for (int x = 0; x < s.width; x++) for (int y = 0; y < s.height; y++)
+                if (s.IsFloor(x, y) && x * away.x + y * away.y == front && (pass == 1 || Mathf.Abs(x * across.x + y * across.y - mid) <= 1))
+                { s.MarkDoor(x, y); any = true; }
+        return s;
+    }
+
     // Which side of the shape its marked doors are on (from its centre, along the stronger axis).
     static Vector2Int DoorSide(DungeonShape s)
     {
@@ -213,8 +237,17 @@ public partial class DungeonGenerator
         if (Stage.bossSpot != null) return Stage.bossSpot.position;
         var centre = Cell(Layout.RoomCenter(StageRoom)) + Vector3.up * Stage.height;
         var toDm = DungeonMasterPosition() - centre; toDm.y = 0;
-        // Near the edge on his side, within his reach over the table.
-        return centre + (toDm.sqrMagnitude > .01f ? toDm.normalized * data.cellSize * 3f : Vector3.zero);
+        // Near the edge on his side, within his reach over the table, but always on the stage with a cell of it beyond
+        // (on a stage grown smaller than planned, three cells toward him went over its edge: the user, 2026-11-12, saw
+        // Edgar set down off the stage).
+        if (toDm.sqrMagnitude <= .01f) return centre;
+        var dir = toDm.normalized;
+        for (float cells = 3f; cells > 0f; cells -= .5f)
+        {
+            var spot = centre + dir * data.cellSize * cells;
+            if (Layout.InRoom(StageRoom, CellOf(spot)) && Layout.InRoom(StageRoom, CellOf(spot + dir * data.cellSize))) return spot;
+        }
+        return centre;
     }
 
     public Vector3 StageCentre => Stage != null ? Cell(Layout.RoomCenter(StageRoom)) + Vector3.up * Stage.height : ExitPoint;

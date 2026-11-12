@@ -435,8 +435,12 @@ public partial class DungeonGenerator
                         var yaw = Quaternion.LookRotation(-outward) * Quaternion.Euler(0f, (float)(rng.NextDouble() - .5) * 70f, 0f);
                         // A wide root mound by a thin bank came out through it into the next room (the tavern's wall).
                         var fb = SizeOf(prefab);
+                        // Nor into what already stands in the room (a crate by the bank): left out, no draw taken.
                         if (!ReachesBehind(at, Reach(fb), edge, outward))
-                            Instantiate(prefab, at, yaw, growth);
+                        {
+                            var footPiece = Instantiate(prefab, at, yaw, growth);
+                            if (CutsIntoBody(footPiece)) DestroyImmediate(footPiece);
+                        }
                     }
                 }
                 int bx = n.x + depth, bz = n.y + depth;
@@ -455,8 +459,12 @@ public partial class DungeonGenerator
                         // Turned any way it reaches its widest extent all round: where that crosses a floor behind the
                         // bank (a thin bank between a passage and the tavern), it came out through the far side.
                         var yaw = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
+                        // Nor through what already stands in the room (a crate stood 8 cm into a sunk pillar).
                         if (!ReachesBehind(at, Reach(b), edge, outward))
-                            Instantiate(prefab, at, yaw, growth);
+                        {
+                            var formation = Instantiate(prefab, at, yaw, growth);
+                            if (CutsIntoBody(formation)) DestroyImmediate(formation);
+                        }
                     }
                 }
                 // On the bank's top at its edge, hanging over the face.

@@ -40,6 +40,7 @@ public partial class DungeonGenerator
         for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
         // A stage arena is kept at the edge in front of the Dungeon Master (DungeonGenerator.Stage).
         if (UsesStartingRoom) shapes[0] = FacingDungeonMaster(shapes[0]);
+        shapes[count - 1] = FrontDoorOnly(shapes[count - 1]);
         var entranceAt = EntranceOrigin(shapes[0]);
         Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]), entranceAt);
         // The shop (the tavern) is built whole or not at all. Grown late on a full grid it can come out as a small
@@ -476,8 +477,26 @@ public partial class DungeonGenerator
         // The prefab carries its own mounting height; its origin sits on the floor at the wall face.
         var torch = Instantiate(prefab, Cell(cell) + WallLightOffset(dir, data.cellSize), Quaternion.LookRotation(-new Vector3(dir.x, 0, dir.y)), parent);
         IntoWall(torch, cell, dir);
+        FitTorchLights(torch, cell, dir);
         DungeonWallLight.Apply(torch, color, TorchBrightness);
         furnished.Add(cell);
+    }
+
+    // A wall torch's light hangs out in front of it (the torch's own prefab puts it 1.6 m out, so a room is lit evenly).
+    // In a corridor one cell wide that left it 0.4 m from the opposite wall, which lit up in a hard white oval like a
+    // spotlight (the user, 2026-11-12): it stays short of halfway across the open floor in front of the torch.
+    void FitTorchLights(GameObject torch, Vector2Int cell, Vector2Int dir)
+    {
+        int free = 0;
+        for (var p = cell; Open(p) && free < 8; p -= dir) free++;
+        float most = Mathf.Max(.3f, free * data.cellSize * .45f);
+        foreach (var light in torch.GetComponentsInChildren<Light>(true))
+        {
+            var local = torch.transform.InverseTransformPoint(light.transform.position);
+            if (local.z <= most) continue;
+            local.z = most;
+            light.transform.position = torch.transform.TransformPoint(local);
+        }
     }
 
     void DecorateWalls()
@@ -644,6 +663,9 @@ public partial class DungeonGenerator
         if (!FindSpot(rule.placement, size, index, order, open, out var pos, out var rotation)) return false;
         var placed = Instantiate(rule.prefab, pos, rotation, geometry);
         BackToWall(placed, rule.placement, size);
+        // Breakables (barrels huddled, a shelf with pots) keep clear of the wall's foot and anything else solid, as
+        // breakables set down anywhere else do (KeepClear): backed up to the wall face they stood 11 cm into its foot trim.
+        if (placed.GetComponentInChildren<DungeonDestructible>() != null && !KeepClear(placed)) { DestroyImmediate(placed); return true; }
         // Flat on its wall (a banner): its rod in front of the cornice, not behind it.
         if (rule.prefab.TryGetComponent<PropMount>(out var mount) && mount.castsNoShadow && index < RegionStyles.Length)
             ClearCornice(new List<GameObject> { placed }, CellOf(pos), -placed.transform.forward, RegionStyles[index]);

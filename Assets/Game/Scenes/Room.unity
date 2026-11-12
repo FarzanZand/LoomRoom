@@ -354618,7 +354618,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
-  enemyBaseDamage: 0.966
+  enemyBaseDamage: 0.869
   enemyBaseHealth: 1
   boxKey: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   classQuestLine:
@@ -376036,7 +376036,7 @@ MonoBehaviour:
   chargeReadyAudio: {fileID: 0}
   blockFrontalDot: -0.3
   blockStaminaCost: 10
-  shieldStaminaPerSecond: 4
+  shieldRegenMultiplier: 0.5
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
   deflect: {fileID: 11400000, guid: e3f721e348b7cef468084c9a4d1881ce, type: 2}
   dash:
@@ -376119,6 +376119,7 @@ MonoBehaviour:
   critMultiplier: 1.75
   critHitStopScale: 2.5
   critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
+  playCritAudio: 0
   backstabsEnabled: 1
   fireCircleOnHit: {fileID: 11400000, guid: 09cafb216649d504bb5720e749d48439, type: 2}
   backstabMultiplier: 2.5

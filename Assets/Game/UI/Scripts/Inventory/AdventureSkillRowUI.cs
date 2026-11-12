@@ -95,8 +95,8 @@ public class AdventureSkillRowUI : MonoBehaviour, IPointerEnterHandler, IPointer
         bool known = m.Known;
         var text = new System.Text.StringBuilder();
         if (known && !string.IsNullOrEmpty(m.Description)) text.Append(m.Description).AppendLine().AppendLine();
-        if (meta.Trophy(track, m) == ProgressionManager.TrophyState.Mounted) text.Append($"<color={Good}>Learned</color> <color={Dim}>(trophy wall)</color>");
-        else if (meta.Unlocked(track, m, rank)) text.Append($"<color={Good}>Learned</color>");
+        // What it does and whether you have it; no word of its trophy (the user, 2026-11-12).
+        if (meta.Trophy(track, m) == ProgressionManager.TrophyState.Mounted || meta.Unlocked(track, m, rank)) text.Append($"<color={Good}>Learned</color>");
         else if (rank >= m.value) text.Append($"<color={Bad}>Locked</color>");
         else text.Append($"<color={Bad}>Locked</color> <color={Dim}>(rank {rank} / {m.value})</color>");
         TooltipUI.Instance.ShowText(known ? m.Name : "?", $"{skillName.ToUpperInvariant()}  {m.value}", text.ToString());

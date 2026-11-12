@@ -287,7 +287,7 @@ public class AdventurerProgress : MonoBehaviour
             {
                 var track = meta.Track((MetaAttribute)a);
                 if (track == null) continue;
-                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.AttributeScore((MetaAttribute)a) + c.Attribute((MetaAttribute)a) - track.baseScore))
+                foreach (var (stat, amount, kind) in ProgressionManager.AttributeGains(track, meta.StartingScore((MetaAttribute)a, InRun) + c.Attribute((MetaAttribute)a) - track.baseScore))
                     if (kind == ModifierType.Flat) Add(stat, amount);
             }
             // The intro's practice run starts without the sheet's ranks (Begin), and its card is shown before that run is going.
@@ -328,11 +328,13 @@ public class AdventurerProgress : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // An attribute's score now: the character sheet's plus, in a run, the class's own points (AdventurerClass), the
+    // An attribute's score now: the character sheet's (or, in the first run after the first morning's dice, the roll) plus,
+    // in a run, the class's own points (AdventurerClass), the
     // points put in this run and what the tavern's dishes eaten this run add (TavernDish).
     public int Score(MetaAttribute attribute)
     {
-        int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.AttributeScore(attribute) : 8;
+        // The first run after the first morning's dice plays the rolled scores in place of the sheet's (ProgressionManager.FirstRoll).
+        int sheet = ProgressionManager.HasInstance ? ProgressionManager.Instance.StartingScore(attribute, InRun) : 8;
         int i = (int)attribute;
         return sheet + (i >= 0 && i < AttributePoints.Length ? AttributePoints[i] : 0) + (InRun ? TavernDish.AttributeBonus() + (selectedClass != null ? selectedClass.Attribute(attribute) : 0) : 0);
     }
