@@ -31,10 +31,19 @@ public class LimbLoss : MonoBehaviour
     [Min(.5f), Tooltip("Seconds before the piece freezes where it lies.")] public float settleSeconds = 5f;
 
     [Header("Blood")]
-    [Min(0), Tooltip("Drops in the first spurt (times the character's gore amount).")] public int firstSpurt = 140;
-    [Min(0), Tooltip("Drops in each spurt after it.")] public int spurt = 40;
-    [Min(0)] public int spurts = 6;
-    [Min(.02f)] public float spurtGap = .16f;
+    [Tooltip("Played once at the stump as the limb comes off (the Black Knight: Sound Effects Library > Blood Guts Bones > Blood_Squirts_01).")]
+    public AudioClip bleedSound;
+    [Range(0, 1)] public float bleedVolume = 1f;
+    // Doubled on 2026-11-12 (the user): twice the drops, harder, for twice as long (about 4 s).
+    [Min(0), Tooltip("Drops in the first spurt (times the character's gore amount).")] public int firstSpurt = 280;
+    [Min(0), Tooltip("Drops in each spurt after it.")] public int spurt = 80;
+    [Min(0), Tooltip("Spurts after the first; each waits a little longer than the one before (Spurt Gap, a quarter more each time).")] public int spurts = 9;
+    [Min(.02f), Tooltip("Seconds before the second spurt.")] public float spurtGap = .185f;
+    [Min(.1f), Tooltip("How hard the first spurt and the rest leave the stump (times the spray's own speed).")] public float firstSpurtSpeed = 1.8f, spurtSpeed = 1.15f;
+    [Tooltip("Metres out from the shoulder joint, to its side, and down, where the blood leaves (under the shoulder armour, not through it).")]
+    public float sprayOut = .02f, sprayDown = .05f;   // .14 and .1 started it in the air beside him (the user, 2026-11-12)
+    [Range(-1f, 1f), Tooltip("How far the spurts point down (-1) or up (1) as they leave sideways (the user, 2026-11-12: down, it looked like bleeding up through the armour).")]
+    public float sprayTilt = -.45f;
 
     Character character;
     int hits;
@@ -94,13 +103,14 @@ public class LimbLoss : MonoBehaviour
         StartCoroutine(DeathPhysics.Settle(pieces, settleSeconds));
         if (stunSeconds > 0f && TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(stunSeconds);
         StartCoroutine(Bleed(root, side));
+        if (bleedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(bleedSound, stump, bleedVolume);
 
         if (lineDelay > 0f) yield return new WaitForSeconds(lineDelay);
         if (words != null && !string.IsNullOrWhiteSpace(words.limbLostLine) && character.IsAlive && PortraitDialogueUI.Current != null)
             PortraitDialogueUI.Current.Bark(words.limbLostLine, character, !string.IsNullOrWhiteSpace(words.bossName) ? words.bossName : character.TheNameCap, 1.6f, words.placement, true);
     }
 
-    // Spurts from the stump (the shrunk bone stays at the shoulder joint), out to the side and up.
+    // Spurts from just under the stump (the shrunk bone stays at the shoulder joint, inside the armour), out to the side and down.
     IEnumerator Bleed(Transform at, Vector3 side)
     {
         var gore = character.data != null ? character.data.gore : null;
@@ -108,7 +118,8 @@ public class LimbLoss : MonoBehaviour
         for (int i = 0; i <= spurts && at != null; i++)
         {
             int drops = i == 0 ? firstSpurt : spurt;
-            GoreManager.Instance.SprayAt(gore, at.position, side + Vector3.up * .6f + Random.insideUnitSphere * .25f, drops, i == 0 ? 1.3f : .8f);
+            Vector3 from = at.position + side * sprayOut + Vector3.down * sprayDown;
+            GoreManager.Instance.SprayAt(gore, from, side + Vector3.up * sprayTilt + Random.insideUnitSphere * .2f, drops, i == 0 ? firstSpurtSpeed : spurtSpeed);
             yield return new WaitForSeconds(spurtGap * (1f + i * .25f));
         }
     }

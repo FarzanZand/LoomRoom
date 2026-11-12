@@ -47,7 +47,7 @@ public class TollBridgeEvent : MonoBehaviour
     EnemyBrain brain;
     float nextScan;
     int paid;
-    bool talkPushed, toughened, walkingAside;
+    bool talkPushed, toughened, walkingAside, turningBack;
 
     public Character Troll => troll;
     public bool Paid => phase == Phase.Paid;
@@ -64,7 +64,13 @@ public class TollBridgeEvent : MonoBehaviour
             walkingAside = false;
             brain.Motor.Stop();
             brain.Motor.ResetSpeed();
-            if (post != null) brain.Motor.SnapFace(post.position);
+            turningBack = post != null;
+        }
+        // At his spot he turns round to face the bridge, at a walk's pace (a snap looked like a glitch).
+        if (turningBack && brain != null && brain.Motor != null && phase == Phase.Paid)
+        {
+            brain.Motor.Face(post.position, 160f);
+            if (brain.Motor.IsFacing(post.position, 4f)) turningBack = false;
         }
         if (phase != Phase.Waiting) return;
         var player = ScriptedEventRoom.TablePlayer;
@@ -166,7 +172,7 @@ public class TollBridgeEvent : MonoBehaviour
     {
         phase = Phase.Fighting;
         if (walkingAside && brain.Motor != null) brain.Motor.ResetSpeed();
-        walkingAside = false;
+        walkingAside = turningBack = false;
         ScriptedEventRoom.Free(brain);
         brain.Provoke(player.transform.position);
     }

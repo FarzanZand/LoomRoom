@@ -91,10 +91,17 @@ MonoBehaviour:
   spin: 7
   pieceMass: 2
   settleSeconds: 5
-  firstSpurt: 140
-  spurt: 40
-  spurts: 6
-  spurtGap: 0.16
+  bleedSound: {fileID: 8300000, guid: dc30582816da7214f8e10701855684ae, type: 3}
+  bleedVolume: 1
+  firstSpurt: 280
+  spurt: 80
+  spurts: 9
+  spurtGap: 0.185
+  firstSpurtSpeed: 1.8
+  spurtSpeed: 1.15
+  sprayOut: 0.02
+  sprayDown: 0.05
+  sprayTilt: -0.45
 --- !u!114 &1594286743929704932
 MonoBehaviour:
   m_ObjectHideFlags: 0

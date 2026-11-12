@@ -365,11 +365,12 @@ public static class EventRoomsSetup
                     cut.fillLightColour = new Color(1f, .42f, .13f); cut.fillLightIntensity = 22f; cut.fillLightRange = 9f; cut.fillLightEvery = 3;
                 }
                 var post = Marker(root, "Troll post", new Vector3(Mid, 0f, 0f), 180f);
-                var aside = Marker(root, "Troll aside", new Vector3(Mid + 4.4f, 0f, 8f), 270f);
+                // His spot once paid: the far ledge's left, clear of the brazier on its right (it stood in his way there).
+                var aside = Marker(root, "Troll aside", new Vector3(Mid - 4.6f, 0f, 8.1f), 90f);
                 var him = Put(root, troll, new Vector3(Mid, 0f, 0f), 180f);
                 if (him != null && him.GetComponent<EventActor>() == null) him.AddComponent<EventActor>();
                 e.entrance = Marker(root, "Entrance", new Vector3(Mid, 0f, -7f));
-                Put(root, $"{Shared}/Furnishing/Bone heap.prefab", new Vector3(Mid - 4.6f, 0f, 8.2f), 30f);
+                Put(root, $"{Shared}/Furnishing/Bone heap.prefab", new Vector3(Mid + 5.6f, 0f, 8.3f), 30f);
                 Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid - 2.4f, 0f, -7.2f));
                 Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid + 2.4f, 0f, 7.2f));
                 foreach (float z in new[] { -2f, -8f, 8f })

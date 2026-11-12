@@ -61,6 +61,7 @@ public static class DevSpawnerBuilder
         var lv = left.GetComponent<VerticalLayoutGroup>();
         lv.spacing = 8; lv.childControlWidth = lv.childControlHeight = true; lv.childForceExpandWidth = true; lv.childForceExpandHeight = false;
         var kinds = new[] { "Items", "Spells", "Room items", "Enemies", "Rooms", "Cheats" }.Select(n => CountedButton(n, left, n, 56, 28)).ToArray();
+        kinds[5].transform.SetAsFirstSibling();   // Cheats at the top of the list (the window opens on it); the array keeps the kinds' order
         var gap = new GameObject("Gap", typeof(RectTransform), typeof(LayoutElement));
         gap.transform.SetParent(left, false);
         gap.GetComponent<LayoutElement>().preferredHeight = 14;
