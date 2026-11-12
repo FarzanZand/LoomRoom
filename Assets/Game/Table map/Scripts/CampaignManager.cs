@@ -65,6 +65,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
     [TabGroup("Cloth"), ShowIf(nameof(fog)), Tooltip("The cloth's fabric. Each style's material is on the map prefab (Cloth > Cloths); the drape and roll are tuned there too.")]
     public CampaignClothStyle clothStyle = CampaignClothStyle.Plaid;
     [TabGroup("Cloth"), Min(.1f), Tooltip("Seconds for an act's cloth to be rolled back and its land to rise.")] public float revealSeconds = 3.2f;
+    [TabGroup("Cloth"), Min(.1f), Tooltip("Seconds for act 1's cloth to be rolled back the very first time the map is seen, after the cloth drop. Shorter than a later act's reveal: the map takes clicks once it is done.")] public float firstRevealSeconds = 1.6f;
     [TabGroup("Cloth"), Tooltip("Rustles while the cloth is rolled back (one clip at a time, spaced out).")] public AudioData rollSound;
     [TabGroup("Cloth"), Min(.1f), ShowIf(nameof(rollSound)), Tooltip("Seconds between rustles.")] public float rollSoundEvery = .5f;
     [TabGroup("Cloth"), Tooltip("Debug: every act open (not saved).")] public bool openEverything;
@@ -497,7 +498,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
     // into hills and folds, then the cloth over act 1 is rolled back from the player's side and its places pop up as the
     // roll passes them (CampaignMap.DropReveal, simulated in Blender: Tools/campaign_cloth_drop.py). The other acts
     // stay under the cloth.
-    IEnumerator BigReveal()
+    // frameOn: the player whose view eases to the map view's framing while the cloth rolls back (no wait after it).
+    IEnumerator BigReveal(Player frameOn = null)
     {
         if (Map == null) yield break;
         rising = true;
@@ -507,7 +509,15 @@ public partial class CampaignManager : Singleton<CampaignManager>
         MapLights(false);
         if (fog) StartCoroutine(Rustle(1.2f));
         var from = new Vector3(-Map.halfX, 0f, Map.PointFor(home) != null ? Map.PointFor(home).transform.localPosition.z : 0f);
-        try { yield return Map.DropReveal(clothStyle, fog, from, revealSeconds, () => { MapLights(true); if (fog) StartCoroutine(Rustle(revealSeconds * .85f)); }); }
+        try
+        {
+            yield return Map.DropReveal(clothStyle, fog, from, firstRevealSeconds, () =>
+            {
+                MapLights(true);
+                if (fog) StartCoroutine(Rustle(firstRevealSeconds * .85f));
+                if (frameOn != null && frameOpenLand) StartCoroutine(Frame(frameOn, Mathf.Min(.9f, firstRevealSeconds)));
+            });
+        }
         finally { rising = false; MapLights(true); }
         revealedNow = Mathf.Max(revealedNow, 1);
         if (PM != null) PM.SetFlag(RevealedFlag, Mathf.Max(1, PM.GetFlag(RevealedFlag)));
@@ -814,10 +824,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
         // The first time the player stands at the middle of the table to watch the cloth fall over all of it, then walks
         // over to the land that opened.
         if (firstReveal) yield return StepToMap(player, wholeTable: true);
-        if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal() : Rise(), _ => { rising = false; RepairMap(); ShowActs(); }));
+        if (!Map.gameObject.activeSelf) yield return StartCoroutine(GuardedRoutine.Run(firstReveal ? BigReveal(player) : Rise(), _ => { rising = false; RepairMap(); ShowActs(); }));
         else ShowActs();
         PlaceFigure(At, firstReveal);
-        if (firstReveal && frameOpenLand) yield return Frame(player, .9f);
         if (!firstReveal) yield return StepToMap(player);
         // The first time the realm is seen, the Dungeon Master says where to start.
         if (PM != null && !PM.HasFlag(SeenFlag))

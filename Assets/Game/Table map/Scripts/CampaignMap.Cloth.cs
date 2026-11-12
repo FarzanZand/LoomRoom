@@ -106,7 +106,7 @@ public partial class CampaignMap
             float s = Vector2.Dot(new Vector2(p.x - fromLocal.x, p.z - fromLocal.z), pull);
             // Its own size, as first seen (a reveal cut short must not leave a piece shrunk for the next one).
             if (!restScale.TryGetValue(t, out var rest)) restScale[t] = rest = t.localScale;
-            appearing.Add((t, rest, Mathf.Clamp01((s - sMin) / span)));
+            appearing.Add((t, rest, cloth != null ? Mathf.Clamp01((s - sMin) / span) : s));
         }
         // This act's scatter, and earlier acts' scatter that only this cloth lay over.
         foreach (var kv in scatterAct)
@@ -114,6 +114,17 @@ public partial class CampaignMap
                 Add(kv.Key);
         foreach (var p in Points) if (p.encounter != null && p.encounter.act == act && !Hidden(p)) { p.ShowProps(!Unmade(p)); p.Grey(Done(p), Greyed); Add(p.transform); }
         foreach (var path in Paths) if (path.Open(act) && !path.Open(act - 1) && !Hidden(path)) Add(path.transform);
+        // With no cloth (the campaign's cloth switched off) the pieces pop in a sweep from the near side to the far end
+        // of what appears: measured against a span of one unit, the nearest popped at once and all the rest only as the
+        // reveal ended, so the map looked stuck for its whole length.
+        if (cloth == null && appearing.Count > 0)
+        {
+            float lo = float.MaxValue, hi = float.MinValue;
+            foreach (var a in appearing) { lo = Mathf.Min(lo, a.at); hi = Mathf.Max(hi, a.at); }
+            float range = Mathf.Max(.01f, hi - lo);
+            // Ends a little before the front does, so the last piece has finished popping as the reveal ends.
+            for (int i = 0; i < appearing.Count; i++) { var a = appearing[i]; a.at = (a.at - lo) / range * .85f; appearing[i] = a; }
+        }
         foreach (var a in appearing) { a.t.localScale = Vector3.zero; a.t.gameObject.SetActive(true); }
         // A piece's lights don't shrink with it: still under the cloth, a lantern would light the cloth from below as a
         // bright spot. They come up with their piece.

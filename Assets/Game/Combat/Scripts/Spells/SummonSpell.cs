@@ -12,6 +12,8 @@ public class SummonSpellSettings
     public GameObject prefab;
     [FoldoutGroup("Summon"), Tooltip("The name it goes by, said as it is (\"John hits the Crypt Rat\"). Empty: its prefab's own name.")]
     public string summonName = "John";
+    [FoldoutGroup("Summon"), Range(.3f, 2f), Tooltip("Its size against its prefab's (0.8: a fifth shorter). Its pixels shrink or grow with it.")]
+    public float size = 1f;
     [FoldoutGroup("Summon"), Min(.5f), Tooltip("Metres in front of the caster where it comes up (nearer when a wall or a drop is in the way).")]
     public float distance = 2.5f;
     [FoldoutGroup("Summon"), Min(0f), Tooltip("Seconds the rune circle shows before it appears.")]
@@ -55,6 +57,7 @@ public class SummonSpell : MonoBehaviour
         var body = summon != null ? summon.Body : null;
         if (body == null) { if (circle != null) circle.Stop(); Destroy(gameObject); yield break; }
         if (!string.IsNullOrWhiteSpace(s.summonName)) { body.nameOverride = s.summonName; body.name = s.summonName + " (summoned)"; }
+        if (!Mathf.Approximately(s.size, 1f)) body.transform.localScale *= s.size;
         var brain = body.GetComponent<EnemyBrain>();
         var renderers = new List<Renderer>();
         foreach (var r in body.GetComponentsInChildren<Renderer>()) if (r.enabled && !(r is ParticleSystemRenderer)) { r.enabled = false; renderers.Add(r); }
@@ -79,22 +82,33 @@ public class SummonSpell : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // Where it comes up: the distance ahead on walkable floor the caster can see, nearer if a wall or a drop is in the
-    // way, else at the caster's feet.
+    // Where it comes up: the distance ahead on walkable floor the caster can see, with room for a body lying and standing
+    // there (nothing solid within half a metre: it came up inside a chest), a little to either side or nearer if not,
+    // else at the caster's feet.
     static Vector3 Spot(Character caster, Vector3 forward, float distance)
     {
         var from = caster.transform.position;
         var eye = from + Vector3.up * 1f;
         foreach (float d in new[] { distance, distance * .7f, distance * .45f })
-        {
-            var want = from + forward * d;
-            if (!NavMesh.SamplePosition(want, out var hit, 1f, NavMesh.AllAreas)) continue;
-            if (Mathf.Abs(hit.position.y - from.y) > 1f) continue;
-            var to = hit.position + Vector3.up * 1f;
-            if (Physics.Linecast(eye, to, out var blocked, ~0, QueryTriggerInteraction.Ignore) && !blocked.transform.IsChildOf(caster.transform)) continue;
-            return hit.position;
-        }
+            foreach (float turn in new[] { 0f, -35f, 35f })
+            {
+                var want = from + Quaternion.Euler(0f, turn, 0f) * forward * d;
+                if (!NavMesh.SamplePosition(want, out var hit, 1f, NavMesh.AllAreas)) continue;
+                var p = hit.position;
+                if (Mathf.Abs(p.y - from.y) > 1f) continue;
+                if (Physics.Linecast(eye, p + Vector3.up * 1f, out var blocked, ~0, QueryTriggerInteraction.Ignore) && !blocked.transform.IsChildOf(caster.transform)) continue;
+                if (Crowded(p, caster)) continue;
+                return p;
+            }
         return NavMesh.SamplePosition(from, out var under, 2f, NavMesh.AllAreas) ? under.position : GroundAreaSpell.GroundBelow(from);
+    }
+
+    // Anything solid but the floor (and the caster) within half a metre of the spot, from knee height up.
+    static bool Crowded(Vector3 p, Character caster)
+    {
+        foreach (var c in Physics.OverlapCapsule(p + Vector3.up * .55f, p + Vector3.up * 1.4f, .5f, ~0, QueryTriggerInteraction.Ignore))
+            if (!c.transform.IsChildOf(caster.transform)) return true;
+        return false;
     }
 
     // A player where they look, anyone else where its body points.

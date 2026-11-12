@@ -327,7 +327,7 @@ public static class NewSpellsSetup
             s.manaCost = 30; s.power = 0; s.castSeconds = 1f; s.recoverySeconds = .4f; s.castMoveSpeed = .6f;
             s.icon = raise.icon;
             var c = s.summon;
-            c.prefab = john; c.summonName = "John"; c.distance = 2.5f; c.gatherSeconds = .9f; c.riseSeconds = 1.4f;
+            c.prefab = john; c.summonName = "John"; c.size = .8f; c.distance = 2.2f; c.gatherSeconds = .9f; c.riseSeconds = 1.4f;
             c.circle = Visual($"{name}/{name} Circle.prefab"); c.flash = Visual($"{name}/{name} Flash.prefab");
             c.gatherSound = raise.raise.gatherSound; c.gatherVolume = raise.raise.gatherVolume;
             var m = c.summon;

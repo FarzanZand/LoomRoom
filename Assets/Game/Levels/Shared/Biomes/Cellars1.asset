@@ -190,7 +190,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 2
+    weight: 0.3
     rooms: 10
     fromFloor: 1
     maxPerFloor: 2

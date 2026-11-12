@@ -176,7 +176,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 1
   - template: {fileID: 273876934562634629, guid: dbc080642f13a354e8633ec6c83b9348, type: 3}
-    weight: 2
+    weight: 0.3
     rooms: 10
     fromFloor: 1
     maxPerFloor: 2
@@ -246,7 +246,7 @@ MonoBehaviour:
     fromFloor: 1
     maxPerFloor: 2
   - template: {fileID: 7553172351964380955, guid: fcbc162bfbf65db469e063d14079ed8b, type: 3}
-    weight: 4
+    weight: 0.3
     rooms: 30
     fromFloor: 1
     maxPerFloor: 1

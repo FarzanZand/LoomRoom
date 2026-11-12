@@ -221,7 +221,8 @@ MonoBehaviour:
   summon:
     prefab: {fileID: 127693124277127202, guid: bfd3d506b648a3b4797e8ea8dc5574f6, type: 3}
     summonName: John
-    distance: 2.5
+    size: 0.8
+    distance: 2.2
     gatherSeconds: 0.9
     riseSeconds: 1.4
     circle: {fileID: 5233650602891333819, guid: 430bdf6ede3a79c42b5bd9a974e085db, type: 3}

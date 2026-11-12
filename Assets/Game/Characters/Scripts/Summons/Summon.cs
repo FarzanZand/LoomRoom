@@ -157,14 +157,26 @@ public class Summon : MonoBehaviour
         var toMe = transform.position - Summoner.transform.position; toMe.y = 0f;
         bool inTheWay = distance < 2.5f && toMe.sqrMagnitude > .01f && Vector3.Dot(forward, toMe.normalized) > .5f;
         if (distance > Settings.followDistance || inTheWay) returning = true;
-        if (returning && Perception.HorizontalDist(transform.position, place) < .5f) returning = false;
+        if (returning && Perception.HorizontalDist(transform.position, place) < .25f) returning = false;
         if (returning)
         {
-            brain.Motor.MoveTo(place);
+            // Round the summoner, never through them: a straight walk from in front to the place behind passed 0.8 m
+            // from the player, the bodies brushing (the user's Summon John, 2026-11-12). Abeam first, then the place.
+            var abeam = Summoner.transform.position + right * 1.6f * side;
+            bool brushes = PassesWithin(transform.position, place, Summoner.transform.position, 1.2f);
+            brain.Motor.MoveTo(brushes && Perception.HorizontalDist(transform.position, abeam) > .4f ? abeam : place);
             return true;
         }
         brain.Motor.Stop();
         return true;
+    }
+
+    // Whether the flat line from a to b passes within reach of the point.
+    static bool PassesWithin(Vector3 a, Vector3 b, Vector3 point, float reach)
+    {
+        var ab = new Vector2(b.x - a.x, b.z - a.z); var ap = new Vector2(point.x - a.x, point.z - a.z);
+        float t = ab.sqrMagnitude > .0001f ? Mathf.Clamp01(Vector2.Dot(ap, ab) / ab.sqrMagnitude) : 0f;
+        return (ap - ab * t).sqrMagnitude < reach * reach;
     }
 
     // Which way a character faces: a player where they look, anyone else where its body points.
