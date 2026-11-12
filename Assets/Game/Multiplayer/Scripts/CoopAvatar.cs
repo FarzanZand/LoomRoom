@@ -78,6 +78,50 @@ public class CoopAvatar : MonoBehaviour
     {
         if (model != null) Destroy(model);
         model = null;
+        DropRoomStandIn();
+    }
+
+    void OnDestroy() => DropRoomStandIn();
+
+    // ── Room body left standing ──
+    // While someone plays on the table their room player stays in the room where it stood, as the local player's own does
+    // (PlayerManager keeps its BodyVisuals): this avatar has gone down to the table with them, so a second copy of their
+    // room body stands where they last were in the room until they come back up (the user, 2026-11-12: from the dungeon
+    // only the local room player was seen in the room).
+    GameObject roomStandIn;
+    Vector3 roomPosition;
+    Quaternion roomRotation;
+    bool roomPoseKnown;
+
+    void UpdateRoomStandIn(CoopPlayerState s)
+    {
+        if (s.place == CoopPlace.Room)
+        {
+            if (!s.inLobby && builtPlace == CoopPlace.Room && model != null) { roomPosition = transform.position; roomRotation = transform.rotation; roomPoseKnown = true; }
+            DropRoomStandIn();
+            return;
+        }
+        if (roomStandIn != null || !roomPoseKnown || s.inLobby || !MultiplayerManager.HasInstance) return;
+        var prefab = MultiplayerManager.Instance.RoomBody(player.SlotIndex);
+        if (prefab == null) return;
+        roomStandIn = Instantiate(prefab, roomPosition, roomRotation);
+        roomStandIn.name = player.DisplayName + " (room body)";
+        foreach (var c in roomStandIn.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+        foreach (var t in roomStandIn.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 0;
+        foreach (var r in roomStandIn.GetComponentsInChildren<Renderer>(true)) r.renderingLayerMask |= LightingManager.RoomLayer;
+        var standAnimator = roomStandIn.GetComponentInChildren<Animator>();
+        if (standAnimator != null)
+        {
+            if (MultiplayerManager.Instance.bodyController != null) standAnimator.runtimeAnimatorController = MultiplayerManager.Instance.bodyController;
+            standAnimator.enabled = true;
+            standAnimator.applyRootMotion = false;
+        }
+    }
+
+    void DropRoomStandIn()
+    {
+        if (roomStandIn != null) Destroy(roomStandIn);
+        roomStandIn = null;
     }
 
     void LateUpdate()
@@ -85,6 +129,7 @@ public class CoopAvatar : MonoBehaviour
         if (player == null || player.IsOwner || !player.IsSpawned) return;
         var s = player.Current;
         Rebuild(false);
+        UpdateRoomStandIn(s);
         // Still in the lobby (joined, waiting for the host's Begin): not in the room yet.
         // Over the campaign map a teammate seated right in front of the view would cover it: hidden while that lasts.
         // On the table while no floor is built here (this player is in the room, or out of the run): nothing to stand
