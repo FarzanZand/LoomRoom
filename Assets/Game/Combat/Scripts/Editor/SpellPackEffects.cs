@@ -32,6 +32,8 @@ public static partial class SpellPackEffects
         public (string system, float rate)[] rates;   // a system's emission times this (after bursts became a steady rate)     // systems kept but no longer emitting (a root that can't be dropped)   // one system's lifetime times this, on top of Life
         public float life;        // every system's lifetime times this (0: as the pack has it)
         public float maxScreen;   // largest a particle may be on screen, as a share of the screen (0: the renderer's own); keeps a hit at point blank from filling the view
+        public (string system, float delay)[] delays;   // a system starts this many seconds late (a world-space trail starts away from the hand)
+        public int divisor;       // texture copies at 1/divisor of the pack's size (0: PixelDivisor); another divisor gets copies of its own
     }
 
     // Fireball (2026-11-11, the user: more like the Molten Boulder, only it flies straight on and bursts on what it
@@ -41,7 +43,12 @@ public static partial class SpellPackEffects
     static readonly Art[] FireballArts =
     {
         new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_4_LWRP.prefab", scale = .08f, charge = true, linger = .35f, remove = new[] { "Flame" } },
-        new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_4_LWRP.prefab", scale = .26f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" } },
+        // The flying rock's flame trail is left in the world: started at the hand, its first flames hung beside the arm for
+        // a fifth of a second after the throw and filled the view there (review 2026-11-12). It starts once the rock is
+        // about a metre out, burns shorter and smaller, and is drawn with texels twice as coarse (a frame of the flame 32
+        // texels across, not 64), so up close it reads as pixels rather than a soft airbrushed streak.
+        new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_4_LWRP.prefab", scale = .26f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" },
+            delays = new[] { ("Fire", .07f), ("Lava", .07f), ("Sparks", .07f) }, lives = new[] { ("Fire", .45f) }, sizes = new[] { ("Fire", .8f) }, maxScreen = .1f, divisor = 16 },
         new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_2_LWRP.prefab", scale = .45f, once = true, life = .5f, maxScreen = .12f, remove = new[] { "Flash", "Flames", "Sparks", "Puff" } },
     };
 
@@ -111,7 +118,7 @@ public static partial class SpellPackEffects
                     var t = effect.transform.Find(name) ?? effect.GetComponentsInChildren<Transform>(true).FirstOrDefault(c => c.name == name);
                     if (t != null && t != effect.transform) Object.DestroyImmediate(t.gameObject);
                 }
-            if (PixelArt) Pixelate(effect);
+            if (PixelArt) Pixelate(effect, art.divisor > 0 ? art.divisor : PixelDivisor);
             var systems = effect.GetComponentsInChildren<ParticleSystem>(true);
             foreach (var ps in systems)
             {
@@ -136,6 +143,9 @@ public static partial class SpellPackEffects
                 if (art.lives != null)
                     foreach (var (system, life) in art.lives)
                         if (ps.name == system) main.startLifetimeMultiplier *= life;
+                if (art.delays != null)
+                    foreach (var (system, delay) in art.delays)
+                        if (ps.name == system) main.startDelay = delay;
                 var r = ps.GetComponent<ParticleSystemRenderer>();
                 if (r != null)
                 {
@@ -236,20 +246,22 @@ public static partial class SpellPackEffects
         Retexture(Spells + "Fire Circle/Fire Circle fill.mat", Pack + "Materials/Glow_LWRP.mat", new Color(2.2f, .7f, .12f, 1f));
     }
 
-    static void Pixelate(GameObject effect)
+    static void Pixelate(GameObject effect, int divisor)
     {
+        // Copies at another size than the usual are kept apart (" 1-16"), so the shared ones other effects use stay as they are.
+        string suffix = divisor == PixelDivisor ? "" : " 1-" + divisor;
         foreach (var r in effect.GetComponentsInChildren<Renderer>(true))
         {
-            r.sharedMaterials = r.sharedMaterials.Select(m => PixelMaterial(m, PixelDivisor)).ToArray();
-            if (r is ParticleSystemRenderer p && p.trailMaterial != null) p.trailMaterial = PixelMaterial(p.trailMaterial, PixelDivisor);
+            r.sharedMaterials = r.sharedMaterials.Select(m => PixelMaterial(m, divisor, suffix)).ToArray();
+            if (r is ParticleSystemRenderer p && p.trailMaterial != null) p.trailMaterial = PixelMaterial(p.trailMaterial, divisor, suffix);
         }
     }
 
     // A copy of a pack material in _Pack/Materials whose textures are the pixel copies; refreshed from the pack each run.
-    public static Material PixelMaterial(Material source, int divisor)
+    public static Material PixelMaterial(Material source, int divisor, string suffix = "")
     {
         if (source == null || !AssetDatabase.GetAssetPath(source).StartsWith("Assets/ThirdParty/Spells Pack/")) return source;
-        string path = PixelFolder + "Materials/" + source.name + ".mat";
+        string path = PixelFolder + "Materials/" + source.name + suffix + ".mat";
         var copy = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (copy == null)
         {
@@ -261,28 +273,28 @@ public static partial class SpellPackEffects
         copy.CopyPropertiesFromMaterial(source);
         copy.shaderKeywords = source.shaderKeywords;
         copy.renderQueue = source.renderQueue;
-        PixelTextures(copy, divisor);
+        PixelTextures(copy, divisor, suffix);
         EditorUtility.SetDirty(copy);
         return copy;
     }
 
-    static void PixelTextures(Material material, int divisor)
+    static void PixelTextures(Material material, int divisor, string suffix = "")
     {
         foreach (var name in material.GetTexturePropertyNames())
         {
             var texture = material.GetTexture(name);
-            if (texture != null) material.SetTexture(name, PixelTexture(texture, divisor));
+            if (texture != null) material.SetTexture(name, PixelTexture(texture, divisor, suffix));
         }
     }
 
     // A copy of the texture file in _Pack/Textures, imported point-filtered at about 1/divisor of its size.
-    static Texture PixelTexture(Texture source, int divisor)
+    static Texture PixelTexture(Texture source, int divisor, string suffix = "")
     {
         string from = AssetDatabase.GetAssetPath(source);
         if (string.IsNullOrEmpty(from) || from.StartsWith(PixelFolder)) return source;
         if (!from.StartsWith("Assets/ThirdParty/Spells Pack/") || source is not Texture2D) return source;
         if (from.Contains("_Normal")) return source;
-        string path = PixelFolder + "Textures/" + System.IO.Path.GetFileName(from);
+        string path = PixelFolder + "Textures/" + System.IO.Path.GetFileNameWithoutExtension(from) + suffix + System.IO.Path.GetExtension(from);
         if (AssetDatabase.LoadAssetAtPath<Texture>(path) == null) { Folder(PixelFolder + "Textures"); AssetDatabase.CopyAsset(from, path); }
         var importer = (TextureImporter)AssetImporter.GetAtPath(path);
         int size = Mathf.Clamp(Mathf.NextPowerOfTwo(Mathf.Max(source.width, source.height) / divisor), 32, 512);

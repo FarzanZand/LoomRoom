@@ -25,7 +25,11 @@ Shader "LoomRoom/Quest Outline"
             float4 vert(appdata v) : SV_POSITION
             {
                 float3 world = mul(unity_ObjectToWorld, v.vertex).xyz;
-                world += normalize(UnityObjectToWorldNormal(v.normal)) * _Width;
+                // The normal turned by the object's own matrix (its scale is even, so this is its direction in the
+                // world). UnityObjectToWorldNormal reads unity_WorldToObject, which this pipeline doesn't always set for
+                // a shader of this kind: the dice cup's outline came out lopsided, thicker on one side in world space
+                // however the cup was turned (review 2026-11-12).
+                world += normalize(mul((float3x3)unity_ObjectToWorld, v.normal)) * _Width;
                 return mul(UNITY_MATRIX_VP, float4(world, 1));
             }
             fixed4 frag() : SV_Target { return _Color; }

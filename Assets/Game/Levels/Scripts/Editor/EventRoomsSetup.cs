@@ -574,15 +574,14 @@ public static class EventRoomsSetup
             // On the table: what was left of his money by his hand, a candle, and the cup turned over.
             var coins = Put(root, "Assets/Game/Items/Prefabs/Gold/Coin pile small.prefab", new Vector3(-3.4f, top + .01f, 1.3f), 35f, "Coins");
             var candle = Put(root, $"{Shared}/Tavern/Table candle.prefab", new Vector3(-2.93f, top + .01f, 1.3f));
-            var cup = Put(root, TavernDress.Prop("Assets/Synty/PolygonFantasyKingdom/Prefabs/Items/SM_Item_Cup_01.prefab", "Dice cup", 1.4f, dir), new Vector3(-3.05f, top + .01f, .82f));
+            // A round leather dice cup turned over (Tools/dice_cup.py and dice_cup.eval.cs; the Synty mug it replaced read as a
+            // block of stone, review 2026-11-12), its mouth on the table.
+            var cup = Put(root, $"{dir}/Dice cup.prefab", new Vector3(-3.05f, top, .82f), 20f);
             foreach (var go in new[] { coins, candle, cup }) if (go != null) foreach (var c in go.GetComponentsInChildren<Collider>()) Object.DestroyImmediate(c);
             if (cup != null)
             {
-                // Turned over, its mouth on the table.
-                cup.transform.localRotation = Quaternion.Euler(180f, 20f, 0f);
-                cup.transform.position += Vector3.up * (top + .01f - Bounds(cup).min.y);
                 cup.name = "Dice cup";
-                Interactable(cup, cup.transform.InverseTransformPoint(Bounds(cup).center), new Vector3(.45f, .45f, .45f));
+                Interactable(cup, cup.transform.InverseTransformPoint(Bounds(cup).center), new Vector3(.6f, .6f, .6f));
                 cup.AddComponent<DiceCup>();
             }
             Put(root, $"{Shared}/Furnishing/Bone pile.prefab", new Vector3(-4.6f, 0f, 2.8f), 40f);

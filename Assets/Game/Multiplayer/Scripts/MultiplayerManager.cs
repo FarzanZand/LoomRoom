@@ -118,7 +118,7 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
     public CoopPlayer LocalPlayer { get; private set; }
     public IReadOnlyList<CoopPlayer> Players => players;
     public int PartySize { get; private set; } = 1;
-    // The host's word on whether the Skeleton Party is done for good (RunStart.partyCleared), read by floor generation
+    // The host's word on whether the Skeleton Party is done for this run (RunStart.partyCleared), read by floor generation
     // in co-op (DungeonRoomTemplate.Gone) so every machine builds the same floor.
     public bool HostPartyCleared { get; private set; }
     public CoopRules Rules => rules;
@@ -1150,6 +1150,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
         PartySize = Mathf.Max(1, party);
         SyncRules();
         CoopMessages.ToGuests(CoopMessages.Rules, rules);
+        // A new run: the Skeleton Party is there again (a run flag; cleared here, before RunStart reads it, not only
+        // when the loader starts the run, or the last run's party would be left out of this one on every machine).
+        SkeletonParty.NewRun();
         var start = RunStartFor(1, false);
         foreach (var p in players)
             if (p != null && !p.IsOwner && p.Current.ready)

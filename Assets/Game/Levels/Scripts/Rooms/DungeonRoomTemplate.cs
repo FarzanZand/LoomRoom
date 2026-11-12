@@ -78,9 +78,9 @@ public class DungeonRoomTemplate : MonoBehaviour
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;
 
-    // Done for good in this save: the Skeleton Party once its dancers are all dead (SkeletonParty.ClearedFlag), and any
+    // Done for this run: the Skeleton Party once its dancers are all dead or its chest is opened (SkeletonParty.ClearedFlag), and any
     // room whose portal leads to a room that is (the Portal hall). Left out of every floor's pools. In co-op the host's
-    // save decides (MultiplayerManager.HostPartyCleared), so every machine builds the same floor.
+    // run decides (MultiplayerManager.HostPartyCleared), so every machine builds the same floor.
     public bool Gone
     {
         get

@@ -210,7 +210,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'Behind the Portal hall''s portal: skeletons dance and ignore you. Open the chest (a Legendary piece and gold) or hit one and they all attack.'
+  description: 'Behind the Portal hall''s portal: skeletons dance and ignore you. Open the chest (The Party Crasher and gold, once a run) or hit one and they all attack.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -328,7 +328,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: party
-  summary: Six skeletons dance round a chest and ignore you. Hit one or open the chest and they all come for you. The chest holds a Legendary piece and 80 gold. Reached through the Portal hall's portal.
+  summary: Six skeletons dance round a chest and ignore you. Hit one or open the chest and they all come for you. The chest holds The Party Crasher and 80 gold, once a run. Reached through the Portal hall's portal.
   entrance: {fileID: 0}
   countsAsEvent: 0
 --- !u!1 &6676549144639257178

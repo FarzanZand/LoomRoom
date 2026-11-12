@@ -137,7 +137,9 @@ public partial class ItemData
     static void ScaleToTier(ItemData copy, List<StatModifierEntry> modifiers)
     {
         int tier = copy.ScaledTier;
-        if (tier <= 0 || !copy.IsWeapon || !InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return;
+        // A saved tier counts only while the relic still scales (one picked up before its Scale With Floor was switched
+        // off keeps its old damage otherwise; the user's retune of 2026-11-11).
+        if (tier <= 0 || !copy.IsWeapon || !copy.BaseItem.scaleWithFloor || !InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return;
         var like = InventoryManager.Instance.itemCatalog.Find(i => i != null && i != copy.baseItem && i.IsWeapon && i.tier == tier
             && i.weaponCategory == copy.weaponCategory && i.rarity == ItemRarity.Common && i.BaseItem == i);
         if (like == null || !like.TryMainStat(out _, out float damage, out _)) return;

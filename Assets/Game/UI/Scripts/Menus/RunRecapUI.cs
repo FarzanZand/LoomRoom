@@ -116,7 +116,9 @@ public class RunRecapUI : MonoBehaviour
         if (summaryLine != null)
         {
             summaryLine.gameObject.SetActive(tallied);
-            summaryLine.text = $"Floor {s.floor} / {s.floors}   ·   Gold {s.gold}   ·   {s.TimeText}" + (s.bosses > 0 ? $"   ·   Bosses {s.bosses}" : "");
+            summaryLine.text = $"Floor {s.floor} / {s.floors}   ·   Gold {s.gold}   ·   {s.TimeText}" + (s.bosses > 0 ? $"   ·   Bosses {s.bosses}" : "")
+                // Revived deaths banked part of these totals as they happened.
+                + (s.deathsBanked > 0 ? $"   ·   {s.deathsBanked} {(s.deathsBanked == 1 ? "death" : "deaths")} banked" : "");
         }
         if (stats != null) stats.gameObject.SetActive(!tallied);
         if (counting != null) StopCoroutine(counting);
@@ -181,6 +183,7 @@ public class RunRecapUI : MonoBehaviour
 #endif
 
     // Revive: up again where you fell, the run going on, and the Dungeon Master mocks it (every time, any build).
+    int lastRevive = -1;
     void Revive()
     {
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
@@ -189,7 +192,11 @@ public class RunRecapUI : MonoBehaviour
         Hide();
         if (reviveLines != null && reviveLines.Length > 0)
         {
-            var line = reviveLines[Random.Range(0, reviveLines.Length)];
+            // Never the line he said last time (one came three times in five revives).
+            int pick = Random.Range(0, reviveLines.Length);
+            if (reviveLines.Length > 1 && pick == lastRevive) pick = (pick + 1 + Random.Range(0, reviveLines.Length - 1)) % reviveLines.Length;
+            lastRevive = pick;
+            var line = reviveLines[pick];
             if (line != null && !line.IsEmpty) DOVirtual.DelayedCall(.6f, () => DungeonMaster.Say(line)).SetLink(gameObject);
         }
     }

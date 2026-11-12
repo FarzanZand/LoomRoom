@@ -37,8 +37,18 @@ public class ShieldCheckChest : MonoBehaviour
         chest.guaranteedItems = new System.Collections.Generic.List<ItemData>();
         if (!carried && shield != null) chest.guaranteedItems.Add(shield);
         if (potion != null) chest.guaranteedItems.Add(potion);
+        // The boss already fell (the chest left for after the fight): no word about the fight.
+        if (BossBeaten()) return;
         var line = !carried ? gaveShieldLine : inHand ? keepShieldLine : equipShieldLine;
         if (line != null && !line.IsEmpty) DungeonMaster.Say(line);
+    }
+
+    bool BossBeaten()
+    {
+        var floor = GetComponentInParent<DungeonGenerator>();
+        if (floor == null) return false;
+        foreach (var stage in floor.GetComponentsInChildren<BossStageEncounter>(true)) if (stage != null && stage.Won) return true;
+        return false;
     }
 
     static bool Carries(Inventory inventory)

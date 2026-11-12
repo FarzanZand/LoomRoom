@@ -30,6 +30,8 @@ public class PortraitLine
 public class PortraitChoice
 {
     [Tooltip("What the answer button says.")] public string label;
+    [Tooltip("Escape picks this answer (one that walks away, such as Never mind). With none, Escape opens the pause menu.")]
+    public bool leaves;
     [Tooltip("The boxes said after this answer, before the dialogue goes on.")] public List<PortraitReply> reply = new();
 }
 

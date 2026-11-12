@@ -397,7 +397,7 @@ public static class AssetStudioDialogue
         a.InsertArrayElementAtIndex(i);
         var e = a.GetArrayElementAtIndex(i);
         if (line.kind == Kind.Box) { e.FindPropertyRelative("label").stringValue = ""; e.FindPropertyRelative("reply").ClearArray(); }
-        else e.FindPropertyRelative("text").stringValue = "";
+        else { e.FindPropertyRelative("text").stringValue = ""; ClearVoice(e); }
         Saved(line.owner, so);
     }
 
@@ -458,7 +458,17 @@ public static class AssetStudioDialogue
         if (line.TextField != null) copy.FindPropertyRelative(line.TextField).stringValue = ""; else copy.stringValue = "";
         // A new box starts with no answers, a new answer with no replies (the speaker and name are kept).
         copy.FindPropertyRelative(line.kind == Kind.Answer ? "reply" : "choices")?.ClearArray();
+        ClearVoice(copy);
     });
+
+    // A new line is a copy of its neighbour (InsertArrayElementAtIndex): it starts silent, not with the neighbour's
+    // recording (review 2026-11-12).
+    static void ClearVoice(SerializedProperty copy)
+    {
+        if (copy.propertyType != SerializedPropertyType.Generic) return;
+        var voice = copy.FindPropertyRelative("voice");
+        if (voice != null && voice.propertyType == SerializedPropertyType.ObjectReference) voice.objectReferenceValue = null;
+    }
     public static void Remove(Line line) => Change(line, a => a.DeleteArrayElementAtIndex(line.index));
 
     static void Change(Line line, Action<SerializedProperty> change)

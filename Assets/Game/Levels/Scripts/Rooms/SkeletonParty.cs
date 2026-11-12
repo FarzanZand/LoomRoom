@@ -9,9 +9,9 @@ using UnityEngine.Playables;
 // party turns on the player at once) or opens the chest in the middle (they stop, stand turned to the player for
 // Chest Stare seconds, then attack; a hit cuts the stare short). Opening the chest also slams iron gates across the
 // room's ways out (ScriptedEventRoom's, the ambush's gates), which sink again once every dancer is dead. The Dungeon
-// Master has a word for each moment. Cleared (every dancer dead), it sets ClearedFlag, and from then on the party and
-// the Portal hall that leads to it are left out of every floor of that save (DungeonRoomTemplate.Gone; the user,
-// 2026-11-11: doable once).
+// Master has a word for each moment. Cleared (every dancer dead) or its chest opened, it sets ClearedFlag, and from then
+// on the party and the Portal hall that leads to it are left out of every floor of that run (DungeonRoomTemplate.Gone;
+// the user, 2026-11-12: one Party Crasher a run, not a save; a new run clears it, NewRun).
 public class SkeletonParty : MonoBehaviour
 {
     [Tooltip("The dance (any humanoid or rig clip the dancers can play). Empty: they stand where they are.")]
@@ -38,8 +38,10 @@ public class SkeletonParty : MonoBehaviour
     [Tooltip("Opening the chest shuts the room's ways out with iron gates until every dancer is dead.")]
     public bool gateOnChest = true;
 
-    // Set once every dancer is dead: the party is never dealt again in this save (DungeonRoomTemplate.Gone).
-    public const string ClearedFlag = "event.skeletonParty";
+    // Set once every dancer is dead or the chest is opened: the party is not dealt again in this run
+    // (DungeonRoomTemplate.Gone). A run flag, so a continued run keeps it and a new run clears it (NewRun).
+    public const string ClearedFlag = "run.skeletonParty";
+    public static void NewRun() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(ClearedFlag, 0); }
 
     DungeonGenerator dungeon;
     int room = -1;
@@ -110,7 +112,13 @@ public class SkeletonParty : MonoBehaviour
             if (chest == null) { waitingChests.RemoveAt(w); continue; }
             if (!chest.gameObject.activeInHierarchy || !InRoom(chest)) continue;
             waitingChests.RemoveAt(w);
-            chests.Add(chest); chest.Opened += _ => Spoil(chestLine, true);
+            chests.Add(chest);
+            chest.Opened += _ =>
+            {
+                // Its prize is out: no second party this run, even if the dancers are left standing.
+                if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(ClearedFlag);
+                Spoil(chestLine, true);
+            };
             // The party's prize: its one item (Prize Item, or a random Legendary piece) and a heap of gold, nothing else.
             if (legendaryInChest)
             {

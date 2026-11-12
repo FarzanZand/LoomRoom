@@ -36,6 +36,7 @@ public partial class ItemDatabaseWindow : EditorWindow
     }
     void OnDisable()
     {
+        CommitEdit();
         Undo.undoRedoPerformed -= Rebuild; EditorApplication.projectChanged -= Rebuild;
         if (inspector != null) DestroyImmediate(inspector);
     }
@@ -114,7 +115,7 @@ public partial class ItemDatabaseWindow : EditorWindow
             GUILayout.Space(12);
             // List: one item at a time. Table: a group of items side by side, every number editable (ItemDatabaseWindow.Table.cs).
             int view = GUILayout.Toolbar(tableView ? 1 : 0, new[] { new GUIContent("List", "One item at a time, all its fields."), new GUIContent("Table", "A kind or a tier side by side, every stat editable.") }, EditorStyles.toolbarButton, GUILayout.Width(110));
-            if ((view == 1) != tableView) { if (view == 1) OpenTable(); else tableView = false; GUI.FocusControl(null); }
+            if ((view == 1) != tableView) { CommitEdit(); if (view == 1) OpenTable(); else tableView = false; GUI.FocusControl(null); }
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{items.Count} items", EditorStyles.miniLabel);
         }

@@ -30,7 +30,20 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
         if(Equipment.IsHand(slot)){var s=UIFeedbackSettings.Shared;s?.Play(s.equipKey);}
         if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();
     }
-    public void OnPointerEnter(PointerEventData e){var item=player?.Equipment?.Get(slot);if(item!=null && TooltipUI.HasInstance)TooltipUI.Instance.Show(item);}
+    // The tooltip sits level with the slot but beside the whole doll, not at the mouse, so it covers no doll slot
+    // (review 2026-11-12: beside its own slot, the shield's covered the helm and body slots).
+    public void OnPointerEnter(PointerEventData e){var item=player?.Equipment?.Get(slot);if(item!=null && TooltipUI.HasInstance)TooltipUI.Instance.ShowBeside(item,(RectTransform)transform,DollArea());}
+
+    static readonly Vector3[] corners=new Vector3[4];
+    // The screen area of every doll slot shown with this one (the same player's, on the same canvas).
+    Rect DollArea(){
+        var canvas=GetComponentInParent<Canvas>();var root=canvas!=null?canvas.rootCanvas.transform:transform.parent;
+        float xMin=float.MaxValue,yMin=float.MaxValue,xMax=float.MinValue,yMax=float.MinValue;
+        foreach(var other in root.GetComponentsInChildren<EquipmentSlotUI>()){
+            if(other!=this && other.player!=player)continue;
+            ((RectTransform)other.transform).GetWorldCorners(corners);
+            xMin=Mathf.Min(xMin,corners[0].x);yMin=Mathf.Min(yMin,corners[0].y);xMax=Mathf.Max(xMax,corners[2].x);yMax=Mathf.Max(yMax,corners[2].y);}
+        return Rect.MinMaxRect(xMin,yMin,xMax,yMax);}
     public void OnPointerExit(PointerEventData e){if(TooltipUI.HasInstance)TooltipUI.Instance.Hide();}
 
     // Dragged off the doll: a hand item from its hotbar slot (it can be moved along the hotbar, or swapped with

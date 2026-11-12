@@ -34,7 +34,7 @@ public static class DevPromptBuilder
         var root = new GameObject("Dev Prompt", typeof(RectTransform));
         var canvas = root.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 950;
+        canvas.sortingOrder = 3000;   // over the pause menu (2000), which covered its text box (review 2026-11-12)
         var scaler = root.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);

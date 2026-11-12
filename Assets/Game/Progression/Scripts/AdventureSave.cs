@@ -59,14 +59,21 @@ public class AdventureSave : MonoBehaviour
     const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
     string FilePath => Path.Combine(Folder, DebugDungeonSession.Active ? DebugFile : SlotFile(Slot));
 
-    // Where saves go: the game's own folder, or another one given with -savedir <folder> (two copies on one computer,
-    // each with its own save).
+    // ── Save folder ──────────────────────────────────────────────────
+    // Builds and the editor of the master checkout (C:/Game projects/LoomRoom) save in Unity's own folder
+    // (<company>/<product>): the user's saves. Every other copy of the project (the co-op worktree LoomRoom-coop, the
+    // QA copy LoomRoom-qa) and every Multiplayer Play Mode clone has that company and product too, so in the editor each
+    // saves in a folder of its own beside it ("The Table Awaits-coop", "-qa", "-coop-mppm203c33af"): on 2026-11-12 a
+    // test editor was found writing the user's slot 1. Only saves move; PlayerPrefs (settings, the slot in play) stay shared.
+    // Co-op tests go before that: -savedir <folder> on the command line (two builds on one computer, each with its own
+    // save), or an editor session's test folder (TestFolderKey).
+    const string MasterCheckout = "LoomRoom";
     public static string Folder
     {
         get
         {
             if (folder != null) return folder;
-            folder = Application.persistentDataPath;
+            folder = Application.isEditor ? Application.persistentDataPath + CheckoutTag(Application.dataPath) : Application.persistentDataPath;
             var args = Environment.GetCommandLineArgs();
             for (int i = 0; i + 1 < args.Length; i++)
                 if (args[i].Equals("-savedir", StringComparison.OrdinalIgnoreCase)) { folder = args[i + 1]; customFolder = true; }
@@ -82,6 +89,27 @@ public class AdventureSave : MonoBehaviour
     // Editor tests: a save folder for this editor session only (SessionState). Saves there are read and written even
     // with Fresh Start In Editor on, and the real save is never touched.
     public const string TestFolderKey = "LoomRoom.Save.TestFolder";
+    // Whether this is the user's own save folder (old saves are only ever brought over into it).
+    static bool RealFolder => !CustomFolder && Folder == Application.persistentDataPath;
+    // "" for the master checkout, "-coop" for LoomRoom-coop, "-coop-mppm203c33af" for a clone made under it,
+    // "-<folder>" for a copy of any other name.
+    public static string CheckoutTag(string dataPath)
+    {
+        var project = (dataPath ?? "").Replace('\\', '/').TrimEnd('/');
+        if (project.EndsWith("/Assets", StringComparison.OrdinalIgnoreCase)) project = project.Substring(0, project.Length - "/Assets".Length);
+        string clone = "";
+        int vp = project.IndexOf("/Library/VP/", StringComparison.OrdinalIgnoreCase);
+        if (vp >= 0)
+        {
+            var rest = project.Substring(vp + "/Library/VP/".Length);
+            int cut = rest.IndexOf('/');
+            clone = "-" + (cut >= 0 ? rest.Substring(0, cut) : rest);
+            project = project.Substring(0, vp);
+        }
+        var name = project.Substring(project.LastIndexOf('/') + 1);
+        string tag = name == MasterCheckout ? "" : name.StartsWith(MasterCheckout + "-", StringComparison.Ordinal) ? name.Substring(MasterCheckout.Length) : "-" + name;
+        return tag + clone;
+    }
 
     // ── Save slots ───────────────────────────────────────────────────
     // Three saves side by side; the main menu picks one (New game, Continue, Load game) before the game's scene loads,
@@ -220,7 +248,7 @@ public class AdventureSave : MonoBehaviour
     }
     public static void MigrateOldSaves()
     {
-        if (PlayerPrefs.GetInt(MigratedPref, 0) == 1 || CustomFolder) return;   // a copy with its own folder (-savedir) leaves the game's alone
+        if (!RealFolder || PlayerPrefs.GetInt(MigratedPref, 0) == 1) return;
         MarkMigrated();
         try
         {
@@ -324,7 +352,7 @@ public class AdventureSave : MonoBehaviour
         try
         {
             Directory.CreateDirectory(Folder);
-            if (!CustomFolder) MarkMigrated();   // this folder has saves of its own now
+            if (RealFolder) MarkMigrated();   // this folder has saves of its own now
             File.WriteAllText(FilePath + ".tmp", JsonUtility.ToJson(Saved, true));
             if (File.Exists(FilePath)) File.Replace(FilePath + ".tmp", FilePath, FilePath + ".bak");
             else File.Move(FilePath + ".tmp", FilePath);

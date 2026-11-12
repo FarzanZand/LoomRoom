@@ -107,18 +107,23 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     void Throw(Vector3 center, Vector3 direction, int count, float force)
     {
         if (debrisPrefab == null) return;
+        System.Collections.Generic.List<Rigidbody> staying = null;
         for (int i = 0; i < count; i++)
         {
             var piece = debrisStays ? Stay(Instantiate(debrisPrefab, center + Random.insideUnitSphere * .2f, Random.rotation, transform.parent))
                 : PoolManager.SpawnOrInstantiate(debrisPrefab, center + Random.insideUnitSphere * .2f, Random.rotation, debrisLifetime);
             var rb = piece != null ? piece.GetComponent<Rigidbody>() : null;
             if (rb == null) continue;
+            if (debrisStays) (staying ??= new()).Add(rb);
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
             Vector3 push = (Random.insideUnitSphere + Vector3.up * .9f + direction * .6f).normalized * debrisForce * force;
             rb.AddForce(push, ForceMode.Impulse);
             rb.AddTorque(Random.insideUnitSphere * debrisForce * force, ForceMode.Impulse);
         }
+        // One timer for the whole throw (one a piece filled DOTween's 200 tweens when many props broke at once, and it
+        // logged a warning as it grew).
+        if (staying != null) DOVirtual.DelayedCall(3f, () => FreezeWhenSettled(staying, 0), false);
     }
 
     // Debris kept for the floor: it settles, then freezes (saves physics time). The oldest go past the cap.
@@ -129,28 +134,27 @@ public class DungeonDestructible : MonoBehaviour, IDamageable
     {
         while (kept.Count >= MaxKeptDebris) { var old = kept.Dequeue(); if (old != null) Destroy(old); }
         kept.Enqueue(piece);
-        if (piece.TryGetComponent<Rigidbody>(out var rb)) DOVirtual.DelayedCall(3f, () => FreezeWhenSettled(rb, 0), false);
         return piece;
     }
 
     // Frozen only once it lies still on fixed floor. A piece resting on a barrel, an item or a body
-    // stays loose (asleep) and falls when that goes; one still moving is checked again later.
-    static void FreezeWhenSettled(Rigidbody rb, int tries)
+    // stays loose (asleep) and falls when that goes; one still moving is checked again later (with the
+    // others of its throw still loose, on one timer).
+    static void FreezeWhenSettled(System.Collections.Generic.List<Rigidbody> pieces, int tries)
     {
-        if (rb == null || rb.isKinematic) return;
+        pieces.RemoveAll(rb => rb == null || rb.isKinematic || Settle(rb));
+        if (pieces.Count > 0 && tries < 20) DOVirtual.DelayedCall(1.5f, () => FreezeWhenSettled(pieces, tries + 1), false);
+    }
+    static bool Settle(Rigidbody rb)
+    {
         bool still = rb.IsSleeping() || rb.linearVelocity.sqrMagnitude < .01f;
-        if (still && rb.TryGetComponent<Collider>(out var col))
-        {
-            var b = col.bounds;
-            if (DungeonPickup.FloorBelow(b.center, b.extents.y + .08f, rb.transform, out _))
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                rb.isKinematic = true;
-                return;
-            }
-        }
-        if (tries < 20) DOVirtual.DelayedCall(1.5f, () => FreezeWhenSettled(rb, tries + 1), false);
+        if (!still || !rb.TryGetComponent<Collider>(out var col)) return false;
+        var b = col.bounds;
+        if (!DungeonPickup.FloorBelow(b.center, b.extents.y + .08f, rb.transform, out _)) return false;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.isKinematic = true;
+        return true;
     }
 
     public void Break(Vector3 direction = default)

@@ -76,8 +76,10 @@ public static partial class CampaignMapBuilder
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         if (prefab == null) return "no prefab " + prefabPath;
         var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-        instance.transform.position = Vector3.zero; instance.transform.localScale = Vector3.one;
-        // The map is measured in its own units (it is laid on the table at scale 1).
+        // The map is measured in its own units (it is laid on the table at scale 1); anything else as it stands, at its
+        // root's own scale (the Crypt Lord's root is 1.24: reset to 1 he measured 158 against his true 128, review 2026-11-12).
+        instance.transform.position = Vector3.zero;
+        if (instance.GetComponentInChildren<CampaignMap>(true) != null) instance.transform.localScale = Vector3.one;
         var off = new Dictionary<string, (float tpu, int count)>();
         int checkedCount = 0;
         try

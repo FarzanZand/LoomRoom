@@ -2,7 +2,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 
 // The Change class quest (the user, 2026-11-11): once the hero can be chosen in the room (the map has been seen, the
-// first lesson is over, no run going), the quest log asks the player to change their class at the desk by the bed, the
+// first lesson is learned, no run going), the quest log asks the player to change their class at the desk by the bed, the
 // Dungeon Master points at it, and the desk glows (ClassPosterWall) until the player uses it to choose a hero. Given once.
 public partial class ProgressionManager
 {
@@ -14,7 +14,9 @@ public partial class ProgressionManager
     void UpdateClassQuest()
     {
         if (Time.frameCount % 15 != 7 || QuestState(ClassQuest) != 0) return;
-        if (!HasFlag(CampaignManager.SeenFlag) || LessonHoldsRuns || !RoomPlayerFree) return;
+        // Only once the lesson is learned (not merely while it holds runs, which starts after the first run): given before
+        // it, the quest sat on top of the lesson and pulled a new player to the desk instead of the sheet (review 2026-11-12).
+        if (!HasFlag(CampaignManager.SeenFlag) || !LessonTaught || !RoomPlayerFree) return;
         if (!CampaignManager.HasInstance || !CampaignManager.Instance.CanChooseHeroInRoom) return;
         if (!GiveQuest(ClassQuest)) return;
         if (classQuestLine != null && !classQuestLine.IsEmpty) DungeonMaster.Say(classQuestLine);

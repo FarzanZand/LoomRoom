@@ -127,13 +127,21 @@ public class Merchant : MonoBehaviour, IInteractable
         var consumables = new List<ItemData>();
         var gear = new List<ItemData>();
         if (staples != null) foreach (var item in staples) if (item != null && !consumables.Contains(item)) consumables.Add(item);
+        // The floor's own gear when the level has a Gear by floor row for it (the user, 2026-11-12: a shop sells the gear
+        // of the floor it is on); the stock table then only gives consumables. With no row, its gear as before.
+        var floorRow = LootSource.FloorGear?.Invoke(Mathf.Max(1, floorNumber));
         // Roll the table until there is enough distinct gear, with a cap so a thin table can't loop forever.
-        for (int i = 0; stockTable != null && i < 60 && gear.Count < gearCount; i++)
+        for (int i = 0; stockTable != null && i < (floorRow != null ? 10 : 60) && (floorRow != null || gear.Count < gearCount); i++)
             foreach (var drop in stockTable.RollDrops(rng, floorNumber, DungeonLootSource.Chest))
             {
-                var list = drop.item == null ? null : drop.item.IsConsumable ? consumables : gear;
+                var list = drop.item == null ? null : drop.item.IsConsumable ? consumables : floorRow != null ? null : gear;
                 if (list != null && !list.Contains(drop.item) && (list == consumables || gear.Count < gearCount)) list.Add(drop.item);
             }
+        for (int i = 0; floorRow != null && i < 60 && gear.Count < gearCount; i++)
+        {
+            var piece = FloorPiece(floorRow, rng);
+            if (piece != null && !gear.Contains(piece)) gear.Add(piece);
+        }
         for (int i = 0; i < consumableCount && consumables.Count > 0; i++)
         {
             int pick = rng.Next(consumables.Count);
@@ -155,11 +163,19 @@ public class Merchant : MonoBehaviour, IInteractable
         // And a weapon of the floor's: when none came up, the table is rolled again for one, which takes the place of the
         // last piece that isn't the tome. It is Uncommon or better (below).
         ItemData weapon = gear.Find(i => i != null && i.itemType == ItemType.Weapon);
-        if (alwaysWeapon && weapon == null && stockTable != null)
+        if (alwaysWeapon && weapon == null && (stockTable != null || floorRow != null))
         {
             for (int i = 0; i < 40 && weapon == null; i++)
+            {
+                if (floorRow != null)
+                {
+                    var piece = FloorPiece(floorRow, rng);
+                    if (piece != null && piece.itemType == ItemType.Weapon && !gear.Contains(piece)) weapon = piece;
+                    continue;
+                }
                 foreach (var drop in stockTable.RollDrops(rng, floorNumber, DungeonLootSource.Chest))
                     if (drop.item != null && drop.item.itemType == ItemType.Weapon && !gear.Contains(drop.item)) { weapon = drop.item; break; }
+            }
             if (weapon != null)
             {
                 int replace = gear.FindLastIndex(i => i != null && i.spell == null);
@@ -183,6 +199,16 @@ public class Merchant : MonoBehaviour, IInteractable
         }
     }
 
+    // A plain piece of gear of the floor: its tier rolled from the floor's row (shares and upgrade chance, as a chest
+    // rolls it), then a weapon, shield or armour piece of that tier by loot weight.
+    ItemData FloorPiece(LootFloorTiers row, System.Random rng)
+    {
+        int tier = row.Roll(rng);
+        if (rng.NextDouble() < row.upgradeChance) tier++;
+        tier = Mathf.Clamp(tier, 1, 12);
+        return InventoryManager.GivenGear(ItemRarity.Common, tier, floorNumber, rng, tier);
+    }
+
     void Add(ItemData item, int count)
     {
         if (item == null || count <= 0) return;
@@ -195,13 +221,48 @@ public class Merchant : MonoBehaviour, IInteractable
         int basePrice = CurrencyManager.HasInstance ? CurrencyManager.Instance.BuyPrice(item) : Mathf.Max(1, item.value);
         float haggle = Trader != null ? Trader.BuyPriceMultiplier : 1;
         // Never cheaper than the merchant pays, so buying and selling back can't make money.
-        return Mathf.Max(SellPriceOf(item) + 1, Mathf.CeilToInt(basePrice * priceMultiplier * (1f + pricePerFloor * Mathf.Max(0, floorNumber - 1)) * haggle));
+        return Mathf.Max(SellPriceOf(item) + 1, Mathf.CeilToInt(basePrice * TierPriceFactor(item) * priceMultiplier * (1f + pricePerFloor * Mathf.Max(0, floorNumber - 1)) * haggle));
     }
 
     public int SellPriceOf(ItemData item)
     {
         int basePrice = CurrencyManager.HasInstance ? CurrencyManager.Instance.SellPrice(item) : Mathf.Max(1, item.value / 3);
-        return Mathf.Max(1, Mathf.FloorToInt(basePrice * (Trader != null ? Trader.SellPriceMultiplier : 1)));
+        return Mathf.Max(1, Mathf.FloorToInt(basePrice * TierPriceFactor(item) * (Trader != null ? Trader.SellPriceMultiplier : 1)));
+    }
+
+    // ── Prices by the floor, not the tier ──
+    // Gear values rise about two and a half times a tier up to tier 4 and a third a tier after, while the gold a run
+    // finds only doubles from floor 1 to 12 (about 1,300 in a whole Dungeon1 run, measured 2026-11-12). Since taverns sell
+    // the floor's own gear, a floor-6 piece cost 780-2,460 (the user: "No player will ever get that much gold"). So the
+    // merchant prices and buys gear above Price Tier as a piece of Price Tier of the same kind and slot at the same rarity;
+    // the floor's markup (Price Per Floor) then follows the gold. Buying and selling go the same way, so nothing bought
+    // sells back for more. The item's own value (tooltips, loot) is unchanged.
+    [Range(1, 12), Tooltip("Gear of a higher tier is bought and sold here at the price of a piece of this tier (same kind, slot and rarity); the floor's markup then grows with the gold found. 2 = what the shops charged before they sold the floor's gear.")]
+    public int priceTier = 2;
+
+    static readonly Dictionary<(ItemType, EquipmentSlot, int), float> tierValues = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetTierValues() => tierValues.Clear();
+
+    float TierPriceFactor(ItemData item)
+    {
+        if (item == null || !item.IsGear) return 1f;
+        var plain = item.BaseItem;
+        if (plain.tier <= priceTier || plain.rarity == ItemRarity.Relic) return 1f;
+        float at = TierValue(plain, plain.tier), to = TierValue(plain, priceTier);
+        return at > 0f && to > 0f ? Mathf.Min(1f, to / at) : 1f;
+    }
+
+    // The average value of the plain catalog gear of this kind and slot at a tier (0 when there is none).
+    static float TierValue(ItemData like, int tier)
+    {
+        var key = (like.itemType, like.equipSlot, tier);
+        if (tierValues.TryGetValue(key, out float v)) return v;
+        float sum = 0f; int n = 0;
+        if (InventoryManager.HasInstance && InventoryManager.Instance.itemCatalog != null)
+            foreach (var i in InventoryManager.Instance.itemCatalog)
+                if (i != null && i.rarity == ItemRarity.Common && i.tier == tier && i.IsGear && i.itemType == like.itemType && i.equipSlot == like.equipSlot && i.value > 0)
+                { sum += i.value; n++; }
+        return tierValues[key] = n > 0 ? sum / n : 0f;
     }
 
     // Trading and Charisma of whoever is shopping (the active player).
@@ -247,6 +308,7 @@ public class Merchant : MonoBehaviour, IInteractable
         if (!buysItems) { reason = $"The {merchantName} isn't buying."; return false; }
         if (item == null) return false;
         if (item.itemType == ItemType.Spoils) { reason = "Spoils go to the tally, not the till."; return false; }
+        if (item.itemType == ItemType.Key) { reason = "Not for sale."; return false; }
         int owned = (player.Bag != null ? player.Bag.TotalCount(item) : 0) + (player.Hotbar != null ? player.Hotbar.TotalCount(item) : 0);
         // A held item stays in the hotbar, so its last copy there is the one in hand; worn items leave the bag, so
         // any copy still in it is a spare.

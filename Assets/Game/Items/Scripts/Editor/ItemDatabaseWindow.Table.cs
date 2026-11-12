@@ -23,6 +23,34 @@ public partial class ItemDatabaseWindow
     Vector2 tableScroll, tablePickScroll;
     ItemData tableRow;
     double lastNameClick;
+
+    // ── The cell being typed in ──
+    // One text field at a time, its item and column kept here: a number typed and left without Enter is written to that
+    // item when the edit ends (Enter, Tab, a click elsewhere, a switch of group or sort), never to whatever cell takes
+    // its place on screen (the review of 2026-11-12: a Delayed field's pending text went into another item's price).
+    ItemData editItem;
+    string editKey, editText, editStart;
+    Action<ItemData, string> editSet;
+    bool focusEdit;
+    const string EditControl = "ItemTableEdit";
+
+    void BeginEdit(ItemData item, Column c, string now)
+    {
+        CommitEdit();
+        editItem = item; editKey = c.key; editText = editStart = now; editSet = c.set; focusEdit = true;
+        tableRow = item;
+    }
+
+    void CommitEdit()
+    {
+        if (editItem == null) return;
+        var item = editItem; var set = editSet; string text = editText, start = editStart;
+        editItem = null; editSet = null; editKey = null;
+        if (item != null && set != null && text != start) { set(item, text); tableRow = item; }
+        Repaint();
+    }
+
+    void CancelEdit() { editItem = null; editSet = null; editKey = null; Repaint(); }
     static GUIStyle cellStyle, cellRead, headStyle, nameCell, pickRow, pickCount;
 
     const float TableRowHeight = 24f, TableHeadHeight = 40f, NameWidth = 220f, PickWidth = 230f;
@@ -181,7 +209,7 @@ public partial class ItemDatabaseWindow
     {
         EditorGUI.DrawRect(r, new Color(.17f, .17f, .17f));
         int mode = GUI.Toolbar(new Rect(r.x + 8f, r.y + 6f, r.width - 16f, 20f), tableByTier ? 1 : 0, new[] { "By kind", "By tier" }, EditorStyles.miniButton);
-        if ((mode == 1) != tableByTier) { tableByTier = mode == 1; tableSort = ""; tableScroll = Vector2.zero; }
+        if ((mode == 1) != tableByTier) { CommitEdit(); tableByTier = mode == 1; tableSort = ""; tableScroll = Vector2.zero; }
         showArchived = GUI.Toggle(new Rect(r.x + 8f, r.y + 30f, r.width - 16f, 18f), showArchived, " Archived items too", EditorStyles.toggle);
 
         var groups = new List<(string label, string sub, int count, bool on, Action pick)>();
@@ -219,7 +247,7 @@ public partial class ItemDatabaseWindow
             GUI.Label(new Rect(row.xMax - 50f, row.y, 40f, row.height), g.count.ToString(), pickCount);
             GUI.color = old;
             if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
-            { g.pick(); tableSort = ""; tableScroll = Vector2.zero; GUI.FocusControl(null); Event.current.Use(); Repaint(); }
+            { CommitEdit(); g.pick(); tableSort = ""; tableScroll = Vector2.zero; GUI.FocusControl(null); Event.current.Use(); Repaint(); }
         }
         GUI.EndScrollView();
     }
@@ -245,6 +273,17 @@ public partial class ItemDatabaseWindow
         var cells = new Rect(r.x + NameWidth, top + TableHeadHeight, r.width - NameWidth, r.yMax - top - TableHeadHeight);
         float contentHeight = rows.Count * TableRowHeight;
 
+        // The cell being typed in: Enter or Tab writes it, Escape drops it, and focus gone elsewhere (a click on another
+        // control, the search box) writes it too.
+        var e = Event.current;
+        if (editItem != null)
+        {
+            if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Tab))
+            { CommitEdit(); GUI.FocusControl(null); e.Use(); }
+            else if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) { CancelEdit(); GUI.FocusControl(null); e.Use(); }
+            else if (!focusEdit && e.type == EventType.Repaint && GUI.GetNameOfFocusedControl() != EditControl) CommitEdit();
+        }
+
         // The names scroll up and down with the cells (a wheel over them too).
         if (Event.current.type == EventType.ScrollWheel && names.Contains(Event.current.mousePosition))
         { tableScroll.y = Mathf.Clamp(tableScroll.y + Event.current.delta.y * 20f, 0f, Mathf.Max(0f, contentHeight - cells.height + 16f)); Event.current.Use(); Repaint(); }
@@ -266,10 +305,18 @@ public partial class ItemDatabaseWindow
                 string now = c.get(item);
                 if (now == null) { x += c.width; continue; }   // not a thing this item has (a shield's spread)
                 if (c.readOnly) GUI.Label(cell, now, c.text ? new GUIStyle(cellRead) { alignment = TextAnchor.MiddleLeft } : cellRead);
+                else if (editItem == item && editKey == c.key)
+                {
+                    GUI.SetNextControlName(EditControl);
+                    editText = EditorGUI.TextField(cell, editText, cellStyle);
+                    if (focusEdit && e.type == EventType.Repaint) { EditorGUI.FocusTextInControl(EditControl); focusEdit = false; Repaint(); }
+                }
                 else
                 {
-                    string next = EditorGUI.DelayedTextField(cell, now, cellStyle);
-                    if (next != now) { c.set(item, next); tableRow = item; }
+                    // Not being typed in: drawn as the field looks; a click starts typing in it.
+                    if (e.type == EventType.Repaint) cellStyle.Draw(cell, new GUIContent(now), false, false, false, false);
+                    EditorGUIUtility.AddCursorRect(cell, MouseCursor.Text);
+                    if (e.type == EventType.MouseDown && e.button == 0 && cell.Contains(e.mousePosition)) { BeginEdit(item, c, now); e.Use(); }
                 }
                 x += c.width;
             }
@@ -310,7 +357,7 @@ public partial class ItemDatabaseWindow
             {
                 bool twice = tableRow == item && EditorApplication.timeSinceStartup - lastNameClick < .35;
                 tableRow = item; lastNameClick = EditorApplication.timeSinceStartup;
-                if (twice || Event.current.clickCount > 1) { tableView = false; ClearFilters(); Select(item); revealSelected = true; }
+                if (twice || Event.current.clickCount > 1) { CommitEdit(); tableView = false; ClearFilters(); Select(item); revealSelected = true; }
                 GUI.FocusControl(null); Event.current.Use(); Repaint();
             }
         }
@@ -330,6 +377,7 @@ public partial class ItemDatabaseWindow
         GUI.Label(new Rect(h.x + 2f, h.y, h.width - 4f, h.height), new GUIContent(title + (sorted ? (tableSortDown ? " ▼" : " ▲") : ""), tip), headStyle);
         if (Event.current.type == EventType.MouseDown && Event.current.button == 0 && h.Contains(Event.current.mousePosition))
         {
+            CommitEdit();
             if (sorted) tableSortDown = !tableSortDown; else { tableSort = key; tableSortDown = key != "name" && key != "tier" && key != "kind"; }
             GUI.FocusControl(null); Event.current.Use(); Repaint();
         }

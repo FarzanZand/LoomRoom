@@ -713,6 +713,10 @@ public static class CoopWorld
 
     // A blood altar or a shrine answered someone: it is silent for everyone (it answers the party once).
     // Every T on the floor and in its portals' pockets, in the same order on every machine.
+    // The boss stage on this machine's current floor (the floor before may still be there for a few frames while it is
+    // taken off the table piece by piece, TableLevelLoader.RemoveSlowly).
+    static BossStageEncounter CurrentStage() => Floor != null ? Floor.GetComponentInChildren<BossStageEncounter>() : Object.FindAnyObjectByType<BossStageEncounter>();
+
     static List<T> OnFloor<T>() where T : Component
     {
         var found = new List<T>();
@@ -1093,19 +1097,19 @@ public static class CoopWorld
                 break;
             case CoopEventKind.BossIntroDone:
             {
-                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                var stage = CurrentStage();
                 if (stage != null) stage.GuestIntroDone(e.slot);
                 break;
             }
             case CoopEventKind.BossBeaten:
             {
-                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                var stage = CurrentStage();
                 if (stage != null) stage.BeatenFromHost(e.position);
                 break;
             }
             case CoopEventKind.BossStageOpened: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.BossFightBegun:
             {
-                var stage = Object.FindAnyObjectByType<BossStageEncounter>();
+                var stage = CurrentStage();
                 if (stage != null) stage.FromHost(e.kind, e.target, e.amount, e.position);
                 break;
             }

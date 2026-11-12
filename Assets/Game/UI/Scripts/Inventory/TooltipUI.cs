@@ -73,11 +73,18 @@ public class TooltipUI : Singleton<TooltipUI>
     // at: the control a pad or the arrow keys picked (a bag cell): the tooltip sits beside it instead of at the mouse.
     // thisCopyEquipped: whether this very copy is the one worn or in hand (null: any copy of it is, as the doll's slots show);
     // a spare copy in the bag or a merchant's ware of the same item is not.
-    public void Show(ItemData item, RectTransform at, bool? thisCopyEquipped = null)
+    public void Show(ItemData item, RectTransform at, bool? thisCopyEquipped = null) => ShowAt(item, at, thisCopyEquipped, null);
+
+    // Beside a control at its height, but wholly to one side of keepClear (screen pixels): the paper doll's slots pass
+    // the doll's whole area, so a slot's tooltip never covers another slot (review 2026-11-12).
+    public void ShowBeside(ItemData item, RectTransform at, Rect keepClear) => ShowAt(item, at, null, keepClear);
+
+    void ShowAt(ItemData item, RectTransform at, bool? thisCopyEquipped, Rect? clear)
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
         anchor = at;
+        keepClear = at != null ? clear : null;
         var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
         bool worn = thisCopyEquipped ?? (gear != null && gear.IsEquipped(item));
         // With a footer, "Equipped" is said there once, not in the lines as well.
@@ -250,6 +257,8 @@ public class TooltipUI : Singleton<TooltipUI>
     readonly Vector3[] corners = new Vector3[4];
     // Shown for a selected control: placed beside it, not at the mouse (null: the mouse).
     RectTransform anchor;
+    // An area the tooltip stays wholly to one side of (screen pixels), with an anchor; null: just the anchor.
+    Rect? keepClear;
 
     void FollowMouse()
     {
@@ -262,6 +271,8 @@ public class TooltipUI : Singleton<TooltipUI>
             anchor.GetWorldCorners(corners);
             mouse = (corners[0] + corners[2]) * .5f;
             halfWidth = (corners[2].x - corners[0].x) * .5f;
+            // Clear of the whole area sideways, still level with the control.
+            if (keepClear is Rect area) { mouse.x = area.center.x; halfWidth = area.width * .5f; }
         }
         else mouse = Mouse.current.position.ReadValue();
         float pivotX = mouse.x < Screen.width  * 0.5f ? 0f : 1f;

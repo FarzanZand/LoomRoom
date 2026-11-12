@@ -36,7 +36,9 @@ public partial class ItemDatabaseWindow
     public static ItemData NewRelic(ItemData look, string name = "New relic")
     {
         var relic = ItemDatabaseAuthoring.Duplicate(look);
-        Undo.RecordObject(relic, "New relic");
+        string firstName = relic.name;   // the copy's icon is rendered under this name
+        // Its setup is not an undo step of its own: Ctrl+Z takes the whole relic away (RelicUndo), never back to a
+        // plain copy of the gear piece.
         var names = new HashSet<string>(ItemDatabaseAuthoring.All().Where(i => i != relic).Select(i => i.itemName), StringComparer.OrdinalIgnoreCase);
         string unique = name; int n = 2;
         while (names.Contains(unique)) unique = name + " " + n++;
@@ -50,6 +52,7 @@ public partial class ItemDatabaseWindow
         AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(relic), Safe(unique));
         ItemDatabaseAuthoring.Save();
         ItemDatabaseAuthoring.SyncCatalog();
+        RelicUndo.Made(relic, firstName);
         return relic;
     }
 

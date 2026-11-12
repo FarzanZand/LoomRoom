@@ -35,7 +35,7 @@ public partial class ProgressionManager
     // The quests the game's own code gives; a scene saved before one existed gets it added at Play (EnsureBuiltInQuests).
     static List<Quest> BuiltInQuests() => new()
     {
-        new Quest { id = SheetQuest, text = "Look at the character sheet by the wall." },
+        new Quest { id = SheetQuest, text = "Look at the character sheet on the hobby table." },
         new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
         new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
         new Quest { id = DashQuest, text = "Dash: press {sprint}, holding left, right or back." },
