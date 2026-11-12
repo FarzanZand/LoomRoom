@@ -44,6 +44,10 @@ public class LimbLoss : MonoBehaviour
     public float sprayOut = .02f, sprayDown = .05f;   // .14 and .1 started it in the air beside him (the user, 2026-11-12)
     [Range(-1f, 1f), Tooltip("How far the spurts point down (-1) or up (1) as they leave sideways (the user, 2026-11-12: down, it looked like bleeding up through the armour).")]
     public float sprayTilt = -.45f;
+    [Min(.1f), Tooltip("The drops' size against a hit's blood (smaller and finer: the stump's spurts showed big squares).")]
+    public float dropSize = .6f;
+    [Min(0), Tooltip("The splash blobs' size against a hit's (at 1 they grew with the spurt's speed to a quarter of a metre).")]
+    public float blobSize = .45f;
 
     Character character;
     int hits;
@@ -119,7 +123,7 @@ public class LimbLoss : MonoBehaviour
         {
             int drops = i == 0 ? firstSpurt : spurt;
             Vector3 from = at.position + side * sprayOut + Vector3.down * sprayDown;
-            GoreManager.Instance.SprayAt(gore, from, side + Vector3.up * sprayTilt + Random.insideUnitSphere * .2f, drops, i == 0 ? firstSpurtSpeed : spurtSpeed);
+            GoreManager.Instance.SprayAt(gore, from, side + Vector3.up * sprayTilt + Random.insideUnitSphere * .2f, drops, i == 0 ? firstSpurtSpeed : spurtSpeed, dropSize, blobSize);
             yield return new WaitForSeconds(spurtGap * (1f + i * .25f));
         }
     }

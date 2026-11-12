@@ -102,6 +102,8 @@ MonoBehaviour:
   sprayOut: 0.02
   sprayDown: 0.05
   sprayTilt: -0.45
+  dropSize: 0.6
+  blobSize: 0.8
 --- !u!114 &1594286743929704932
 MonoBehaviour:
   m_ObjectHideFlags: 0
