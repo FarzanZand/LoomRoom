@@ -270,7 +270,7 @@ MonoBehaviour:
   roll: {fileID: 8300000, guid: c5f2559aab1ce0e4d835b730f4a30190, type: 3}
   toughEnemy: {fileID: 4704730101835608744, guid: a325de79c7d20e94996706b5776dd849, type: 3}
   toughCount: 2
-  ambushScale: 2
+  ambushEnemies: 3
   healEffect: {fileID: 278138404442018645, guid: 2215c46c3070b1b4bbf73445b78cd978, type: 3}
   lid:
     open: {fileID: 8300000, guid: 45ea8ece760e8ad4aa11e7f1a1f6ef25, type: 3}
@@ -1261,7 +1261,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 0.6, y: 0.6, z: 0.6}
-  m_Center: {x: 0, y: 0.0765625, z: 0}
+  m_Center: {x: 0, y: 0.11484375, z: 0}
 --- !u!114 &9054395456373906828
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1295,7 +1295,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceCup
   shake: 0.03
-  outlineWidth: 0.03
+  outlineWidth: 0.015
 --- !u!1001 &8093642903286166864
 PrefabInstance:
   m_ObjectHideFlags: 0

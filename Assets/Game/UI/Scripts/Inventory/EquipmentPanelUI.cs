@@ -120,6 +120,8 @@ public class EquipmentPanelUI : MonoBehaviour
         int score=progress!=null?progress.Score(a):meta.AttributeScore(a),above=score-t.baseScore;
         int fromRun=progress!=null && (int)a<progress.AttributePoints.Length?progress.AttributePoints[(int)a]:0;
         title=t.displayName;subtitle=fromRun>0?$"+{fromRun} this run":"";
+        // The first run after the first morning's dice starts from the roll (ProgressionManager.FirstRoll).
+        if(progress!=null && meta.FirstRoll(a,progress.InRun,out int rolled))subtitle=$"Rolled {rolled}"+(subtitle.Length>0?", "+subtitle:"");
         var stats=ProgressionManager.AttributeStats(a);
         float[] perPoint={t.bonusPerPoint,t.secondBonusPerPoint,t.thirdBonusPerPoint};
         string[] units={t.unit,t.secondUnit,t.thirdUnit};

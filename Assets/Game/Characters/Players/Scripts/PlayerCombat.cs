@@ -507,8 +507,13 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (raising && !wasGuarding) guardRaisedAt = Time.time;
         wasGuarding = raising;
         bool guarding = IsGuarding;
-        if (guarding && player.Stats != null)
-            guarding = player.Stats.DrainStamina(CombatManager.HasInstance ? CombatManager.Instance.shieldStaminaPerSecond : 2f, StaminaRegenDelay);
+        // Holding the shield costs nothing (the user, 2026-11-12): stamina only comes back slower while it is up. Worn out
+        // (a blocked hit took the last of it), the shield stays down until stamina has come back far enough, as before.
+        if (guarding && player.Stats != null && player.Stats.HasStat(StatType.MaxStamina))
+        {
+            if (player.Stats.IsExhausted) guarding = false;
+            else player.Stats.ScaleStaminaRegen(CombatManager.HasInstance ? CombatManager.Instance.shieldRegenMultiplier : .5f);
+        }
         AnimatorHelper.SetBool(armsAnimator, blockHeldParam, guarding);
 
         if (player.Stats != null)

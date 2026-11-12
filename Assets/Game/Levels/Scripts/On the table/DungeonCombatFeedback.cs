@@ -12,8 +12,11 @@ public class DungeonCombatFeedback : MonoBehaviour
         public Character character;
         public RectTransform root;
         public Image fill, loss;
+        public TMPro.TMP_Text label;
         public float until, lossUntil, displayed=1;
         public Action<DamageInfo> handler;
+        // Its name as it is now: a name can change after the bar is made (an event makes it an elite, "Brutal ...").
+        public void Name(){var now=character.DisplayName;if(label!=null && label.text!=now)label.text=now;}
     }
     // A sturdy breakable that took a hit without breaking.
     sealed class ObjectView
@@ -72,7 +75,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         foreach(var e in enemies)if(e.character==character)return;
         var bar=Instantiate(dungeon.LevelData.enemyBarPrefab,canvas);
         var root=bar.Rect;bar.enemyName.text=character.DisplayName;
-        var view=new EnemyView{character=character,root=root,fill=bar.healthFill,loss=bar.recentDamageFill};
+        var view=new EnemyView{character=character,root=root,fill=bar.healthFill,loss=bar.recentDamageFill,label=bar.enemyName};
         view.handler=info=>EnemyDamaged(view,info);character.Damaged+=view.handler;
         root.gameObject.SetActive(false);enemies.Add(view);
     }
@@ -160,7 +163,7 @@ public class DungeonCombatFeedback : MonoBehaviour
                 bool shown=show && e==topEnemy && !bossBar;
                 e.root.gameObject.SetActive(shown);
                 bool bossUp=BossBarUI.HasInstance && BossBarUI.Instance.Boss!=null;
-                if(shown){e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset-(bossUp?topBarUnderBoss:0));}
+                if(shown){e.Name();e.root.localScale=Vector3.one*topBarScale;e.root.anchoredPosition=new Vector2(0,canvas.rect.height*.5f-topBarOffset-(bossUp?topBarUnderBoss:0));}
             }
             else
             {

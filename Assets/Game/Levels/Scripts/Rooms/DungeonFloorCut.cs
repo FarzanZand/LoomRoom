@@ -16,6 +16,26 @@ public class DungeonFloorCut : MonoBehaviour
     public float fallDamage = .25f;
     [Tooltip("Pit: its edge holds the player back (they slide along it) instead of letting them fall in. Set from the floor's room features (Player Falls In Pits).")]
     public bool keepPlayerOut = true;
+
+    [Header("Fill (pit)")]
+    [Tooltip("What stands in this pit instead of the floor's pit water (the duel bridge's lava). Its texture repeats every Fill Repeat metres in world space, so the cells meet. Empty: the biome's pit water, or dry.")]
+    public Material fill;
+    [Min(.5f), Tooltip("Metres the fill's texture covers before it repeats (a 512 texel texture at 128 a metre: 4).")]
+    public float fillRepeat = 4f;
+    [Range(.1f, 3f), Tooltip("Metres from the floor down to the fill (never below the pit's bottom).")]
+    public float fillBelow = .9f;
+    [Tooltip("Warm lights just over the fill, flickering, children of the pit. Strength 0: none.")]
+    public Color fillLightColour = new(1f, .42f, .13f);
+    [Min(0f)] public float fillLightIntensity = 0f;
+    [Min(.5f)] public float fillLightRange = 6f;
+    [Min(1), Tooltip("One light about every this many cells along the pit.")]
+    public int fillLightEvery = 3;
+
+    // The fill's sheet, made per floor build and freed with it.
+    Mesh fillMesh;
+    public void OwnFillMesh(Mesh mesh) { if (fillMesh != mesh) Free(fillMesh); fillMesh = mesh; }
+    void OnDestroy() => Free(fillMesh);
+    static void Free(Mesh m) { if (m == null) return; if (Application.isPlaying) Destroy(m); else DestroyImmediate(m); }
     // How far round the player's middle must stay off the hole (about the body's radius).
     const float BodyRadius = .3f;
 

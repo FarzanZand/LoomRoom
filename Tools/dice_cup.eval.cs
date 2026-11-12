@@ -61,6 +61,7 @@ try
     cup.transform.localRotation = Quaternion.Euler(0f, 20f, 0f);
     var p = cup.transform.localPosition; cup.transform.localPosition = new Vector3(p.x, top, p.z);
     cup.GetComponent<MeshFilter>().sharedMesh = mesh; r.sharedMaterial = mat;
+    var dc = cup.GetComponent<DiceCup>(); if (dc != null) dc.outlineWidth = .015f;
     var col = cup.GetComponent<BoxCollider>();
     col.center = mesh.bounds.center; col.size = new Vector3(.6f, .6f, .6f);
     UnityEditor.PrefabUtility.SaveAsPrefabAsset(room, Room);

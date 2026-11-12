@@ -7,7 +7,7 @@ using UnityEngine;
 // edge where a skeleton died over his last bet. Walking in, the Dungeon Master says what the room is; shaking the cup on
 // the table (DiceCup) asks for the roll: he leans over, lifts the roof off, brings his die up in his fingers and drops it
 // onto the board, where it comes to rest on the square of its own number, and a light comes up on that square:
-//   1 an ambush (gates and two waves)   2 he sets a tough enemy down     3 nothing
+//   1 an ambush (gates and one wave of three)   2 he sets a tough enemy down     3 nothing
 //   4 a rest (health back to full)      5 he sets down an iron chest     6 he sets down a gold chest with gear rolled Unique
 // The die is his: it stays where it lands. The number is picked from the floor's seed, then the die is made to land on it.
 public class DiceEvent : MonoBehaviour
@@ -25,7 +25,7 @@ public class DiceEvent : MonoBehaviour
     [Tooltip("Rolling to a stop.")] public AudioClip roll;
     [Tooltip("The tough enemy a 2 brings (empty: the room's own pick).")] public GameObject toughEnemy;
     [Range(1, 4), Tooltip("How many tough enemies a 2 brings, set down one after another.")] public int toughCount = 2;
-    [Range(1, 4), Tooltip("Each of the ambush's waves (a 1) is this many times its usual size.")] public int ambushScale = 2;
+    [Range(1, 12), Tooltip("How many enemies a 1 brings behind the shut gates, in one wave (the user, 2026-11-12: 3; it was two waves, 10 on floor 4).")] public int ambushEnemies = 3;
     [Tooltip("The effect on the player when a 4 heals them.")] public GameObject healEffect;
     [Tooltip("The room's roof, which he lifts off to drop his die and set down what it brings: its sounds and dust.")]
     public LidEffects lid = new();
@@ -304,9 +304,8 @@ public class DiceEvent : MonoBehaviour
         var points = room.FreeFloor(rng, 2.5f);
         var from = player.transform.position;
         points.Sort((a, b) => (b - from).sqrMagnitude.CompareTo((a - from).sqrMagnitude));
-        foreach (int size in new[] { 2 + (ScriptedEventRoom.Floor - 1) / 3, 2 })
+        foreach (int count in new[] { Mathf.Max(1, ambushEnemies) })
         {
-            int count = size * ambushScale;
             // The far half of the room's free floor, or more of it when the wave needs more spots.
             int spots = Mathf.Max(1, Mathf.Min(points.Count, Mathf.Max(count, points.Count / 2)));
             var wave = new List<Character>();

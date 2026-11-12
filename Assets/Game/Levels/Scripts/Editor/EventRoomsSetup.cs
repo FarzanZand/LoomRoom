@@ -287,34 +287,84 @@ public static class EventRoomsSetup
         go.AddComponent<InteractableTrigger>();
     }
 
-    // The duel: a 7 x 9 hall two tiles high, a chasm three cells wide down each side, a bridge one cell wide up the middle
-    // from the south door to the north one, the duellist in the middle facing the south.
+    // The duel: an 8 x 9 hall two tiles high, a chasm of lava three cells wide down each side, a bridge two cells wide up
+    // the middle from the south door to the north one, the duellist in the middle of it facing the south (the user,
+    // 2026-11-12: the bridge was one cell wide in a 7 x 9 hall, and the chasms were dry). The room's pivot is its centre
+    // cell, column 4 of 0-7, so the bridge (columns 3 and 4) runs up the line Mid metres west of it; everything is laid
+    // along that line. The doors are in column 4, on the bridge.
+    const float Mid = -1f;
     static GameObject Duel(GameObject duellist, HouseRule rule) => Room("Duel bridge", "duel",
         "A duellist waits on a bridge. Face him one on one; a foul brings his friends.",
-        Rows(7, 9, new Vector2Int(3, 0), new Vector2Int(3, 8)), 2, (root, e) =>
+        Rows(8, 9, new Vector2Int(4, 0), new Vector2Int(4, 8)), 2, (root, e) =>
         {
+            var lava = LavaMaterial();
             foreach (var x in new[] { -5f, 5f })
             {
-                var cut = Marker(root, "Chasm", new Vector3(x * .8f, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
+                var cut = Marker(root, "Chasm", new Vector3(Mid + x, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
                 cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
+                cut.fill = lava; cut.fillRepeat = 4f; cut.fillBelow = .9f;
+                cut.fillLightColour = new Color(1f, .42f, .13f); cut.fillLightIntensity = 22f; cut.fillLightRange = 9f; cut.fillLightEvery = 3;
             }
-            var post = Marker(root, "Duellist post", Vector3.zero, 180f);
+            var post = Marker(root, "Duellist post", new Vector3(Mid, 0f, 0f), 180f);
             // He roams other floors as a plain enemy: only the one put down here is held still until the duel takes him over.
-            var him = Put(root, duellist, Vector3.zero, 180f);
+            var him = Put(root, duellist, new Vector3(Mid, 0f, 0f), 180f);
             if (him != null && him.GetComponent<EventActor>() == null) him.AddComponent<EventActor>();
-            e.entrance = Marker(root, "Entrance", new Vector3(0f, 0f, -7f));
-            Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(-4.6f, 2.97f, 2.4f));
-            Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(5.2f, 2.97f, -1.6f));
-            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(-2.4f, 0f, -7.2f));
-            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(2.4f, 0f, 7.2f));
-            // Torches either side of him across the chasms, so he is seen from the way in (the bridge is too narrow for fire).
-            WallLight(root, new Vector3(-6f, 0f, -2f), 270f); WallLight(root, new Vector3(6f, 0f, -2f), 90f);
-            WallLight(root, new Vector3(-6f, 0f, -8f), 270f); WallLight(root, new Vector3(6f, 0f, -8f), 90f);
-            WallLight(root, new Vector3(-6f, 0f, 8f), 270f); WallLight(root, new Vector3(6f, 0f, 8f), 90f);
+            e.entrance = Marker(root, "Entrance", new Vector3(Mid, 0f, -7f));
+            Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(Mid - 4.6f, 2.97f, 2.4f));
+            Put(root, $"{Shared}/Furnishing/Hanging chain.prefab", new Vector3(Mid + 5.2f, 2.97f, -1.6f));
+            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid - 2.4f, 0f, -7.2f));
+            Put(root, $"{Shared}/Furnishing/Brazier.prefab", new Vector3(Mid + 2.4f, 0f, 7.2f));
+            // Torches either side of him across the chasms, so he is seen from the way in (fire on the bridge would block it).
+            foreach (float z in new[] { -2f, -8f, 8f })
+            {
+                WallLight(root, new Vector3(Mid - 7f, 0f, z), 270f); WallLight(root, new Vector3(Mid + 7f, 0f, z), 90f);
+            }
             var duel = root.gameObject.AddComponent<DuelEvent>();
+            if (duelTuning != null) EditorUtility.CopySerialized(duelTuning, duel);   // the old room's tuning, kept on a rebuild
             duel.post = post; duel.rule = rule;
             duel.salute = Load<AnimationClip>("Assets/Game/Characters/Animations/ThirdPerson/Gestures/RaiseArm.anim");
         });
+
+    // The tuning on the duel room being rebuilt (RebuildDuel), copied onto the new one so a rebuild never resets it.
+    static DuelEvent duelTuning;
+
+    // The chasms' lava (Tools/lava_texture.py: 512 texels over 4 m, 128 a metre, wrapping): the colour and what glows,
+    // point filtered, on a lit material that glows by its emission map. Made once; edit the material by hand after.
+    const string LavaDir = PropDir + "/Lava";
+    static Material LavaMaterial()
+    {
+        string path = $"{LavaDir}/Lava.mat";
+        var made = Load<Material>(path);
+        if (made != null) return made;
+        Texture2D Texture(string file)
+        {
+            string at = $"{LavaDir}/{file}";
+            if (AssetImporter.GetAtPath(at) is TextureImporter importer)
+            {
+                importer.filterMode = FilterMode.Point; importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.mipmapEnabled = true; importer.wrapMode = TextureWrapMode.Repeat; importer.sRGBTexture = true;
+                importer.SaveAndReimport();
+            }
+            return Load<Texture2D>(at);
+        }
+        var colour = Texture("Lava.png"); var glow = Texture("Lava emission.png");
+        if (colour == null) { Debug.LogWarning($"No lava texture at {LavaDir}: run python Tools/lava_texture.py \"{LavaDir}\" first."); return null; }
+        var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "Lava" };
+        m.SetTexture("_BaseMap", colour); m.SetColor("_BaseColor", Color.white);
+        m.SetFloat("_Smoothness", .15f); m.SetFloat("_Metallic", 0f); m.SetFloat("_EnvironmentReflections", 0f);
+        if (glow != null)
+        {
+            m.SetTexture("_EmissionMap", glow); m.SetColor("_EmissionColor", Color.white * 2.2f);
+        }
+        AssetDatabase.CreateAsset(m, path);
+        // Its glow switched on once it is an asset (set before, the keyword was dropped on import): no baked GI from it.
+        if (glow != null)
+        {
+            m.EnableKeyword("_EMISSION"); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+            EditorUtility.SetDirty(m); AssetDatabase.SaveAssetIfDirty(m);
+        }
+        return m;
+    }
 
     // The bell: a 7 x 7 room two tiles high, the bell over the middle with its pull beside it, a plain chest at the back.
     static GameObject BellRoom(GameObject bell) => Room("Bell room", "bell",
@@ -443,8 +493,11 @@ public static class EventRoomsSetup
         var duellist = Load<GameObject>(DuellistPath);
         var rule = Rule3();
         overwrite = true;
+        // Keep the room's tuning (the knight's damage and health there, the friends): copied from the old room.
+        var old = Load<GameObject>($"{RoomDir}/Duel bridge.prefab");
+        if (old != null && old.TryGetComponent<DuelEvent>(out var tuned)) duelTuning = tuned;   // still the old asset while the new room is filled
         try { Duel(duellist, rule); }
-        finally { overwrite = false; }
+        finally { overwrite = false; duelTuning = null; }
         AssetDatabase.SaveAssets();
         return log.ToString();
     }

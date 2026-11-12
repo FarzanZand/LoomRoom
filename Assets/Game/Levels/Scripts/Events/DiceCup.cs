@@ -6,8 +6,10 @@ using UnityEngine;
 // the quest outline (QuestGlow), so the eye finds it on the table (the user, 2026-11-11).
 public class DiceCup : MonoBehaviour, IInteractable
 {
-    [Tooltip("How far it jiggles while shaken.")] public float shake = .03f;
-    [Min(0), Tooltip("Width of its outline while it waits to be shaken, in metres (.012 was too thin to see).")] public float outlineWidth = .03f;
+    [Tooltip("How far it jiggles from side to side while shaken, in metres.")] public float shake = .03f;
+    [Tooltip("How high it is lifted off the table while shaken, in metres.")] public float lift = .08f;
+    [Tooltip("How long the shake lasts, in seconds.")] public float rattleSeconds = .8f;
+    [Min(0), Tooltip("Width of its outline while it waits to be shaken, in metres (.012 was too thin to see, .03 too heavy: the user, 2026-11-12).")] public float outlineWidth = .015f;
     DiceEvent dice;
     QuestGlow glow;
     Vector3 rest;
@@ -32,13 +34,18 @@ public class DiceCup : MonoBehaviour, IInteractable
         dice.Shake(who as Player);
     }
 
+    // Picked up off the table, rattled hard from side to side and set back down. (The Synty mug hung upside down from a
+    // pivot in the air, so the old small wobble swung it a long way; the leather cup stands on its base and the same
+    // wobble barely moved it: the user, 2026-11-12, "it does not shake".)
     IEnumerator Rattle()
     {
-        for (float t = 0; t < .6f; t += Time.deltaTime)
+        for (float t = 0; t < rattleSeconds; t += Time.deltaTime)
         {
-            float k = Mathf.Sin(t * 70f) * (1f - t / .6f);
-            transform.localPosition = rest + new Vector3(k * shake, Mathf.Abs(k) * shake * .5f, 0f);
-            transform.localRotation = restTurn * Quaternion.Euler(0f, 0f, k * 12f);
+            float u = t / rattleSeconds;
+            float up = Mathf.Sin(Mathf.Clamp01(u / .15f) * Mathf.PI * .5f) * Mathf.Clamp01((1f - u) / .15f);   // up, held, down
+            float k = Mathf.Sin(t * 42f);
+            transform.localPosition = rest + new Vector3(k * shake * up, up * lift + Mathf.Abs(k) * shake * .3f * up, 0f);
+            transform.localRotation = restTurn * Quaternion.Euler(Mathf.Sin(t * 31f) * 7f * up, 0f, k * 18f * up);
             yield return null;
         }
         transform.localPosition = rest; transform.localRotation = restTurn;

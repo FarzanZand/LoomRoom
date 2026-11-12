@@ -165,7 +165,8 @@ public static class DungeonChunkKit
             foreach (float x in new[] { -.95f, .95f }) Block(t, "Jamb", new Vector3(x, 0f, -.35f), new Vector3(.35f, 2.2f, .7f), Wall, Trim);
             Block(t, "Header", new Vector3(0f, 2.2f, -.35f), new Vector3(2.25f, .45f, .7f), Trim, Trim);
             Block(t, "Ledge", new Vector3(0f, 0f, -.24f), new Vector3(1.55f, .55f, .48f), Trim, Trim);
-            var back = Block(t, "Recess", new Vector3(0f, .55f, -.03f), new Vector3(1.55f, 1.65f, .06f), Upper, Upper); back.solid = false;
+            // Its back in the walls' own stone: some styles' upper wall is plain plaster, which read as a flat panel here.
+            var back = Block(t, "Recess", new Vector3(0f, .55f, -.03f), new Vector3(1.55f, 1.65f, .06f), Wall, Wall); back.solid = false;
         });
         Kit("Platform", false, t =>
         {

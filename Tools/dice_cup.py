@@ -1,12 +1,12 @@
 """The dice room's cup (Levels/Shared/Props/Events/Dice room/Dice cup): a round leather dice cup turned over on the dead
 gambler's table, its mouth down. It replaces the Synty mug turned over, whose handle made it read as a block of stone and
 pulled its quest outline to one side (review 2026-11-12). Made at the dungeon's 128 texels a metre (one texel = 1/128 m;
-the sizes below are in texels): a tapered leather tube about 15 cm tall, a thick rolled lip at the mouth, a turned-over
+the sizes below are in texels): a tapered leather tube about 23 cm tall, a thick rolled lip at the mouth, a turned-over
 edge at the closed end and a slightly domed base on top. Every face is laid into a panel of the texture at exactly that
-density, and the texture is painted here too: old dark leather in tone clusters, a stitched seam down one side, a tooled
-line under the top edge, a scuffed lip, grime toward the table and a worn lit edge on top.
+density, and the texture is painted here too: old pale leather in tone clusters, a tooled
+line under the top edge, a scuffed lip, grime toward the table and a worn lit edge on top (no stitched seam: it read as a stray line).
 
-Unity space: y up, the mouth on the ground at y = 0, the seam toward -z.
+Unity space: y up, the mouth on the ground at y = 0, u = 0 of the tube toward -z.
 
     blender -b -P Tools/dice_cup.py -- "<out folder>"      writes Dice cup.fbx and .png, and Source~/Dice cup.blend
 """
@@ -19,12 +19,14 @@ T = 1 / 128
 rng = np.random.default_rng(11)
 
 # ── Sizes (texels) ──
+# Half as big again as first made (the user, 2026-11-12: about 23 cm tall; 15 cm was hard to find on the table).
+K = 1.5
 SIDES = 16
-R_LIP, H_LIP = 8.4, 2.0        # the rolled lip at the mouth: radius, height
-R_MOUTH = 7.7                  # the tube where it leaves the lip
-R_TOP, H_TOP = 6.6, 18.0       # the tube at the closed end, and where it ends
-R_EDGE, H_EDGE = 6.0, 19.0     # the turned-over edge on top
-H_DOME = 19.6                  # the base's middle
+R_LIP, H_LIP = 8.4 * K, 2.0 * K        # the rolled lip at the mouth: radius, height
+R_MOUTH = 7.7 * K                      # the tube where it leaves the lip
+R_TOP, H_TOP = 6.6 * K, 18.0 * K       # the tube at the closed end, and where it ends
+R_EDGE, H_EDGE = 6.0 * K, 19.0 * K     # the turned-over edge on top
+H_DOME = 19.6 * K                      # the base's middle
 
 panels = {}; faces = []
 
@@ -123,9 +125,10 @@ me.materials.append(bpy.data.materials.new('Dice cup'))
 triangles = sum(len(p.vertices) - 2 for p in me.polygons)
 
 # ── Paint ──
-# Old dark leather, warm and muted (darkest to lightest), and the waxed thread of the seam.
-LEATHER = np.array([[int(c[i:i + 2], 16) for i in (0, 2, 4)] for c in ('1a110b', '26190f', '332116', '422c1c', '533823', '67462d', '7e5a3b', '99744f')], float)
-THREAD = np.array([[int(c[i:i + 2], 16) for i in (0, 2, 4)] for c in ('5e4a32', '857055', 'a39070')], float)
+# Old pale tan leather, muted (darkest to lightest), and the dark waxed thread of the seam. Lighter than the gambler's
+# table so the cup stands out on it (the user, 2026-11-12: the dark brown cup blended into the wood).
+LEATHER = np.array([[int(c[i:i + 2], 16) for i in (0, 2, 4)] for c in ('3d2b1c', '573f2b', '70573c', '887051', '9e8664', 'b29a76', 'c3ad88', 'd2c09d')], float)
+THREAD = np.array([[int(c[i:i + 2], 16) for i in (0, 2, 4)] for c in ('2e2116', '3d2c1d', '4d3926')], float)
 
 
 def clusters(w, h, base, cell=(3, 2), spread=(-1, 0, 0, 1)):
@@ -149,31 +152,30 @@ tex = np.zeros((TH, TW, 3))
 for name, (x, y, w, h) in place.items():
     thread = None
     if name == 'side':                     # rows top (the closed end) to bottom (the mouth); columns from the seam round
-        idx = clusters(w, h, 3)
+        idx = clusters(w, h, 4)
         rows = np.arange(h) / max(h - 1, 1)
         idx += np.where(rows > .78, -1, 0)[:, None]                               # grime toward the table
         idx[1, :] -= 1; idx[2, :] -= 1                                            # the tooled line under the top edge
-        idx[0, :] = np.maximum(idx[0, :], 4)                                       # its lit lip
-        seam = [0, w - 1]                                                         # the seam: a dark groove, thread across it
-        for c in seam: idx[:, c] = np.minimum(idx[:, c], 1)
-        thread = [(r, 0 if r % 4 < 2 else w - 1) for r in range(3, h - 1, 2)]
+        idx[0, :] = np.maximum(idx[0, :], 6)                                       # its lit lip
+        # No stitched seam: a dark groove with thread down one side read as a stray vertical line on the cup (the user,
+        # 2026-11-12). The tube's wrap is just another cluster boundary.
         for c in rng.integers(2, w - 2, 5):                                       # scuffs: short light scratches
             r = rng.integers(4, h - 4); idx[r:r + rng.integers(1, 3), c] += 2
     elif name == 'lip':
-        idx = clusters(w, h, 2, cell=(4, 1)); idx[0, :] += 1                       # its top catches light
+        idx = clusters(w, h, 3, cell=(4, 1)); idx[0, :] += 1                       # its top catches light
         for c in rng.integers(0, w, 7): idx[:, c] += 2                            # scuffed where it is gripped
         idx[-1, :] -= 1                                                           # dirt against the table
     elif name == 'lip top':
-        idx = clusters(w, h, 3, cell=(4, 1)); idx[-1, :] = 1                      # the crease where the tube leaves it
+        idx = clusters(w, h, 4, cell=(4, 1)); idx[-1, :] = 2                      # the crease where the tube leaves it
     elif name == 'edge':
-        idx = clusters(w, h, 5, cell=(4, 1))                                      # the worn turned edge, lit
+        idx = clusters(w, h, 6, cell=(4, 1))                                      # the worn turned edge, lit
         for c in rng.integers(0, w, 6): idx[:, c] += 1
     elif name == 'base':
-        idx = clusters(w, h, 4, cell=(3, 3))
+        idx = clusters(w, h, 5, cell=(3, 3))
         yy, xx = np.indices((h, w)); rr = np.hypot(xx - (w - 1) / 2, yy - (h - 1) / 2)
         idx[(rr > w / 2 - 2.4) & (rr < w / 2 - 1.4)] -= 1                          # a faint pressed ring round the base
         idx[rr < 1.5] += 1
-    else: idx = clusters(w, h, 1)          # underneath
+    else: idx = clusters(w, h, 2)          # underneath
     img = LEATHER[np.clip(idx, 0, len(LEATHER) - 1)]
     if thread:
         for r, c in thread: img[r, c] = THREAD[rng.integers(0, 3)]

@@ -101,7 +101,7 @@ public partial class DungeonGenerator
                     modifier.overrideArea = true; modifier.area = 1;
                 }
             }
-            if (cut.kind == DungeonFloorCut.Kind.Pit) PitWater(cells, floorY, depth, parent);
+            if (cut.kind == DungeonFloorCut.Kind.Pit) { if (cut.fill != null) PitFill(cut, cells, floorY, depth, parent); else PitWater(cells, floorY, depth, parent); }
             foreach (var c in cells) tableHoles.Add(new TableCut.Hole { area = CellRect(c) });
             // A sliced build cuts the table once it is done (the map may still be folding away over it).
             if (!slicing) TableCut.Set(this, tableHoles);
@@ -126,6 +126,54 @@ public partial class DungeonGenerator
             water.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
             water.transform.localScale = new Vector3(data.cellSize, data.cellSize, 1f);
             var r = water.GetComponent<Renderer>(); r.sharedMaterial = biome.pitWater; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+
+    // A pit's own fill (DungeonFloorCut.fill: the duel bridge's lava): one sheet over its cells a little under the floor,
+    // its UVs its world position over Fill Repeat so cells and pits meet without a seam; no collider (the edge holds the
+    // player back, what falls in goes through), no shadow. Its lights are the pit's children, spread along its long side.
+    void PitFill(DungeonFloorCut cut, HashSet<Vector2Int> cells, float floorY, float depth, Transform parent)
+    {
+        float y = floorY - Mathf.Min(cut.fillBelow, depth - .05f), half = data.cellSize * .5f, repeat = Mathf.Max(.5f, cut.fillRepeat);
+        var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
+        var sheet = new GameObject("Pit fill");
+        sheet.transform.SetParent(parent, false);
+        sheet.transform.position = new Vector3(transform.position.x, y, transform.position.z);
+        Vector3 min = new(float.MaxValue, 0f, float.MaxValue), max = new(float.MinValue, 0f, float.MinValue);
+        foreach (var c in cells)
+        {
+            var centre = Cell(c); int start = verts.Count;
+            foreach (var (dx, dz) in new[] { (-1f, -1f), (-1f, 1f), (1f, 1f), (1f, -1f) })
+            {
+                var world = new Vector3(centre.x + dx * half, y, centre.z + dz * half);
+                verts.Add(sheet.transform.InverseTransformPoint(world));
+                uvs.Add(new Vector2(world.x, world.z) / repeat);
+                min = Vector3.Min(min, world); max = Vector3.Max(max, world);
+            }
+            tris.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
+        }
+        var mesh = new Mesh { name = "Pit fill" };
+        mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals(); mesh.RecalculateBounds(); mesh.RecalculateTangents();
+        sheet.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = sheet.AddComponent<MeshRenderer>(); r.sharedMaterial = cut.fill; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        cut.OwnFillMesh(mesh);
+        if (cut.fillLightIntensity <= 0f) return;
+        // Along the pit's longer side, evenly, a little over the floor (lower, they lit only the fill and not the pit's sides
+    // and the walls round it).
+        var along = max.x - min.x >= max.z - min.z ? Vector3.right : Vector3.forward;
+        float length = Vector3.Dot(max - min, along);
+        int count = Mathf.Max(1, Mathf.RoundToInt(length / data.cellSize / cut.fillLightEvery));
+        var middle = (min + max) * .5f;
+        for (int i = 0; i < count; i++)
+        {
+            var go = new GameObject("Pit fill light");
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(middle.x, floorY + .8f, middle.z) + along * ((i + .5f) / count - .5f) * length;
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point; light.color = cut.fillLightColour; light.intensity = cut.fillLightIntensity; light.range = cut.fillLightRange;
+            light.shadows = LightShadows.None;
+            var flicker = go.AddComponent<TorchFlicker>(); flicker.amount = .12f; flicker.speed = 1.6f;
         }
     }
 
