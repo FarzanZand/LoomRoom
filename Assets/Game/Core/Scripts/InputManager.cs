@@ -269,6 +269,7 @@ public class InputManager : Singleton<InputManager>
     {
         string json = PlayerPrefs.GetString(BindingsPref, "");
         if (string.IsNullOrEmpty(json)) return;
+        keyNames.Clear();
         try { actions.asset.LoadBindingOverridesFromJson(json); }
         catch (Exception e) { Debug.LogWarning($"[InputManager] Ignoring saved bindings: {e.Message}"); }
     }
@@ -285,7 +286,7 @@ public class InputManager : Singleton<InputManager>
         actions.asset.RemoveAllBindingOverrides();
         PlayerPrefs.DeleteKey(BindingsPref);
         PlayerPrefs.Save();
-        BindingsChanged?.Invoke();
+        KeyNamesChanged();
     }
 
     // The keyboard/mouse binding for an action, or one part of a composite ("up", "left"...).
@@ -309,7 +310,19 @@ public class InputManager : Singleton<InputManager>
 
     // Keys are named by the key itself ("Space", "Left Shift"), not by the Windows keyboard language (which would say
     // "Blanksteg" on a Swedish layout); mouse buttons keep their short names (LMB, RMB).
+    // Each name is read from the Input System once per rebind and kept: one read made about 190 KB of garbage (measured
+    // 2026-11-12), and the prompt, the quest log and the lesson's lines read them again and again (the user's stutters).
+    readonly System.Collections.Generic.Dictionary<(string, string), string> keyNames = new();
+    void KeyNamesChanged() { keyNames.Clear(); BindingsChanged?.Invoke(); }
+
     public string BindingDisplay(string actionName, string part = null)
+    {
+        var key = (actionName ?? "", part ?? "");
+        if (keyNames.TryGetValue(key, out var known)) return known;
+        return keyNames[key] = ReadBindingDisplay(actionName, part);
+    }
+
+    string ReadBindingDisplay(string actionName, string part)
     {
         var action = TableAction(actionName) ?? RoomAction(actionName);
         int index = FindBinding(action, part);
@@ -342,7 +355,7 @@ public class InputManager : Singleton<InputManager>
                 Mirror(action, index);
                 SaveBindingOverrides();
                 Finish();
-                BindingsChanged?.Invoke();
+                KeyNamesChanged();
             })
             .OnCancel(_ => Finish());
         rebind.Start();

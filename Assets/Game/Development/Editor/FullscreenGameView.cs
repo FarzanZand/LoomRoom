@@ -20,10 +20,14 @@ public static class FullscreenGameView
     {
         EditorApplication.playModeStateChanged += state =>
         {
-            if (state == PlayModeStateChange.EnteredPlayMode && EditorPrefs.GetBool(OnPlayKey, false)) Open();
+            // Never in a Multiplayer Play Mode player's editor (co-op's Player 2): the setting is the computer's, shared by
+            // every editor, and the clone's own Game view, its only view, would be sent to an empty display under it.
+            if (state == PlayModeStateChange.EnteredPlayMode && EditorPrefs.GetBool(OnPlayKey, false) && !IsPlayModeClone) Open();
             // Closed once this round of play mode callbacks is over: the window is a Game view too, and Unity's own
             // Game view callback for it still runs after this one (closing it here threw MissingReferenceException).
-            else if (state == PlayModeStateChange.ExitingPlayMode) EditorApplication.delayCall += Close;
+            // Unless Play has started again meanwhile: put off while the editor was unfocused, the close landed in the next
+            // Play and shut its new window.
+            else if (state == PlayModeStateChange.ExitingPlayMode) EditorApplication.delayCall += () => { if (!EditorApplication.isPlayingOrWillChangePlaymode) Close(); };
         };
         // It never stays without Play (the user, 2026-11-11: "stuck in full screen mode again, happens often"): the close
         // above is a delayCall, which Unity skips while the editor is not focused and loses in a script reload, and a
@@ -32,11 +36,14 @@ public static class FullscreenGameView
     }
 
     static double nextCheck;
+    static bool strayChecked;   // once after each reload: a cover tab left in a saved layout
     static void CloseWithoutPlay()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.timeSinceStartup < nextCheck) return;
         nextCheck = EditorApplication.timeSinceStartup + 1;
         if (Find() != null) Close();
+        else if (SessionState.GetString(HiddenKey, "").Length > 0) ShowHiddenViews();   // the window went without its Close (a reload): the views it covered come back
+        else if (!strayChecked) { strayChecked = true; foreach (var stray in Resources.FindObjectsOfTypeAll<FullscreenCover>()) RemoveCover(stray); }
     }
 
     [UnityEditor.ShortcutManagement.Shortcut("LoomRoom/Fullscreen Game View", KeyCode.F11)]
@@ -89,8 +96,11 @@ public static class FullscreenGameView
         UnityEditor.Toolbars.MainToolbar.Refresh("LoomRoom/Debug");
     }
 
+    static bool IsPlayModeClone => Application.dataPath.Contains("/Library/VP/");
+
     static void Open()
     {
+        if (IsPlayModeClone) return;
         if (Find() != null) return;
         var type = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
         if (type == null) { Debug.LogWarning("Fullscreen Game View: no GameView type in this Unity version."); return; }
@@ -101,6 +111,7 @@ public static class FullscreenGameView
         window.ShowPopup();
         window.position = TargetMonitor();
         window.Focus();
+        HideCoveredViews();
         // The popup's native window exists (and is the active one) once Unity has shown it.
         EditorApplication.delayCall += Snap;
     }
@@ -150,8 +161,111 @@ public static class FullscreenGameView
 
     static void Close()
     {
+        ShowHiddenViews();
         if (Find() == null) return;
         window.Close();
         window = null;
+    }
+
+    // ── The views it covers ──
+    // While the fullscreen window is open the main editor window lies behind it, yet Unity kept drawing its Game view
+    // (the whole game a second time, about 2.7 ms a frame on the 4090) and its Scene view (the world again, about 2 ms):
+    // measured 2026-11-12, the user's fps. So each docked Game view is pointed at a display no camera draws to, and
+    // an empty tab (FullscreenCover) is put in front of each Scene view, and both are put back as the window closes. What
+    // was changed is kept in SessionState, so a script reload during Play still puts it back.
+    const string HiddenKey = "LoomRoom.FullscreenGameView.Hidden";
+    const int EmptyDisplay = 7;   // "Display 8": no camera of the game draws there
+    const BindingFlags Any = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    static void HideCoveredViews()
+    {
+        if (SessionState.GetString(HiddenKey, "").Length > 0) return;
+        var hidden = new System.Text.StringBuilder();
+        var gameView = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
+        if (gameView != null)
+            foreach (var o in Resources.FindObjectsOfTypeAll(gameView))
+            {
+                var w = (EditorWindow)o;
+                if (w == window || w.titleContent.text == Title) continue;
+                var display = TargetDisplay(w);
+                if (display == null || (int)display.GetValue(w) == EmptyDisplay) continue;
+                hidden.Append("g:").Append(EntityId.ToULong(w.GetEntityId())).Append(':').Append((int)display.GetValue(w)).Append(';');
+                display.SetValue(w, EmptyDisplay);
+                w.Repaint();
+            }
+        foreach (var view in Resources.FindObjectsOfTypeAll<SceneView>())
+        {
+            var dock = Dock(view, out var panes, out var selected);
+            if (dock == null || panes[(int)selected.GetValue(dock)] != (object)view) continue;
+            var addTab = dock.GetType().GetMethod("AddTab", Any, null, new[] { typeof(EditorWindow), typeof(bool) }, null);
+            if (addTab == null) continue;
+            var cover = ScriptableObject.CreateInstance<FullscreenCover>();
+            cover.titleContent = new GUIContent("Playing fullscreen");
+            addTab.Invoke(dock, new object[] { cover, true });
+            int at = panes.IndexOf(cover);
+            if (at < 0) { Object.DestroyImmediate(cover); continue; }
+            selected.SetValue(dock, at);
+            hidden.Append("s:").Append(EntityId.ToULong(view.GetEntityId())).Append(':').Append(EntityId.ToULong(cover.GetEntityId())).Append(';');
+        }
+        SessionState.SetString(HiddenKey, hidden.ToString());
+    }
+
+    static void ShowHiddenViews()
+    {
+        string hidden = SessionState.GetString(HiddenKey, "");
+        if (hidden.Length == 0) return;
+        SessionState.EraseString(HiddenKey);
+        foreach (var entry in hidden.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries))
+        {
+            var part = entry.Split(':');
+            if (part.Length < 2 || !ulong.TryParse(part[1], out var raw)) continue;
+            var w = EditorUtility.EntityIdToObject(EntityId.FromULong(raw)) as EditorWindow;
+            if (w == null) continue;
+            if (part[0] == "g" && part.Length > 2 && int.TryParse(part[2], out var display))
+            {
+                TargetDisplay(w)?.SetValue(w, display);
+                w.Repaint();
+            }
+            else if (part[0] == "s")
+            {
+                var cover = part.Length > 2 && ulong.TryParse(part[2], out var coverId) ? EditorUtility.EntityIdToObject(EntityId.FromULong(coverId)) as FullscreenCover : null;
+                var dock = Dock(w, out var panes, out var selected);
+                int at = dock != null ? panes.IndexOf(w) : -1;
+                if (at >= 0) selected.SetValue(dock, at);
+                RemoveCover(cover);
+            }
+        }
+        // Any cover left from an earlier time (a crash or a quit during Play, with the layout saved).
+        foreach (var stray in Resources.FindObjectsOfTypeAll<FullscreenCover>()) RemoveCover(stray);
+    }
+
+    static void RemoveCover(FullscreenCover cover)
+    {
+        if (cover == null) return;
+        var dock = Dock(cover, out var panes, out _);
+        var removeTab = dock?.GetType().GetMethod("RemoveTab", Any, null, new[] { typeof(EditorWindow) }, null);
+        if (removeTab != null && panes.Contains(cover)) removeTab.Invoke(dock, new object[] { cover });
+        if (cover != null) Object.DestroyImmediate(cover);
+    }
+
+    static PropertyInfo TargetDisplay(EditorWindow w)
+    {
+        for (var t = w.GetType(); t != null; t = t.BaseType)
+        {
+            var p = t.GetProperty("targetDisplay", Any | BindingFlags.DeclaredOnly);
+            if (p != null && p.PropertyType == typeof(int) && p.CanWrite) return p;
+        }
+        return null;
+    }
+
+    // The dock area holding a window, its tabs and the property saying which tab shows; null when it isn't in one.
+    static object Dock(EditorWindow w, out System.Collections.IList panes, out PropertyInfo selected)
+    {
+        panes = null; selected = null;
+        var dock = typeof(EditorWindow).GetField("m_Parent", Any)?.GetValue(w);
+        if (dock == null) return null;
+        panes = dock.GetType().GetField("m_Panes", Any)?.GetValue(dock) as System.Collections.IList;
+        selected = dock.GetType().GetProperty("selected", Any);
+        return panes != null && selected != null && selected.PropertyType == typeof(int) ? dock : null;
     }
 }
