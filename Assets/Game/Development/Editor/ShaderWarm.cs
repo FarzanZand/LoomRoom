@@ -87,6 +87,10 @@ public static class ShaderWarm
     static ShaderWarm()
     {
         if (Application.isBatchMode) return;
+        // Not in a Multiplayer Play Mode player's editor (co-op's Player 2): it shares the project's Assets but may not write
+        // to it (each harvest's temporary asset failed there, and the host's editor saw files change under it), and its
+        // background compiles would only repeat the host's on the same cores.
+        if (Application.dataPath.Contains("/Library/VP/")) return;
         notBefore = EditorApplication.timeSinceStartup + StartDelay;
         walkDue = true;
         EditorApplication.update += Tick;
