@@ -12,7 +12,7 @@ public class ArenaFight : MonoBehaviour
     public DungeonMaster.Line wonLine = new() { text = "That's the fight. Take your bow.", inPerson = true };
     [Min(0), Tooltip("Seconds between the last enemy falling and the run ending (the body falls, the line is read).")]
     public float delay = 3.5f;
-    [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Arcanist.")]
+    [Tooltip("Unlocked by the win the first time (its New class card shows as the line is said; its poster comes home). The Necromancer.")]
     public AdventurerClass unlocks;
     [Min(1f), Tooltip("Every fighter in the room has this many times its health here, full when it is found (the user, 2026-11-11: the duel's Undead Knight at triple health).")]
     public float healthMultiplier = 3f;

@@ -48,7 +48,7 @@ public static class ClassUnlockedSetup
         portrait.preserveAspect = true;
         var bottom = Picture("Divider 2", card, divider, new Vector2(315f, 16f), Color.white);
         bottom.rectTransform.anchoredPosition = new Vector2(0f, -140f);
-        var name = Text("Class name", card, title, 58f, Ink, null, new Vector2(0f, -190f), "Arcanist");
+        var name = Text("Class name", card, title, 58f, Ink, null, new Vector2(0f, -190f), "Necromancer");
         var line = Text("Line", card, body, 28f, InkSoft, null, new Vector2(0f, -250f), "Pick it at the table.");
 
         var so = new SerializedObject(root.GetComponent<ClassUnlockedUI>());

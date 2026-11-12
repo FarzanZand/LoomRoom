@@ -91,7 +91,9 @@ public class SpellDefinition : ScriptableObject
     [Range(0, 1)] public float impactVolume = 1f;
 
     public bool IsProjectile => effect == SpellEffect.Standard && spell != LeftHandSpell.Heal && !groundArea;
-    public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.RaiseTheFallen || effect == SpellEffect.HelpingHand ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
+    // Thaumaturgy is support only (heals and buffs: Heal, Helping Hand); everything that fights, Raise Skeletons included,
+    // is Sorcery (the user, 2026-11-12).
+    public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.HelpingHand ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 
     // A scroll's rules line: what the spell does, with no mana, and its charges.
     public string ScrollLine(float power, int charges)

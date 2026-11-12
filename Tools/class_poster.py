@@ -16,6 +16,7 @@ import sys
 from PIL import Image, ImageDraw, ImageEnhance, ImageFont
 
 FONT = "Assets/Game/UI/Fonts/PixelOperator-Bold.ttf"
+FONT_REGULAR = "Assets/Game/UI/Fonts/PixelOperator.ttf"
 PAPER = (214, 204, 180)
 INK = (46, 38, 34)
 
@@ -89,6 +90,10 @@ def poster(src, out, w, h, name, seed, cool=0.0):
     d.fontmode = "1"
     font = ImageFont.truetype(FONT, 16)
     l, t, r, b = d.textbbox((0, 0), name, font=font)
+    # A name too wide for the paper in bold (NECROMANCER on its 82 texel poster) is set in the regular weight instead.
+    if r - l > w - margin * 2:
+        font = ImageFont.truetype(FONT_REGULAR, 16)
+        l, t, r, b = d.textbbox((0, 0), name, font=font)
     tx, ty = (w - (r - l)) // 2 - l, margin + ph + (band - (b - t)) // 2 - t + 1
     d.text((tx, ty), name, font=font, fill=INK)
 
