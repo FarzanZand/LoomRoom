@@ -12,7 +12,7 @@ using UnityEngine.UI;
 // the kinds (Cheats at the top, where F7 opens; then Items, Spells, Room items, Enemies, Rooms, Audio) and the groups of the one picked, each with its count. Middle: a
 // search and a scrolling grid. Right: the picked entry, big, with what it is and its buttons (Add to pack, Drop on the
 // floor, Spawn, Carry home, Play this room), count and rarity where they apply; a button that can't work here says why.
-// Click picks, double-click or Enter does the first button, right-click the second. Typing always goes to the search;
+// Click picks (a cheat: click uses it), double-click or Enter does the first button, right-click the second. Typing always goes to the search;
 // Esc clears it, then closes. While it is open the game is in the Menu state. Development/Resources/Dev Spawner.prefab is
 // built by DevSpawnerBuilder.Build() (from an eval; edit the prefab freely after), its lists for builds by RefreshLists().
 // Audio (DevSpawner.Audio.cs): every sound effect, sorted by category or by when it was last heard, to play and to set its
@@ -390,7 +390,9 @@ public partial class DevSpawner : MonoBehaviour
             {
                 Pick(e);
                 if (button == PointerEventData.InputButton.Right) Do(e.secondary ?? e.primary);
-                else if (clicks >= 2) Do(e.primary);
+                // A cheat goes off on one click (the user, 2026-11-12); the rest need two. A double click on a cheat
+                // uses it once.
+                else if (kind == Kind.Cheats ? clicks == 1 : clicks >= 2) Do(e.primary);
                 Refocus();
             };
             cells.Add((cell, entry));

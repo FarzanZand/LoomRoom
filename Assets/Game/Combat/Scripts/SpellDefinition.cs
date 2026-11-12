@@ -55,6 +55,7 @@ public class SpellDefinition : ScriptableObject
     [ShowIf("@effect == SpellEffect.RaiseTheFallen"), InlineProperty, HideLabel] public RaiseSettings raise = new();
     [ShowIf("@effect == SpellEffect.Flick"), InlineProperty, HideLabel] public FlickSettings flick = new();
     [ShowIf("@effect == SpellEffect.HelpingHand"), InlineProperty, HideLabel] public HelpingHandSettings helpingHand = new();
+    [ShowIf("@effect == SpellEffect.Summon"), InlineProperty, HideLabel] public SummonSpellSettings summon = new();
 
     [Title("Ground area")]
     [Tooltip("Lands on the ground at the target instead of flying: the spot is marked (Show Marker), then it erupts after Area Delay and hits everything hostile inside Area Radius. The eruption is the Impact effect.")]
@@ -110,6 +111,7 @@ public class SpellDefinition : ScriptableObject
     {
         SpellEffect.ShadowVeil => $"{cost:0.#} mana, unseen for {veil.seconds:0.#} seconds",
         SpellEffect.RaiseTheFallen => $"{cost:0.#} mana, raises a fallen skeleton for {raise.summon.lifetime:0} seconds",
+        SpellEffect.Summon => $"{cost:0.#} mana, {(string.IsNullOrWhiteSpace(summon.summonName) ? "a summon" : summon.summonName)} fights for you for {summon.summon.lifetime:0} seconds",
         SpellEffect.ChainLightning => $"{cost:0.#} mana, {power:0.#} damage, jumps to {chain.jumps} more",
         SpellEffect.Flick when flick.reach == FlickReach.Portal => $"{cost:0.#} mana, {power:0.#} damage, a die shoots out of a portal at it",
         SpellEffect.Flick when flick.reach == FlickReach.DieOnly => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks a die at it",
@@ -120,5 +122,5 @@ public class SpellDefinition : ScriptableObject
 }
 
 // What a spell does when it leaves the hand. Serialized by integer: append only.
-public enum SpellEffect { Standard = 0, ShadowVeil = 1, ChainLightning = 2, SweepingArc = 3, RaiseTheFallen = 4, Flick = 5, HelpingHand = 6 }
+public enum SpellEffect { Standard = 0, ShadowVeil = 1, ChainLightning = 2, SweepingArc = 3, RaiseTheFallen = 4, Flick = 5, HelpingHand = 6, Summon = 7 }
 

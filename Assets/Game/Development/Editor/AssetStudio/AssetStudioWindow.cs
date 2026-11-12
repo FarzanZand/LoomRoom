@@ -571,10 +571,10 @@ public partial class AssetStudioWindow : EditorWindow
                 int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), roomSort, RoomSorts);
                 if (sort != roomSort) { roomSort = sort; Filter(); listScroll = Vector2.zero; }
             }
-            if (categories.Count > 0) GUI.Label(new Rect(r.x + 8, r.y + 56, r.width - 16, 34), categories[categoryIndex].description, dim);
+            // No line about the category under the filters (the user, 2026-11-12): the list starts right under them.
         }
         const float rowH = 44;
-        var area = new Rect(r.x, r.y + 96, r.width, r.height - 100);
+        var area = new Rect(r.x, r.y + 58, r.width, r.height - 62);
         var view = new Rect(0, 0, r.width - 16, Mathf.Max(shown.Count * rowH, area.height - 2));
         listScroll = GUI.BeginScrollView(area, listScroll, view);
         int first = Mathf.Max(0, (int)(listScroll.y / rowH) - 1), last = Mathf.Min(shown.Count, first + (int)(area.height / rowH) + 3);

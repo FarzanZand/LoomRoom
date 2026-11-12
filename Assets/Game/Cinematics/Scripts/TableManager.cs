@@ -200,7 +200,9 @@ public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryIn
 
         Seated?.Invoke(player);
         yield return null;
-        if (DMTalking && !straightToMap)
+        // The first morning's sheet and dice start at once too (the user, 2026-11-12: a delay after the intro): his lines
+        // queue behind whatever he is saying, so nothing is cut off.
+        if (DMTalking && !straightToMap && !IntroController.SheetPending)
         {
             float waited = 0f;
             while (DMTalking && waited < maxSpeechWait)

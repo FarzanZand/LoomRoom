@@ -688,6 +688,7 @@ public partial class DungeonGenerator : MonoBehaviour
         if (SliceDue) { Pause(); yield return null; Resume(); }
         StockStartingChest();
         FaceStartingChests();
+        RecordEventsSeen();
         if (SliceDue) { Pause(); yield return null; Resume(); }
         FinishRoomEvents();
         if (SliceDue) { Pause(); yield return null; Resume(); }

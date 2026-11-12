@@ -361,7 +361,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
         // Not back from the intro's practice board, nor before the first morning's dice: the map isn't open yet.
         bool onTable = MapBelongsOnTableAfterReturn;
         if (onTable) StartCoroutine(Rise());
-        // After a win the player goes straight back to the map, to see what opened.
+        // After a win what opened is shown on the map (and the map view opens only with Open Map After Win).
         if (lastRunWon) StartCoroutine(BackToMap());
         else if (onTable) StartCoroutine(GuardedRoutine.Run(Landed()));
         lastRunWon = false;
@@ -400,8 +400,8 @@ public partial class CampaignManager : Singleton<CampaignManager>
         }
     }
 
-    // After a win: what opened is shown at once (the fog lifts over the table where the player stands), then the player
-    // is taken to the map, unless something holds the table (the sheet lesson).
+    // After a win: what opened is shown at once (the fog lifts over the table where the player stands); with
+    // openMapAfterWin the player is then taken to the map, unless something holds the table (the sheet lesson).
     IEnumerator BackToMap()
     {
         yield return GameManager.WaitCutscene(.3f);
@@ -420,10 +420,12 @@ public partial class CampaignManager : Singleton<CampaignManager>
         bool free = GameManager.HasInstance && GameManager.Instance.State == GameState.Explore;
         var room = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Room) : null;
         bool near = room != null && TableManager.HasInstance && Vector3.Distance(room.transform.position, TableManager.Instance.transform.position) < nearTable;
-        if (!held && free && near && !InMapView && TableManager.HasInstance) TableManager.Instance.Play();
+        if (openMapAfterWin && !held && free && near && !InMapView && TableManager.HasInstance) TableManager.Instance.Play();
     }
 
     bool revealing;
+    [TabGroup("View"), Tooltip("After a won run, open the map view by itself. Off (the user, 2026-11-12): the player lands standing in the room, free to walk, and uses the table to see the map.")]
+    public bool openMapAfterWin = false;
     [TabGroup("View"), Min(0), Tooltip("After a win the map view opens by itself only while the player stands within this distance of the table (world units).")]
     public float nearTable = 140f;
 

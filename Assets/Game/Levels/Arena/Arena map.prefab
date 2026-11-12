@@ -82,6 +82,7 @@ MonoBehaviour:
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -260,6 +261,7 @@ MonoBehaviour:
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -289,7 +291,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 1
   delay: 3.5
-  unlocks: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
+  unlocks: {fileID: 11400000, guid: 44669be9e4d991d49a58e4866c2edc8a, type: 2}
   healthMultiplier: 3
   talk: {fileID: 11400000, guid: ad8f8e2e3411d7d46bfd8ff34754c2d1, type: 2}
 --- !u!1001 &1961152536423531071

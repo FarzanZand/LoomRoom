@@ -28,6 +28,7 @@ public static class SpellEffects
                 break;
             case SpellEffect.Flick: Flick.Cast(player, spell, power, progress); break;
             case SpellEffect.HelpingHand: HelpingHand.Cast(player, spell, power, progress); break;
+            case SpellEffect.Summon: SummonSpell.Cast(player, spell, progress); break;
         }
     }
 
@@ -62,6 +63,7 @@ public static class SpellEffects
                 var heap = BoneHeap.Nearest(caster.transform.position, spell.raise.reach);
                 if (heap != null) RaiseTheFallen.Cast(caster, spell, heap, null);
                 break;
+            case SpellEffect.Summon: SummonSpell.Cast(caster, spell, null); break;
         }
     }
 

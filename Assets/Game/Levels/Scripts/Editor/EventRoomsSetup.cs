@@ -18,7 +18,8 @@ public static class EventRoomsSetup
     const string EnemyDir = "Assets/Game/Characters/Enemies/Events";
     const string Shared = "Assets/Game/Levels/Shared/Props";
     // Who waits on the duel bridge (the user, 2026-11-10; the Duellist in Characters/Enemies/Events before).
-    const string DuellistPath = "Assets/Game/Characters/Enemies/Realms/Undead Knight.prefab";
+    // Little Undead John (the Green Hood Skeleton at 1.2x, the Undead Knight's numbers; the user, 2026-11-12).
+    const string DuellistPath = "Assets/Game/Characters/Enemies/Events/Little Undead John.prefab";
     static bool overwrite;
     const float Weight = .3f;
     static System.Text.StringBuilder log;

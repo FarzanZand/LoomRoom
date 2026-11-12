@@ -219,7 +219,7 @@ public static class CampaignSetup
         // it stay in view), between Previous and Next.
         var strip = MakeRect("Hero column", root, typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         strip.anchorMin = strip.anchorMax = strip.pivot = new Vector2(0f, .5f);
-        strip.anchoredPosition = new Vector2(64f, 20f); strip.sizeDelta = new Vector2(320f, 0f);
+        strip.anchoredPosition = new Vector2(64f, 20f); strip.sizeDelta = new Vector2(380f, 0f);   // wide enough for Necromancer on one line
         var sv = strip.GetComponent<VerticalLayoutGroup>();
         sv.spacing = 12f; sv.childAlignment = TextAnchor.MiddleLeft; sv.childControlWidth = sv.childControlHeight = true; sv.childForceExpandWidth = true; sv.childForceExpandHeight = false;
         strip.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -232,7 +232,7 @@ public static class CampaignSetup
 
         // The card everything else is copied from: portrait at the left, name beside it; the chosen one slides right.
         var card = MakeRect("Hero card", cards, typeof(LayoutElement), typeof(Image), typeof(CampaignHeroCard));
-        var cle = card.GetComponent<LayoutElement>(); cle.preferredWidth = 320f; cle.preferredHeight = 124f;
+        var cle = card.GetComponent<LayoutElement>(); cle.preferredWidth = 380f; cle.preferredHeight = 124f;
         card.GetComponent<Image>().color = new Color(0, 0, 0, 0);   // catches the mouse for the whole card
         var hc = card.GetComponent<CampaignHeroCard>();
         var lift = MakeRect("Lift", card); Stretch(lift);
@@ -245,7 +245,7 @@ public static class CampaignSetup
         pic.anchoredPosition = new Vector2(12f, 0f); pic.sizeDelta = new Vector2(100f, 104f);
         hc.portrait = pic.GetComponent<Image>(); hc.portrait.preserveAspect = true; hc.portrait.raycastTarget = false;
         hc.title = Text("Name", lift, title, 32f, light, null, true);
-        Place(hc.title.rectTransform, new Vector2(0f, .5f), new Vector2(128f, 0f), new Vector2(180f, 40f));
+        Place(hc.title.rectTransform, new Vector2(0f, .5f), new Vector2(128f, 0f), new Vector2(240f, 40f));
         hc.title.alignment = TextAlignmentOptions.Left;
         ui.cardTemplate = hc;
         card.gameObject.SetActive(false);

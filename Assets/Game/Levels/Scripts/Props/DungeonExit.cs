@@ -3,6 +3,10 @@ using UnityEngine;
 public class DungeonExit : MonoBehaviour, IInteractable
 {
     public bool entrance;
+    // Built as a way down (a stairwell or the boss stage's shaft) on the run's last floor: walking into it ends the run,
+    // as walking into one takes the player down on any other floor (the user, 2026-11-12: Dungeon1 ends at the Crypt
+    // Lord's stairs). The last floor's ladder still wants a press.
+    [HideInInspector] public bool completesOnStep;
     TableLevelLoader Loader => TableManager.Loader;
     public string Prompt => !entrance && Sealed ? "Blocked" : entrance ? "No way back" : IntroController.PracticeRunning ? "Climb out" : Loader!=null && Loader.HasNextFloor ? "Descend to floor "+(Loader.FloorNumber+1) : "Complete dungeon and return";
     // A living boss seals the way down (see DungeonBossEncounter).
@@ -53,7 +57,7 @@ public class DungeonExit : MonoBehaviour, IInteractable
     }
     void OnTriggerEnter(Collider other)
     {
-        if(entrance || Sealed || Loader==null || !Loader.HasNextFloor || stepping)return;
+        if(entrance || Sealed || Loader==null || (!Loader.HasNextFloor && !completesOnStep) || stepping)return;
         var player=other.GetComponentInParent<Player>();
         if(player!=null && player.IsActive)StartCoroutine(StepIn(player));
     }

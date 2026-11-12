@@ -290,7 +290,7 @@ MonoBehaviour:
   m_Name: Dungeon1
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: Dungeon
-  description: 'Twelve floors: the cellars, the catacombs, the crypt, the deep realms and the ruins. The Crypt Lord waits on the fourth.'
+  description: 'Four floors: the cellars, the catacombs and the crypt. The Crypt Lord waits on the fourth.'
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages:
@@ -309,36 +309,6 @@ MonoBehaviour:
     boss: 1
     extraFloors: 0
     damageScale: 1.28
-  - biome: {fileID: 11400000, guid: 0ec60215029f73349b3f3e0022f081f0, type: 2}
-    floors: 1
-    boss: 0
-    extraFloors: 1
-    damageScale: 1
-  - biome: {fileID: 11400000, guid: 5c3c2fd95bbff7542a3462f9fbc3fb46, type: 2}
-    floors: 2
-    boss: 0
-    extraFloors: 0
-    damageScale: 1
-  - biome: {fileID: 11400000, guid: 3e7956d2f7a9798459eb48f754cf6ec8, type: 2}
-    floors: 1
-    boss: 0
-    extraFloors: 0
-    damageScale: 1
-  - biome: {fileID: 11400000, guid: 982d8b3f7a28bf0498b32a7265370690, type: 2}
-    floors: 1
-    boss: 0
-    extraFloors: 1
-    damageScale: 1
-  - biome: {fileID: 11400000, guid: 29d73894662dc204ebe0b50f8ce9acab, type: 2}
-    floors: 2
-    boss: 0
-    extraFloors: 0
-    damageScale: 1
-  - biome: {fileID: 11400000, guid: a120b1fb852141c43b0f64838c9e2b0a, type: 2}
-    floors: 1
-    boss: 0
-    extraFloors: 0
-    damageScale: 1
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
