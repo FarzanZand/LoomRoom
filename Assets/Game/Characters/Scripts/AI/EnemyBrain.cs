@@ -81,6 +81,7 @@ public class EnemyBrain : MonoBehaviour
         Asleep = true;
         Motor.Stop();
         SetSleepAnimation(true);
+        SleepZs.Over(this);   // Z's over its head until it wakes
     }
 
     // Up and fighting: it stands still for riseSeconds (getting up), then hunts whoever woke it.
@@ -346,7 +347,7 @@ public class EnemyBrain : MonoBehaviour
     public void ApplyNetworkState(EnemyState state, bool asleep)
     {
         if (State == EnemyState.Dead) return;
-        if (Asleep != asleep) { Asleep = asleep; SetSleepAnimation(asleep); }
+        if (Asleep != asleep) { Asleep = asleep; SetSleepAnimation(asleep); if (asleep) SleepZs.Over(this); }   // the Z's go as it wakes
         if (state != State && state != EnemyState.Dead)
         {
             var previous = State;

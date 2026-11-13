@@ -52,7 +52,7 @@ public partial class AssetStudioWindow : EditorWindow
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
     StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
-    const string BuiltKey = "LoomRoom.Studio.Built.3";   // a new number when the categories change: the library is built afresh
+    const string BuiltKey = "LoomRoom.Studio.Built.4";   // a new number when the categories change: the library is built afresh
     bool showingWorld => studioView == StudioView.World;
     bool showingDialogue => studioView == StudioView.Dialogue;
     const string InGameOnlyKey = "LoomRoom.Studio.InGameOnly";
@@ -586,13 +586,19 @@ public partial class AssetStudioWindow : EditorWindow
             if (on) GUI.Box(row, GUIContent.none, cellSelected);
             var loaded = e.Load();
             // An item shows its own bag icon; anything else Unity's preview of it.
-            Texture icon = loaded is ItemData item && item.icon != null ? item.icon.texture : AssetPreview.GetAssetPreview(loaded) ?? AssetPreview.GetMiniThumbnail(loaded);
-            if (icon != null) GUI.DrawTexture(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), icon, ScaleMode.ScaleToFit);
+            // A class shows its portrait.
+            if (loaded is AdventurerClass rowClass) { if (Event.current.type == EventType.Repaint) DrawSprite(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), rowClass.portrait); }
+            else
+            {
+                Texture icon = loaded is ItemData item && item.icon != null ? item.icon.texture : AssetPreview.GetAssetPreview(loaded) ?? AssetPreview.GetMiniThumbnail(loaded);
+                if (icon != null) GUI.DrawTexture(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), icon, ScaleMode.ScaleToFit);
+            }
             if (e.inGame) DrawCheck(new Rect(row.x + rowH - 18, row.y + rowH - 20, 15, 15));
             // A room's kind in the icon's top corner (right-click the row to set it).
             if (RoomsShown && loaded is GameObject roomGo && roomGo.GetComponent<DungeonRoomTemplate>() != null) AssetStudioRoomKinds.Badge(new Rect(row.x + 2, row.y + 1, 16, 16), roomGo);
             GUI.Label(new Rect(row.x + rowH + 2, row.y + 3, row.width - rowH, 18), e.name, EditorStyles.boldLabel);
-            GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (e.category != categories[categoryIndex].name ? e.category + " · " : "") + e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description), dimLine);
+            string second = loaded is AdventurerClass lineClass ? ClassRowLine(lineClass, e) : e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description);
+            GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (e.category != categories[categoryIndex].name ? e.category + " · " : "") + second, dimLine);
             if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
             {
                 Select(e); GUI.FocusControl(null);
@@ -622,6 +628,7 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingBiomes) { DrawBiomePage(r); return; }
         if (showingUnlockables) { DrawUnlockPage(r); return; }
         if (showingDungeon) { DrawDungeonPage(r); return; }
+        if (DrawClassPreview(r)) return;   // a class: its page (AssetStudioWindow.Classes)
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
         GUI.Label(new Rect(r.x + 14, r.y + 10, r.width - 28, 40), selected.name, titleStyle);

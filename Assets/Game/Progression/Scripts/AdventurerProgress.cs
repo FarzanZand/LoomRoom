@@ -95,7 +95,11 @@ public class AdventurerProgress : MonoBehaviour
     public bool BlockAbsorbsAll => Legendary(AdventureSkill.Blocking);
     public float SprintCost => 1f;
 
-    public float SpellPower(AdventureSkill school)
+    // A spell's power over its own: 1 plus every bonus added up, never multiplied (the user, 2026-11-13: "instead of
+    // 18 x 2 x 1.3 it is 18x(2+0.3)", or the multipliers would go far too high). The bonuses are the school's skill,
+    // Intelligence (Thaumaturgy also Constitution at half; Legendary raises this part x1.4) and the gear's spell damage
+    // (`gear`, the SpellDamage stat, which PlayerSpellcasting.Power passes in).
+    public float SpellPower(AdventureSkill school, float gear = 0f)
     {
         // Intelligence points above the base (the sheet's and this run's) raise every spell; Thaumaturgy draws on
         // Constitution as well, at half.
@@ -104,7 +108,7 @@ public class AdventurerProgress : MonoBehaviour
         float perPoint = intTrack != null && intTrack.thirdBonusPerPoint > 0 ? intTrack.thirdBonusPerPoint * .01f : rules != null ? rules.intelligenceSpell : .035f;
         float intelligence = Mathf.Max(0, PointsAbove(MetaAttribute.Intelligence)) * perPoint;
         if (school == AdventureSkill.Thaumaturgy) intelligence += Mathf.Max(0, PointsAbove(MetaAttribute.Constitution)) * perPoint * .5f;
-        return (1 + Bonus(school)) * (1 + intelligence * (Legendary(school) ? 1.4f : 1));
+        return 1 + Bonus(school) + intelligence * (Legendary(school) ? 1.4f : 1) + Mathf.Max(0f, gear);
     }
     public float SpellCastTime(AdventureSkill school) => Legendary(school) ? .5f : Mathf.Max(.5f, 1 - Extra(school));
 

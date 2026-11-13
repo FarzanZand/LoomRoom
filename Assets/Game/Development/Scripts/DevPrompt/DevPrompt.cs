@@ -144,6 +144,24 @@ public class DevPrompt : MonoBehaviour
 
     bool MarkupOpen => markupPanel != null && markupPanel.activeSelf;
 
+#if UNITY_EDITOR
+    // Set by the editor's fullscreen Game view (FullscreenGameView): its own picture while it is open, else null. Unity's
+    // ScreenCapture reads the docked Game view, which draws an empty display behind the fullscreen window, so F9's
+    // screenshot came out black there (the user, 2026-11-13). Set once by the editor, never by the game: no reset.
+    public static System.Func<Texture2D> EditorCapture;
+#endif
+
+    // What the player sees, HUD included: the fullscreen Game view's picture in the editor while it is open, otherwise
+    // the screen (the docked Game view, or a build's window).
+    static Texture2D CaptureScreen()
+    {
+#if UNITY_EDITOR
+        var shot = EditorCapture?.Invoke();
+        if (shot != null) return shot;
+#endif
+        return ScreenCapture.CaptureScreenshotAsTexture();
+    }
+
     // The picture and the state are taken before the window shows, so neither has the window in it.
     IEnumerator OpenWithCapture()
     {
@@ -153,7 +171,7 @@ public class DevPrompt : MonoBehaviour
         if (markup == null || !markup.HasMarks)
         {
             markup?.Release();
-            var shot = ScreenCapture.CaptureScreenshotAsTexture();
+            var shot = CaptureScreen();
             markup = new DevPromptMarkup(shot);
             var state = DevGameSnapshot.Capture();
             stateJson = DevGameSnapshot.ToJson(state);
@@ -236,7 +254,7 @@ public class DevPrompt : MonoBehaviour
         panel.SetActive(false);
         capturing = true;
         yield return new WaitForEndOfFrame();
-        markup = new DevPromptMarkup(ScreenCapture.CaptureScreenshotAsTexture());
+        markup = new DevPromptMarkup(CaptureScreen());
         capturing = false;
         panel.SetActive(true);
         thumbnail.texture = markup.Composed;

@@ -84,7 +84,7 @@ public static class CoopWorld
     {
         Floor = null; FloorKey = 0;
         enemies.Clear(); enemyIds.Clear(); containers.Clear(); destructibles.Clear(); doors.Clear(); spikes.Clear(); ambushes.Clear(); provokables.Clear();
-        loot.Clear(); lootKeys.Clear(); culling.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
+        loot.Clear(); lootKeys.Clear(); takenByTeammate.Clear(); culling.Clear(); networkSpawned.Clear(); pendingHealth.Clear(); history.Clear(); spawnHistory.Clear(); waiting.Clear();
         lootScope = -1; lootCounter = 0; dropCounter = 0; gathering = null;
         nextSnapshot = nextNoise = 0f;
         hostClock = float.NaN;
@@ -701,6 +701,25 @@ public static class CoopWorld
         Send(new CoopEvent { kind = CoopEventKind.PickupTaken, id = key, item = new FixedString128Bytes(item.Item != null ? item.Item.itemName : "") });
     }
 
+    // Shared loot a teammate took here (the sleeping giant counts only its own player's pieces). Kept by reference: they
+    // are destroyed.
+    static readonly List<GameObject> takenByTeammate = new();
+    public static bool TakenByTeammate(GameObject piece)
+    {
+        foreach (var t in takenByTeammate) if (ReferenceEquals(t, piece)) return true;
+        return false;
+    }
+
+    // Whether the player who made a noise was crouched (a guest's from their stand-in's state); a noise with no player
+    // behind it goes by the local table player.
+    public static bool Crouching(Character source)
+    {
+        if (source != null && source.TryGetComponent<CoopPlayer>(out var coop)) return coop.Current.crouching;
+        var player = source as Player;
+        if (player == null || player.kind != PlayerKind.Table) player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+        return player != null && player.Motor != null && player.Motor.IsCrouching;
+    }
+
     public static void CoinsTaken(CoinPickup coins, int amount)
     {
         if (!Coop.Running || Applying || coins == null || !lootKeys.TryGetValue(coins.gameObject, out var key) || !SharedPiece(key)) return;
@@ -1272,7 +1291,7 @@ public static class CoopWorld
                 // Shared loot a teammate took: say who, so it doesn't just vanish.
                 if (loot.TryGetValue(e.id, out var piece) && piece != null && e.item.Length > 0 && MultiplayerManager.Instance.PlayerInSlot(e.slot) is CoopPlayer taker)
                     MessageLog.Post($"{taker.DisplayName} took the {e.item}.", MessageKind.Loot);
-                if (loot.TryGetValue(e.id, out piece) && piece != null) Object.Destroy(piece);
+                if (loot.TryGetValue(e.id, out piece) && piece != null) { takenByTeammate.Add(piece); Object.Destroy(piece); }
                 loot.Remove(e.id);
                 break;
             case CoopEventKind.CoinsTaken:

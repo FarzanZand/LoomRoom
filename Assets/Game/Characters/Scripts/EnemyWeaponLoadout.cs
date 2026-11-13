@@ -10,6 +10,8 @@ public class EnemyWeaponLoadout : MonoBehaviour
     public bool hasWeapon = true;
     [Tooltip("Item database entry. Uses its World Prefab, never its pickup pouch.")]
     public ItemData weapon;
+    [Tooltip("Shown in the hand in place of the weapon's World Prefab: a body far from a man's size carries its own pixel copy, baked for the size it is held at (the sleeping giant's mace). The weapon's numbers stay the item's. Empty: the item's own model.")]
+    public GameObject weaponModel;
     [Tooltip("Shared by compatible humanoid enemies; adjust once for the entire rig family.")]
     public EnemyWeaponGrip grip;
     [Tooltip("Archers: the bow's pose on the left-hand bone. Shared like the weapon grip.")]
@@ -113,7 +115,7 @@ public class EnemyWeaponLoadout : MonoBehaviour
             SetArrowNocked(false);
         }
         else if (hasWeapon && weapon != null && weapon.worldPrefab != null)
-            visual = Spawn(weapon.worldPrefab, ref attachment, HumanBodyBones.RightHand, grip, "Weapon grip - right hand", "Equipped weapon - " + weapon.itemName);
+            visual = Spawn(weaponModel != null ? weaponModel : weapon.worldPrefab, ref attachment, HumanBodyBones.RightHand, grip, "Weapon grip - right hand", "Equipped weapon - " + weapon.itemName);
 
         ApplyGrips();
         // New gear joins the hit flash.

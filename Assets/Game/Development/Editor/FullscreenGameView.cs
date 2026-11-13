@@ -33,6 +33,31 @@ public static class FullscreenGameView
         // above is a delayCall, which Unity skips while the editor is not focused and loses in a script reload, and a
         // reload also forgets the window. So once a second, while not playing, a fullscreen window still open is closed.
         EditorApplication.update += CloseWithoutPlay;
+        DevPrompt.EditorCapture = Capture;
+    }
+
+    // F9's screenshot while the window is open (DevPrompt.EditorCapture): the frame it drew, read from its own render
+    // texture (the whole picture, HUD included, at the window's size), turned the right way up. Null when it is closed.
+    static Texture2D Capture()
+    {
+        var w = Find();
+        if (w == null) return null;
+        var playModeView = typeof(Editor).Assembly.GetType("UnityEditor.PlayModeView");
+        var rt = playModeView?.GetField("m_TargetTexture", Any)?.GetValue(w) as RenderTexture;
+        if (rt == null || !rt.IsCreated()) return null;
+        var was = RenderTexture.active;
+        RenderTexture.active = rt;
+        var shot = new Texture2D(rt.width, rt.height, TextureFormat.RGB24, false);
+        shot.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        RenderTexture.active = was;
+        // The view's texture is stored upside down where textures start at the top (Direct3D, the team's editors).
+        if (!SystemInfo.graphicsUVStartsAtTop) { shot.Apply(); return shot; }
+        var px = shot.GetPixels32();
+        var flipped = new Color32[px.Length];
+        for (int y = 0; y < rt.height; y++) System.Array.Copy(px, y * rt.width, flipped, (rt.height - 1 - y) * rt.width, rt.width);
+        shot.SetPixels32(flipped);
+        shot.Apply();
+        return shot;
     }
 
     // ── VSync ──

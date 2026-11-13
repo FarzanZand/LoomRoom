@@ -49,6 +49,7 @@ public static class AssetStudioCatalog
         Cat("Items", "Weapons, shields, armour, trinkets, consumables, spell tomes and keys (ItemData).");
         Cat("Enemies", "Enemy prefabs, their EnemyData inside them.");
         Cat("Players & NPCs", "The two players and the people of the world.");
+        Cat("Classes", "The adventurer classes (AdventurerClass): portrait, pools, attributes, ranks, kit, spells, unlock, poster.");
         Cat("Spells", "Spell definitions (SpellDefinition) and what they launch.");
         Cat("Rooms", "Room templates: hand-built chunks, starting rooms, arenas and pockets.");
         Cat("Events", "Hand-built rooms with an event of their own (ScriptedEventRoom): what happens, who is in it, what they say, where it comes up. Play each from its page.");
@@ -69,7 +70,7 @@ public static class AssetStudioCatalog
     static IEnumerable<string> Candidates()
     {
         var guids = new HashSet<string>();
-        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "DungeonRoomStyle", "TavernDish", "Prefab" })
+        foreach (var t in new[] { "ItemData", "SpellDefinition", "TableLevelData", "DungeonBiome", "BossFight", "AudioData", "CampaignEncounter", "CampaignEvent", "TableLevelDefaults", "HouseRule", "DungeonRoomStyle", "TavernDish", "AdventurerClass", "Prefab" })
             guids.UnionWith(AssetDatabase.FindAssets("t:" + t, new[] { Root }));
         guids.UnionWith(AssetDatabase.FindAssets("t:AudioClip", new[] { Root + "/Audio", Root + "/UI/Audio", Root + "/Combat", Root + "/Levels" }.Where(AssetDatabase.IsValidFolder).ToArray()));
         return guids.Select(AssetDatabase.GUIDToAssetPath);
@@ -124,6 +125,10 @@ public static class AssetStudioCatalog
                     case CampaignEncounter p: e = Add(C("Campaign"), guid, path, $"Place · Act {p.act}", p.displayName + " · " + p.KindName + (p.level != null ? " · " + p.level.name : "") + (p.Locked ? $" · shut until {p.deathsToOpen} deaths in {p.deathsIn.displayName}" : "")); break;
                     case CampaignEvent ev: e = Add(C("Campaign"), guid, path, $"Event · after Act {ev.afterAct}", ev.title); break;
                     case HouseRule r: e = Add(C("Campaign"), guid, path, "House rule", r.text); break;
+                    case AdventurerClass ac:
+                        e = Add(C("Classes"), guid, path, string.IsNullOrEmpty(ac.unlockFlag) ? "Class · from the start" : "Class · unlocked in play", $"HP {ac.health:0} · MP {ac.mana:0} · SP {ac.stamina:0}");
+                        if (!string.IsNullOrEmpty(ac.displayName)) { e.name = ac.displayName; e.Search = $"{e.name} {e.id} {e.path} {e.kind} {e.description} {ac.id}".ToLowerInvariant(); }
+                        break;
                 }
             }
             catch (Exception ex) { Debug.LogWarning($"[Asset Studio] {path}: {ex.Message}"); }

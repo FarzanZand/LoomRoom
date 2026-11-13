@@ -41,8 +41,9 @@ UnityEngine.Material Readable(UnityEngine.Material m)
     if (outMesh == null) break;
     src.sharedMesh = outMesh; src.sharedMaterials = new[] { outMat };
     UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GetAssetPath(outMat.GetTexture("_BaseMap")), UnityEditor.ImportAssetOptions.ForceUpdate);
-    // Measured on the skinned pose (BakeMesh), as the body stands in the game: the bind-pose mesh under the renderer's
-    // transform missed the rig's scale on some bodies, and four came out 10-20% fine (128 x their scale).
+    // Measured on the skinned pose (BakeMesh), as the body stands in the game, its root's scale counted in. (Until
+    // 2026-11-13 the measure left the root's scale out, so every scaled body was really 128 / its scale: the Pit Demon
+    // 107, the Bone Brute 116, the dwarves 178, the king 160. Tools/realms_rebake.eval.cs baked those again.)
     measured = PixelRestyle.TexelsPerUnit(src, outMat);
     if (measured <= 0f || UnityEngine.Mathf.Abs(measured / TPU - 1f) < .05f) break;
     aim *= TPU / measured;

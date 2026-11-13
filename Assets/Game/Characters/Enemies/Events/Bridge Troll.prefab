@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1562963849407412147, guid: bb310c78cbf260b4ea8b43b6209046f0, type: 3}
+      propertyPath: hasWeapon
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3273835384214400741, guid: bb310c78cbf260b4ea8b43b6209046f0, type: 3}
       propertyPath: data
       value: 
@@ -165,7 +169,7 @@ MonoBehaviour:
   hurtTrigger: Hurt
   deathTrigger: Death
   deathDisableDelay: 8
-  prefab: {fileID: 0}
+  prefab: {fileID: 819948396285445826}
   behaviour: {fileID: 0}
   behaviourSettings:
     defaultState: 0

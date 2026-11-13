@@ -403,8 +403,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 1
-  description: A giant sleeps on its hoard. Crouch and take what you can; a walking
-    step close by wakes it.
+  description: A giant sleeps on its hoard. Crouch and take what you can; a walking step close by wakes it.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -432,6 +431,7 @@ MonoBehaviour:
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -468,8 +468,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: giant
-  summary: A giant sleeps on its hoard. Crouch and take what you can; a walking step
-    close by wakes it.
+  summary: 'A giant sleeps on its hoard. Each piece of its gear taken stirs it: the first is safe, then the Dungeon Master rolls for it, then it wakes. Stealth makes pieces safer. Walking, any step in its reach wakes it; crouched, only a blow does. Awake, it shuts the room until it dies.'
   entrance: {fileID: 5922092410827267091}
   countsAsEvent: 1
 --- !u!114 &3131393733419917980
@@ -496,18 +495,41 @@ MonoBehaviour:
   - {fileID: 544386048439113231}
   - {fileID: 4175337727594244757}
   - {fileID: 7173102255432153753}
-  gearShare: 0.5
+  items: 3
   goldPerPile: 6
   goldPerFloor: 3
   gearRarity: 6
   maxTier: 2
   snore: {fileID: 0}
-  hearing: 1.7
+  meleeHearing: 2.5
   riseSeconds: 1.8
   doorNoise: 1.5
   dropRarity: 3
-  enterLine:
-    text: It's asleep. Crouch.
+  wakePoint: {x: 80, y: 120}
+  pieceBase: 42
+  piecePerFloor: 5
+  stealthDivisor: 30
+  roll: {fileID: 8300000, guid: c5f2559aab1ce0e4d835b730f4a30190, type: 3}
+  knocks:
+  - {fileID: 8300000, guid: 86fb3724254ffa44f8bda6c38d457da9, type: 3}
+  - {fileID: 8300000, guid: 25f69a68ba5c53f4396af5a95dffe198, type: 3}
+  - {fileID: 8300000, guid: 6cce797ff44577a4485de32d4045286d, type: 3}
+  knockTimes:
+  - 0.55
+  - 0.8
+  - 0.95
+  - 1.15
+  rollSeconds: 1.5
+  enterLines:
+  - text: Time for nimble hands. Do you feel Lucky, punk?
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: A stealthy rogue walks out rich. A bad doesn't walk out at all.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Shh. Light feet, heavy pockets.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -518,6 +540,52 @@ MonoBehaviour:
     inPerson: 0
   struckLine:
     text: You hit it. It's awake now.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  lootedLine:
+    text: It felt that.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  rollLostLine:
+    text: Ooh. Bad roll.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  rollWonLine:
+    text: Lucky. Don't push it.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  safeLines:
+  - text: Go on. It sleeps like a rock.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Still snoring. Greedy, but fine.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  riskyLines:
+  - text: Go for more? Could go either way. I'm not telling which.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Feeling lucky enough to try another one?
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: I'd roll for the next item.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  unsafeLines:
+  - text: Take another and you're fighting it.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: I wouldn't. And I'd know.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

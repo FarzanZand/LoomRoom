@@ -71,8 +71,13 @@ public class PlayerSpellcasting : MonoBehaviour
 
     // ── Rules ──────────────────────────────────────────────────────────────────
     public float Cost(SpellDefinition spell) => spell == null ? 0 : Mathf.Max(1, spell.manaCost);
-    public float Power(SpellDefinition spell) => spell == null ? 0 : spell.power * (progress != null ? progress.SpellPower(spell.Skill) : 1)
-        * (1f + (player != null && player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.SpellDamage)) : 0f));
+    // The spell's power times 1 plus every bonus added up (skill, Intelligence, gear): AdventurerProgress.SpellPower.
+    public float Power(SpellDefinition spell)
+    {
+        if (spell == null) return 0;
+        float gear = player != null && player.Stats != null ? Mathf.Max(0f, player.Stats.GetFinal(StatType.SpellDamage)) : 0f;
+        return spell.power * (progress != null ? progress.SpellPower(spell.Skill, gear) : 1f + gear);
+    }
     public float CastTime(SpellDefinition spell) => spell == null ? 0 : Mathf.Max(.1f, spell.castSeconds * (progress != null ? progress.SpellCastTime(spell.Skill) : 1));
 
     // ── Equipping ──────────────────────────────────────────────────────────────
