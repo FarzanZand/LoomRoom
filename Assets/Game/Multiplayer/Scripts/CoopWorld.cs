@@ -478,6 +478,8 @@ public static class CoopWorld
         var target = brain != null && brain.Perception != null ? brain.Perception.Target : null;
         int slot = SlotOf(target);
         bool guest = slot != Coop.NoSlot && slot != Coop.LocalSlot;
+        // The brain sets its own culling mode every frame (EnemyBrain.PoseWhileAttacking): it is told, not overridden.
+        if (brain != null) { brain.KeepPosed = guest; return; }
         if (guest)
         {
             if (!culling.ContainsKey(anim)) { culling[anim] = anim.cullingMode; anim.cullingMode = AnimatorCullingMode.AlwaysAnimate; }

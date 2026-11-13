@@ -275,6 +275,7 @@ public class EnemyBrain : MonoBehaviour
         var anim = Character != null ? Character.Animator : null;
         if (anim != null && CombatManager.HasInstance)
             anim.cullingMode = CombatManager.Instance.cullUnseenEnemyAnimation ? AnimatorCullingMode.CullUpdateTransforms : AnimatorCullingMode.AlwaysAnimate;
+        if (anim != null) restingCulling = anim.cullingMode;
         if (Data == null) Debug.LogWarning($"{name}: EnemyBrain needs EnemyData on its Character (has {(Character.data != null ? Character.data.GetType().Name : "none")}).", this);
         // Alerted or provoked in the frame it was put down (the wrathful merchant, the intro's killer): already fighting.
         if (State == EnemyState.Chase || State == EnemyState.Attack || State == EnemyState.Dead) return;
@@ -429,11 +430,17 @@ public class EnemyBrain : MonoBehaviour
 
     // Unseen, its bones aren't moved (Start), except while it attacks: an arrow or a spell leaves from the hand the
     // animation raises, and held bones sent an unseen archer's or caster's shots off from hip height (Tifa, 2026-11-13).
+    // Co-op: the host keeps an enemy that is after a guest posed all the time, since the host may not see it while the
+    // guest does (CoopWorld.KeepAnimating sets it). This is the one place that sets the culling mode while it lives.
+    [System.NonSerialized] public bool KeepPosed;
+    AnimatorCullingMode restingCulling = AnimatorCullingMode.AlwaysAnimate;
+
     void PoseWhileAttacking()
     {
         var anim = Character.Animator;
-        if (anim == null || !CombatManager.HasInstance || !CombatManager.Instance.cullUnseenEnemyAnimation) return;
-        var want = IsSwinging ? AnimatorCullingMode.AlwaysAnimate : AnimatorCullingMode.CullUpdateTransforms;
+        if (anim == null) return;
+        bool attacking = IsSwinging && CombatManager.HasInstance && CombatManager.Instance.cullUnseenEnemyAnimation;
+        var want = attacking || KeepPosed ? AnimatorCullingMode.AlwaysAnimate : restingCulling;
         if (anim.cullingMode != want) anim.cullingMode = want;
     }
 
