@@ -9,6 +9,8 @@ What a new team member (or a second computer) needs to work on the project, with
 3. Open the project. The first open rebuilds the `Library` folder, which takes a long time; later opens are quick.
 4. The game is `Assets/Game/Scenes/Room.unity`. `Assets/Game/README.md` says where to go to change what, and `Docs/Folder-layout.md` has the folder rules.
 
+**Making builds** (only on a computer that builds): builds use IL2CPP since 2026-11-13. Add the editor's **Windows Build Support (IL2CPP)** module, and install Visual Studio 2022 or newer with the **Desktop development with C++** workload and a **Windows 11 SDK** (Visual Studio Installer > Modify > Individual components). Without the SDK the build stops at "Could not set up a toolchain".
+
 **Odin Inspector** must be 4.1.0.0 or newer for Unity 6.6 (it is in the repository; 4.0.1.6 threw an error every frame after each script reload).
 
 **Licences.** The project uses paid assets: Synty packs, Odin Inspector, the Pixel Crushers Dialogue System and others in `Assets/ThirdParty`. Check each one's licence terms for every new person before they get the repository.

@@ -294,6 +294,11 @@ public partial class CombatManager : Singleton<CombatManager>
     [Tooltip("How quickly player knockback loses speed. A 2.5 speed kick at 12 decay travels about 0.26 units.")]
     [Min(.1f)] public float playerKnockbackDecay = 12f;
 
+    // ── Enemies: Performance ──
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Performance")]
+    [Tooltip("An enemy nobody sees (off screen, or behind walls the floor isn't drawing) skips moving its bones: its animation, its events and its swings run on as before, and a body that dies unseen takes its pose first. Off animates every enemy every frame.")]
+    public bool cullUnseenEnemyAnimation = true;
+
     // ── Enemies: Attack rhythm ──
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Seconds after the swing starts during which the enemy still turns to track the target (windupTrackSpeed). After this the swing direction is committed.")]

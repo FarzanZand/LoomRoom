@@ -376084,6 +376084,7 @@ MonoBehaviour:
   blockHitStopScale: 0.65
   playerKnockbackSpeedLimit: 2.5
   playerKnockbackDecay: 12
+  cullUnseenEnemyAnimation: 1
   enemyAttackCommitTime: 0.65
   enemyCommitBeforeHit: 0.25
   enemyAimLead: 1

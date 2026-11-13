@@ -60,6 +60,7 @@ public class DeathBurst : MonoBehaviour
     void OnDied()
     {
         if (HasBurst || pending) return;
+        DeathPhysics.FreshPose(character.Animator);
         pending = true;
         burstAt = Time.time + HoldSeconds;
         // Hold the current pose: with the Animator running, the Dead flag and death trigger would move it first.
