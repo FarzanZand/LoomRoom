@@ -21,6 +21,17 @@ public class KeeperFace : MonoBehaviour
 
     void Awake() => Apply();
 
+    // The head worn just now, when it is not the body's own (null for Human): the ragdoll sizes its head to it.
+    public Renderer Worn
+    {
+        get
+        {
+            foreach (var entry in faces)
+                if (entry != null && entry.face != null && entry.kind == face && entry.face.activeInHierarchy) return entry.face.GetComponentInChildren<Renderer>();
+            return null;
+        }
+    }
+
 #if UNITY_EDITOR
     // SetActive is not allowed inside OnValidate, so the swap waits a frame. Prefab assets are left alone.
     void OnValidate()

@@ -115,6 +115,9 @@ public class ProvokableNpc : MonoBehaviour
         }
         var wrath = Instantiate(wrathPrefab, at, facing, transform.parent);
         wrath.name = wrathPrefab.name;
+        // He keeps the head he had (the tavern keeper's KeeperFace: the minotaur stays a minotaur).
+        var myFace = GetComponentInChildren<KeeperFace>(true); var itsFace = wrath.GetComponentInChildren<KeeperFace>(true);
+        if (myFace != null && itsFace != null) { itsFace.face = myFace.face; itsFace.Apply(); }
         var enemy = wrath.GetComponent<EnemyBrain>();
         if (enemy != null) enemy.Alert();
         Destroy(gameObject);

@@ -33,8 +33,8 @@ MonoBehaviour:
   maxStackSize: 1
   gridSize: {x: 0, y: 0}
   value: 40
-  tier: 1
-  lootWeight: 0.75
+  tier: 0
+  lootWeight: 0
   pickupAudioSource: 0
   pickupAudio: {fileID: 0}
   pickupClip: {fileID: 0}

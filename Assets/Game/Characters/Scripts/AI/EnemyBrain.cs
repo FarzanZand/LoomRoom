@@ -200,7 +200,7 @@ public class EnemyBrain : MonoBehaviour
     // can't be staggered again for CombatManager.enemyStaggerImmunity.
     public void Stun(float seconds)
     {
-        if (State == EnemyState.Dead || seconds <= 0f) return;
+        if (State == EnemyState.Dead || seconds <= 0f || EventProtection.Held(Character)) return;
         // Co-op guest: the host stuns the real enemy; the stun rides along with the strike that follows.
         if (NetworkPuppet) { PendingNetworkStun = Mathf.Max(PendingNetworkStun, seconds); return; }
         if (IsSwinging) { attackRunner.CancelForPause(); SetState(EnemyState.Chase); }

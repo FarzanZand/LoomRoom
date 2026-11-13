@@ -37,7 +37,63 @@ public static class RuleSetup
         ("rule2", "Do not attack the help. It will hurt you more than them.", "*New rule added:* Do not attack the help. It will hurt you more than them.", "*Rule {number}.*", false),
         // Given when a duel is broken (DuelEvent, the Duel bridge).
         ("rule3", "A duel is fought face to face.", "*New rule added:* A duel is fought face to face.", "*Rule {number}.*", false),
+        // Given the first time a player's spell hits the Dungeon Master (DungeonMasterRemarks.SpellHit; the user, 2026-11-13).
+        // Quoted as the rule itself, with no number (the user: "don't count the rules").
+        ("rule4", "The Dungeon Master is not a target. However big he is.", "*New rule:* The Dungeon Master is not a target. However big he is.", "*The Dungeon Master is not a target.*", false),
+        // Given the first time an event's fighter is hit before he has had his say (EventProtection,
+        // DungeonMasterRemarks.ProtectedHit; the user, 2026-11-13). Quoted as the rule itself, with no number.
+        ("rule5", "Let them have their say before you hit them.", "*New rule:* Let them have their say before you hit them.", "*Let them have their say.*", false),
     };
+
+    // Only what a new row in the Table needs, without rebuilding the sheet or the read screen: RuleSetup.AddRules() from an
+    // eval, with Room open. Makes the missing rule assets, lists every rule on the manager (prefab and the scene's), and
+    // gives the door's sheet a picture for each count (paint the new one first: python Tools/house_rules_sheet.py
+    // "Assets/Game/Rules/Art/House rules sheet N.png" N). Safe to run again; save the scene after.
+    public static string AddRules()
+    {
+        var log = new System.Text.StringBuilder();
+        var rules = Rules(log);
+        string path = Dir + "/Prefabs/RuleManager.prefab";
+        var contents = PrefabUtility.LoadPrefabContents(path);
+        try { contents.GetComponent<RuleManager>().rules = rules; PrefabUtility.SaveAsPrefabAsset(contents, path); }
+        finally { PrefabUtility.UnloadPrefabContents(contents); }
+        var manager = Object.FindAnyObjectByType<RuleManager>(FindObjectsInactive.Include);
+        if (manager != null && manager.rules.Length != rules.Length)
+        {
+            // The scene's copy lists them itself (an override): the same list there.
+            manager.rules = rules;
+            EditorUtility.SetDirty(manager);
+            if (PrefabUtility.IsPartOfPrefabInstance(manager)) PrefabUtility.RecordPrefabInstancePropertyModifications(manager);
+            EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
+            log.Append("scene manager lists them; ");
+        }
+        log.Append($"manager: {(manager != null ? manager.rules.Length : 0)} rules; ");
+        var sheet = Object.FindAnyObjectByType<HouseRulesSheet>(FindObjectsInactive.Include);
+        if (sheet == null) { log.Append("NO sheet in the scene; "); return log.ToString(); }
+        var pictures = new System.Collections.Generic.List<Texture2D>();
+        for (int n = 1; n <= Table.Length; n++)
+        {
+            string file = n == 1 ? SheetArt : $"{Dir}/Art/House rules sheet {n}.png";
+            var importer = (TextureImporter)AssetImporter.GetAtPath(file);
+            if (importer == null) { log.Append($"no sheet picture for {n} rules ({file}); "); continue; }
+            if (importer.filterMode != FilterMode.Point || importer.mipmapEnabled || importer.textureCompression != TextureImporterCompression.Uncompressed || importer.npotScale != TextureImporterNPOTScale.None || importer.wrapMode != TextureWrapMode.Clamp)
+            {
+                importer.textureType = TextureImporterType.Default; importer.filterMode = FilterMode.Point; importer.mipmapEnabled = false;
+                importer.textureCompression = TextureImporterCompression.Uncompressed; importer.wrapMode = TextureWrapMode.Clamp; importer.npotScale = TextureImporterNPOTScale.None;
+                importer.SaveAndReimport();
+            }
+            pictures.Add(AssetDatabase.LoadAssetAtPath<Texture2D>(file));
+        }
+        if (pictures.Count != sheet.sheets.Length)
+        {
+            sheet.sheets = pictures.ToArray();
+            EditorUtility.SetDirty(sheet);
+            EditorSceneManager.MarkSceneDirty(sheet.gameObject.scene);
+        }
+        log.Append($"sheet: {sheet.sheets.Length} pictures; ");
+        AssetDatabase.SaveAssets();
+        return log.ToString();
+    }
 
     // Each rule's asset (Rules/Data/Rule N), made when missing; made ones are kept as they are (edit them freely).
     static HouseRule[] Rules(System.Text.StringBuilder log)

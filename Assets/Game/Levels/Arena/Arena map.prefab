@@ -77,6 +77,7 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
@@ -256,6 +257,7 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
@@ -693,7 +695,7 @@ PrefabInstance:
     - target: {fileID: 7558874133378379582, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 4300000, guid: 68993202e4d86e543937ad7e6d204701, type: 2}
+      objectReference: {fileID: 4300000, guid: a73ed6ba9c164af4596cabf278c9e3d9, type: 2}
     - target: {fileID: 7647342911486511710, guid: 962c0a5ec3679d3429eb7ad75f5f1bcd, type: 3}
       propertyPath: m_Materials.Array.size
       value: 2

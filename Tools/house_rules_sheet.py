@@ -1,7 +1,8 @@
 """The house rules sheet taped to the bedroom's east door, painted texel by texel at the bedroom's pixel size.
 
 python Tools/house_rules_sheet.py <out.png> [rules]
-  rules: how many rules are written on it (1 by default); each is a number and a line or two of hand-writing.
+  rules: how many rules are written on it (1 by default); each is a number and a line or two of hand-writing
+         (four or more are written closer together so they fit the sheet).
 
 45 x 61 texels = 7 x 9.5 room units at 6.4 texels a unit (the door and the painting measure 6.4). Off-white paper with
 grain and a soft fold, a strip of tape at each top corner, HOUSE RULES lettered in dark ink at the top, then the rules:
@@ -91,12 +92,17 @@ def main():
     for x in range(10, W - 10):  # underline
         if rng.random() > .1:
             img.putpixel((x, 18 + (1 if x > W // 2 + 6 else 0)), (INK[0] + 15, INK[1] + 15, INK[2] + 15, 255))
+    # Up to three rules take 13 rows each; more are written closer so the last still ends on the paper (at 9 rows the
+    # second line sits a row higher; from seven rules on each has one line).
     y = 23
+    # From five rules on (one line each) the last may start 9 rows from the foot, so the numbers don't touch.
+    step = 13 if rules <= 3 else max(6, (H - (11 if rules <= 4 else 9) - 23) // (rules - 1))
     for n in range(1, rules + 1):
         x = letters(img, f"{n}.", 4, y, INK, rng)
         scribble(img, x + 1, W - 4, y + 3, rng)
-        scribble(img, 8, W - 6 - rng.randint(0, 10), y + 8, rng)
-        y += 13
+        if step >= 9:
+            scribble(img, 8, W - 6 - rng.randint(0, 10), y + (8 if step >= 13 else 7), rng)
+        y += step
     tape(img, 1, 0, 9, 4)
     tape(img, W - 10, 0, 9, 4)
     img.save(out)

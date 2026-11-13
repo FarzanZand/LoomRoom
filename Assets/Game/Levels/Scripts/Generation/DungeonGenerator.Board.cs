@@ -418,7 +418,8 @@ public partial class DungeonGenerator
     {
         var right = door.transform.right;
         var basePos = door.transform.position; basePos.y = transform.position.y;
-        float post = .34f, height = top - transform.position.y;
+        // The posts end 1 cm inside the lintel's top: level with it, their tops and its lay in one plane (flicker).
+        float post = .34f, height = top - transform.position.y - .01f;
         var material = WallMaterial(Layout.RegionIds[roomCell.x, roomCell.y], 0);
         var rng = new System.Random(unchecked(roomCell.x * 92821 ^ roomCell.y * 68917 ^ FloorNumber));
         for (int side = -1; side <= 1; side += 2)

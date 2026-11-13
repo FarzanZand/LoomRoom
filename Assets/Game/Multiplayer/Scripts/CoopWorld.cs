@@ -353,7 +353,8 @@ public static class CoopWorld
     // the wielder's own, on their machine.
     static void CelebrateTeammateKill(DamageInfo info, Character enemy)
     {
-        if (!info.Critical || info.Weapon == null || info.Weapon.effects == null) return;
+        // A critical kill, or a charged heavy attack's (the combo's finisher is Heavy too, but doesn't count).
+        if (!(info.Critical || info.Heavy && !info.Finisher) || info.Weapon == null || info.Weapon.effects == null) return;
         foreach (var entry in info.Weapon.effects)
         {
             if (entry == null || entry.trigger != EffectTrigger.OnHitLanded || entry.customEffect is not CritKillRewardEffect party) continue;
@@ -598,6 +599,7 @@ public static class CoopWorld
             side = c.TryGetComponent<Summon>(out var summon) && summon.Summoner != null && summon.Summoner.Faction == Faction.Player ? (byte)(1 + Mathf.Clamp(SlotOf(summon.Summoner), 0, 250)) : (byte)0,
             summonKind = new Unity.Collections.FixedString64Bytes(summon != null && summon.Kind != null ? summon.Kind : ""),
             scale = c.transform.localScale.x,
+            face = c.GetComponentInChildren<KeeperFace>(true) is { } keeperFace ? (sbyte)keeperFace.face : (sbyte)-1,
         };
         spawnHistory.Add(spawn);
         CoopMessages.ToGuests(CoopMessages.Spawn, spawn);
@@ -619,6 +621,8 @@ public static class CoopWorld
             c.Stats.AddModifier(new StatModifier(StatType.MaxHealth, spawn.maxHealth / c.Stats.MaxHealth - 1f, ModifierType.PercentMultiply, Coop.PartySource));
         pendingHealth[c] = spawn.health;
         if (spawn.minion && go.TryGetComponent<EnemyBrain>(out var minionBrain)) minionBrain.NoExperience = true;
+        // The head the host's wears (the turned tavern keeper keeps the one he had).
+        if (spawn.face >= 0 && go.GetComponentInChildren<KeeperFace>(true) is { } keeperFace && (int)keeperFace.face != spawn.face) { keeperFace.face = (KeeperFaceKind)spawn.face; keeperFace.Apply(); }
         if (spawn.scale > 0f && go.transform.localScale.x > 0f && Mathf.Abs(spawn.scale - go.transform.localScale.x) > .001f)
             go.transform.localScale *= spawn.scale / go.transform.localScale.x;
         // Raised or summoned for a player (Raise the Fallen, Summon John): on the players' side here too, with its aura, so
@@ -991,7 +995,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: case CoopEventKind.ArenaTalk: case CoopEventKind.SpellAffliction: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: case CoopEventKind.ArenaTalk: case CoopEventKind.SpellAffliction: case CoopEventKind.DmRemark: return;
         }
         history.Add(e);
     }
@@ -1020,6 +1024,14 @@ public static class CoopWorld
             else if (enemies[i].Stats != null && enemies[i].Stats.CurrentHealth < enemies[i].Stats.MaxHealth)
                 CoopMessages.ToClient(CoopMessages.Event, client, new CoopEvent { kind = CoopEventKind.EnemyHealth, id = i, amount = Mathf.RoundToInt(enemies[i].Stats.CurrentHealth * 100f), floorKey = FloorKey, slot = (byte)Coop.LocalSlot });
         }
+    }
+
+    // The Dungeon Master answered this player (a spell in his face, a blow on a fighter he holds): the same line for
+    // everyone, and the house rule with it given once on every machine (DungeonMasterRemarks).
+    public static void DungeonMasterRemark(int kind, int line, string spell, Vector3 at)
+    {
+        if (!Coop.Running || Applying || line < 0) return;
+        Send(new CoopEvent { kind = CoopEventKind.DmRemark, amount = kind, id = line, item = spell ?? "", position = at, target = Coop.NoSlot });
     }
 
     public static void Send(CoopEvent e)
@@ -1070,6 +1082,13 @@ public static class CoopWorld
         if (Coop.IsHost && sender != NetworkManager.ServerClientId && e.kind != CoopEventKind.RoomDoor) { CoopMessages.ToGuests(CoopMessages.Event, e, NetworkDelivery.ReliableSequenced, sender); Record(e); }
         if (e.kind == CoopEventKind.AtExit) { if (Coop.IsHost) MultiplayerManager.Instance.PlayerAtExit(e.slot); return; }
         if (e.kind == CoopEventKind.Ping) { if (e.floorKey == FloorKey) CoopPing.Show(e.slot, e.position, e.item.ToString()); return; }
+        if (e.kind == CoopEventKind.DmRemark)
+        {
+            if (e.floorKey != FloorKey) return;
+            if (e.amount == 0) DungeonMasterRemarks.SpellHitFromNetwork(e.id, CoopSpells.Spell(e.item.ToString()));
+            else DungeonMasterRemarks.ProtectedHitFromNetwork(e.id, e.position);
+            return;
+        }
         if (e.kind == CoopEventKind.PartySpoiled)
         {
             if (e.floorKey != FloorKey) return;

@@ -1217,7 +1217,9 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             {
                 kept = keptRun;
                 ghostAgain = keptDeadOnFloor == start.floor;
-                Debug.Log($"[Coop] Back in run {start.runId} as this player left it: level {kept.characterLevel}, {kept.gold} gold{(ghostAgain ? ", a ghost on this floor" : "")}.");
+                Debug.Log(AdventureSave.ResumesRuns
+                    ? $"[Coop] Back in run {start.runId} as this player left it: level {kept.characterLevel}, {kept.gold} gold{(ghostAgain ? ", a ghost on this floor" : "")}."
+                    : $"[Coop] Back in run {start.runId} as a new adventurer (runs are never continued){(ghostAgain ? ", a ghost on this floor" : "")}.");
             }
             keptRun = null; keptRunId = keptDeadOnFloor = 0;
         }
@@ -1232,7 +1234,10 @@ public class MultiplayerManager : Singleton<MultiplayerManager>
             yield return null;
             while (loader.Busy) yield return null;
             CoopMessages.ToHost(CoopMessages.Ready, new CoopInt { a = CoopWorld.FloorKey });
-            if (kept != null) NotificationUI.Show(ghostAgain ? "Back in the run. You are still a ghost on this floor." : "Back in the run as you left it.");
+            // Runs are never continued (AdventureSave.ResumesRuns off): the adventurer left behind is gone and this one
+            // starts afresh in the party's run; only a ghost stays one on the floor it left dead on.
+            if (kept != null && AdventureSave.ResumesRuns) NotificationUI.Show(ghostAgain ? "Back in the run. You are still a ghost on this floor." : "Back in the run as you left it.");
+            else if (ghostAgain) NotificationUI.Show("Back in the run. You are still a ghost on this floor.");
             // Left dead on this floor: dead here still, a ghost until the party's next floor.
             var table = ghostAgain && PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
             if (table != null && table.IsAlive && LocalInRun)

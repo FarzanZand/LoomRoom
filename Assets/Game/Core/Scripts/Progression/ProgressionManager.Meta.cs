@@ -109,7 +109,7 @@ public partial class ProgressionManager
     public DungeonMaster.Line handOverMany = new() { text = "All of these go on the wall." };
     [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Says, once it is bought"), Tooltip("Said once, as the sheet is put down after the lesson skill's first milestone (the dash) is bought. {sprint} and the other keys are the player's own.")]
     [UnityEngine.Serialization.FormerlySerializedAs("shieldBashMounted")]
-    public DungeonMaster.Line lessonTrophyMounted = new() { text = "You can dash now. {sprint} and a direction, sideways or back." };
+    public DungeonMaster.Line lessonTrophyMounted = new() { text = "You can evade now. {sprint} and a direction, sideways or back." };
     [FoldoutGroup("First visit to the sheet"), PropertyOrder(25), LabelText("Wait before he speaks (s)"), Min(0), Tooltip("Seconds after the room player is free before his first line about the sheet.")] public float lessonDelay = 2.5f;
     [FoldoutGroup("Character sheet"), PropertyOrder(20), LabelText("Portraits in colour"), Tooltip("The character sheet's portraits in colour (each class's Sheet Portrait Colour) instead of drawn in pencil (Sheet Portrait).")]
     public bool colourSheetPortraits;

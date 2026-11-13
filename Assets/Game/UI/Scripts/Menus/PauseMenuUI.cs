@@ -14,7 +14,7 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] Button resumeButton;
     [SerializeField] Button settingsButton;
     [SerializeField] Button adventuresButton;
-    [SerializeField, Tooltip("Shown during a run (not the intro's practice): back to the room standing at the table; the run is kept and picks up at the start of this floor from the map.")]
+    [SerializeField, Tooltip("Shown during a run (not the intro's practice): back to the room standing at the table. The run ends there (no death; the spoils carried are lost), unless AdventureSave.ResumesRuns, which keeps it to pick up at the start of this floor from the map.")]
     Button leaveButton;
     [SerializeField] Button mainMenuButton;
     [SerializeField] Button quitButton;
@@ -30,6 +30,8 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] string mainMenuScene = "Main Menu";
     [SerializeField, Tooltip("Said under the question while a run is on: what leaving costs.")]
     string runLoss = "Your run picks up at the start of this floor.";
+    [SerializeField, Tooltip("Said under the question while a run is on and runs are never continued (AdventureSave.ResumesRuns off).")]
+    string runEnds = "This ends your run. The spoils you carry are lost.";
     System.Action confirmed;
 
     bool open;
@@ -151,7 +153,8 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (confirmPanel == null) { action?.Invoke(); return; }
         confirmed = action;
-        if (confirmText != null) confirmText.text = InRun && !string.IsNullOrEmpty(runLoss) ? $"{question}\n<size=75%><color=#A3A3A3>{runLoss}</color></size>" : question;
+        string loss = AdventureSave.ResumesRuns ? runLoss : runEnds;
+        if (confirmText != null) confirmText.text = InRun && !string.IsNullOrEmpty(loss) ? $"{question}\n<size=75%><color=#A3A3A3>{loss}</color></size>" : question;
         if (pausePanel != null) pausePanel.SetActive(false);
         confirmPanel.SetActive(true);
         confirmNo?.Select();
@@ -227,8 +230,8 @@ public class PauseMenuUI : MonoBehaviour
         settingsButton?.Select();
     }
 
-    // The run is put aside, not ended (no tally, no death): its checkpoint stays, so the map's flag over its place
-    // continues it from the start of this floor. The way back is the usual flight out of the table.
+    // The run is put aside with no tally and no death. Runs are never continued (AdventureSave.ResumesRuns), so it is
+    // gone: no checkpoint is kept and the spoils carried are lost. The way back is the usual flight out of the table.
     void LeaveLevel()
     {
         Close();

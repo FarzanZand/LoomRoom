@@ -37,7 +37,6 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         new() { text = "Ow! Did you just throw {a spell} at me?" },
         new() { text = "Hey! The {spell} is for the monsters. Not for me." },
-        new() { text = "Ow. I'm the Dungeon Master, not a target for your {spell}." },
         new() { text = "{A spell}. At me. Really?" },
         new() { text = "Ow! That {spell} hit me right in the face." },
         new() { text = "Ow! Aim the {spell} down there, not up here." },
@@ -56,6 +55,18 @@ public class DungeonMasterRemarks : MonoBehaviour
         new() { text = "I'm writing that down. {A spell}, cast on yourself." },
     };
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he remarks on another spell cast on yourself.")] public float ownSpellGap = 12f;
+    // The user, 2026-11-13: an event's fighter that waits for the player to walk up and talk (Little Undead John, the
+    // Bridge Troll, the Black Knight) is kept out of reach by him until the talk starts (EventProtection).
+    [TabGroup(Tabs, "Runs"), Tooltip("A blow or spell on an event's fighter before the player has walked up and heard him out (the duel, the toll bridge, the Arena): he stops it. One at random, never the one said last.")]
+    public List<DungeonMaster.Line> protectedHit = new()
+    {
+        new() { text = "Not yet. Let him have his say first." },
+        new() { text = "Hold it. He hasn't said a word yet." },
+        new() { text = "No. Walk up and hear him out." },
+        new() { text = "He's waiting to talk to you. Go and talk." },
+        new() { text = "Not until he's had his say." },
+    };
+    [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he stops another blow on a fighter who hasn't talked yet with a line (the blow is stopped either way).")] public float protectedHitGap = 4f;
     [TabGroup(Tabs, "Runs"), InfoBox("What he says during a run (kills, close calls, new floors, rooms) is set on each level's Dialogue tab.")]
     [Range(.05f, .5f), Tooltip("Health left, as a share, that counts as a close call.")] public float closeCallFraction = .25f;
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds between two run remarks.")] public float remarkGap = 25f;
@@ -114,6 +125,13 @@ public class DungeonMasterRemarks : MonoBehaviour
     static void Say(DungeonMaster.Line line) { if (line != null) DungeonMaster.Say(line); }
     static void Say(List<DungeonMaster.Line> lines) => Say(Pick(lines));
     // One of the lines at random, skipping empty ones; null when there are none.
+    static int PickIndex(List<DungeonMaster.Line> lines)
+    {
+        if (lines == null) return -1;
+        var usable = new List<int>();
+        for (int i = 0; i < lines.Count; i++) if (lines[i] != null && !lines[i].IsEmpty) usable.Add(i);
+        return usable.Count > 0 ? usable[Random.Range(0, usable.Count)] : -1;
+    }
     static DungeonMaster.Line Pick(List<DungeonMaster.Line> lines)
     {
         if (lines == null || lines.Count == 0) return null;
@@ -242,11 +260,49 @@ public class DungeonMasterRemarks : MonoBehaviour
         var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
         if (remarks == null || caster is not Player || Hold || BossStageEncounter.Current != null) return;
         if (Time.time - remarks.lastSpellHit < remarks.spellHitGap) return;
-        var line = Pick(remarks.spellHitMe);
-        if (line == null) return;
+        int index = PickIndex(remarks.spellHitMe);
+        if (index < 0) return;
+        remarks.SaySpellHit(index, spell);
+        // Co-op: said for everyone, the same line (and the rule with it, once).
+        CoopWorld.DungeonMasterRemark(0, index, spell != null ? spell.name : null, Vector3.zero);
+    }
+
+    // Co-op: another player's spell hit him (their remark above, sent here).
+    public static void SpellHitFromNetwork(int index, SpellDefinition spell)
+    {
+        var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
+        if (remarks == null || Hold || BossStageEncounter.Current != null) return;
+        remarks.SaySpellHit(index, spell);
+    }
+
+    // One of his answers to a spell in the face, and his rule about it.
+    void SaySpellHit(int index, SpellDefinition spell)
+    {
+        var line = spellHitMe != null && index >= 0 && index < spellHitMe.Count ? spellHitMe[index] : null;
+        if (line == null || line.IsEmpty) return;
+        var remarks = this;
         remarks.lastSpellHit = Time.time;
         // Said at once, cutting off whatever he was saying or had queued: it answers the hit.
         DungeonMaster.CutIn(line.With(FillSpell(line.text, spell)), null, .3f);
+        // His house rule about it (the user, 2026-11-13: "The Dungeon Master is not a target. However big he is."): given
+        // after his answer the first time, on the sheet from then on, and quoted after his answer on later hits.
+        if (!RuleManager.HasInstance) return;
+        var rule = RuleManager.Instance.Rule(TargetRule);
+        if (rule == null) return;
+        if (RuleManager.Instance.Given(rule)) RuleManager.Instance.Quote(rule);
+        else if (!remarks.givingRule) remarks.StartCoroutine(remarks.GiveRuleAfterLine(rule));
+    }
+    const int TargetRule = 4;   // the fourth rule on RuleManager (its number on the sheet is the order given)
+    bool givingRule;
+    // The rule is given as he starts to say it, once his answer has been read: the sheet and whatever else shows a new
+    // rule (RuleManager.Give) then land with his words, not the six seconds of his answer ahead of them.
+    IEnumerator GiveRuleAfterLine(HouseRule rule)
+    {
+        givingRule = true;
+        yield return null;
+        while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
+        givingRule = false;
+        if (RuleManager.HasInstance && !RuleManager.Instance.Given(rule)) DungeonMaster.Say(RuleManager.Instance.Give(rule));
     }
 
     float lastOwnSpell = -999f;
@@ -284,6 +340,48 @@ public class DungeonMasterRemarks : MonoBehaviour
 
     // A player's spell hit the room player at the table (SpellProjectile). Not during a boss fight or the intro's
     // practice, where he says other things.
+    // A blow or spell on a fighter he keeps out of reach until it has talked (EventProtection.Stops): one of his lines,
+    // said at once (it answers the blow), not again within the gap.
+    public static void ProtectedHit(Vector3 at = default)
+    {
+        var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
+        if (remarks == null || Time.time - remarks.lastProtectedHit < remarks.protectedHitGap) return;
+        var usable = remarks.protectedHit != null ? remarks.protectedHit.FindAll(l => l != null && !l.IsEmpty && l != remarks.lastProtectedLine) : null;
+        var line = usable != null && usable.Count > 0 ? usable[Random.Range(0, usable.Count)] : Pick(remarks.protectedHit);
+        if (line == null) return;
+        remarks.SayProtectedHit(line);
+        // Co-op: said for everyone, the same line (the puff shown there too), and the rule given once.
+        CoopWorld.DungeonMasterRemark(1, remarks.protectedHit.IndexOf(line), null, at);
+    }
+
+    // Co-op: another player's blow on a held fighter (their remark above, sent here).
+    public static void ProtectedHitFromNetwork(int index, Vector3 at)
+    {
+        var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
+        if (remarks == null || remarks.protectedHit == null || index < 0 || index >= remarks.protectedHit.Count) return;
+        if (at != Vector3.zero) EventProtection.PuffAt(at);
+        var line = remarks.protectedHit[index];
+        if (line != null && !line.IsEmpty) remarks.SayProtectedHit(line);
+    }
+
+    void SayProtectedHit(DungeonMaster.Line line)
+    {
+        var remarks = this;
+        remarks.lastProtectedHit = Time.time;
+        remarks.lastProtectedLine = line;
+        DungeonMaster.CutIn(line, null, .15f);
+        // His house rule about it (the user, 2026-11-13): given after this line the first time ("*New rule:* Let them
+        // have their say before you hit them."), and on later hits quoted after it, as the rule itself with no number.
+        if (!RuleManager.HasInstance) return;
+        var rule = RuleManager.Instance.Rule(SayRule);
+        if (rule == null) return;
+        if (RuleManager.Instance.Given(rule)) { if (rule.quote != null && !rule.quote.IsEmpty) DungeonMaster.Say(rule.quote); }
+        else if (!remarks.givingRule) remarks.StartCoroutine(remarks.GiveRuleAfterLine(rule));
+    }
+    const int SayRule = 5;   // the fifth rule on RuleManager: let them have their say
+    float lastProtectedHit = -999f;
+    DungeonMaster.Line lastProtectedLine;
+
     public static void SpellHitRoomSelf(Character caster, SpellDefinition spell)
     {
         if (caster is not Player { kind: PlayerKind.Table } || Hold || BossStageEncounter.Current != null || IntroController.PracticeRunning) return;

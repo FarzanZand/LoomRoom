@@ -46,6 +46,7 @@ public struct NetDamage : INetworkSerializable
     public float stun;            // guest -> host: seconds the blow stuns the enemy (a shield bash)
     public FixedString128Bytes weapon;
     public bool spared;           // host -> guests: it took no health (the boss shielded during a beam: IMMUNE)
+    public bool finisher;         // the combo's last hit (DamageInfo.Finisher: Heavy without being a charged heavy attack)
 
     const byte Heavy = 1, Critical = 2, Backstab = 4, Magic = 8, Blocked = 16, Parried = 32, FromEffect = 64, DiedFlag = 128;
     public bool Died { get => (flags & DiedFlag) != 0; set => flags = (byte)(value ? flags | DiedFlag : flags & ~DiedFlag); }
@@ -56,7 +57,7 @@ public struct NetDamage : INetworkSerializable
         {
             amount = info.Amount, hitPoint = info.HitPoint, direction = info.Direction, swing = info.SwingDirection,
             knockback = info.KnockbackForce, attack = -1, slot = Coop.NoSlot,
-            weapon = new FixedString128Bytes(Coop.SaveId(info.Weapon)), spared = info.Spared,
+            weapon = new FixedString128Bytes(Coop.SaveId(info.Weapon)), spared = info.Spared, finisher = info.Finisher,
         };
         if (info.Heavy) d.flags |= Heavy;
         if (info.Critical) d.flags |= Critical;
@@ -80,7 +81,7 @@ public struct NetDamage : INetworkSerializable
             HitPoint = hitPoint, Direction = direction, SwingDirection = swing, KnockbackForce = knockback,
             Heavy = (flags & Heavy) != 0, Critical = (flags & Critical) != 0, Backstab = (flags & Backstab) != 0,
             Magic = (flags & Magic) != 0, Blocked = (flags & Blocked) != 0, Parried = (flags & Parried) != 0,
-            FromEffect = (flags & FromEffect) != 0, Spared = spared,
+            FromEffect = (flags & FromEffect) != 0, Spared = spared, Finisher = finisher,
         };
     }
 
@@ -89,7 +90,7 @@ public struct NetDamage : INetworkSerializable
         s.SerializeValue(ref enemy); s.SerializeValue(ref slot); s.SerializeValue(ref amount);
         s.SerializeValue(ref hitPoint); s.SerializeValue(ref direction); s.SerializeValue(ref swing);
         s.SerializeValue(ref knockback); s.SerializeValue(ref flags); s.SerializeValue(ref attack);
-        s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon); s.SerializeValue(ref spared);
+        s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon); s.SerializeValue(ref spared); s.SerializeValue(ref finisher);
     }
 }
 
@@ -133,6 +134,7 @@ public enum CoopEventKind : byte
     DevSpawn = 33,      // a guest's spawn window: the host makes the enemy (amount = MultiplayerManager.enemyPrefabs index, item = its name)
     BossBeaten = 34,
     SpellAffliction = 36, // a player's spell stunned, chilled or burned an enemy (id = it, item = the spell, amount = its power x 100): the host does it, the others show it
+    DmRemark = 37,      // the Dungeon Master answered a player (amount 0: a spell hit him, item = the spell; 1: a blow on a fighter he holds, position = its puff), id = his line
     ArenaTalk = 35,     // the Arena fighter's say: host, amount 0, it is said to the player in slot id; a guest, amount 1, theirs is over    // host, only to a player catching up: the stage's boss is dead (position = where it fell; its chest and the way on)
 }
 
@@ -219,6 +221,7 @@ public struct EnemySpawn : INetworkSerializable
     public bool minion;              // a boss's minion: killing it gives no experience (EnemyBrain.NoExperience)
     public FixedString64Bytes summonKind; // a summon's spell (Summon.Kind: Raise the Fallen, Summon John): its settings, name and arrival here
     public float scale;              // its size as the host made it (Summon John's is 0.8 of the prefab's)
+    public sbyte face;               // the head it wears (KeeperFace: the turned tavern keeper keeps his), -1 none
 
     public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
     {
@@ -226,7 +229,7 @@ public struct EnemySpawn : INetworkSerializable
         s.SerializeValue(ref position); s.SerializeValue(ref yaw); s.SerializeValue(ref lootSeed);
         s.SerializeValue(ref health); s.SerializeValue(ref maxHealth); s.SerializeValue(ref side);
         s.SerializeValue(ref elite); s.SerializeValue(ref eliteFloors); s.SerializeValue(ref minion);
-        s.SerializeValue(ref summonKind); s.SerializeValue(ref scale);
+        s.SerializeValue(ref summonKind); s.SerializeValue(ref scale); s.SerializeValue(ref face);
     }
 }
 

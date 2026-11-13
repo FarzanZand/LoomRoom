@@ -20,10 +20,14 @@ public partial class DungeonGenerator
             var lipBox = ArchitectureBox("Skylight trim", at, scale, trim, ceiling);
             DestroyImmediate(lipBox.GetComponent<Collider>());   // also in Edit-mode builds; before the NavMesh bake
         }
-        if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
-        if (r) { Strip(center + new Vector3(halfX - fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x + halfX - fx - lip * .5f, lipY, center.z), new Vector3(lip, lipHeight, size.z)); }
-        if (b) { Strip(center + new Vector3(0, 0, -halfZ + fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z - halfZ + fz + lip * .5f), new Vector3(size.x, lipHeight, lip)); }
-        if (f) { Strip(center + new Vector3(0, 0, halfZ - fz * .5f), new Vector3(size.x, size.y, fz)); Lip(new Vector3(center.x, lipY, center.z + halfZ - fz - lip * .5f), new Vector3(size.x, lipHeight, lip)); }
+        // Where two sides meet at a corner, the strip and lip along x run between the strips along z, and the lips along z
+        // stop at the lips along x: crossing, their faces lay in one plane and the roof flickered at the opening's corners.
+        float sx0 = l ? fx : 0f, sx1 = r ? fx : 0f, lz0 = b ? fz + lip : 0f, lz1 = f ? fz + lip : 0f;
+        float stripX = size.x - sx0 - sx1, stripMidX = (sx0 - sx1) * .5f, lipZ = size.z - lz0 - lz1, lipMidZ = (lz0 - lz1) * .5f;
+        if (l) { Strip(center + new Vector3(-halfX + fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x - halfX + fx + lip * .5f, lipY, center.z + lipMidZ), new Vector3(lip, lipHeight, lipZ)); }
+        if (r) { Strip(center + new Vector3(halfX - fx * .5f, 0, 0), new Vector3(fx, size.y, size.z)); Lip(new Vector3(center.x + halfX - fx - lip * .5f, lipY, center.z + lipMidZ), new Vector3(lip, lipHeight, lipZ)); }
+        if (b) { Strip(center + new Vector3(stripMidX, 0, -halfZ + fz * .5f), new Vector3(stripX, size.y, fz)); Lip(new Vector3(center.x + stripMidX, lipY, center.z - halfZ + fz + lip * .5f), new Vector3(stripX, lipHeight, lip)); }
+        if (f) { Strip(center + new Vector3(stripMidX, 0, halfZ - fz * .5f), new Vector3(stripX, size.y, fz)); Lip(new Vector3(center.x + stripMidX, lipY, center.z + halfZ - fz - lip * .5f), new Vector3(stripX, lipHeight, lip)); }
         // Inner corners: both sides open but the diagonal cell closed; fill the frame's corner square.
         void Corner(Vector2Int a, Vector2Int c, float sx, float sz)
         {
@@ -95,8 +99,14 @@ public partial class DungeonGenerator
         bool side = WallAt(cell, end, y);
         // Checkerboard: another room touches this one only at the corner; its wall shares this
         // quarter of rock, so only the north/south-facing piece reaches the corner.
-        if (side && WallAt(cell + end + d, -end, y)) return zFacing ? 0 : -WallThickness;
-        if (side) return zFacing ? WallThickness : -proud;
+        // A trim there is not mitered (MiterDiagonalEnds): the one facing z stops TrimInset short of the corner and the one
+        // facing x at the other's face, so neither room's trim reaches into the other's (mitered, the four met in one point
+        // and their faces overlapped in one plane: flicker).
+        if (side && WallAt(cell + end + d, -end, y)) return proud > 0 ? (zFacing ? -TrimInset : -proud) : zFacing ? 0 : -WallThickness;
+        // At an inside corner the wall facing z runs on to the other wall's back; its trim stops TrimInset short of it, as
+        // a trim's back face does: reaching it, the trim's end lay in the plane of that wall's back and flickered there.
+        if (side && zFacing && proud <= 0 && OverLowerCeiling(cell, d, end, y)) return 0;
+        if (side) return zFacing ? WallThickness - (proud > 0 ? TrimInset : 0) : -proud;
         if (!WallAt(cell + end, d, y) && WallAt(cell + end + d, -end, y))
         {
             // An opening's corner (a doorway between a room and a corridor): the room's wall keeps
@@ -105,16 +115,45 @@ public partial class DungeonGenerator
             // A trim wraps the corner by its own depth whichever way it faces: ending on the opening's edge, its end face lay
             // in the plane of the wall's end face there and flickered against it (the tavern's way in).
             if (room && !otherRoom) return proud;
-            if (!room && otherRoom) return -WallThickness;
-            return zFacing ? proud : -WallThickness;
+            if (!room && otherRoom) return -WallThickness - (proud > 0 ? TrimInset : 0);
+            return zFacing ? proud : -WallThickness - (proud > 0 ? TrimInset : 0);
         }
-        return 0;
+        // The wall runs straight on into the next cell: the next piece starts where this one ends.
+        if (WallAt(cell + end, d, y)) return 0;
+        // A wall that just ends (an opening beside it): its trim stops TrimInset short, so the two ends are never in one plane.
+        return proud > 0 ? -TrimInset : 0;
+    }
+
+    // An upper wall piece whose inside-corner run-on would lie over a lower cell's ceiling, starting at that ceiling's
+    // underside: the two undersides lay in one plane there and flickered, seen from the lower passage (the user,
+    // 2026-11-13). The piece stops at the corner and UpperWallCorner fills the corner from the ceiling's top up.
+    bool OverLowerCeiling(Vector2Int cell, Vector2Int d, Vector2Int end, float y)
+    {
+        var k = cell + end + d;
+        if (!Open(k) || WallAt(cell + end + d, -end, y)) return false;
+        return Mathf.Abs(HeightAt(k.x, k.y) - (y - .001f)) < .01f;
+    }
+
+    // The corner a piece stopped short of (OverLowerCeiling), from the lower ceiling's top to the piece's top.
+    void UpperWallCorner(Vector2Int cell, Vector2Int d, float y, float top, Material material)
+    {
+        var endAxis = d.x != 0 ? Vector2Int.up : Vector2Int.right;
+        foreach (var end in new[] { endAxis, -endAxis })
+        {
+            if (!(d.y != 0 && WallAt(cell, end, y + .001f) && OverLowerCeiling(cell, d, end, y + .001f))) continue;
+            float bottom = y + .24f;
+            if (top - bottom < .01f) continue;
+            var centre = Cell(cell) + new Vector3(d.x, 0, d.y) * (data.cellSize * .5f + WallThickness * .5f)
+                + new Vector3(end.x, 0, end.y) * (data.cellSize * .5f + WallThickness * .5f) + Vector3.up * ((bottom + top) * .5f);
+            ArchitectureBox("Upper wall corner", centre, new Vector3(WallThickness, top - bottom, WallThickness), material, geometry);
+        }
     }
 
     bool IsRoomCell(Vector2Int c) => Layout.InBounds(c) && Layout.floor[c.x, c.y] && Layout.RegionIds[c.x, c.y] < Layout.rooms.Count;
 
     void MiterDiagonalEnds(GameObject piece, Vector2Int cell, Vector2Int direction, float probeY, float proud, bool tiled)
     {
+        if (proud > 0) return;   // trims end square there (EndAdjust)
         var along = direction.x != 0 ? Vector2Int.up : Vector2Int.right;
         float y = probeY + .001f;
         bool Diagonal(Vector2Int end) => WallAt(cell, end, y) && WallAt(cell + end + direction, -end, y);

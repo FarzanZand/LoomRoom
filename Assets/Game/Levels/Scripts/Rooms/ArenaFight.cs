@@ -55,12 +55,13 @@ public class ArenaFight : MonoBehaviour
         room = dungeon.Layout.RoomAt(dungeon.CellOf(transform.position));
         if (room < 0) yield break;
         // Enemies are put down after the room is built: gather them for a while, then keep to the ones found.
-        for (float t = 0; t < 3f; t += .25f) { Gather(true); Strengthen(); yield return new WaitForSeconds(.25f); }
+        for (float t = 0; t < 3f; t += .25f) { Gather(true); Strengthen(); Protect(); yield return new WaitForSeconds(.25f); }
         var wait = new WaitForSeconds(.25f);
         while (!done && this != null)
         {
             Gather(false);
             Strengthen();
+            Protect();
             // Co-op: the host's word decides who hears it (the first of the party in), the guests follow (CoopTalk).
             if (!talked && talk != null && !Coop.IsGuest)
             {
@@ -86,6 +87,7 @@ public class ArenaFight : MonoBehaviour
     bool hearerDone;
     IEnumerator Talk(Character hearer)
     {
+        ReleaseAll();
         var box = PortraitDialogueUI.Current;
         EnemyBrain speaker = fighters.Find(b => b != null && !Down(b));
         if (box == null || hearer == null || speaker == null || talk.introLines == null || talk.introLines.Count == 0) yield break;
@@ -155,6 +157,16 @@ public class ArenaFight : MonoBehaviour
             s.SetHealthShare(1f);
         }
     }
+
+    // While its say is still to come, every fighter is out of reach (EventProtection; the user, 2026-11-13: none can be
+    // hurt or moved from the landing before it has talked). Let go as the talk begins.
+    void Protect()
+    {
+        if (talk == null || talked) return;
+        foreach (var b in fighters) if (b != null && !Down(b) && b.TryGetComponent<Character>(out var c)) EventProtection.Hold(c, this);
+    }
+    void ReleaseAll() { foreach (var b in fighters) if (b != null && b.TryGetComponent<Character>(out var c)) EventProtection.Release(c); }
+    void OnDestroy() => ReleaseAll();
 
     // Dead by its brain or by its health (an enemy killed while its room was off the table never ran its death). One that
     // never started (its room still behind a closed door) reads 0 health but stands: it counts as up.

@@ -490,8 +490,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'Always an ambush in a green-lit burial corridor: the doors bar shut
-    and waves come at you. A chest when they are dead.'
+  description: 'Always an ambush in a green-lit burial corridor: the doors bar shut and waves come at you. A chest when they are dead.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -514,11 +513,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 2
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

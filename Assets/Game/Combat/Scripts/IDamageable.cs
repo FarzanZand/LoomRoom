@@ -17,7 +17,8 @@ public struct DamageInfo
     public float     KnockbackForce;  // already scaled by CombatManager
     public bool      Parried;
     public bool      Magic;           // spell damage bypasses physical armor and shield blocking
-    public bool      Heavy;           // captured by the hitbox for this swing
+    public bool      Heavy;           // captured by the hitbox for this swing (a charged heavy attack, or the combo's finisher)
+    public bool      Finisher;        // the combo's last hit (Heavy too when it hits like one, CombatManager.comboFinisherHeavy)
     public bool      Blocked;         // set by the victim's IBlocker
     public bool      FromEffect;      // created by an item effect; never counts as a landed hit
     public bool      Critical;        // rolled by the hitbox; bigger number, longer hit stop

@@ -178,11 +178,13 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

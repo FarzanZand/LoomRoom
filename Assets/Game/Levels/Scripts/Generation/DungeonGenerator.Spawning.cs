@@ -206,6 +206,8 @@ public partial class DungeonGenerator
             // centre and turn, as PlaceTemplate does) and it is taken only if they all stay: wholly in the room, no way in
             // opening into them, the ways in still joined.
             if (!PitsHold(t, room)) return false;
+            // A way through needs a way in at each end its doors are marked at (the bridge: one door at each end).
+            if (tpl.wayThrough && !EndsOpen(tpl, room)) return false;
             if (!tpl.HasFootprint) return true;
             var fp = tpl.Footprint(); var rect = Layout.rooms[room];
             // Built at the room's own rotation (PlaceTemplate turns it by RoomRotation), so it must fit that way round.
@@ -240,6 +242,38 @@ public partial class DungeonGenerator
             }
         }
     }
+    // A way through (DungeonRoomTemplate.wayThrough) put into a room already laid out: each end the template marks a door
+    // at must have a way in of the room's own, on that end's side of the room's middle and as far out as the marked door.
+    bool EndsOpen(DungeonRoomTemplate tpl, int room)
+    {
+        var fp = tpl.Footprint();
+        if (fp == null) return true;
+        var at = Cell(Layout.RoomCenter(room));
+        var back = Quaternion.Inverse(Quaternion.Euler(0f, 90f * Layout.RoomRotation(room), 0f));
+        var ways = new System.Collections.Generic.List<Vector3>();
+        foreach (var c in Layout.RoomCells(room))
+            foreach (var d in DungeonLayout.Neighbours)
+                if (Layout.IsOpening(room, c, d)) { ways.Add(back * (Cell(c) - at)); break; }
+        for (int x = 0; x < fp.width; x++)
+            for (int y = 0; y < fp.height; y++)
+            {
+                if (!fp.DoorAllowed(x, y)) continue;
+                var door = new Vector3((x - fp.center.x) * data.cellSize, 0f, (y - fp.center.y) * data.cellSize);
+                // The end it marks: the way it lies furthest out from the room's middle.
+                bool alongZ = Mathf.Abs(door.z) >= Mathf.Abs(door.x);
+                float want = alongZ ? door.z : door.x;
+                if (Mathf.Abs(want) < data.cellSize) continue;
+                bool found = false;
+                foreach (var w in ways)
+                {
+                    float v = alongZ ? w.z : w.x;
+                    if (v * want > 0f && Mathf.Abs(v) >= Mathf.Abs(want) - data.cellSize * .5f) { found = true; break; }
+                }
+                if (!found) return false;
+            }
+        return true;
+    }
+
     // Whether a template's pits would all be built in room `room` (BuildCuts leaves out one that falls outside the room or
     // cuts its ways in apart): laid at the room's centre and turn, as PlaceTemplate places the template.
     bool PitsHold(GameObject template, int room)
@@ -250,12 +284,16 @@ public partial class DungeonGenerator
         foreach (var cut in template.GetComponentsInChildren<DungeonFloorCut>(true))
         {
             if (cut.kind != DungeonFloorCut.Kind.Pit) continue;
+            var mine = new System.Collections.Generic.HashSet<Vector2Int>();
             foreach (var p in cut.CellCentres(data.cellSize))
             {
                 var c = CellOf(at + turn * template.transform.InverseTransformPoint(p));
                 if (!Layout.InRoom(room, c)) return false;
-                hole.Add(c);
+                mine.Add(c);
             }
+            // Widened to the room's walls as BuildCuts will widen it, so a way in on that side counts as opening into it.
+            if (cut.toWalls) WidenToWalls(mine, room, OuterSide(template.transform.InverseTransformPoint(cut.transform.position).x, turn));
+            hole.UnionWith(mine);
         }
         return hole.Count == 0 || KeepsWaysJoined(room, hole);
     }
@@ -439,9 +477,13 @@ public partial class DungeonGenerator
     // The patch of night sky hangs a little above the ceiling's skylight: the room's walls go on up to it in its own
     // upper stone (kit blocks, built with the room's other blocks; no collider), and the sky is cut to the room's own
     // outline, so nothing shows through between the walls and the stars and no sky hangs over the rooms round it.
+    // The bands stand on the ceiling slab's top (.24 thick, as the generator lays it), never level with its underside: started
+    // at the underside, their own underside lay in the roof's plane along every wall and flickered (the user, 2026-11-13).
+    // The bands along z stop at the inner faces of the bands along x, so no two share a face at the corners.
     void CloseSkyGap(GameObject instance,int index,Transform sky,float ceiling)
     {
         if(index<0 || index>=Layout.rooms.Count)return;
+        ceiling+=.24f;
         float height=sky.position.y-ceiling;
         if(height<=.05f)return;
         var r=Layout.rooms[index];
@@ -461,8 +503,8 @@ public partial class DungeonGenerator
         }
         Band(new Vector3(cx,ceiling,z0),new Vector3(w+thick,height,thick));
         Band(new Vector3(cx,ceiling,z1),new Vector3(w+thick,height,thick));
-        Band(new Vector3(x0,ceiling,cz),new Vector3(thick,height,d+thick));
-        Band(new Vector3(x1,ceiling,cz),new Vector3(thick,height,d+thick));
+        Band(new Vector3(x0,ceiling,cz),new Vector3(thick,height,d-thick));
+        Band(new Vector3(x1,ceiling,cz),new Vector3(thick,height,d-thick));
         // The sky over the room alone, lying on the bands.
         sky.position=new Vector3(cx,sky.position.y,cz);
         sky.rotation=Quaternion.Euler(-90f,0f,0f);

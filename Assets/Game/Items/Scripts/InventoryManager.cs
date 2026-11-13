@@ -37,7 +37,7 @@ public class InventoryManager : Singleton<InventoryManager>
     public SourceDrops enemyDrops = new() { goldChance = .3f, goldMin = 1, goldMax = 4, gearChance = .3f, recoveryChance = .107f };
     [Title("Breakable"), InlineProperty, HideLabel, Tooltip("What a barrel, crate, urn or other breakable drops, in every biome.")]
     public SourceDrops breakableDrops = new() { goldChance = .25f, goldMin = 1, goldMax = 2, gearChance = .05f, recoveryChance = .12f };
-    [Title("Chest"), InlineProperty, HideLabel, Tooltip("What a chest, bookshelf, grave or loot on the floor gives, in every biome (iron and gold chests roll it again, DungeonContainer.extraRolls).")]
+    [Title("Chest"), InlineProperty, HideLabel, Tooltip("What a chest, bookshelf, grave or loot on the floor gives, in every biome (iron and gold chests roll it again and keep the best piece of gear: one a chest, DungeonContainer.extraRolls).")]
     public SourceDrops chestDrops = new() { goldChance = .6f, goldMin = 4, goldMax = 10, gearChance = 1f, recoveryChance = .7f };
 
     // The drop chances of a kind of source (Floor counts as a chest).
@@ -243,7 +243,8 @@ public class InventoryManager : Singleton<InventoryManager>
 
         if (!added)
         {
-            NotificationUI.Show("Bag full");
+            // In the middle of the screen, big (the user, 2026-11-13: the small toast was missed).
+            AnnouncementUI.Show("Bag full", null, 0f, true, true);
             return false;
         }
         if (used > 0 && item.IsScroll) MarkUsed(player, item, used);

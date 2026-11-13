@@ -76,6 +76,16 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
         }
         if (phase != Phase.Waiting || !troll.IsAlive) return;
         if (Coop.IsGuest) return;
+        // He turns to the end the nearest player in the room came in at (co-op: the host's troll, any player; the guests'
+        // copy follows its turn).
+        Character near = null; float nearest = float.MaxValue;
+        foreach (var c in Coop.Running ? CoopWorld.Party() : new Character[] { ScriptedEventRoom.TablePlayer })
+        {
+            if (c == null || !c.IsAlive || !room.Inside(c.transform.position)) continue;
+            float d2 = (c.transform.position - troll.transform.position).sqrMagnitude;
+            if (d2 < nearest) { nearest = d2; near = c; }
+        }
+        if (near != null) { var to = near.transform.position - troll.transform.position; to.y = 0f; FaceEnd(troll.transform, to); }
         if (Coop.Running) { foreach (var c in CoopWorld.Party()) if (Stops(c)) { StartCoroutine(Ask(c)); return; } return; }
         var player = ScriptedEventRoom.TablePlayer;
         if (player != null && player.IsAlive && Stops(player)) StartCoroutine(Ask(player));
@@ -93,6 +103,7 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
     // (value: slot << 2 | 0 picked, 1 struck before paying, 2 struck after). Used (guest to host): the answer of the
     // player he stopped, 1 paid, 2 fight.
     int answer;
+    Character asker;
     public void Used(int what, Character who) { if (Coop.IsHost && phase == Phase.Talking && (what == 1 || what == 2)) answer = what; }
     public void Step(int step, int value, int seed)
     {
@@ -107,6 +118,16 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
             if (kind == 1) ScriptedEventRoom.Say(fightLine); else if (kind == 2) ScriptedEventRoom.Say(cheatLine);
             Fight(CoopWorld.CharacterOf(value >> 2));
         }
+    }
+
+    // Both ends of the bridge have a door (the user, 2026-11-13): while he waits he turns, at a walk's pace, to the end
+    // the player came in at (his post's facing or its reverse; `to` is from him to the player).
+    void FaceEnd(Transform who, Vector3 to)
+    {
+        var along = post != null ? post.forward : who.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return;
+        if (Vector3.Dot(to, along) < 0f) along = -along;
+        who.rotation = Quaternion.RotateTowards(who.rotation, Quaternion.LookRotation(along), 160f * Time.deltaTime);
     }
 
     void FindTroll()
@@ -126,6 +147,8 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) troll.transform.rotation = Quaternion.LookRotation(f); }
         troll.Damaged += OnHit;
         troll.Died += OnDied;
+        // Out of reach until the player walks up and he asks (EventProtection; the user, 2026-11-13).
+        EventProtection.Hold(troll, this);
     }
 
     // Damage and Health Multiplier, once, once his stats are set up (after the floor's balance).
@@ -144,6 +167,7 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
     void OnDestroy()
     {
         EndTalk();
+        EventProtection.Release(troll);
         if (troll != null) { troll.Damaged -= OnHit; troll.Died -= OnDied; }
     }
 
@@ -151,6 +175,8 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
     {
         phase = Phase.Talking;
         answer = 0;
+        asker = player;
+        EventProtection.Release(troll);
         CoopWorld.EventStep(this, 1, CoopWorld.SlotOf(player));
         // He turns to the player, then asks.
         var to = player.transform.position - troll.transform.position; to.y = 0f;
@@ -210,7 +236,25 @@ public class TollBridgeEvent : MonoBehaviour, ICoopEventRoom
     {
         phase = Phase.Paid;
         ScriptedEventRoom.Say(paidLine);
-        if (!Coop.IsGuest && aside != null && brain != null && brain.Motor != null) { brain.Motor.Resume(); brain.Motor.SetSpeed(asideSpeed); brain.Motor.MoveTo(aside.position); walkingAside = true; }
+        if (!Coop.IsGuest && aside != null && brain != null && brain.Motor != null) { brain.Motor.Resume(); brain.Motor.SetSpeed(asideSpeed); brain.Motor.MoveTo(AsideSpot()); walkingAside = true; }
+    }
+
+    // Where he steps aside to: the landing at the far end from the player, so they pass him going on. That is the Aside
+    // marker, or its mirror through his post when the player came in at the marker's end (a door at each end,
+    // 2026-11-13): the room is laid out the same turned half round (a brazier on each landing, on opposite sides), so the
+    // mirrored spot is as clear of the brazier as the marker is.
+    Vector3 AsideSpot()
+    {
+        // Co-op: the player he stopped (the one who paid), else the host's own.
+        var player = asker != null ? asker : ScriptedEventRoom.TablePlayer;
+        if (post == null || player == null) return aside.position;
+        var along = post.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return aside.position;
+        along.Normalize();
+        float playerSide = Vector3.Dot(player.transform.position - post.position, along), asideSide = Vector3.Dot(aside.position - post.position, along);
+        if (playerSide * asideSide <= 0f) return aside.position;
+        var mirrored = post.position * 2f - aside.position; mirrored.y = aside.position.y;
+        return mirrored;
     }
 
     void Fight(Character player)

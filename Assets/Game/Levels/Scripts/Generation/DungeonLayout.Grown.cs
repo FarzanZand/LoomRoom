@@ -28,6 +28,29 @@ public sealed partial class DungeonLayout
     readonly List<int> degree = new();
     readonly List<HashSet<Vector2Int>> doorAnchors = new();   // null: doors anywhere on the outline
     readonly List<DungeonShape> placedShapes = new();
+    // The floor kept clear in front of each marked door of a way through (DungeonShape.everyDoor: the bridge rooms): three
+    // cells wide and FrontDepth out. No room is laid across it, and such a room is only placed where its own fronts are
+    // clear and inside the grid, so a passage can be dug from each door (a bridge room's far door stood one cell from the
+    // next room's wall, or on the grid's edge, and stayed shut). Passages may cross it freely.
+    const int FrontDepth = 3;
+    readonly List<List<Vector2Int>> doorFronts = new();   // per room; empty for all but a way through
+    readonly HashSet<Vector2Int> frontCells = new();
+
+    static IEnumerable<Vector2Int> FrontOf(DungeonShape s, Vector2Int origin)
+    {
+        for (int x = 0; x < s.width; x++) for (int y = 0; y < s.height; y++)
+        {
+            if (!s.DoorAllowed(x, y) || s[x, y] != DungeonShape.Floor) continue;
+            // The side the door opens on: the shape's nearest edge.
+            int toRight = s.width - 1 - x, toLeft = x, toTop = s.height - 1 - y, toBottom = y;
+            int least = Mathf.Min(Mathf.Min(toRight, toLeft), Mathf.Min(toTop, toBottom));
+            var dir = least == toRight ? new Vector2Int(1, 0) : least == toLeft ? new Vector2Int(-1, 0) : least == toTop ? new Vector2Int(0, 1) : new Vector2Int(0, -1);
+            var side = new Vector2Int(-dir.y, dir.x);
+            // From the shape's edge outward (the door may be marked a cell or more inside it).
+            var edge = origin + new Vector2Int(x, y) + dir * least;
+            for (int k = 1; k <= FrontDepth; k++) for (int w = -1; w <= 1; w++) yield return edge + dir * k + side * w;
+        }
+    }
 
     // exitAt: where the exit room must stand (a boss stage in front of the Dungeon Master): the spot is kept free
     // while the other rooms grow, then the exit is placed there and tunnelled to the nearest room it can reach.
@@ -163,6 +186,7 @@ public sealed partial class DungeonLayout
         Shapes = placedShapes.ToArray();
 
         AddLoops();
+        OpenEveryDoor();
         AddDeadEnds();
         Finish();
     }
@@ -335,7 +359,17 @@ public sealed partial class DungeonLayout
             if (px < 1 || py < 1 || px > width - 2 || py > depth - 2) return false;
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++)
                 if (occupant[px + dx, py + dy] != EmptyCell) return false;
+            // Not across the floor kept in front of a way through's doors.
+            if (frontCells.Count > 0 && frontCells.Contains(new Vector2Int(px, py))) return false;
         }
+        // A way through stands only where the floor in front of each of its doors is free and inside the grid.
+        if (s.everyDoor)
+            foreach (var p in FrontOf(s, origin))
+            {
+                if (p.x < 1 || p.y < 1 || p.x > width - 2 || p.y > depth - 2) return false;
+                int o = occupant[p.x, p.y];
+                if (o != EmptyCell && o != CorridorCell) return false;
+            }
         return true;
     }
 
@@ -356,6 +390,9 @@ public sealed partial class DungeonLayout
         rooms.Add(new RectInt(origin.x, origin.y, s.width, s.height));
         roomCells.Add(cells); roomCenters.Add(origin + s.center);
         placedShapes.Add(s); degree.Add(0); doorAnchors.Add(anchors);
+        var front = new List<Vector2Int>();
+        if (s.everyDoor) foreach (var p in FrontOf(s, origin)) { front.Add(p); frontCells.Add(p); }
+        doorFronts.Add(front);
         return index;
     }
 
@@ -380,6 +417,14 @@ public sealed partial class DungeonLayout
             if (occupant[p.x, p.y] == index) { occupant[p.x, p.y] = EmptyCell; floor[p.x, p.y] = false; }
         rooms.RemoveAt(index); roomCells.RemoveAt(index); roomCenters.RemoveAt(index);
         placedShapes.RemoveAt(index); degree.RemoveAt(index); doorAnchors.RemoveAt(index);
+        if (doorFronts[index].Count > 0)
+        {
+            // Its fronts go; another way through's stay.
+            doorFronts.RemoveAt(index);
+            frontCells.Clear();
+            foreach (var list in doorFronts) foreach (var p in list) frontCells.Add(p);
+        }
+        else doorFronts.RemoveAt(index);
     }
 
     // ── Corridors ────────────────────────────────────────────────────
@@ -430,14 +475,54 @@ public sealed partial class DungeonLayout
         return list;
     }
 
+    // A way through (DungeonShape.everyDoor: the bridge rooms; the user, 2026-11-13: "a door on both sides of the bridge,
+    // it should lead somewhere else to the dungeon"): each of its marked doors that no passage reached gets one, tunnelled
+    // from that door to another room, the nearest on the door's own side of the room first, so the room is entered at
+    // one end and left at the other. Floors without such a room are laid out exactly as before.
+    void OpenEveryDoor()
+    {
+        for (int room = 1; room < rooms.Count - 1; room++)
+        {
+            if (placedShapes[room] == null || !placedShapes[room].everyDoor || doorAnchors[room] == null) continue;
+            foreach (var anchor in new List<Vector2Int>(doorAnchors[room]))
+            {
+                var door = new Vector2Int(-1, -1); bool open = false;
+                foreach (var d in Directions)
+                {
+                    var q = anchor + d;
+                    if (!Inner(q)) continue;
+                    if (occupant[q.x, q.y] == CorridorCell) { open = true; break; }
+                    if (IsDoor(q, room, -1)) door = q;
+                }
+                if (open || door.x < 0) continue;
+                // The other rooms, those out beyond this door first (the way it faces), nearest first; never the starting
+                // room with its one door, nor the exit (no second way into it).
+                var outward = door - anchor;
+                var others = new List<int>();
+                for (int other = doorAnchors[0] != null ? 1 : 0; other < rooms.Count - 1; other++) if (other != room) others.Add(other);
+                int Rank(int other)
+                {
+                    var to = roomCenters[other] - door;
+                    int along = to.x * outward.x + to.y * outward.y, far = Mathf.Abs(to.x) + Mathf.Abs(to.y);
+                    return (along > 0 ? 0 : 100000) + far;
+                }
+                others.Sort((x, y) => Rank(x).CompareTo(Rank(y)));
+                foreach (int other in others)
+                    if (Connect(room, other, (growth.loopReach * 2 + 26) * 16, door)) break;
+            }
+        }
+    }
+
     // Cheapest tunnel between two rooms. New cells cost 10 plus noise; running through an
-    // existing corridor costs 5, so passages share tunnels instead of digging twins.
-    bool Connect(int a, int b, int maxCost)
+    // existing corridor costs 5, so passages share tunnels instead of digging twins. only: the one door cell of room a
+    // the tunnel must start at (OpenEveryDoor).
+    bool Connect(int a, int b, int maxCost, Vector2Int? only = null)
     {
         // The entrance with marked doors (the starting room) has one way out: a second passage beside the first would
         // leave an opening its one door doesn't close.
         if ((a == 0 || b == 0) && doorAnchors[0] != null && degree[0] > 0) return false;
         var sources = DoorCells(a, b);
+        if (only.HasValue) sources.RemoveAll(c => c != only.Value);
         var targets = new HashSet<Vector2Int>(DoorCells(b, a));
         // Along the starting room's wall only its own door cells may be dug: any other cell touching it (a door cell of
         // the room at the other end, a step sideways) would be a second opening its one door doesn't close.

@@ -10,6 +10,8 @@ public class DungeonFloorCut : MonoBehaviour
     public Kind kind = Kind.Pit;
     [Tooltip("Cells across (x) and deep (z), centred on this object: an odd count sits on a cell centre, an even one on a cell edge.")]
     public Vector2Int cells = new(2, 2);
+    [Tooltip("Pit: widened along the room's width, on its side away from the room's middle, until the room ends. In a room wider than the one it was made for (an event put into a room already laid out) no strip of floor is left between it and the wall. The bridge rooms' lava.")]
+    public bool toWalls;
     [Min(.2f), Tooltip("Metres below the room's floor.")]
     public float depth = 3.5f;
     [Range(0f, 1f), Tooltip("Pit: share of the player's health a fall takes.")]

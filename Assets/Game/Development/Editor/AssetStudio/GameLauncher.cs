@@ -105,11 +105,13 @@ public static class GameLauncher
                     ProgressionManager.Instance.SetFlag(CampaignManager.DeathsPrefix + parts[1], deaths);
                     if (parts.Length > 3 && parts[3].Length > 0) ProgressionManager.Instance.SetFlag(CampaignManager.OpenedPrefix + parts[3], 0);
                 }
+                DebugDungeonSession.MarkTestStart();
                 TableManager.Instance.Play();
                 break;
             case "place":
                 // place|<id>: at the table, then (click|<id>) that place picked on the map once it is up.
                 if (!TableManager.HasInstance) return;
+                DebugDungeonSession.MarkTestStart();
                 Pend("click|" + parts[1]);
                 TableManager.Instance.Play();
                 break;
@@ -199,6 +201,7 @@ public static class GameLauncher
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();
         DevGive.GoldAtNextRunStart();
+        DebugDungeonSession.MarkTestStart();
         loader.Load(copy, skipReveal: true);
         return $"Loading a run in {template.name} ({level.name}).";
     }
@@ -395,6 +398,7 @@ public static class GameLauncher
         var first = stages.Count > 0 ? stages[0].biome : copy.baseBiome;
         Debug.Log($"[Asset Studio] Testing {(map != null ? map.name + " in " : "")}{level.name}{(first != null ? " from " + first.name : "")}{(boss ? ", boss floor" : "")}{(force.Length > 0 ? ", with " + ForcedName(force) : "")}.");
         DevGive.GoldAtNextRunStart();
+        DebugDungeonSession.MarkTestStart();
         loader.Load(copy, skipReveal: true);
     }
 

@@ -226,7 +226,7 @@ Transform:
   m_GameObject: {fileID: 7063199187428351730}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 1, z: 0, w: -0.00000004371139}
-  m_LocalPosition: {x: 0, y: 0.12, z: 1.45}
+  m_LocalPosition: {x: 0, y: 0.365, z: 1.65}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -293,8 +293,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 1
-  description: A skeleton runs a shell game. Bet gold, find the coin. He cheats once
-    you win twice; call him out with a blow.
+  description: A skeleton runs a shell game. Bet gold, find the coin. He cheats once you win twice; call him out with a blow.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -313,11 +312,13 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -354,8 +355,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: wager
-  summary: A skeleton runs a shell game. Bet gold, find the coin. He cheats once
-    you win twice; call him out with a blow.
+  summary: A skeleton runs a shell game. Bet gold, find the coin. He cheats once you win twice; call him out with a blow.
   entrance: {fileID: 6133076228360418702}
   countsAsEvent: 1
 --- !u!114 &7691718898956248555
@@ -382,6 +382,7 @@ MonoBehaviour:
   betPerFloor: 5
   games: 6
   winsBeforeCheating: 2
+  winsToQuit: 1
   swaps: 6
   swapsPerWin: 2
   swapSeconds: 0.45
@@ -678,7 +679,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1807961671773065681, guid: 0bc141b66be5c714393ebfad0db36e87, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.58
+      value: 1.83
       objectReference: {fileID: 0}
     - target: {fileID: 1807961671773065681, guid: 0bc141b66be5c714393ebfad0db36e87, type: 3}
       propertyPath: m_LocalRotation.w
@@ -862,11 +863,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3987087852334303911, guid: 5bf2041b9cffefd4aa8e57ded49a5734, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.12
+      value: 0.365
       objectReference: {fileID: 0}
     - target: {fileID: 3987087852334303911, guid: 5bf2041b9cffefd4aa8e57ded49a5734, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.45
+      value: 1.65
       objectReference: {fileID: 0}
     - target: {fileID: 3987087852334303911, guid: 5bf2041b9cffefd4aa8e57ded49a5734, type: 3}
       propertyPath: m_LocalRotation.w

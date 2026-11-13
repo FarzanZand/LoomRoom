@@ -389,6 +389,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 3, y: 7}
+  toWalls: 1
   depth: 3.5
   fallDamage: 0.25
   keepPlayerOut: 1
@@ -484,6 +485,7 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 1
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
@@ -645,6 +647,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 3, y: 7}
+  toWalls: 1
   depth: 3.5
   fallDamage: 0.25
   keepPlayerOut: 1

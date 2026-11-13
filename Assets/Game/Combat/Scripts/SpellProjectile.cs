@@ -243,6 +243,7 @@ public class SpellProjectile : MonoBehaviour
                 var aim = col.bounds.center;
                 if (Blocked(centre, aim, target.transform, mask)) continue;
                 target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = aim, Direction = Flat(aim - centre) });
+                if (EventProtection.Held(target)) continue;   // stopped by the Dungeon Master: hurt nothing, no practice
                 struck = true;
                 if (onHit != null && target.IsAlive) onHit(target);
                 continue;

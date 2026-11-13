@@ -6,8 +6,8 @@ using UnityEngine;
 // iron gates slam across the ways out and three waves come, one after another, out of the room's edge, the last with an
 // elite in it (eliteInLastWave); clear them and the gates sink and the chest comes back a tier
 // better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut while a ring's waves are coming
-// (DungeonContainer.HeldShut). Ring again or open the chest: opening it ends the game,
-// and the rope can't be pulled once the last ring is done.
+// (DungeonContainer.HeldShut). It can be rung Max Rings times (once: the user, 2026-11-13, "You can only do the ring bell
+// event once"); the rope can't be pulled after that, nor once the chest is open.
 public class BellEvent : MonoBehaviour, ICoopEventRoom
 {
     [Tooltip("The bell: swung about its local X when it tolls.")] public Transform bell;
@@ -16,6 +16,8 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     [Range(0f, 1f)] public float tollVolume = 1f;
     [Tooltip("Enemies in each of a ring's waves, first ring first; the number of entries is how many times it can be rung.")]
     public int[] waves = { 2, 3, 4, 5 };
+    [Range(1, 4), Tooltip("How many times the bell can be rung (the user, 2026-11-13: once). More brings back ring again for a better chest, up to the entries in Waves.")]
+    public int maxRings = 1;
     [Range(1, 5), Tooltip("Waves a ring brings, each once the last is down.")] public int wavesPerRing = 3;
     [Tooltip("The last wave of every ring brings one elite (a random trait; the user, 2026-11-12), on every floor, the run's first included: ringing is the player's choice.")]
     public bool eliteInLastWave = true;
@@ -51,8 +53,10 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
 
     public int Rings => rings;
     public bool Busy => busy;
-    public bool CanRing => !busy && !cashedOut && rings < waves.Length && chest != null && !chest.IsOpen;
-    public string RopePrompt => cashedOut || chest == null || chest.IsOpen ? "" : rings >= waves.Length ? "" : rings == 0 ? "Ring the bell" : "Ring the bell again";
+    // Rings allowed: Max Rings, never more than Waves lists.
+    int RingLimit => Mathf.Clamp(maxRings, 1, Mathf.Max(1, waves.Length));
+    public bool CanRing => !busy && !cashedOut && rings < RingLimit && chest != null && !chest.IsOpen;
+    public string RopePrompt => cashedOut || chest == null || chest.IsOpen ? "" : rings >= RingLimit ? "" : rings == 0 ? "Ring the bell" : "Ring the bell again";
 
     void Start()
     {
@@ -89,7 +93,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     {
         if (cashedOut) return;
         cashedOut = true;
-        if (rings > 0 && rings < waves.Length) ScriptedEventRoom.Say(cashOutLine);
+        if (rings > 0 && rings < RingLimit) ScriptedEventRoom.Say(cashOutLine);
     }
 
     public void Ring(Character who)
@@ -113,6 +117,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     {
         if (step == 1)
         {
+            busy = true;   // a teammate's ring is on: the rope waits for it here too
             ScriptedEventRoom.Play(toll, bell != null ? bell.position : transform.position, tollVolume * .8f);
             if (bell != null) StartCoroutine(Swing());
             if (value - 1 >= 0 && value - 1 < waveLines.Length) ScriptedEventRoom.Say(waveLines[value - 1]);
@@ -122,7 +127,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
             rings = Mathf.Max(rings, value + 1);
             room.OpenGates();
             Upgrade(value + 1, seed);
-            ScriptedEventRoom.Say(rings >= waves.Length ? doneLine : clearedLine);
+            ScriptedEventRoom.Say(rings >= RingLimit ? doneLine : clearedLine);
             busy = false;
         }
     }
@@ -183,7 +188,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
         int seed = rng.Next();
         Upgrade(ring + 1, seed);
         CoopWorld.EventStep(this, 2, ring, seed);
-        ScriptedEventRoom.Say(rings >= waves.Length ? doneLine : clearedLine);
+        ScriptedEventRoom.Say(rings >= RingLimit ? doneLine : clearedLine);
         busy = false;
     }
 

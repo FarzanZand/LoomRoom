@@ -475,14 +475,14 @@ public partial class DungeonGenerator : MonoBehaviour
             float height = HeightAt(x,z);
             var pos = Cell(new Vector2Int(x,z));
             ArchitectureBox("Flagstone", pos - Vector3.up*.12f, new Vector3(size,.24f,size), FloorMaterial(room, x, z), geometry);
-            // A taller neighbor's upper wall occupies a strip inside this cell. End the
-            // ceiling just inside that wall's back. Ending exactly on the back face
-            // makes the ceiling's vertical edge coplanar with the upper masonry.
+            // A taller neighbor's upper wall occupies a strip inside this cell. The ceiling ends exactly on that wall's back
+            // (its end face and the wall's back are back to back): reaching 2 cm into the wall, the two undersides lay in one
+            // plane along the wall and flickered (the user, 2026-11-13).
             float CeilingInset(Vector2Int direction)
             {
                 var neighborCell = new Vector2Int(x, z) + direction;
                 return Open(neighborCell) && HeightAt(neighborCell.x, neighborCell.y) > height
-                    ? WallThickness - CeilingWallOverlap : 0;
+                    ? WallThickness : 0;
             }
             float left = CeilingInset(Vector2Int.left), right = CeilingInset(Vector2Int.right);
             float back = CeilingInset(Vector2Int.down), front = CeilingInset(Vector2Int.up);
@@ -533,6 +533,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     var (wallCenter, wallScale) = WallPiece(cell, dir, y, 0, tile, y+tile*.5f);
                     var wall = ArchitectureBox("Crypt masonry", wallCenter, wallScale, WallSurface(room,y,x,z,dir), geometry);
                     MiterDiagonalEnds(wall, cell, dir, y, 0, true);
+                    if (y > .01f) UpperWallCorner(cell, dir, y, y + tile, WallSurface(room,y,x,z,dir));
                     wall.GetComponent<Renderer>().enabled = visible;
                 }
                 if (style == null || !style.hideTrims)
@@ -868,8 +869,13 @@ public partial class DungeonGenerator : MonoBehaviour
                     // On a board the lintel is the arch's beam: across both posts, and part of the door (none between post props).
                     bool arch = Board && !tavernDoor;
                     if (arch && BoardPostProps) continue;
-                    float spanWidth = arch ? data.cellSize + .68f : data.cellSize;
-                    if (arch) depth = WallThickness + .06f;
+                    // Across both posts, its ends 1 cm inside their outer faces (level with them, the faces flickered).
+                    float spanWidth = arch ? data.cellSize + .68f - .02f : data.cellSize;
+                    // 1 cm proud of the posts' faces each side: as deep as the posts, the beam's faces lay in theirs (flicker).
+                    if (arch) depth = WallThickness + .06f + .02f;
+                    // The cap above the lower ceiling lies inside its slab: 1 cm short at each end, so its end faces stay inside
+                    // the slab and never in the plane of the slab's own end (they flickered there).
+                    if (!arch && y >= top - CeilingWallOverlap - .001f) spanWidth -= .02f;
                     var span = dir.x != 0 ? new Vector3(depth,end-y,spanWidth) : new Vector3(spanWidth,end-y,depth);
                     // In line with the room walls either side, which sit behind the edge on the corridor side.
                     var lintel = ArchitectureBox("Styled door lintel", pos+new Vector3(dir.x,0,dir.y)*(arch ? 0 : WallThickness*.5f)+Vector3.up*((y+end)*.5f), span,

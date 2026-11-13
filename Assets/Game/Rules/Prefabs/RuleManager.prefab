@@ -48,5 +48,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 614a8b8107d3a33428d605ef0ee9c5f2, type: 2}
   - {fileID: 11400000, guid: 17805c2602883cb4891bc04d4f88ffe9, type: 2}
   - {fileID: 11400000, guid: 6c4a8fd58be8b2949a19997cc278363a, type: 2}
+  - {fileID: 11400000, guid: 7d8e6a76d5aae434ab33e519599913ee, type: 2}
+  - {fileID: 11400000, guid: f565f257f5f643c46a7c7bd08541ccd3, type: 2}
   quoteGap: 45
   readScreen: {fileID: 0}

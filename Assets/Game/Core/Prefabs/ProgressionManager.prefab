@@ -408,7 +408,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can dash now. {sprint} and a direction, sideways or back.
+    text: You can evade now. {sprint} and a direction, sideways or back.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -419,7 +419,7 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
-    text: 'Dash: press {sprint}, holding left, right or back.'
+    text: 'Evade: press {sprint}, holding left, right or back.'
   startingPlayer: 1
   skipWakeUp: 1
   startAt: 0

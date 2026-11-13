@@ -202,9 +202,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 1, y: 1}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &4082502307346454430
 GameObject:
   m_ObjectHideFlags: 0
@@ -303,9 +311,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 1, y: 1}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &5250045113979731483
 GameObject:
   m_ObjectHideFlags: 0
@@ -419,8 +435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: A fight on walkways between holes in the floor. Enemies knocked over
-    an edge fall and die.
+  description: A fight on walkways between holes in the floor. Enemies knocked over an edge fall and die.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -443,11 +458,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -554,9 +571,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 1, y: 1}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &7182921821043633722
 GameObject:
   m_ObjectHideFlags: 0
@@ -655,9 +680,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 2, y: 2}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &7639379004698119163
 GameObject:
   m_ObjectHideFlags: 0
@@ -756,9 +789,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 2, y: 1}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1001 &3083738842828875743
 PrefabInstance:
   m_ObjectHideFlags: 0

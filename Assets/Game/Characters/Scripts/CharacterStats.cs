@@ -320,6 +320,10 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        // An event's fighter waiting for the player to walk up and talk takes nothing (EventProtection): no health,
+        // knockback, flinch or blood; a puff where it landed and the Dungeon Master's word instead.
+        // Co-op: before a guest's blow goes to the host, so it is stopped here as for the host's own.
+        if (EventProtection.Stops(Character, info.Source, info.HitPoint)) return;
         if (NetworkIntercept != null && NetworkIntercept(this, info)) return;
         bool spared = Invulnerable != null && Invulnerable(this) || Time.time < SparedUntil;
         info.Target = Character;

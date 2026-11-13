@@ -111,8 +111,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'Intro lesson in sneaking: a lone Crypt Soldier stands facing the
-    wall, his back to the way in, so the player creeps up for a backstab. Green-lit.'
+  description: 'Intro lesson in sneaking: a lone Crypt Soldier stands facing the wall, his back to the way in, so the player creeps up for a backstab. Green-lit.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 0
@@ -133,11 +132,13 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

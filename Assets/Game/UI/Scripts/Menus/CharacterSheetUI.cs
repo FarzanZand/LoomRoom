@@ -62,7 +62,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     RectTransform veilAbove, veilBelow, veilSide;
     [SerializeField, Tooltip("The window's title. {skill} is the lesson skill's name, {price} its next price.")] string lessonTitleText = "Train {skill} first";
     [SerializeField, TextArea, Tooltip("The window's text. {skill} is the lesson skill's name, {price} its next price.")]
-    string lessonBodyText = "It costs {price} spoils and teaches the dash.\nThe rest of the sheet opens after.";
+    string lessonBodyText = "It costs {price} spoils and teaches Evade.\nThe rest of the sheet opens after.";
     [SerializeField, Min(0), Tooltip("Half the height of a skill row (the washes stop this far above and below the lesson's row).")] float lessonRowHalfHeight = 43f;
     [SerializeField, Tooltip("The lowest and highest the washes over the skill rows reach, in the paper's own units.")] Vector2 veilSpan = new(-365, 335);
     [SerializeField, Min(0), Tooltip("How far the window bobs toward the button and back.")] float lessonBob = 4f;

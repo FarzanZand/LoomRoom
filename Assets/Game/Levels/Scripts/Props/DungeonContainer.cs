@@ -34,8 +34,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     [Tooltip("A short sting over the creak as it opens (wood, iron and gold chests each have their own).")]
     public AudioClip stingAudio;
     [Range(0,1)] public float stingVolume = .7f;
-    [Min(0), Tooltip("Extra item rolls (an iron chest: 1).")]
+    [Min(0), Tooltip("Extra item rolls (an iron chest: 1). A chest gives one piece of gear at most: the best of what its rolls bring. Potions and food from every roll come out.")]
     public int extraRolls;
+    [Tooltip("Keeps every piece of gear its loot rolls (a boss's chest). Every other chest gives at most one piece of gear or one spell tome (the user, 2026-11-13).")]
+    public bool keepsAllGear;
     [Tooltip("The starting room's chest: exactly one piece of gear rolled from its loot plus its guaranteed items (a potion), no spoils (set by the generator).")]
     public bool startingKit;
     [Min(0), Tooltip("Floors deeper a bonus roll comes from (a gold chest: one item as if from 3 floors down). 0 = none.")]
@@ -51,6 +53,26 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     // The table player only: the room player's reach (room-sized) covers the whole table, so a watcher in the room
     // would otherwise open chests down there.
     public bool CanInteract(Character who) => !opened && DungeonFeatureUtility.TablePlayer(who) != null;
+
+    // What counts toward a chest's one piece: weapons, shields, armour, trinkets and spell tomes.
+    public static bool CountsAsGear(ItemData item) => item!=null && (item.IsGear || item.spell!=null);
+    // Rarities from least to most (the enum's numbers are not in order).
+    static int RarityRank(ItemRarity r) => r switch { ItemRarity.Uncommon => 1, ItemRarity.Rare => 2, ItemRarity.Unique => 3, ItemRarity.Legendary => 4, ItemRarity.Relic => 5, _ => 0 };
+    static bool Better(ItemData a, ItemData b)
+    {
+        int ra=RarityRank(a.rarity), rb=RarityRank(b.rarity);
+        if(ra!=rb) return ra>rb;
+        if(a.tier!=b.tier) return a.tier>b.tier;
+        return a.value>b.value;
+    }
+    // Leaves the best counted piece among the drops (none when the chest has gear of its own), everything else as it is.
+    public static void OnePiece(System.Collections.Generic.List<LootSource.Drop> drops, bool hasOwn)
+    {
+        int best=-1;
+        for(int i=0;i<drops.Count;i++) if(CountsAsGear(drops[i].item) && (best<0 || Better(drops[i].item,drops[best].item))) best=i;
+        if(best<0) return;
+        for(int i=drops.Count-1;i>=0;i--) if(CountsAsGear(drops[i].item) && (hasOwn || i!=best)) drops.RemoveAt(i);
+    }
     public void Interact(Character who)
     {
         if (!chest || !CanInteract(who)) return;
@@ -124,6 +146,13 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
                 if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
             }
         }
+        // At most one piece of gear a chest (the user, 2026-11-13: "Maximum one gear item per chest, they give too much now"):
+        // of the gear and spell tomes it rolled the best stays (OnePiece), so an iron or gold chest's extra rolls make its
+        // one piece better, not more; a chest with gear of its own (a prize put in it) gives that in place of a rolled
+        // piece. Potions, food, scrolls, gold, spoils and keys are not counted. Not the starting chest (its kit is one
+        // piece of gear and a tome) nor a boss's chest (Keeps All Gear).
+        if(chest && !startingKit && !keepsAllGear)
+            OnePiece(drops, CountsAsGear(guaranteedItem) || (guaranteedItems!=null && guaranteedItems.Exists(CountsAsGear)));
         // A chest's own items (the starting chest's, a boss's) leave out a spell the table player already has: the starting
         // chest's Fireball tome came on top of the Wizard's own (the user, 2026-11-11). Shops and altars already skip them.
         if(guaranteedItems!=null)foreach(var item in guaranteedItems)if(item!=null && (item.spell==null || !InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(item)))drops.Add(new LootSource.Drop(item,1));

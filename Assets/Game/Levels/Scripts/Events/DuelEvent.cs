@@ -74,6 +74,16 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         if (phase != Phase.Waiting || !duellist.IsAlive) return;
         // Co-op: the host's duellist decides, for whichever player walks up first; the guests' copies follow (Step).
         if (Coop.IsGuest) return;
+        // He turns to the end the nearest player in the room came in at (co-op: the host's duellist, any player; the
+        // guests' copy follows its turn).
+        Character near = null; float nearest = float.MaxValue;
+        foreach (var c in Coop.Running ? CoopWorld.Party() : new Character[] { ScriptedEventRoom.TablePlayer })
+        {
+            if (c == null || !c.IsAlive || !room.Inside(c.transform.position)) continue;
+            float d2 = (c.transform.position - duellist.transform.position).sqrMagnitude;
+            if (d2 < nearest) { nearest = d2; near = c; }
+        }
+        if (near != null) { var to = near.transform.position - duellist.transform.position; to.y = 0f; FaceEnd(duellist.transform, to); }
         if (Coop.Running) { foreach (var c in CoopWorld.Party()) if (Challenges(c)) { StartCoroutine(Salute(c)); return; } return; }
         var player = ScriptedEventRoom.TablePlayer;
         if (player != null && player.IsAlive && Challenges(player)) StartCoroutine(Salute(player));
@@ -101,6 +111,16 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     bool talkDone, saluteGo;
     bool HasTalk => talk != null && talk.introLines != null && talk.introLines.Count > 0 && PortraitDialogueUI.Current != null;
 
+    // Both ends of the bridge have a door (the user, 2026-11-13): while he waits he turns, at a walk's pace, to the end
+    // the player came in at (his post's facing or its reverse; `to` is from him to the player).
+    void FaceEnd(Transform who, Vector3 to)
+    {
+        var along = post != null ? post.forward : who.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return;
+        if (Vector3.Dot(to, along) < 0f) along = -along;
+        who.rotation = Quaternion.RotateTowards(who.rotation, Quaternion.LookRotation(along), 160f * Time.deltaTime);
+    }
+
     // The enemy standing nearest his post in the room. He waits there, facing the way the post faces.
     void FindDuellist()
     {
@@ -119,6 +139,9 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) duellist.transform.rotation = Quaternion.LookRotation(f); }
         duellist.Damaged += OnHit;
         duellist.Died += OnDied;
+        // Out of reach until the player walks up and the talk starts (the user, 2026-11-13: he was killed with spells
+        // from the bridge's far end); the duel's own rules apply from then on.
+        EventProtection.Hold(duellist, this);
     }
 
     // Damage Multiplier on his damage and Health Multiplier on his health (full), once, once his stats are set up
@@ -145,6 +168,7 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     void OnDestroy()
     {
         EndTalk();
+        EventProtection.Release(duellist);
         if (duellist != null) { duellist.Damaged -= OnHit; duellist.Died -= OnDied; }
         StopSalute();
     }
@@ -152,6 +176,7 @@ public class DuelEvent : MonoBehaviour, ICoopEventRoom
     IEnumerator Salute(Character player)
     {
         phase = Phase.Saluting;
+        EventProtection.Release(duellist);
         CoopWorld.EventStep(this, 1, CoopWorld.SlotOf(player));
         // He turns to face the player, then has his say in the box, then the Dungeon Master calls the duel and he
         // raises his blade.

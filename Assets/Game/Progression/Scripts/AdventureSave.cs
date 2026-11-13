@@ -54,6 +54,11 @@ public class AdventureSave : MonoBehaviour
     bool UsesFile => !(Application.isEditor && freshStartInEditor && !CustomFolder) && !fileLocked;
     bool fileLocked;
     public bool HasCheckpoint => Saved.checkpoint != null;
+    // Whether a run left mid-way (Leave level, quitting) can be continued later (the user, 2026-11-13: no; every run starts
+    // fresh on floor 1). Off: no run checkpoint is ever written, one in an older save is dropped as it is read, and every
+    // way to continue (the map's flag, E at the table, the table menu, the main menu's "in a run") goes with it, since
+    // they all ask CanRestore. Leaving a run then costs the spoils carried and counts as no death. True brings it all back.
+    public static bool ResumesRuns => false;
     public event Action Changed;
     Player player; AdventurerProgress progress;
     const string AdventureFile = "loomroom-adventure.json", DebugFile = "loomroom-debug.json";
@@ -211,7 +216,7 @@ public class AdventureSave : MonoBehaviour
                         if (flag.key == ProgressionManager.SpoilsFlag) summary.spoils = flag.value;
                         else if (flag.key.StartsWith(ProgressionManager.TrophyPrefix) && flag.value == (int)ProgressionManager.TrophyState.Mounted) summary.trophies++;
                     }
-                summary.runFloor = data.version == Data.Current && data.checkpoint != null ? data.checkpoint.floor : 0;
+                summary.runFloor = ResumesRuns && data.version == Data.Current && data.checkpoint != null ? data.checkpoint.floor : 0;
                 if (data.savedAt > 0) summary.lastPlayed = new DateTime(data.savedAt, DateTimeKind.Utc).ToLocalTime();
                 return summary;
             }
@@ -309,6 +314,7 @@ public class AdventureSave : MonoBehaviour
             try { var data = JsonUtility.FromJson<Data>(File.ReadAllText(path)); if (data == null) { unreadable = true; continue; }
                 // Older saves keep their memorials and unlocks; a run checkpoint from another format is dropped.
                 if (data.version != Data.Current) { data.checkpoint = null; data.version = Data.Current; }
+                if (!ResumesRuns) data.checkpoint = null;   // runs are never continued: a run left before this is gone
                 // Read from the backup: set the broken save aside, or the next write would move it over the good backup.
                 if (unreadable) KeepCorrupt(FilePath);
                 Saved = data; return true; }
@@ -368,6 +374,7 @@ public class AdventureSave : MonoBehaviour
     }
     public void CaptureFloor()
     {
+        if (!ResumesRuns) { if (Saved.checkpoint != null) { Saved.checkpoint = null; Write(); } return; }
         if (!progress.InRun || IntroController.PracticeRunning) return;
         if (MultiplayerManager.HasInstance && MultiplayerManager.Instance.HoldsSave) return;
         var snapshot = Snapshot();
@@ -390,7 +397,7 @@ public class AdventureSave : MonoBehaviour
     }
     public bool CanRestore(Checkpoint checkpoint)
     {
-        if (checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
+        if (!ResumesRuns || checkpoint == null || checkpoint.bag == null || checkpoint.hotbar == null || checkpoint.equipped == null || checkpoint.ranks?.Length != AdventureSkills.Count || checkpoint.floor < 1 || progress.rules == null || !progress.rules.classes.Any(x => x != null && x.id == checkpoint.classId)) return false;
         // Items that no longer exist (retired to _Archive, dropped from the catalog) don't block the run: Restore leaves them out.
         return true;
     }
