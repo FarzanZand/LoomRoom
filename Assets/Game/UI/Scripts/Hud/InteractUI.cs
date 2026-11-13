@@ -17,6 +17,7 @@ public class InteractUI : MonoBehaviour
     string shownKey, shownMessage;
     float nextPromptCheck;
     const float PromptCheckSeconds = .2f;
+    readonly System.Collections.Generic.List<Vector3> frameCorners = new();
 
     void LateUpdate()
     {
@@ -31,16 +32,14 @@ public class InteractUI : MonoBehaviour
         if (targetMarker == null) return;
         if (targetMarker.gameObject.activeSelf != show) targetMarker.gameObject.SetActive(show);
         if (!show) return;
-        var bounds = target.TargetBounds;
+        target.FrameCorners(frameCorners);
         Vector2 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
         if (canvas == null) canvas = targetMarker.GetComponentInParent<Canvas>();
         if (canvas == null) return;
         var uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
         var parent = (RectTransform)targetMarker.parent;
-        for (int i = 0; i < 8; i++)
+        foreach (var corner in frameCorners)
         {
-            Vector3 corner = bounds.center + Vector3.Scale(bounds.extents,
-                new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
             Vector3 screen = bound.ViewCamera.WorldToScreenPoint(corner);
             if (screen.z <= 0) { targetMarker.gameObject.SetActive(false); return; }
             RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screen, uiCamera, out var local);

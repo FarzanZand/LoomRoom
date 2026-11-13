@@ -67,6 +67,75 @@ public class InteractableTrigger : MonoBehaviour
             return found ? result : targetCollider != null ? targetCollider.bounds : result;
         }
     }
+    // The corners the HUD's target frame is fitted round: the item's own model only, each mesh's box turned with it
+    // (a sword lying across the view is framed along its blade, not by a world-aligned box round it). The loot beam
+    // (1.5 m of line), the pickup sparkle and any other effect are left out: with them the frame was a tall box
+    // standing over the item (the user, 2026-11-13). Falls back to TargetBounds when the item has no model.
+    public void FrameCorners(List<Vector3> into)
+    {
+        into.Clear();
+        _ = TargetBounds;   // looks the renderers up again while there are none yet
+        if (itemRenderers != null)
+            foreach (var renderer in itemRenderers)
+            {
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    renderer is LineRenderer || renderer is TrailRenderer || renderer is ParticleSystemRenderer) continue;
+                var filter = renderer is MeshRenderer ? renderer.GetComponent<MeshFilter>() : null;
+                var mesh = filter != null ? filter.sharedMesh : null;
+                var hull = mesh != null ? Hull(mesh) : null;
+                if (hull != null)
+                {
+                    var toWorld = renderer.transform.localToWorldMatrix;
+                    foreach (var p in hull) into.Add(toWorld.MultiplyPoint3x4(p));
+                }
+                else if (mesh != null)
+                    AddCorners(into, mesh.bounds, renderer.transform.localToWorldMatrix);
+                else
+                    AddCorners(into, renderer.bounds, Matrix4x4.identity);
+            }
+        if (into.Count == 0) AddCorners(into, TargetBounds, Matrix4x4.identity);
+    }
+    // A mesh's outermost vertices along 64 directions spread over the sphere, worked out once per mesh: the frame
+    // fitted round them hugs the model from any side (its bounding box stood well clear of body armour lying on
+    // its back). Null for a mesh whose vertices can't be read; the box is used then.
+    static readonly Dictionary<Mesh, Vector3[]> hulls = new();
+    static Vector3[] directions;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => hulls.Clear();
+    static Vector3[] Hull(Mesh mesh)
+    {
+        if (hulls.TryGetValue(mesh, out var hull)) return hull;
+        if (mesh.isReadable && mesh.vertexCount > 0)
+        {
+            if (directions == null)
+            {
+                directions = new Vector3[64];
+                for (int i = 0; i < directions.Length; i++)   // a Fibonacci sphere: even spacing, no pole crowding
+                {
+                    float y = 1f - (i + .5f) * 2f / directions.Length, r = Mathf.Sqrt(1f - y * y), a = i * 2.39996323f;
+                    directions[i] = new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r);
+                }
+            }
+            var vertices = mesh.vertices;
+            var extreme = new HashSet<int>();
+            foreach (var d in directions)
+            {
+                int best = 0; float most = float.MinValue;
+                for (int v = 0; v < vertices.Length; v++) { float s = Vector3.Dot(vertices[v], d); if (s > most) { most = s; best = v; } }
+                extreme.Add(best);
+            }
+            hull = new Vector3[extreme.Count];
+            int n = 0; foreach (int v in extreme) hull[n++] = vertices[v];
+        }
+        hulls[mesh] = hull;
+        return hull;
+    }
+    static void AddCorners(List<Vector3> into, Bounds box, Matrix4x4 toWorld)
+    {
+        for (int i = 0; i < 8; i++)
+            into.Add(toWorld.MultiplyPoint3x4(box.center + Vector3.Scale(box.extents,
+                new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1))));
+    }
     // Cheap reach test before the full scoring: the trigger collider (which encloses the item) within distance
     // of point. True when there is no enabled collider to measure.
     public bool RoughlyWithin(Vector3 point, float distance) =>
