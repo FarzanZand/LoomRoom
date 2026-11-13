@@ -36,13 +36,20 @@ public static class CoopMessages
         return writer;
     }
 
+    // A reliable message too long for one packet goes as the fragmented kind: unsplit, the transport refuses anything
+    // past about 1,280 bytes (a played save's flags sent to a guest as it joins were 1,785 and never arrived).
+    const int OnePacket = 1100;
+    static NetworkDelivery Fit(in FastBufferWriter writer, NetworkDelivery delivery) =>
+        writer.Length > OnePacket && (delivery == NetworkDelivery.Reliable || delivery == NetworkDelivery.ReliableSequenced)
+            ? NetworkDelivery.ReliableFragmentedSequenced : delivery;
+
     // To the host (or straight to the handler on the host).
     public static void ToHost<T>(string name, T value, NetworkDelivery delivery = NetworkDelivery.ReliableSequenced) where T : INetworkSerializable
     {
         if (Net == null || !Net.IsListening) return;
         if (Net.IsServer) { Local(name, value); return; }
         using var writer = Write(value);
-        Net.CustomMessagingManager.SendNamedMessage(name, NetworkManager.ServerClientId, writer, delivery);
+        Net.CustomMessagingManager.SendNamedMessage(name, NetworkManager.ServerClientId, writer, Fit(writer, delivery));
     }
 
     // Host only: to every guest but one (the one it came from).
@@ -53,7 +60,7 @@ public static class CoopMessages
         foreach (var client in Net.ConnectedClientsIds)
         {
             if (client == NetworkManager.ServerClientId || client == except) continue;
-            Net.CustomMessagingManager.SendNamedMessage(name, client, writer, delivery);
+            Net.CustomMessagingManager.SendNamedMessage(name, client, writer, Fit(writer, delivery));
         }
     }
 
@@ -67,7 +74,7 @@ public static class CoopMessages
         foreach (var p in MultiplayerManager.Instance.Players)
         {
             if (p == null || p.IsOwner || !p.Current.inRun || notLoading && p.Current.loading) continue;
-            Net.CustomMessagingManager.SendNamedMessage(name, p.OwnerClientId, writer, delivery);
+            Net.CustomMessagingManager.SendNamedMessage(name, p.OwnerClientId, writer, Fit(writer, delivery));
         }
     }
 
@@ -77,7 +84,7 @@ public static class CoopMessages
         if (Net == null || !Net.IsServer) return;
         if (client == NetworkManager.ServerClientId) { Local(name, value); return; }
         using var writer = Write(value);
-        Net.CustomMessagingManager.SendNamedMessage(name, client, writer, delivery);
+        Net.CustomMessagingManager.SendNamedMessage(name, client, writer, Fit(writer, delivery));
     }
 
     static void Local<T>(string name, T value) where T : INetworkSerializable
