@@ -524,13 +524,14 @@ public static class EventRoomsSetup
             var table = Put(root, $"{Shared}/Tavern/Table.prefab", new Vector3(0f, 0f, .6f));
             var tb = table != null ? Bounds(table) : new Bounds(new Vector3(0, .8f, .6f), new Vector3(1.6f, 1.6f, 1f));
             float top = tb.max.y;
-            // He is small (a skeleton at .83) on a full-size chair: he sits on its seat (its top is at .58 m; at seat
-            // height .365 the lowest of him is 9 mm over it), his back 4 cm clear of the backrest, his lower legs hanging in
-            // front of the seat, and the chair stands far enough from the table that his knees and hands stay clear of its
-            // edge (measured on his sitting pose, which holds through the shuffle; the user, 2026-11-13: at .12 he sat
-            // 24 cm deep in the chair).
-            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(0f, 0f, 1.83f), 180f);
-            var seat = Marker(root, "Dealer seat", new Vector3(0f, .365f, 1.65f), 180f);
+            // He is small (a skeleton at .83), so his chair is a short one (the user, 2026-11-13: "Make chair shorter"): the
+            // tavern chair with its legs sunk 24.5 cm into the floor, its seat's top at .335 m. He sits at his old height
+            // (.12), the lowest of him 9 mm over the seat, his back 4 cm clear of the backrest, and the chair stands far
+            // enough from the table that his knees and hands stay clear of its edge (measured on his sitting pose, edge by
+            // edge against the chair's and the table's own triangles; the pose holds through the shuffle). On the full-size
+            // chair at .12 he sat 24 cm deep in the seat; raised to .365 his feet hung 38 cm off the floor.
+            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(0f, -.245f, 1.83f), 180f);
+            var seat = Marker(root, "Dealer seat", new Vector3(0f, .12f, 1.65f), 180f);
             Put(root, sharp, seat.localPosition, 180f);
             var bet = Marker(root, "Bet", new Vector3(0f, 0f, .6f)).gameObject;
             Interactable(bet, new Vector3(0f, top * .5f, 0f), new Vector3(tb.size.x, top, tb.size.z));
