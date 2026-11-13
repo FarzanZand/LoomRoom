@@ -81,6 +81,7 @@ public class EnemyBrain : MonoBehaviour
         Asleep = true;
         Motor.Stop();
         SetSleepAnimation(true);
+        SleepZs.Over(this);   // Z's over its head until it wakes
     }
 
     // Up and fighting: it stands still for riseSeconds (getting up), then hunts whoever woke it.

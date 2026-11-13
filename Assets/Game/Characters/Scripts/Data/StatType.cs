@@ -25,7 +25,7 @@ public enum StatType
     CriticalChance = 20,     // added to CombatManager.critChance
     BackstabDamage = 21,     // backstabs deal (1 + this) times more
     LightRadius = 22,        // metres added to the light radius on dark floors
-    SpellDamage = 24,        // spells hit and heal (1 + this) times harder
+    SpellDamage = 24,        // added to a spell's other bonuses (skill, Intelligence): AdventurerProgress.SpellPower
     KillHeal = 25,           // health back on every kill
     GoldFind = 26,           // gold picked up is (1 + this) times more
     ShieldBashDamage = 27,   // added to the shield bash's damage

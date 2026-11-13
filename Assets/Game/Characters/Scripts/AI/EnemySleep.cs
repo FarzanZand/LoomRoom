@@ -12,6 +12,10 @@ public class EnemySleep : MonoBehaviour
     public float hearing = .5f;
     [Tooltip("Seconds it takes to get up once woken.")]
     public float riseSeconds = 1.1f;
+    [Tooltip("Any noise made within this many metres of it wakes it, and none from further off (0: it hears at Hearing's share of a sound's reach). The sleeping giant's is its melee range.")]
+    public float wakeReach;
+    [Tooltip("While the table player is crouched no noise wakes it at all, only a blow (the sleeping giant).")]
+    public bool deafToCrouched;
     [Tooltip("Seconds between packmates waking, one after another.")]
     public Vector2 packDelay = new(.25f, .9f);
 
@@ -58,7 +62,14 @@ public class EnemySleep : MonoBehaviour
     {
         if (!brain.Asleep) return;
         if (source != null && source == brain.Character) return;
+        if (deafToCrouched)
+        {
+            var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
+            if (player != null && player.Motor != null && player.Motor.IsCrouching) return;
+        }
         float reach = radius * hearing;
+        // With a wake reach any noise at all made that close wakes it, and none from further off.
+        if (wakeReach > 0f) reach = radius > 0f ? wakeReach : 0f;
         if ((position - transform.position).sqrMagnitude <= reach * reach) WakeNow();
     }
 

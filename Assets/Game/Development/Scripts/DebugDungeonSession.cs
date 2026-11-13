@@ -18,6 +18,8 @@ public class DebugDungeonSession : MonoBehaviour
     // Arena: the authored test arena with the settings' enemies. Dungeon: the level picked in the toolbar's dropdown (SelectedDungeon), generated as in a real run.
     public static bool Active { get; private set; }
     public const string StudioEnemyKey = "LoomRoom.Studio.ArenaEnemy";
+    // Asset Studio's Try it on a class page: the class the arena is played as (read once, then forgotten).
+    public const string StudioClassKey = "LoomRoom.Studio.ArenaClass";
 #if UNITY_EDITOR
     static GameObject studioEnemy;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ForgetStudioEnemy() => studioEnemy = null;
@@ -65,6 +67,12 @@ public class DebugDungeonSession : MonoBehaviour
         if (level == null) { Debug.LogError("Add the levels the Dungeon button should play to WorldManager's Debug Dungeons."); yield break; }
         var player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         if (settings != null && settings.startingClass != null) player.GetComponent<AdventurerProgress>().selectedClass = settings.startingClass;
+#if UNITY_EDITOR
+        string studioClass = UnityEditor.SessionState.GetString(StudioClassKey, "");
+        UnityEditor.SessionState.EraseString(StudioClassKey);
+        var picked = studioClass.Length > 0 ? UnityEditor.AssetDatabase.LoadAssetAtPath<AdventurerClass>(UnityEditor.AssetDatabase.GUIDToAssetPath(studioClass)) : null;
+        if (picked != null) player.GetComponent<AdventurerProgress>().selectedClass = picked;
+#endif
 #if UNITY_EDITOR || DEBUG
         DevGive.GoldAtNextRunStart();
 #endif

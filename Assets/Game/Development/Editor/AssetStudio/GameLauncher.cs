@@ -149,6 +149,16 @@ public static class GameLauncher
         return $"Starting the Debug arena with {enemy.name}.";
     }
 
+    // The Debug arena played as this class (its kit, spells and pools). The pick is only set when the arena really starts.
+    public static string PlayAsClass(AdventurerClass adventurerClass)
+    {
+        if (adventurerClass == null) return "No class.";
+        if (!RoomOpen()) return NoRoom;
+        SessionState.SetString(DebugDungeonSession.StudioClassKey, AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(adventurerClass)));
+        if (!DebugDungeonToolbar.StartDebug()) { SessionState.EraseString(DebugDungeonSession.StudioClassKey); return Busy; }
+        return $"Starting the Debug arena as the {adventurerClass.displayName}.";
+    }
+
     // A scripted event (the dev console's event command): a run starting at the way into its room, from the Debug arena
     // unless the table player is already playing. face: the dice room's die lands on it (1-6; 0 the floor's roll).
     // "cheats": a run where the Dungeon Master meddles at the first chance.

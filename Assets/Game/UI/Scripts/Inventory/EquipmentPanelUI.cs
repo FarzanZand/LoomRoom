@@ -148,9 +148,6 @@ public class EquipmentPanelUI : MonoBehaviour
         return body.Length>0;
     }
 
-    // Spell damage from Intelligence alone, as a share of a spell's own (AdventurerProgress.SpellPower's part of it).
-    static string SpellPercent(int pointsAbove,float perPoint)=>$"{(1f+Mathf.Max(0,pointsAbove)*perPoint)*100f:0}%";
-
     // The player's real number behind a stat an attribute raises, with `add` more of the stat: what the game uses
     // (CombatManager, Hitbox, ShieldBash, ItemEffectProcessor), written as the panel writes it.
     string Total(StatType stat,float add)

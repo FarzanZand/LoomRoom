@@ -32,7 +32,10 @@ public static class EventRoomsSetup
         log = new System.Text.StringBuilder();
         Folder(RoomDir); Folder(PropDir); Folder(EnemyDir);
         var duellist = Load<GameObject>(DuellistPath);
+        // Its body is the Dungeon Realms demon in colour B without wings (Tools/giant_body.eval.cs): run that again after
+        // an overwrite build, which makes the giant from the Crypt Warden.
         var giant = Enemy("Sleeping giant", "Crypt/Crypt Warden", 1.7f, (StatType.MaxHealth, 130f), (StatType.AttackDamage, 18f), (StatType.Armor, 12f), (StatType.MoveSpeed, .85f), (StatType.AttackSpeed, .8f));
+        Unarmed(giant);
         var sharp = Enemy("Card sharp", "Crypt/Crypt Soldier", -1f, (StatType.MaxHealth, 30f), (StatType.AttackDamage, 8f));
         var die = Die();
         var bell = Bell();
@@ -97,6 +100,18 @@ public static class EventRoomsSetup
         PrefabUtility.UnloadPrefabContents(root);
         log.Append($"enemy {name}; ");
         return AssetDatabase.LoadAssetAtPath<GameObject>(path);
+    }
+
+    // No weapon in its hand (the user, 2026-11-13: the demon body held the giant's and the troll's weapon oddly; they fight
+    // bare-handed for now). Its weapon stays set on the loadout, only switched off.
+    static void Unarmed(GameObject prefab)
+    {
+        if (prefab == null) return;
+        string path = AssetDatabase.GetAssetPath(prefab);
+        var root = PrefabUtility.LoadPrefabContents(path);
+        var loadout = root.GetComponent<EnemyWeaponLoadout>();
+        if (loadout != null && loadout.hasWeapon) { loadout.hasWeapon = false; PrefabUtility.SaveAsPrefabAsset(root, path); }
+        PrefabUtility.UnloadPrefabContents(root);
     }
 
     // ── Prop stand-ins ───────────────────────────────────────────────
@@ -352,6 +367,7 @@ public static class EventRoomsSetup
         var d = duellist != null ? duellist.GetComponent<Character>().data : null;
         float Of(StatType t, float fallback) { if (d == null) return fallback; int i = d.stats.FindIndex(x => x.stat == t); return i >= 0 ? d.stats[i].baseValue : fallback; }
         var troll = Enemy("Bridge Troll", "Realms/Pit Demon", -1f, (StatType.MaxHealth, Of(StatType.MaxHealth, 60f)), (StatType.AttackDamage, Of(StatType.AttackDamage, 12f)), (StatType.Armor, Of(StatType.Armor, 6f)));
+        Unarmed(troll);
         var talk = Load<BossDialogueData>(TrollTalkPath);
         var room = Room("Troll bridge", "troll",
             "The Bridge Troll stands on a bridge over lava. Pay his toll of 30 gold to pass, or fight him.",
@@ -527,7 +543,7 @@ public static class EventRoomsSetup
 
     // The giant: a 9 x 9 hall two tiles high, dim, the giant asleep in the middle of its hoard, a gold chest at its back.
     static GameObject Giant(GameObject giant) => Room("Giant's hoard", "giant",
-        "A giant sleeps on its hoard. Crouch and take what you can; a walking step close by wakes it.",
+        "A giant sleeps on its hoard. Each piece of its gear taken stirs it: the first is safe, then the Dungeon Master rolls for it, then it wakes. Stealth makes pieces safer. Walking, any step in its reach wakes it; crouched, only a blow does. Awake, it shuts the room until it dies.",
         Rows(9, 9, new Vector2Int(4, 0), new Vector2Int(8, 4)), 2, (root, e) =>
         {
             var bed = Marker(root, "Bed", new Vector3(0f, 0f, .6f), 200f);
@@ -552,7 +568,20 @@ public static class EventRoomsSetup
             WallLight(root, new Vector3(-8f, 0f, -6f), 270f); WallLight(root, new Vector3(8f, 0f, 6f), 90f);
             var ev = root.gameObject.AddComponent<SleepingGiantEvent>();
             ev.bed = bed; ev.hoard = spots.ToArray();
+            GiantDie(ev);
         }, light: DungeonRoomLight.Candlelit);
+
+    // The giant's roll, heard only: the Dungeon Master's dice and the table's knocks (also from an eval on the built room).
+    public static void GiantDie(SleepingGiantEvent ev)
+    {
+        ev.roll = Load<AudioClip>("Assets/ThirdParty/Sound Effects Library/SoundFX/DiceRollFast.wav");
+        ev.knocks = new[]
+        {
+            Load<AudioClip>("Assets/Game/Cinematics/Intro/Tabletop/Dice knock 1.wav"),
+            Load<AudioClip>("Assets/Game/Cinematics/Intro/Tabletop/Dice knock 2.wav"),
+            Load<AudioClip>("Assets/Game/Cinematics/Intro/Tabletop/Dice knock 3.wav"),
+        };
+    }
 
     // Only the duel room again (it keeps its GUID; the duellist is kept as it is): RebuildDuel() from an eval.
     public static string RebuildDuel()

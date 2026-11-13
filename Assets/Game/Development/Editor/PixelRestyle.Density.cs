@@ -19,8 +19,12 @@ public static partial class PixelRestyle
         Vector3[] v; Matrix4x4 m;
         if (r is SkinnedMeshRenderer skin)
         {
+            // Baked with the renderer's scale, the vertices are in its own space: the whole transform takes them to the
+            // world. (Under a transform without the scale, as this was until 2026-11-13, a body on a scaled root read as
+            // if it stood at scale 1: every enemy baked to 128 through it was really 128 / its scale in the game, the
+            // Pit Demon 107 and the Forge dwarves 178.)
             var baked = new Mesh(); skin.BakeMesh(baked, true); v = baked.vertices; Object.DestroyImmediate(baked);
-            m = Matrix4x4.TRS(r.transform.position, r.transform.rotation, Vector3.one);
+            m = r.transform.localToWorldMatrix;
         }
         else { v = mesh.vertices; m = r.transform.localToWorldMatrix; }
         var uv = new List<Vector2>(); mesh.GetUVs(0, uv);
@@ -45,8 +49,11 @@ public static partial class PixelRestyle
     }
 
     // Median texels per world unit over the renderer's triangles (area-weighted samples), for its first texture.
+    // A skinned renderer is measured in its pose, as above: its mesh's own vertices under the renderer's transform miss
+    // what the rig's bones do to them.
     public static float TexelsPerUnit(Renderer r)
     {
+        if (r is SkinnedMeshRenderer) return TexelsPerUnit(r, r.sharedMaterial);
         var mf = r.GetComponent<MeshFilter>(); Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : (mf != null ? mf.sharedMesh : null);
         var mat = r.sharedMaterial; var tex = mat != null ? MainTexture(mat) : null;
         if (mesh == null || tex == null) return 0f;
