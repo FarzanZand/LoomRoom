@@ -10,6 +10,9 @@ public class Burning : MonoBehaviour
     Character target, source;
     float perSecond, nextTick, owed;
     int ticksLeft;
+    // Co-op: a guest's copy of an enemy the host burns (CoopWorld.Afflicted): the flame and the charring show, the
+    // ticks hurt nothing here (the host's fire does the damage and sends it).
+    bool lookOnly;
 
     // Seconds until the last tick (BurnCoat lets the body cool just before).
     public float SecondsLeft => ticksLeft <= 0 ? 0f : nextTick - Time.time + (ticksLeft - 1);
@@ -21,6 +24,15 @@ public class Burning : MonoBehaviour
         var fire = target.GetComponent<Burning>();
         if (fire == null) fire = target.gameObject.AddComponent<Burning>();
         fire.Light(target, source, perSecond, seconds, flamePrefab);
+    }
+
+    // Only the look of a fire (co-op: an enemy the host runs): a flame for the seconds, no damage.
+    public static void Show(Character target, float seconds, GameObject flamePrefab)
+    {
+        if (target == null || !target.IsAlive || seconds <= 0f) return;
+        var fire = target.GetComponent<Burning>();
+        if (fire == null) { fire = target.gameObject.AddComponent<Burning>(); fire.lookOnly = true; }
+        fire.Light(target, null, 0f, seconds, flamePrefab);
     }
 
     void Light(Character on, Character by, float damage, float seconds, GameObject flamePrefab)
@@ -49,7 +61,7 @@ public class Burning : MonoBehaviour
         ticksLeft--;
         owed += perSecond;
         float amount = Mathf.Floor(owed + .5f);
-        if (amount <= 0f) return;
+        if (amount <= 0f || lookOnly) return;
         owed -= amount;
         target.Stats.TakeDamage(new DamageInfo
         {

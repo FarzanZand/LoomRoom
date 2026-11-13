@@ -292,6 +292,18 @@ public static class CoopWorld
         return false;
     }
 
+    // A player's spell has hit an enemy with a stun, a chill or a burn besides its damage (SpellProjectile.OnHit). The
+    // host's enemies are the real ones: on the host it is done there and the others are sent the look; on a guest it is
+    // sent to the host to do (and passed on to the other guests) while this machine only shows it. True: show it only.
+    public static bool Afflicted(Character target, SpellDefinition spell, float power)
+    {
+        if (!Coop.Running || target == null || spell == null || !target.IsEnemy) return false;
+        if (spell.stunSeconds <= 0f && spell.chill <= 0f && spell.burn <= 0f) return Coop.IsGuest;
+        if (TryEnemyId(target, out var id))
+            Send(new CoopEvent { kind = CoopEventKind.SpellAffliction, id = id, item = spell.name, amount = Mathf.RoundToInt(power * 100f), target = Coop.NoSlot });
+        return Coop.IsGuest;
+    }
+
     // Guest -> host: a player's blow on an enemy, applied by the host as if it struck here.
     public static void ReceiveStrike(ulong sender, NetDamage strike)
     {
@@ -960,7 +972,7 @@ public static class CoopWorld
         if (!Coop.IsHost || e.floorKey != FloorKey) return;
         switch (e.kind)
         {
-            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: case CoopEventKind.ArenaTalk: return;
+            case CoopEventKind.AttackTell: case CoopEventKind.EnemySwing: case CoopEventKind.ArrowLoosed: case CoopEventKind.EnemySpell: case CoopEventKind.BossBeam: case CoopEventKind.BossVolley: case CoopEventKind.SpikeSprung: case CoopEventKind.AtExit: case CoopEventKind.Ping: case CoopEventKind.PartySpoiled: case CoopEventKind.PlayerSpell: case CoopEventKind.Noise: case CoopEventKind.Meddle: case CoopEventKind.DevSpawn: case CoopEventKind.BossIntroDone: case CoopEventKind.ArenaTalk: case CoopEventKind.SpellAffliction: return;
         }
         history.Add(e);
     }
@@ -1168,6 +1180,16 @@ public static class CoopWorld
             case CoopEventKind.PlayerSpell:
                 if (e.slot != Coop.LocalSlot) CoopSpells.Play(e);
                 break;
+            case CoopEventKind.SpellAffliction:
+            {
+                // The host stuns, slows and burns it for real, the caster's (their stand-in's) burn and power; a guest
+                // shows the frost or the fire on its copy.
+                var enemy = Enemy(e.id);
+                var spell = CoopSpells.Spell(e.item.ToString());
+                if (enemy == null || !enemy.IsAlive || spell == null || e.slot == Coop.LocalSlot) break;
+                SpellProjectile.Afflict(enemy, CharacterOf(e.slot), spell, e.amount / 100f, lookOnly: !Coop.IsHost);
+                break;
+            }
             case CoopEventKind.Noise:
                 if (Coop.IsHost) NoiseEvents.Report(e.position, e.amount / 100f, CharacterOf(e.slot));
                 break;

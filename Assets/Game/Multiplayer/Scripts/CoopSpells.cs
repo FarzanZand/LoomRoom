@@ -23,9 +23,13 @@ public static class CoopSpells
     // A spell by its asset's name (a summon's kind), or null.
     public static SpellDefinition Spell(string name) => string.IsNullOrEmpty(name) ? null : Find(name);
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() => spells = null;
+
     static SpellDefinition Find(string name)
     {
-        if (spells == null || !spells.ContainsKey(name))
+        // Looked up again when missing or gone (an asset reloaded in the editor leaves a dead entry behind).
+        if (spells == null || !spells.TryGetValue(name, out var known) || known == null)
         {
             spells ??= new Dictionary<string, SpellDefinition>();
             if (InventoryManager.HasInstance)
@@ -35,7 +39,8 @@ public static class CoopSpells
                     if (item.spell != null) spells[item.spell.name] = item.spell;
                     if (item.scrollSpell != null) spells[item.scrollSpell.name] = item.scrollSpell;
                 }
-            foreach (var s in Resources.FindObjectsOfTypeAll<SpellDefinition>()) if (s != null) spells.TryAdd(s.name, s);
+            foreach (var s in Resources.FindObjectsOfTypeAll<SpellDefinition>())
+                if (s != null && (!spells.TryGetValue(s.name, out var had) || had == null)) spells[s.name] = s;
         }
         return spells.TryGetValue(name, out var found) ? found : null;
     }

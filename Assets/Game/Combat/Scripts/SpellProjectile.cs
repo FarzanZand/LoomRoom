@@ -260,12 +260,25 @@ public class SpellProjectile : MonoBehaviour
     void OnHit(Character target)
     {
         if (target == null || !target.IsAlive) return;
-        if (spell.stunSeconds > 0f && target.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(spell.stunSeconds);
+        // Co-op: an enemy is the host's. It stuns, slows and burns it there; every other machine shows the frost or the
+        // fire (CoopWorld.Afflicted sends it; true on a guest).
+        Afflict(target, owner, spell, power, CoopWorld.Afflicted(target, spell, power));
+    }
+
+    // lookOnly: only what shows (the frost and its slowed animation, the flame), no stun and no burn damage.
+    public static void Afflict(Character target, Character owner, SpellDefinition spell, float power, bool lookOnly = false)
+    {
+        if (target == null || !target.IsAlive || spell == null) return;
+        if (!lookOnly && spell.stunSeconds > 0f && target.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(spell.stunSeconds);
         if (spell.chill > 0f) Chill.Apply(target, spell.chill, spell.chillSeconds, spell.chillEffect);
         // A burn: its share of the hit in all, a tick a second (the Fireball, half its hit over 5 seconds: the user,
         // 2026-11-13). Sorcery's Burning milestone, which made a Fireball burn, is gone (now '?', to be decided).
         if (spell.burn > 0f)
-            Burning.Ignite(target, owner, power * spell.burn / spell.burnSeconds, spell.burnSeconds, spell.burnEffect != null ? spell.burnEffect.gameObject : null);
+        {
+            var flame = spell.burnEffect != null ? spell.burnEffect.gameObject : null;
+            if (lookOnly) Burning.Show(target, spell.burnSeconds, flame);
+            else Burning.Ignite(target, owner, power * spell.burn / spell.burnSeconds, spell.burnSeconds, flame);
+        }
     }
 
     // The direction to throw at a speed so a fall of gravity lands it on the target: the low arc, or 45 degrees up when
