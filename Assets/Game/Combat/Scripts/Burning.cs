@@ -1,13 +1,18 @@
 using UnityEngine;
 
 // A character on fire: a magic hit every second for a few seconds, from whoever lit it (so kills and practice count for
-// them), with a flame on its body. Lighting it again starts the time over and keeps the stronger fire. Sorcery's
-// Burning milestone sets a Fireball's targets alight (SpellProjectile).
+// them), with a flame on its body. Lighting it again starts the time over and keeps the stronger fire. A spell with a
+// burn (SpellDefinition.burn: the Fireball, half its hit over 5 seconds) sets what it hits alight (SpellProjectile). Each
+// tick lands a whole number and what rounding left over is carried to the next, so the ticks add up to the fire's whole
+// (2.1 a second: 2, 2, 2, 2, 3). The flame's BurnCoat chars the body while it burns.
 public class Burning : MonoBehaviour
 {
     Character target, source;
-    float perSecond, nextTick;
+    float perSecond, nextTick, owed;
     int ticksLeft;
+
+    // Seconds until the last tick (BurnCoat lets the body cool just before).
+    public float SecondsLeft => ticksLeft <= 0 ? 0f : nextTick - Time.time + (ticksLeft - 1);
     GameObject flame;
 
     public static void Ignite(Character target, Character source, float perSecond, float seconds, GameObject flamePrefab)
@@ -42,9 +47,13 @@ public class Burning : MonoBehaviour
         if (Time.time < nextTick) return;
         nextTick += 1f;
         ticksLeft--;
+        owed += perSecond;
+        float amount = Mathf.Floor(owed + .5f);
+        if (amount <= 0f) return;
+        owed -= amount;
         target.Stats.TakeDamage(new DamageInfo
         {
-            Amount = perSecond, Source = source, Magic = true, FromEffect = true, SourceName = "fire",
+            Amount = amount, Source = source, Magic = true, FromEffect = true, SourceName = "fire",
             HitPoint = target.transform.position + Vector3.up * 1.1f,
         });
     }

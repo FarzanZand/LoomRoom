@@ -7,7 +7,7 @@ using UnityEngine;
 // (gold, gear including spell tomes, recovery) and which gear tiers drop here. Items are picked from the item catalog
 // by their tier and loot weight, so a new item joins the loot just by having a tier.
 [CreateAssetMenu(menuName = "LoomRoom/Loot Profile")]
-public class DungeonLootProfile : LootSource
+public partial class DungeonLootProfile : LootSource
 {
     [Serializable]
     public class Rule
@@ -118,11 +118,13 @@ public class DungeonLootProfile : LootSource
     // tier, so it doesn't vanish from the deeper floors.
     static string Kind(ItemData i) => i.itemType == ItemType.Weapon ? $"weapon {i.weaponCategory}"
         : i.itemType == ItemType.Equipment ? $"worn {(i.equipSlot == EquipmentSlot.Trinket2 ? EquipmentSlot.Trinket1 : i.equipSlot)}" : i.itemType.ToString();
-    static Dictionary<string, int> TopTiers()
+    static Dictionary<string, int> TopTiers() =>
+        TopTiers(InventoryManager.HasInstance ? InventoryManager.Instance.itemCatalog : null);
+    static Dictionary<string, int> TopTiers(IList<ItemData> catalog)
     {
         var top = new Dictionary<string, int>();
-        if (!InventoryManager.HasInstance || InventoryManager.Instance.itemCatalog == null) return top;
-        foreach (var i in InventoryManager.Instance.itemCatalog)
+        if (catalog == null) return top;
+        foreach (var i in catalog)
             if (i != null && i.tier > 0 && IsGear(i)) top[Kind(i)] = Mathf.Max(i.tier, top.TryGetValue(Kind(i), out int t) ? t : 0);
         return top;
     }

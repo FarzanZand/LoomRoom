@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
   spell: 12
   displayName: Die Throw
-  description: Ask the Dungeon Master for a hand. He flicks a die at the enemy you
-    aim at from where he stands, and it knocks it across the room.
+  description: A thrown die knocks the enemy across the room.
   icon: {fileID: 21300000, guid: 3be0d6f2553b93e44b4c7537b4d42002, type: 3}
   manaCost: 24
   power: 24
@@ -107,6 +106,10 @@ MonoBehaviour:
     reach: 2
     appearDistance: 13
     appearAhead: 0.75
+    clearOfRoof: 4
+    openSkyFromPlayer: 18
+    appearFarthest: 20
+    turnRight: 25
     range: 16
     aimCone: 15
     reachSeconds: 0.9
@@ -135,6 +138,21 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 6cce797ff44577a4485de32d4045286d, type: 3}
     dieRollSound: {fileID: 8300000, guid: c5f2559aab1ce0e4d835b730f4a30190, type: 3}
     dieVolume: 1
+    portalMaterial: {fileID: 0}
+    portalFrames: 8
+    portalFps: 12
+    portalColor: {r: 0.32, g: 0.48, b: 1, a: 1}
+    portalRadius: 0.8
+    portalDistance: 5.5
+    portalOpenSeconds: 0.35
+    portalHoldSeconds: 0.3
+    portalCloseSeconds: 0.3
+    portalDieSpeed: 20
+    portalLight: 6
+    portalOpenSound: {fileID: 0}
+    portalShootSound: {fileID: 0}
+    portalCloseSound: {fileID: 0}
+    portalVolume: 0.9
     lines:
     - Catch.
     - Let's see what you roll.
@@ -160,6 +178,9 @@ MonoBehaviour:
   helpingHand:
     reach: 1
     appearDistance: 11
+    clearOfRoof: 4
+    appearFarthest: 24
+    appearAside: 9
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -200,6 +221,27 @@ MonoBehaviour:
     - Hold still.
     - Try not to need that again.
     color: {r: 1, g: 0.9, b: 0.6, a: 1}
+  summon:
+    prefab: {fileID: 0}
+    summonName: John
+    size: 1
+    distance: 2.5
+    gatherSeconds: 0.9
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 1
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2

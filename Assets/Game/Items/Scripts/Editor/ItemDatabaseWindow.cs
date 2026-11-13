@@ -42,7 +42,7 @@ public partial class ItemDatabaseWindow : EditorWindow
     }
     void Rebuild()
     {
-        items = ItemDatabaseAuthoring.All(); issues.Clear();
+        items = ItemDatabaseAuthoring.All(); issues.Clear(); ForgetLoot(); lootLevels = null;
         foreach (var item in items) issues[item] = ItemDatabaseAuthoring.Issues(item, items);
         Repaint();
     }
@@ -70,6 +70,7 @@ public partial class ItemDatabaseWindow : EditorWindow
             }
             var body = new Rect(0, top, position.width, position.height - top);
             if (tableView) { TableView(body); if (Event.current.type == EventType.MouseMove) Repaint(); return; }
+            if (lootView) { LootView(body); return; }
             listWidth = Mathf.Clamp(listWidth, 260f, Mathf.Max(260f, body.width - 420f));
             var listRect = new Rect(body.x, body.y, listWidth, body.height);
             var split = new Rect(listRect.xMax, body.y, 5f, body.height);
@@ -114,8 +115,16 @@ public partial class ItemDatabaseWindow : EditorWindow
             if (GUILayout.Button("Tools", EditorStyles.toolbarDropDown, GUILayout.Width(60))) ToolsMenu();
             GUILayout.Space(12);
             // List: one item at a time. Table: a group of items side by side, every number editable (ItemDatabaseWindow.Table.cs).
-            int view = GUILayout.Toolbar(tableView ? 1 : 0, new[] { new GUIContent("List", "One item at a time, all its fields."), new GUIContent("Table", "A kind or a tier side by side, every stat editable.") }, EditorStyles.toolbarButton, GUILayout.Width(110));
-            if ((view == 1) != tableView) { CommitEdit(); if (view == 1) OpenTable(); else tableView = false; GUI.FocusControl(null); }
+            // Loot: what drops on a floor of a level, and what never does (ItemDatabaseWindow.Loot.cs).
+            int was = tableView ? 1 : lootView ? 2 : 0;
+            int view = GUILayout.Toolbar(was, new[] { new GUIContent("List", "One item at a time, all its fields."), new GUIContent("Table", "A kind or a tier side by side, every stat editable."), new GUIContent("Loot", "What drops on a floor, and what never does.") }, EditorStyles.toolbarButton, GUILayout.Width(165));
+            if (view != was)
+            {
+                CommitEdit(); GUI.FocusControl(null);
+                tableView = false; lootView = view == 2;
+                if (view == 1) OpenTable();
+                if (view == 2) ForgetLoot();
+            }
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{items.Count} items", EditorStyles.miniLabel);
         }
@@ -211,6 +220,8 @@ public partial class ItemDatabaseWindow : EditorWindow
             {
                 GUILayout.Label(item.itemName, NameStyle(titleStyle, item));
                 GUILayout.Label(Subtitle(item), subtitleStyle);
+                string loot = LootLine(item);
+                if (loot.Length > 0) GUILayout.Label(loot, subtitleStyle);
                 string path = AssetDatabase.GetAssetPath(item);
                 Rect link = GUILayoutUtility.GetRect(new GUIContent(path), linkStyle);
                 EditorGUIUtility.AddCursorRect(link, MouseCursor.Link);
@@ -270,7 +281,7 @@ public partial class ItemDatabaseWindow : EditorWindow
     // The tooltip as the game builds it, on a dark card.
     void TooltipCard(ItemData item, params GUILayoutOption[] options)
     {
-        string text = $"<size=14><b><color=#{ColorUtility.ToHtmlStringRGB(NameColour(item))}>{item.itemName}</color></b></size>\n" + item.BuildTooltip();
+        string text = $"<size=14><b><color=#{ColorUtility.ToHtmlStringRGB(NameColour(item))}>{item.itemName}</color></b></size>\n" + ItemData.ForImgui(item.BuildTooltip());
         var content = new GUIContent(text);
         float w = options.Length > 0 ? Mathf.Min(360f, position.width * .3f) : position.width - listWidth - 40f;
         float h = tooltipStyle.CalcHeight(content, Mathf.Max(120f, w));

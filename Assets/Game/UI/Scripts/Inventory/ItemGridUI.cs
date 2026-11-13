@@ -36,6 +36,51 @@ public class ItemGridUI : MonoBehaviour
         }
     }
 
+    // ── Gaps between cells ───────────────────────────────────────────
+    // The cells stand apart, so the pointer between two cells of one big item (the middle of a helm) was over nothing:
+    // no tooltip, click or drag. Each cell's hit area reaches halfway across the gap to its neighbours
+    // (Graphic.raycastPadding: negative grows it), so the whole area an item covers answers for it. The gaps are measured
+    // between the cells as they stand (a grid layout's spacing, or the shop's hand-placed, scaled pack cells).
+    // Returns each cell's padding (in its own units), for a check of the pointer against the same area.
+    Vector4[] pads;
+    public static Vector4[] CoverGaps<T>(IList<T> cells) where T : Component
+    {
+        var pads = new Vector4[cells.Count];
+        var boxes = new Rect[cells.Count];
+        var corners = new Vector3[4];
+        for (int i = 0; i < cells.Count; i++)
+        {
+            if (cells[i] == null) continue;
+            ((RectTransform)cells[i].transform).GetWorldCorners(corners);
+            boxes[i] = Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+        }
+        // The narrowest gap across and down between neighbours in a row or a column.
+        float across = float.MaxValue, down = float.MaxValue;
+        for (int i = 0; i < cells.Count; i++)
+            for (int j = 0; j < cells.Count; j++)
+            {
+                if (i == j || cells[i] == null || cells[j] == null) continue;
+                Rect a = boxes[i], b = boxes[j];
+                if (Mathf.Abs(a.center.y - b.center.y) < a.height * .5f && b.xMin >= a.xMax - .01f) across = Mathf.Min(across, b.xMin - a.xMax);
+                if (Mathf.Abs(a.center.x - b.center.x) < a.width * .5f && b.yMax <= a.yMin + .01f) down = Mathf.Min(down, a.yMin - b.yMax);
+            }
+        if (across == float.MaxValue) across = 0f;
+        if (down == float.MaxValue) down = 0f;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            if (cells[i] == null) continue;
+            var rt = (RectTransform)cells[i].transform;
+            var scale = rt.lossyScale;
+            float x = scale.x > 1e-5f ? across * .5f / scale.x : 0f, y = scale.y > 1e-5f ? down * .5f / scale.y : 0f;
+            var pad = new Vector4(-x, -y, -x, -y);
+            pads[i] = pad;
+            // The graphics that take the cell's hits: those as big as the cell (a frame or background), not its icon.
+            foreach (var g in rt.GetComponentsInChildren<Graphic>(true))
+                if (g.raycastTarget && g.rectTransform.rect.width >= rt.rect.width * .9f && g.rectTransform.rect.height >= rt.rect.height * .9f) g.raycastPadding = pad;
+        }
+        return pads;
+    }
+
     public void Refresh()
     {
         if (template == null) return;
@@ -44,6 +89,8 @@ public class ItemGridUI : MonoBehaviour
         template.gameObject.SetActive(false);
         // The cells must be where the layout puts them before items are laid over them.
         if (cells.Count > 0 && cells[0] != null && cells[0].transform.parent is RectTransform cellGrid) LayoutRebuilder.ForceRebuildLayoutImmediate(cellGrid);
+        // Measured once laid out (at Awake the grid was not yet, and the gaps came out too wide).
+        pads = CoverGaps(cells);
         int used = 0;
         if (bag != null && bag.IsGrid)
             for (int i = 0; i < bag.SlotCount && i < cells.Count; i++)
@@ -63,6 +110,8 @@ public class ItemGridUI : MonoBehaviour
         {
             var view = Instantiate(template, template.parent);
             view.name = "Item " + views.Count;
+            // The cells under it take the clicks and the hover.
+            foreach (var g in view.GetComponentsInChildren<Graphic>(true)) g.raycastTarget = false;
             views.Add(view);
         }
         views[index].gameObject.SetActive(true);
@@ -128,7 +177,7 @@ public class ItemGridUI : MonoBehaviour
         Vector2 pointer = Mouse.current.position.ReadValue();
         int hovered = -1;
         for (int i = 0; i < cells.Count; i++)
-            if (cells[i] != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)cells[i].transform, pointer, null)) { hovered = i; break; }
+            if (cells[i] != null && RectTransformUtility.RectangleContainsScreenPoint((RectTransform)cells[i].transform, pointer, null, pads != null && i < pads.Length ? pads[i] : Vector4.zero)) { hovered = i; break; }
         bool dragging = ItemDragHandler.HasInstance && ItemDragHandler.Instance.IsDragging;
         Pop(hovered, dragging);
         if (hovered < 0) return;

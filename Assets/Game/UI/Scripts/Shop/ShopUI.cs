@@ -82,6 +82,9 @@ public class ShopUI : Singleton<ShopUI>
         if (player.Hotbar != null) player.Hotbar.Changed += Refresh;
         if (player.Wallet != null) player.Wallet.Changed += OnGold;
         Refresh();
+        // The pack's cells answer across the gaps between them, so a big bag item has no dead spots (ItemGridUI). Measured
+        // here, with the screen up and laid out: at Awake the cells did not stand where they are drawn yet.
+        if (packSlots != null) ItemGridUI.CoverGaps(packSlots);
         if (tavern != null) tavern.Bind(m, p);
         // With a pad, a ware is selected at once (selecting shows it in the details, so the mouse keeps the help text).
         if (InputManager.PadConnected) SelectStart();

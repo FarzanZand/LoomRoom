@@ -21,7 +21,9 @@ public partial class ItemDatabaseWindow
     static GUIStyle listStyles, rowName, rowRight, groupTitle, groupCount, badge;
 
     const float RowHeight = 30f, HeaderHeight = 24f;
-    static readonly string[] Kinds = { "All items", "Relics", "Weapons", "Shields", "Armour", "Trinkets", "Spell tomes", "Consumables", "Other" };
+    // The last two filter by the Loot view's level (ItemDatabaseWindow.Loot.cs), not by kind.
+    static readonly string[] Kinds = { "All items", "Relics", "Weapons", "Shields", "Armour", "Trinkets", "Spell tomes", "Consumables", "Other", "Drops as loot", "Never drops" };
+    const int ShowDrops = 9, ShowNever = 10;
     static readonly string[] Sorts = { "Tier", "Name", "Price", "Main number" };
 
     // The group an item is listed under: its order, title and Kinds index.
@@ -55,7 +57,7 @@ public partial class ItemDatabaseWindow
     bool Matches(ItemData i) => i != null &&
         (showArchived || !ItemDatabaseAuthoring.IsArchived(i)) &&
         (!issuesOnly || issues.TryGetValue(i, out var list) && list.Count > 0) &&
-        (show == 0 || Group(i).kind == show) &&
+        (show == 0 || (show == ShowDrops ? DropsAsLoot(i) : show == ShowNever ? IsLootKind(i) && !DropsAsLoot(i) : Group(i).kind == show)) &&
         (string.IsNullOrEmpty(tag) || i.tag == tag) &&
         (string.IsNullOrWhiteSpace(search) || (i.itemName + " " + i.tag + " " + i.TypeLine() + " " + i.RarityName + " " + AssetDatabase.GetAssetPath(i))
             .IndexOf(search.Trim(), StringComparison.OrdinalIgnoreCase) >= 0);

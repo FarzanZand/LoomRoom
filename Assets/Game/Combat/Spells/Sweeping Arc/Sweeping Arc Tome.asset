@@ -18,8 +18,7 @@ MonoBehaviour:
   spell: {fileID: 11400000, guid: 0eb555352d08db04c9132bc69c17471d, type: 2}
   unlocksClass: {fileID: 0}
   rarity: 6
-  description: Hold it in your left hand to cast Sweeping Arc. A beam that swings
-    across everything in front of you.
+  description: 
   icon: {fileID: 21300000, guid: 9dfb3fbbd35b3ff4cacf873eb649cdd0, type: 3}
   iconSource:
     custom: 0
@@ -59,6 +58,8 @@ MonoBehaviour:
     knockbackForce: -1
     hitStopScale: 1
   damageSpread: 0
+  damageSpreadUp: 0
+  scaleWithFloor: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}

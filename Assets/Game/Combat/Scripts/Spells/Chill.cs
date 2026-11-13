@@ -2,7 +2,8 @@ using UnityEngine;
 
 // Slowed by frost (a Frost Lance): an enemy walks and swings slower (its motor's speed and its animator), a player walks
 // slower. A new chill takes the stronger slow and the later end. Frost clings to the body while it lasts. Added to the
-// character when it is first chilled; removes itself when it wears off.
+// character when it is first chilled; removes itself when it wears off. On an enemy the frost effect's FrostCoat draws it
+// frozen (bluer, rimed, breathing cold) for as long as this lasts.
 public class Chill : MonoBehaviour
 {
     Character character;
@@ -11,6 +12,9 @@ public class Chill : MonoBehaviour
     SpellVisual frost;
     float share, until, animatorWas = 1f;
     readonly object slowSource = new object();
+
+    // Seconds until it wears off (FrostCoat thaws the look just before).
+    public float SecondsLeft => until - Time.time;
 
     public static void Apply(Character target, float share, float seconds, SpellVisual frostEffect)
     {

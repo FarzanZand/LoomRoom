@@ -91,6 +91,16 @@ public class EliteEnemy : MonoBehaviour
 
     void OnDamaged(DamageInfo info) { if (stats != null && stats.CurrentHealth <= 0f) RemoveOutline(); }
 
+    // Whether a renderer is one of an elite's glow shells. Anything that cuts or bakes a body (DeathBurst works out its
+    // split from the first blow, LimbLoss) leaves them out: split with the body they lay on the floor as glowing red
+    // lumps (the user, 2026-11-13).
+    public static bool IsGlow(Renderer r)
+    {
+        if (r == null) return false;
+        var elite = r.GetComponentInParent<EliteEnemy>(true);
+        return elite != null && elite.shells.Contains(r.gameObject);
+    }
+
     // Switched off at once, not only destroyed: Destroy waits for the frame's end, and DeathBurst splits every enabled
     // skinned mesh in that frame's LateUpdate, which turned the shells into flat-coloured bone pieces on the floor.
     void RemoveOutline()
