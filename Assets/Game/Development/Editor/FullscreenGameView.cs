@@ -53,7 +53,7 @@ public static class FullscreenGameView
         if (vsync == null) return;
         var views = Resources.FindObjectsOfTypeAll(type);
         if (views.Length == 0) return;   // no Game view open yet: tried again after the next reload
-        foreach (var o in views) vsync.SetValue(o, true);
+        foreach (var o in views) if (Hosted((EditorWindow)o)) vsync.SetValue(o, true);
         EditorPrefs.SetBool(VSyncSetKey, true);
     }
 
@@ -61,7 +61,7 @@ public static class FullscreenGameView
     {
         var vsync = VSync(gameView);
         foreach (var o in Resources.FindObjectsOfTypeAll(gameView))
-            if (((EditorWindow)o).titleContent.text != Title && vsync?.GetValue(o) is bool on) return on;
+            if (((EditorWindow)o).titleContent.text != Title && Hosted((EditorWindow)o) && vsync?.GetValue(o) is bool on) return on;
         return true;
     }
 
@@ -139,11 +139,13 @@ public static class FullscreenGameView
         window = (EditorWindow)ScriptableObject.CreateInstance(type);
         // The Game view's own toolbar would take the top of the screen.
         type.GetProperty("showToolbar", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.SetValue(window, false);
-        // VSync as the docked Game view has it (on unless switched off there, say for measuring fps): a new Game view
-        // starts with it off, and panning fast then tears the picture.
-        VSync(type)?.SetValue(window, DockedVSync(type));
         window.titleContent = new GUIContent(Title);
         window.ShowPopup();
+        // VSync as the docked Game view has it (on unless switched off there, say for measuring fps): a new Game view
+        // starts with it off, and panning fast then tears the picture. Only once shown: set before, Unity threw (the view
+        // has no host yet) and the window was left half made, with no fullscreen.
+        try { VSync(type)?.SetValue(window, DockedVSync(type)); }
+        catch (System.Exception e) { Debug.LogWarning("Fullscreen Game View: VSync not set: " + (e.InnerException ?? e).Message); }
         window.position = TargetMonitor();
         window.Focus();
         HideCoveredViews();

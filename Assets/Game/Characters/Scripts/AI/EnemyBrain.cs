@@ -265,6 +265,12 @@ public class EnemyBrain : MonoBehaviour
 
     void Start()
     {
+        // Unseen, its bones aren't moved (Cull Update Transforms keeps its states, events and root motion running): a
+        // floor holds thirty or more enemies, most behind walls (2026-11-12, the user's fps). Rats, bats and urn crawlers
+        // already had it on their prefabs.
+        var anim = Character != null ? Character.Animator : null;
+        if (anim != null && CombatManager.HasInstance)
+            anim.cullingMode = CombatManager.Instance.cullUnseenEnemyAnimation ? AnimatorCullingMode.CullUpdateTransforms : AnimatorCullingMode.AlwaysAnimate;
         if (Data == null) Debug.LogWarning($"{name}: EnemyBrain needs EnemyData on its Character (has {(Character.data != null ? Character.data.GetType().Name : "none")}).", this);
         // Alerted or provoked in the frame it was put down (the wrathful merchant, the intro's killer): already fighting.
         if (State == EnemyState.Chase || State == EnemyState.Attack || State == EnemyState.Dead) return;
@@ -350,6 +356,7 @@ public class EnemyBrain : MonoBehaviour
         Perception.Tick(State == EnemyState.Chase || State == EnemyState.Attack);
         Motor.SuppressKnockback = IsSwinging;
         attackRunner.Tick();
+        PoseWhileAttacking();
 
         // Another component steering for a moment (FlyingEnemy pulling back after a dive): it moves, the brain waits.
         if (MovementOverride != null && !IsSwinging && MovementOverride()) { UpdateAnimator(); return; }
@@ -394,6 +401,16 @@ public class EnemyBrain : MonoBehaviour
         if (handlers.TryGetValue(State, out var handler)) handler?.Invoke();
 
         UpdateAnimator();
+    }
+
+    // Unseen, its bones aren't moved (Start), except while it attacks: an arrow or a spell leaves from the hand the
+    // animation raises, and held bones sent an unseen archer's or caster's shots off from hip height (Tifa, 2026-11-13).
+    void PoseWhileAttacking()
+    {
+        var anim = Character.Animator;
+        if (anim == null || !CombatManager.HasInstance || !CombatManager.Instance.cullUnseenEnemyAnimation) return;
+        var want = IsSwinging ? AnimatorCullingMode.AlwaysAnimate : AnimatorCullingMode.CullUpdateTransforms;
+        if (anim.cullingMode != want) anim.cullingMode = want;
     }
 
     // ── Events ────────────────────────────────────────────────────────

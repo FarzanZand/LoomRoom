@@ -7,6 +7,15 @@ using UnityEngine;
 // them along the killing blow and freeze them once they have settled.
 public static class DeathPhysics
 {
+    // A body that dies where nobody sees it has had its bones held while unseen (Cull Update Transforms): posed once at
+    // once, so its burst or ragdoll starts from where it really stands, not from the last pose drawn.
+    public static void FreshPose(Animator anim)
+    {
+        if (anim == null || !anim.enabled || !anim.isActiveAndEnabled || anim.cullingMode == AnimatorCullingMode.AlwaysAnimate) return;
+        anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        anim.Update(0f);
+    }
+
     // Anything still posing the skeleton would fight the physics.
     public static void StopPosing(Component root, Animator anim)
     {

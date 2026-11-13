@@ -54,6 +54,7 @@ public class EnemyRagdoll : MonoBehaviour
         if (deathAnimationInstead && character.Animator != null && character.Animator.runtimeAnimatorController != null) return;
         IsRagdolled = true;
         var anim = character.Animator;
+        DeathPhysics.FreshPose(anim);
         bool thrownWithClip = deathClipWhileThrown && anim != null && !anim.isHuman && anim.runtimeAnimatorController != null;
         if (anim != null && anim.isHuman) BuildHumanoid(anim);
         else BuildRigid(thrownWithClip ? DeathClip(anim) : null);
