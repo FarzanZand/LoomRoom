@@ -4,8 +4,10 @@ using UnityEngine;
 // Burning puts under the body (Combat/Spells/Fireball/Fireball Burn), and for as long as it burns (BodyCoat):
 //   - the body and everything it wears and holds are drawn charred, baked by Burn Bake.shader: darkened toward soot, the
 //     lightest texels toward ash, soot in ragged clusters, and embers glowing in the dark creases (the copies' emission);
-//   - pixel flames lick off the body, embers rise off it and dark smoke puffs out above it, and a small firelight
-//     flickers over its head (never inside the body, where it lit the body's middle white).
+//   - it burns with the Fireball's own fire (the pack's flame flipbook drawn in pixels, yellow to red, many flames
+//     overlapping; small flame sprites of our own read as stickers, the user, 2026-11-13): small low flames close to
+//     the whole body, a crown of slightly taller ones over its shoulders and head, embers rising, dark smoke above, and a
+//     small firelight flickering over its head (never inside the body, where it lit the body's middle white).
 public class BurnCoat : BodyCoat
 {
     [Header("Charred")]
@@ -17,6 +19,7 @@ public class BurnCoat : BodyCoat
 
     [Header("Fire")]
     [Tooltip("Flames off the body's surface (from its skinned mesh where it can be read, else a box round it).")] public ParticleSystem flames;
+    [Tooltip("Taller flames over its shoulders and head (kept at the top of the body by this script).")] public ParticleSystem crown;
     [Tooltip("Embers rising off it.")] public ParticleSystem sparks;
     [Tooltip("Dark smoke puffed out over its head by this script.")] public ParticleSystem smoke;
     [Min(.1f)] public float smokeEvery = .7f;
@@ -47,6 +50,17 @@ public class BurnCoat : BodyCoat
             else { shape.shapeType = ParticleSystemShapeType.Box; FitToBody(flames, .55f, .75f); }
         }
         FitToBody(sparks, .5f, .6f);
+        FitToBody(crown, .55f, .18f);
+        // The flames are sized for a body a man's height: smaller on a rat, bigger on a boss.
+        float k = Mathf.Clamp(BodyBounds().size.y / 1.8f, .5f, 1.3f);
+        Scale(flames, k); Scale(crown, k);
+    }
+
+    static void Scale(ParticleSystem ps, float k)
+    {
+        if (ps == null) return;
+        var main = ps.main; main.startSizeXMultiplier *= k; main.startSizeYMultiplier *= k;
+        var vel = ps.velocityOverLifetime; vel.yMultiplier *= k;
     }
 
     protected override bool Lasting(out float secondsLeft)
@@ -76,9 +90,10 @@ public class BurnCoat : BodyCoat
             FitToBody(flames, .55f, .75f);
         }
         var top = HeadPoint(out var forward);
+        var b = BodyBounds();
+        if (crown != null) crown.transform.position = new Vector3(b.center.x, b.center.y + b.extents.y * .55f, b.center.z);
         if (fireLight != null)
         {
-            var b = BodyBounds();
             fireLight.transform.position = new Vector3(b.center.x, b.max.y + lightAbove, b.center.z);
             fireLight.intensity = lightIntensity * (1f - lightFlicker + lightFlicker * 2f * Mathf.PerlinNoise(seed, Time.time * 7f));
         }
@@ -92,6 +107,7 @@ public class BurnCoat : BodyCoat
     protected override void End()
     {
         if (flames != null) flames.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+        if (crown != null) crown.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (sparks != null) sparks.Stop(true, ParticleSystemStopBehavior.StopEmitting);
         if (fireLight != null) fireLight.enabled = false;
     }
