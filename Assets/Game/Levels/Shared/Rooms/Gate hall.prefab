@@ -425,8 +425,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: A big pillared hall with arches. Lands as a fight or as a quiet room
-    (treasure, rest, storage).
+  description: A big pillared hall with arches. Lands as a fight or as a quiet room (treasure, rest, storage).
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -449,11 +448,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

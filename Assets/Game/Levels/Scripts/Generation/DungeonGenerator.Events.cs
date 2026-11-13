@@ -284,6 +284,7 @@ public partial class DungeonGenerator
         chest.seed = new System.Random(Scramble(unchecked(seed0 + FloorNumber * 7919 + 17))).Next(); chest.floorNumber = FloorNumber;
         chest.guaranteedItems = new List<ItemData>(m.chestItems ?? new List<ItemData>());
         chest.bonusGold = m.bonusGold;
+        chest.keepsAllGear = true;   // the boss's reward: every piece it rolls, not one a chest
         if (chest.openAudio == null) chest.openAudio = data.chestOpenAudio;
         ClearChestSpot(go.transform);
         return chest;

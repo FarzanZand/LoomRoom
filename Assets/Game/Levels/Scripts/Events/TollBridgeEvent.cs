@@ -76,7 +76,18 @@ public class TollBridgeEvent : MonoBehaviour
         var player = ScriptedEventRoom.TablePlayer;
         if (player == null || !player.IsAlive || !troll.IsAlive) return;
         var d = player.transform.position - troll.transform.position; d.y = 0f;
+        if (room.Inside(player.transform.position)) FaceEnd(troll.transform, d);
         if (room.Inside(player.transform.position) && d.magnitude <= challengeDistance) StartCoroutine(Ask(player));
+    }
+
+    // Both ends of the bridge have a door (the user, 2026-11-13): while he waits he turns, at a walk's pace, to the end
+    // the player came in at (his post's facing or its reverse; `to` is from him to the player).
+    void FaceEnd(Transform who, Vector3 to)
+    {
+        var along = post != null ? post.forward : who.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return;
+        if (Vector3.Dot(to, along) < 0f) along = -along;
+        who.rotation = Quaternion.RotateTowards(who.rotation, Quaternion.LookRotation(along), 160f * Time.deltaTime);
     }
 
     void FindTroll()
@@ -96,6 +107,8 @@ public class TollBridgeEvent : MonoBehaviour
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) troll.transform.rotation = Quaternion.LookRotation(f); }
         troll.Damaged += OnHit;
         troll.Died += OnDied;
+        // Out of reach until the player walks up and he asks (EventProtection; the user, 2026-11-13).
+        EventProtection.Hold(troll, this);
     }
 
     // Damage and Health Multiplier, once, once his stats are set up (after the floor's balance).
@@ -114,12 +127,14 @@ public class TollBridgeEvent : MonoBehaviour
     void OnDestroy()
     {
         EndTalk();
+        EventProtection.Release(troll);
         if (troll != null) { troll.Damaged -= OnHit; troll.Died -= OnDied; }
     }
 
     IEnumerator Ask(Player player)
     {
         phase = Phase.Talking;
+        EventProtection.Release(troll);
         // He turns to the player, then asks.
         var to = player.transform.position - troll.transform.position; to.y = 0f;
         var face = to.sqrMagnitude > .01f ? Quaternion.LookRotation(to) : troll.transform.rotation;
@@ -165,7 +180,24 @@ public class TollBridgeEvent : MonoBehaviour
     {
         phase = Phase.Paid;
         ScriptedEventRoom.Say(paidLine);
-        if (aside != null && brain != null && brain.Motor != null) { brain.Motor.Resume(); brain.Motor.SetSpeed(asideSpeed); brain.Motor.MoveTo(aside.position); walkingAside = true; }
+        if (aside != null && brain != null && brain.Motor != null) { brain.Motor.Resume(); brain.Motor.SetSpeed(asideSpeed); brain.Motor.MoveTo(AsideSpot()); walkingAside = true; }
+    }
+
+    // Where he steps aside to: the landing at the far end from the player, so they pass him going on. That is the Aside
+    // marker, or its mirror through his post when the player came in at the marker's end (a door at each end,
+    // 2026-11-13): the room is laid out the same turned half round (a brazier on each landing, on opposite sides), so the
+    // mirrored spot is as clear of the brazier as the marker is.
+    Vector3 AsideSpot()
+    {
+        var player = ScriptedEventRoom.TablePlayer;
+        if (post == null || player == null) return aside.position;
+        var along = post.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return aside.position;
+        along.Normalize();
+        float playerSide = Vector3.Dot(player.transform.position - post.position, along), asideSide = Vector3.Dot(aside.position - post.position, along);
+        if (playerSide * asideSide <= 0f) return aside.position;
+        var mirrored = post.position * 2f - aside.position; mirrored.y = aside.position.y;
+        return mirrored;
     }
 
     void Fight(Player player)

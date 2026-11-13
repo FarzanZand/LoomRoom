@@ -75,7 +75,18 @@ public class DuelEvent : MonoBehaviour
         var player = ScriptedEventRoom.TablePlayer;
         if (player == null || !player.IsAlive || !duellist.IsAlive) return;
         var d = player.transform.position - duellist.transform.position; d.y = 0f;
+        if (room.Inside(player.transform.position)) FaceEnd(duellist.transform, d);
         if (room.Inside(player.transform.position) && d.magnitude <= challengeDistance) StartCoroutine(Salute(player));
+    }
+
+    // Both ends of the bridge have a door (the user, 2026-11-13): while he waits he turns, at a walk's pace, to the end
+    // the player came in at (his post's facing or its reverse; `to` is from him to the player).
+    void FaceEnd(Transform who, Vector3 to)
+    {
+        var along = post != null ? post.forward : who.forward; along.y = 0f;
+        if (along.sqrMagnitude < .01f) return;
+        if (Vector3.Dot(to, along) < 0f) along = -along;
+        who.rotation = Quaternion.RotateTowards(who.rotation, Quaternion.LookRotation(along), 160f * Time.deltaTime);
     }
 
     // The enemy standing nearest his post in the room. He waits there, facing the way the post faces.
@@ -96,6 +107,9 @@ public class DuelEvent : MonoBehaviour
         if (post != null) { var f = post.forward; f.y = 0f; if (f.sqrMagnitude > .01f) duellist.transform.rotation = Quaternion.LookRotation(f); }
         duellist.Damaged += OnHit;
         duellist.Died += OnDied;
+        // Out of reach until the player walks up and the talk starts (the user, 2026-11-13: he was killed with spells
+        // from the bridge's far end); the duel's own rules apply from then on.
+        EventProtection.Hold(duellist, this);
     }
 
     // Damage Multiplier on his damage and Health Multiplier on his health (full), once, once his stats are set up
@@ -122,6 +136,7 @@ public class DuelEvent : MonoBehaviour
     void OnDestroy()
     {
         EndTalk();
+        EventProtection.Release(duellist);
         if (duellist != null) { duellist.Damaged -= OnHit; duellist.Died -= OnDied; }
         StopSalute();
     }
@@ -129,6 +144,7 @@ public class DuelEvent : MonoBehaviour
     IEnumerator Salute(Player player)
     {
         phase = Phase.Saluting;
+        EventProtection.Release(duellist);
         // He turns to face the player, then has his say in the box, then the Dungeon Master calls the duel and he
         // raises his blade.
         var to = player.transform.position - duellist.transform.position; to.y = 0f;

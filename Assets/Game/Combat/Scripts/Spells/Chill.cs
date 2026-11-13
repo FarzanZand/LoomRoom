@@ -18,7 +18,7 @@ public class Chill : MonoBehaviour
 
     public static void Apply(Character target, float share, float seconds, SpellVisual frostEffect)
     {
-        if (target == null || !target.IsAlive || share <= 0f || seconds <= 0f) return;
+        if (target == null || !target.IsAlive || share <= 0f || seconds <= 0f || EventProtection.Held(target)) return;
         var chill = target.GetComponent<Chill>();
         if (chill == null) chill = target.gameObject.AddComponent<Chill>();
         chill.Set(target, share, seconds, frostEffect);

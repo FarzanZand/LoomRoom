@@ -253,6 +253,7 @@ public class Hitbox : MonoBehaviour
             SwingDirection = sweepDirection,
             KnockbackForce = force,
             Heavy          = heavy,
+            Finisher       = finisher,
         };
         if (owner is Player && target != null && CombatManager.HasInstance)
             CombatManager.Instance.RollCriticalOrBackstab(ref info, target);

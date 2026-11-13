@@ -317,6 +317,9 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
     public void TakeDamage(DamageInfo info)
     {
         if (!IsAlive) return;
+        // An event's fighter waiting for the player to walk up and talk takes nothing (EventProtection): no health,
+        // knockback, flinch or blood; a puff where it landed and the Dungeon Master's word instead.
+        if (EventProtection.Stops(Character, info.Source, info.HitPoint)) return;
         bool spared = Invulnerable != null && Invulnerable(this) || Time.time < SparedUntil;
         info.Target = Character;
         info.Spared = spared;

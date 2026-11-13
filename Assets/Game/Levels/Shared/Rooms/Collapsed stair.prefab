@@ -73,11 +73,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -288,9 +290,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
   cells: {x: 2, y: 2}
+  toWalls: 0
   depth: 4
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &8728399973630238414
 GameObject:
   m_ObjectHideFlags: 0

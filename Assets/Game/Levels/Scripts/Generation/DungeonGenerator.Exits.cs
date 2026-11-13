@@ -101,7 +101,8 @@ public partial class DungeonGenerator
         MetricBox("Hatch",p+Vector3.up*(height-.05f),new Vector3(1.1f,.06f,1.1f),wood,root);
         foreach(var d in new[]{Vector3.right,Vector3.left,Vector3.forward,Vector3.back})
         {
-            var size=d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.32f,.14f,.12f);
+            // The bars along x run between the bars along z: overlapping at the corners, their faces lay in one plane (flicker).
+            var size=d.x!=0 ? new Vector3(.12f,.14f,1.32f) : new Vector3(1.08f,.14f,.12f);
             // The style's trim laid per tile like the walls (stretched over a plain box it came out 1,100 texels a metre).
             if(frame!=data.trimMaterial)ArchitectureBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);
             else MetricBox("Hatch frame",p+d*.6f+Vector3.up*(height-.07f),size,frame,root);

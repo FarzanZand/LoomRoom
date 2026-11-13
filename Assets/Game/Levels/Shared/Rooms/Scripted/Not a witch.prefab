@@ -63,9 +63,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: A moonlit sunken court where Not a witch kneels weeping and ignores
-    you. Leave her be and nothing happens; hit her and she wakes for a hard fight
-    with a Legendary drop.
+  description: A moonlit sunken court where Not a witch kneels weeping and ignores you. Leave her be and nothing happens; hit her and she wakes for a hard fight with a Legendary drop.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -88,11 +86,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 1
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -132,9 +132,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: witch
-  summary: 'She kneels weeping in the moonlight and ignores you; a blow from behind
-    is a backstab. The first hit wakes her for good: a fireball volley, then she
-    fights. She drops Legendary gear.'
+  summary: 'She kneels weeping in the moonlight and ignores you; a blow from behind is a backstab. The first hit wakes her for good: a fireball volley, then she fights. She drops Legendary gear.'
   entrance: {fileID: 0}
   countsAsEvent: 0
 --- !u!1 &500983072971138914
@@ -497,9 +495,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 1
   cells: {x: 5, y: 5}
+  toWalls: 0
   depth: 0.9
   fallDamage: 0.25
   keepPlayerOut: 1
+  fill: {fileID: 0}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 0
+  fillLightRange: 6
+  fillLightEvery: 3
 --- !u!1 &2933210944464907078
 GameObject:
   m_ObjectHideFlags: 0

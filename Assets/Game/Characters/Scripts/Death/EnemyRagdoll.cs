@@ -96,10 +96,28 @@ public class EnemyRagdoll : MonoBehaviour
         var hipsRb = Part(hips, null, .16f, BoxAround(hips, spine, .28f * scale));
         var spineRb = Part(spine, hipsRb, .2f, BoxAround(spine, head, .3f * scale));
         var headRb = Part(head, spineRb, .06f, null, .12f * scale);
+        FitWornHead(head);
         Limb(B(HumanBodyBones.LeftUpperArm), B(HumanBodyBones.LeftLowerArm), B(HumanBodyBones.LeftHand), spineRb, .05f * scale);
         Limb(B(HumanBodyBones.RightUpperArm), B(HumanBodyBones.RightLowerArm), B(HumanBodyBones.RightHand), spineRb, .05f * scale);
         Limb(B(HumanBodyBones.LeftUpperLeg), B(HumanBodyBones.LeftLowerLeg), B(HumanBodyBones.LeftFoot), hipsRb, .07f * scale);
         Limb(B(HumanBodyBones.RightUpperLeg), B(HumanBodyBones.RightLowerLeg), B(HumanBodyBones.RightFoot), hipsRb, .07f * scale);
+    }
+
+    // A head worn on the head bone in place of the body's own (the tavern keeper's, KeeperFace, kept when he turns) can be
+    // much bigger than the head's sphere: under a body lying face down the minotaur's muzzle sank into the floor
+    // (2026-11-13). The head bone's collider becomes a box round the worn head, a little inside it.
+    void FitWornHead(Transform head)
+    {
+        var face = GetComponentInChildren<KeeperFace>();
+        var worn = face != null ? face.Worn : null;
+        if (worn == null || !worn.TryGetComponent<MeshFilter>(out var filter) || filter.sharedMesh == null) return;
+        var b = filter.sharedMesh.bounds; var toBone = head.worldToLocalMatrix * worn.transform.localToWorldMatrix;
+        var box = new Bounds(toBone.MultiplyPoint3x4(b.center), Vector3.zero);
+        for (int i = 0; i < 8; i++)
+            box.Encapsulate(toBone.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f))));
+        if (head.TryGetComponent<SphereCollider>(out var sphere)) { sphere.enabled = false; Destroy(sphere); }
+        var c = head.gameObject.AddComponent<BoxCollider>();
+        c.center = box.center; c.size = box.size * .8f;
     }
 
     void Limb(Transform upper, Transform lower, Transform end, Rigidbody parent, float radius)

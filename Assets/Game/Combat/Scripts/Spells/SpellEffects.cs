@@ -74,7 +74,8 @@ public static class SpellEffects
         if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) { ProvokableNpc.TryProvoke(target, owner); return false; }
         var dir = at - from; dir.y = 0f;
         target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = at, Direction = dir.sqrMagnitude > .0001f ? dir.normalized : Vector3.forward });
-        return true;
+        // A hit the Dungeon Master stopped (EventProtection) hurt nothing: no skill practice for it.
+        return !EventProtection.Held(target);
     }
 
     // A character's middle, where bolts and beams meet it.

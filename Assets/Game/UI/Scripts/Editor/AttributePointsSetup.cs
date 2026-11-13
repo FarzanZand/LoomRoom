@@ -34,7 +34,9 @@ public static class AttributePointsSetup
 
         var root = Rect("Attribute points", parent);
         root.anchorMin = root.anchorMax = new Vector2(.5f, .5f);
-        root.sizeDelta = new Vector2(440f, 600f);
+        // As tall as keeps the rows as far from the bottom edge as from the sides (24; the user, 2026-11-13: they sat high
+        // in the panel, twice as far from its foot).
+        root.sizeDelta = new Vector2(440f, 574f);
         // The panels' corners are only laid out while the bag is open; closed, the gap's middle measured in game is used.
         float x = GapCentre(inventory, parent);
         root.anchoredPosition = new Vector2(Mathf.Abs(x) < 1f ? -79f : x, 30f);
@@ -45,10 +47,10 @@ public static class AttributePointsSetup
         ui.group = panel.gameObject.AddComponent<CanvasGroup>();
         var face = Box("Frame", panel, Sprite(Inv + "Plain frame grey.png"), panel.sizeDelta, Tint); face.type = Image.Type.Tiled;
         Box("Grunge", panel, Sprite("Assets/Game/UI/Sprites/Panel/Panel grunge.png"), panel.sizeDelta - new Vector2(28f, 28f), Color.white);
-        ui.title = Text("Title", panel, bold, 26, Gold, new Vector2(0f, 262f), "1 POINT TO SPEND", 400);
+        ui.title = Text("Title", panel, bold, 26, Gold, new Vector2(0f, 249f), "1 POINT TO SPEND", 400);
         ui.choices = new AttributePointsUI.Choice[4];
         // Each bonus on its own line (the user), so the rows are three lines of bonuses tall.
-        for (int i = 0; i < 4; i++) ui.choices[i] = Row(panel, i, new Vector2(0f, 174f - i * 122f), new Vector2(392f, 114f));
+        for (int i = 0; i < 4; i++) ui.choices[i] = Row(panel, i, new Vector2(0f, 161f - i * 122f), new Vector2(392f, 114f));
         ui.ink = Ink; ui.gold = Gold; ui.faded = Faded;
         ui.appear = Card("Tarot pop"); ui.hover = Card("Tarot hover"); ui.leave = Card("Tarot leave");
         ui.pickKey = AttributeCellUI.ClickKey;   // a pick is the regular button click (the user, 2026-11-04)

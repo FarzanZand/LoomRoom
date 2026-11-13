@@ -590,6 +590,49 @@ public partial class AssetStudioWindow
         return total > 0f ? rolls / total : 1f;
     }
 
+    // A chest's one piece (DungeonContainer: at most one piece of gear a chest, the best of what its rolls bring; the
+    // user, 2026-11-13): each chest tier's rolls (1 + its extra rolls, and for a gold chest one from deeper floors) at
+    // this floor's odds, the best kept, the tiers weighed as the level deals them. A tome ranks as Rare.
+    static DropOdds ChestPiece(TableLevelData d, InventoryManager im, int floor)
+    {
+        int n = GearRarities.Length, rare = Array.IndexOf(GearRarities, ItemRarity.Rare);
+        var o = new DropOdds { rarity = new float[n] };
+        float total = 0f;
+        foreach (var t in d.chestTiers ?? Array.Empty<DungeonWeightedPrefab>()) if (t != null && t.prefab != null && t.weight > 0f) total += t.weight;
+        if (total <= 0f) return OddsOf(im, im.chestDrops, 1f, floor);
+        var here = OddsOf(im, im.chestDrops, 1f, floor);
+        foreach (var t in d.chestTiers)
+        {
+            if (t == null || t.prefab == null || t.weight <= 0f) continue;
+            var c = t.prefab.GetComponentInChildren<DungeonContainer>(true);
+            // atMost[k]: the chance no roll brought better than rank k (0 nothing, 1.. the rarities in order).
+            var atMost = new float[n + 1];
+            for (int k = 0; k <= n; k++) atMost[k] = 1f;
+            void Roll(DropOdds one)
+            {
+                float cum = 1f - one.gear;
+                for (int k = 0; k <= n; k++)
+                {
+                    if (k > 0) { cum += one.rarity[k - 1]; if (k - 1 == rare) cum += one.tome; }
+                    atMost[k] *= Mathf.Clamp01(cum);
+                }
+            }
+            int rolls = 1 + (c != null ? Mathf.Max(0, c.extraRolls) : 0);
+            for (int i = 0; i < rolls; i++) Roll(here);
+            if (c != null && c.rareRollFloors > 0) Roll(OddsOf(im, im.chestDrops, 1f, floor + c.rareRollFloors));
+            float w = t.weight / total;
+            o.gear += w * (1f - atMost[0]);
+            for (int k = 0; k < n; k++)
+            {
+                float p = w * Mathf.Max(0f, atMost[k + 1] - atMost[k]);
+                // At Rare the piece is a tome as often as tomes are among a roll's Rare pieces.
+                float tome = k == rare && here.rarity[k] + here.tome > 0f ? p * here.tome / (here.rarity[k] + here.tome) : 0f;
+                o.rarity[k] += p - tome; o.tome += tome;
+            }
+        }
+        return o;
+    }
+
     // One source's odds: the chance of gear, the tome among it, and each rarity of the rest, all of one kill (or roll).
     struct DropOdds { public float gear, tome; public float[] rarity; }
     static DropOdds OddsOf(InventoryManager im, SourceDrops s, float dropScale, int floor)
@@ -603,10 +646,10 @@ public partial class AssetStudioWindow
 
     void DropsTab(TableLevelData d, InventoryManager im, ProgressionManager pm)
     {
-        Question("How often each rarity drops: per kill, per chest roll, per floor");
+        Question("How often each rarity drops: per kill, per chest, per floor");
         float rolls = ChestRolls(d);
         float killScale = im.dropChanceMultiplier * im.enemyDropMultiplier;
-        float PerFloor(int f, int r) => fightKills * OddsOf(im, im.enemyDrops, killScale, f).rarity[r] + dropChests * rolls * OddsOf(im, im.chestDrops, 1f, f).rarity[r];
+        float PerFloor(int f, int r) => fightKills * OddsOf(im, im.enemyDrops, killScale, f).rarity[r] + dropChests * ChestPiece(d, im, f).rarity[r];
         TwoColumns(470, () =>
         {
             Group("RARITY CHANCES", im, "InventoryManager");
@@ -665,7 +708,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal(GUILayout.Height(20));
             GUILayout.Label("Chests", GUILayout.Width(150)); dropChests = Mathf.Clamp(EditorGUILayout.IntField(dropChests, GUILayout.Width(56)), 0, 100);
-            GUILayout.Label($"x {rolls:0.##} rolls", Unit, GUILayout.Width(100));
+            GUILayout.Label($"one piece each, the best of {rolls:0.##} rolls", Unit, GUILayout.Width(250));
             GUILayout.EndHorizontal();
         }, () =>
         {
@@ -682,9 +725,9 @@ public partial class AssetStudioWindow
                 GUILayout.EndVertical();
             }
             GUILayout.EndHorizontal();
-            GUILayout.Label($"A floor: {fightKills} kills and {dropChests} chests ({rolls:0.##} rolls each).", dim);
+            GUILayout.Label($"A floor: {fightKills} kills and {dropChests} chests (one piece of gear each: the best of {rolls:0.##} rolls).", dim);
 
-            void PerSource(string title, SourceDrops s, float scale, string per)
+            void PerSource(string title, SourceDrops s, float scale, string per, bool chestPiece = false)
             {
                 GUILayout.Space(8);
                 GUILayout.Label(title, gold);
@@ -695,7 +738,7 @@ public partial class AssetStudioWindow
                 GUILayout.EndHorizontal();
                 for (int f = 1; f <= d.FloorCount; f++)
                 {
-                    var o = OddsOf(im, s, scale, f);
+                    var o = chestPiece ? ChestPiece(d, im, f) : OddsOf(im, s, scale, f);
                     GUILayout.BeginHorizontal(GUILayout.Height(20));
                     Out($"{per}{f}f", f.ToString(), 40);
                     for (int r = 0; r < GearRarities.Length; r++) Out($"{per}{f}{r}", $"{Pct(o.rarity[r])} <color=#a9a49a>{OneIn(o.rarity[r])}</color>", 96);
@@ -706,6 +749,7 @@ public partial class AssetStudioWindow
             }
             PerSource("PER KILL  (THE ROW ADDS UP TO = GEAR)", im.enemyDrops, killScale, "k");
             PerSource("PER CHEST ROLL  (THE ROW ADDS UP TO = GEAR)", im.chestDrops, 1f, "c");
+            PerSource("PER CHEST: ITS ONE PIECE, THE BEST OF ITS ROLLS  (THE ROW ADDS UP TO = GEAR)", im.chestDrops, 1f, "cp", true);
 
             GUILayout.Space(8);
             GUILayout.Label("OF THE GEAR DROPPED  (EACH ROW 100%)", gold);
@@ -716,7 +760,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
             void ShareRow(string label, SourceDrops s, float scale, int f)
             {
-                var o = OddsOf(im, s, scale, f);
+                var o = s == im.chestDrops ? ChestPiece(d, im, f) : OddsOf(im, s, scale, f);
                 GUILayout.BeginHorizontal(GUILayout.Height(20));
                 GUILayout.Label(label, StudioSkin.Label, GUILayout.Width(120));
                 for (int r = 0; r < GearRarities.Length; r++) Out($"s{label}{r}", o.gear > 0f ? Pct(o.rarity[r] / o.gear) : "-", 80);

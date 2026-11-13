@@ -49,7 +49,7 @@ public class EquipmentPanelUI : MonoBehaviour
                 if(CombatManager.HasInstance)
                 {
                     var cm=CombatManager.Instance;
-                    if(cm.dash!=null && cm.dash.enabled && (!ProgressionManager.HasInstance || ProgressionManager.Instance.Unlocked(cm.dash.ability,player.GetComponent<AdventurerProgress>())))Row(b,"Dash",$"-{cm.dash.staminaCost:0.#}",ItemData.BadColor);
+                    if(cm.dash!=null && cm.dash.enabled && (!ProgressionManager.HasInstance || ProgressionManager.Instance.Unlocked(cm.dash.ability,player.GetComponent<AdventurerProgress>())))Row(b,"Evade",$"-{cm.dash.staminaCost:0.#}",ItemData.BadColor);
                     Row(b,"Blocked hit",$"-{cm.blockStaminaCost:0.#}",ItemData.BadColor);
                 }
                 body=b.ToString();

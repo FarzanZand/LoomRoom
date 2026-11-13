@@ -151,28 +151,37 @@ public partial class DungeonGenerator
     void AddWayInDoors()
     {
         doorPrefabs.Clear();
-        if (MerchantRoom <= 0) return;
-        // The merchant in a plain room (the shop didn't fit) has no tavern, so no tavern door either.
-        var prefab = TemplatePrefab(MerchantRoom);
+        // The merchant's room first, then every other room that asks for doors (a way through: the bridge rooms).
+        if (MerchantRoom > 0) WayInDoors(MerchantRoom);
+        for (int room = 1; room < Layout.rooms.Count; room++) if (room != MerchantRoom) WayInDoors(room);
+    }
+
+    void WayInDoors(int room)
+    {
+        // A room with no template of its own (the merchant in a plain room when the shop didn't fit) gets none.
+        var prefab = TemplatePrefab(room);
         var template = prefab != null ? prefab.GetComponent<DungeonRoomTemplate>() : null;
-        if (template == null || template.wayInDoor == null) return;
-        NarrowWaysInto(MerchantRoom);
-        foreach (var cell in Layout.RoomCells(MerchantRoom))
+        if (template == null) return;
+        // Its own door, or for a way through the level's.
+        var door = template.wayInDoor != null ? template.wayInDoor : template.wayThrough ? data.doorPrefab : null;
+        if (door == null) return;
+        NarrowWaysInto(room);
+        foreach (var cell in Layout.RoomCells(room))
             foreach (var dir in DungeonLayout.Neighbours)
             {
-                if (!Layout.IsOpening(MerchantRoom, cell, dir)) continue;
+                if (!Layout.IsOpening(room, cell, dir)) continue;
                 var outside = cell + dir;
                 int passage = Layout.RegionIds[outside.x, outside.y];
-                // The passage's other doors go (one door a passage), the starting room's own excepted.
+                // The passage's other doors go (one door a passage), the starting room's own and another such room's excepted.
                 doorways.RemoveAll(d =>
                 {
                     var n = d.roomCell + d.direction;
-                    return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage && !Layout.InRoom(0, d.roomCell) && !Layout.InRoom(MerchantRoom, d.roomCell);
+                    return Layout.InBounds(n) && Layout.RegionIds[n.x, n.y] == passage && !Layout.InRoom(0, d.roomCell) && !Layout.InRoom(room, d.roomCell) && !doorPrefabs.ContainsKey((d.roomCell, d.direction));
                 });
                 // A door the doorway already has goes too: two leaves stood in one doorway.
                 doorways.RemoveAll(d => d.roomCell == cell && d.direction == dir);
                 doorways.Add((cell, dir));
-                doorPrefabs[(cell, dir)] = template.wayInDoor;
+                doorPrefabs[(cell, dir)] = door;
             }
     }
 

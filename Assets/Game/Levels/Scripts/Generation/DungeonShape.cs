@@ -48,6 +48,8 @@ public sealed class DungeonShape
     // Quarter turns clockwise seen from above, matching Quaternion.Euler(0, 90 * rotation, 0).
     public int rotation;
     public bool mirrored;
+    // A way through (DungeonRoomTemplate.wayThrough): every marked door gets a passage (DungeonLayout.OpenEveryDoor).
+    public bool everyDoor;
 
     public DungeonShape(int width, int height)
     {
@@ -73,7 +75,7 @@ public sealed class DungeonShape
     public DungeonShape RotatedClockwise()
     {
         // Offset (dx, dy) becomes (dy, -dx): the same turn Unity applies for +90 degrees yaw.
-        var r = new DungeonShape(height, width) { kind = kind, name = name, rotation = (rotation + 1) & 3, mirrored = mirrored };
+        var r = new DungeonShape(height, width) { kind = kind, name = name, rotation = (rotation + 1) & 3, mirrored = mirrored, everyDoor = everyDoor };
         for (int x = 0; x < width; x++) for (int y = 0; y < height; y++)
         {
             r[y, width - 1 - x] = this[x, y];
@@ -85,7 +87,7 @@ public sealed class DungeonShape
 
     public DungeonShape Mirrored()
     {
-        var m = new DungeonShape(width, height) { kind = kind, name = name, rotation = rotation, mirrored = !mirrored };
+        var m = new DungeonShape(width, height) { kind = kind, name = name, rotation = rotation, mirrored = !mirrored, everyDoor = everyDoor };
         for (int x = 0; x < width; x++) for (int y = 0; y < height; y++)
         {
             m[width - 1 - x, y] = this[x, y];
@@ -350,7 +352,7 @@ public sealed class DungeonShape
         for (int x = 0; x < width; x++) for (int y = 0; y < height; y++)
             if (this[x, y] != Empty) { minX = Mathf.Min(minX, x); minY = Mathf.Min(minY, y); maxX = Mathf.Max(maxX, x); maxY = Mathf.Max(maxY, y); }
         if (maxX < 0) return this;
-        var t = new DungeonShape(maxX - minX + 1, maxY - minY + 1) { kind = kind, name = name, rotation = rotation, mirrored = mirrored };
+        var t = new DungeonShape(maxX - minX + 1, maxY - minY + 1) { kind = kind, name = name, rotation = rotation, mirrored = mirrored, everyDoor = everyDoor };
         for (int x = minX; x <= maxX; x++) for (int y = minY; y <= maxY; y++)
         {
             t[x - minX, y - minY] = this[x, y];

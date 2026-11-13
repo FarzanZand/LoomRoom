@@ -21,6 +21,8 @@ public class RuleManager : Singleton<RuleManager>
     public const string FlagPrefix = "rule.";
     // A rule was given or the list changed: the sheet and the read screen redraw.
     public event Action Changed;
+    // A rule was given for the first time (not a rule read back from a save): its notice shows (NewRuleUI).
+    public event Action<HouseRule> RuleGiven;
 
     static ProgressionManager PM => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
 
@@ -59,6 +61,8 @@ public class RuleManager : Singleton<RuleManager>
             foreach (var r in rules) if (r != null && r != rule && Given(r)) last = Mathf.Max(last, Order(r));
             PM.SetFlag(FlagPrefix + rule.id, last + 1);
             Changed?.Invoke();
+            RuleGiven?.Invoke(rule);
+            NewRuleUI.Show(rule);   // a small "NEW RULE ADDED" and the rule typed out, where his lines are
         }
         return rule.given != null && !rule.given.IsEmpty ? Numbered(rule.given, rule) : new DungeonMaster.Line { text = $"*Rule {Word(Number(rule))}.* {rule.text}", inPerson = true, mumble = true };
     }

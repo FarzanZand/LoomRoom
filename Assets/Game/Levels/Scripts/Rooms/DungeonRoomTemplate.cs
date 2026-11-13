@@ -65,6 +65,9 @@ public class DungeonRoomTemplate : MonoBehaviour
     [AssetsOnly, Tooltip("A door on every way into this room (a dungeon door prefab, or a variant of one such as the Tavern door), in place of the level's random doors there. Only for the merchant's room (the shop room) for now. Empty: the level's doors as usual.")]
     public GameObject wayInDoor;
 
+    [Tooltip("A way through (the bridge rooms; the user, 2026-11-13): every door marked on its footprint gets a passage, so the room is entered at one end and left at the other, never a dead end, and every way in gets a door (the level's, unless Way In Door names another). Put into a room already laid out, that room must have a way in at each end a door is marked at.")]
+    public bool wayThrough;
+
     [Title("Contents")]
     [Tooltip("Skip the generator's random props, supply container and features in this room.")]
     public bool replaceGeneratedProps = true;
@@ -153,8 +156,12 @@ public class DungeonRoomTemplate : MonoBehaviour
     public bool HasFootprint => paintFootprint || footprint != null;
 
     // The outline as painted, before any turn.
-    public DungeonShape Footprint() =>
-        paintFootprint ? DungeonShapeGrid.ToShape(width, height, rows, name) : footprint != null ? footprint.ToShape() : null;
+    public DungeonShape Footprint()
+    {
+        var shape = paintFootprint ? DungeonShapeGrid.ToShape(width, height, rows, name) : footprint != null ? footprint.ToShape() : null;
+        if (shape != null) shape.everyDoor = wayThrough;
+        return shape;
+    }
 
     // The outline as the generator places it: maybe turned, never mirrored.
     public DungeonShape FootprintShape(System.Random random) =>

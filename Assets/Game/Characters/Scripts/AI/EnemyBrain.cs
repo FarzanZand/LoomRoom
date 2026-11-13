@@ -198,7 +198,7 @@ public class EnemyBrain : MonoBehaviour
     // can't be staggered again for CombatManager.enemyStaggerImmunity.
     public void Stun(float seconds)
     {
-        if (State == EnemyState.Dead || seconds <= 0f) return;
+        if (State == EnemyState.Dead || seconds <= 0f || EventProtection.Held(Character)) return;
         if (IsSwinging) { attackRunner.CancelForPause(); SetState(EnemyState.Chase); }
         BeginRecovery(seconds);
         staggerImmuneUntil = Mathf.Max(staggerImmuneUntil, Time.time + seconds + (Tuning != null ? Tuning.enemyStaggerImmunity : 0f));

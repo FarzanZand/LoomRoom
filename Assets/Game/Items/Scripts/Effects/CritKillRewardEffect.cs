@@ -1,6 +1,7 @@
 using UnityEngine;
 
-// A Relic's unique skill (the Party Crasher's, the user, 2026-11-11): a kill made with a critical hit is celebrated.
+// A Relic's unique skill (the Party Crasher's, the user, 2026-11-11): a kill made with a critical hit, or with a charged
+// heavy attack (the user, 2026-11-13; not the combo's finisher, which also counts as heavy in the hit), is celebrated.
 // The wielder collects Gold through the usual gold pickup (CurrencyManager.Collect: the coin sound and the pickup line),
 // a party horn sounds at Horn Volume, a burst of confetti goes off where the blow landed, and now and then (Line
 // Chance) the Dungeon Master says one of Lines. Used from an EffectEntry of type Custom on the item, trigger On Hit
@@ -31,8 +32,9 @@ public class CritKillRewardEffect : ItemEffect
     public override void Apply(EffectEntry entry, EffectContext ctx)
     {
         var hit = ctx.Hit;
-        // Only a kill, only by a critical hit, only the wielder's own blow.
-        if (!hit.Critical || hit.Target == null || hit.Target.IsAlive || ctx.User == null || hit.Source != ctx.User) return;
+        // Only a kill, only by a critical hit or a charged heavy attack, only the wielder's own blow.
+        bool heavyAttack = hit.Heavy && !hit.Finisher;
+        if (!(hit.Critical || heavyAttack) || hit.Target == null || hit.Target.IsAlive || ctx.User == null || hit.Source != ctx.User) return;
         Vector3 at = hit.HitPoint != Vector3.zero ? hit.HitPoint : hit.Target.transform.position + Vector3.up;
         if (gold > 0 && ctx.User is Player player && CurrencyManager.HasInstance) CurrencyManager.Instance.Collect(player, gold, at);
         if (horn != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(horn, at, hornVolume, 0f);

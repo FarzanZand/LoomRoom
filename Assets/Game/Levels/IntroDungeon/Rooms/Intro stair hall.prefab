@@ -59,8 +59,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: The intro's last room, moonlit under an open ceiling. Walking in brings
-    the killer down the ladder to end the practice run.
+  description: The intro's last room, moonlit under an open ceiling. Walking in brings the killer down the ladder to end the practice run.
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 0
@@ -79,11 +78,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 1
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

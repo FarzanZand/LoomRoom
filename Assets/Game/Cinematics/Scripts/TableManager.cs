@@ -31,7 +31,7 @@ public class TableManager : Singleton<TableManager>, IInteractable, ISecondaryIn
     [SerializeField, Tooltip("Said when the table is used during the win ending, while the door stands open.")]
     DungeonMaster.Line endingLine = new() { text = "The door's open. Go and get some air." };
     [SerializeField, Tooltip("Said when the table is used while the spend-spoils quest is open (the lesson skill first, Athletics).")]
-    DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Learn to dash at the sheet first." };
+    DungeonMaster.Line learnFirstLine = new() { text = "Not yet. Learn to evade at the sheet first." };
     [SerializeField, Tooltip("Said instead while the lesson holds runs and the sheet has not been opened yet.")]
     DungeonMaster.Line lookFirstLine = new() { text = "Have a look at the sheet first." };
 

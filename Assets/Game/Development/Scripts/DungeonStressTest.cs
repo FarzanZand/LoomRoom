@@ -81,7 +81,7 @@ public static class DungeonStressTest
         var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
         if (level == null) return "no level at " + levelPath;
         var report = new StringBuilder();
-        int fails = 0, built = 0, pockets = 0, pocketFails = 0, noExit = 0;
+        int fails = 0, built = 0, pockets = 0, pocketFails = 0, noExit = 0, flickering = 0;
         var pocketErrors = new System.Collections.Generic.List<string>();
         var previous = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         var testScene = BeginTestScene();
@@ -104,6 +104,11 @@ public static class DungeonStressTest
                         pocketErrors.Clear();
                         pocketFails += PortalArch.PrebuildAll(generator, unchecked(seed + floor * 104729), pocketErrors);
                         foreach (var error in pocketErrors) report.AppendLine($"seed {seed} floor {floor} pocket: {error}");
+                        // No two built faces in one place (the user, 2026-11-13: flicker must not come back): each floor and its
+                        // pockets are checked, and a floor with any is a failure (CoplanarCheck; Flicker() for the full report).
+                        int flicker = BuiltFlicker(generator, $"seed {seed} floor {floor}", report);
+                        foreach (var pocket in PortalArch.PocketsOf(generator)) if (pocket != null) flicker += BuiltFlicker(pocket, $"seed {seed} floor {floor} pocket", report);
+                        if (flicker > 0) flickering++;
                         // Pockets stand beside the floor, not under it.
                         foreach (var pocket in new System.Collections.Generic.List<DungeonGenerator>(PortalArch.PocketsOf(generator)))
                             if (pocket != null) { pockets++; Object.DestroyImmediate(pocket.gameObject); }
@@ -114,8 +119,115 @@ public static class DungeonStressTest
             }
         }
         finally { EndTestScene(testScene, previous); }
-        string summary = $"{level.name}: {fails} of {fails + built} floors failed, {noExit} without stairs, {pocketFails} of {pocketFails + pockets} portal pockets failed";
+        string summary = $"{level.name}: {fails} of {fails + built} floors failed, {noExit} without stairs, {pocketFails} of {pocketFails + pockets} portal pockets failed, {flickering} with built faces that flicker";
         System.IO.File.WriteAllText("Temp/stress.log", summary + "\n" + report);
+        return summary;
+#else
+        return "editor only";
+#endif
+    }
+
+    // What can be seen on a walled floor: everything from the floor's top up, and below it only inside a pit's or a sunken
+    // floor's hole, above its bottom (the undersides of the floor and of a pit's linings lie in the table).
+    static System.Func<Vector3, bool> Seen(DungeonGenerator floor)
+    {
+        float top = floor.transform.position.y - .0005f;
+        var holes = new System.Collections.Generic.List<Bounds>();
+        foreach (var r in floor.GetComponentsInChildren<MeshRenderer>(true))
+            if (r.name == "Pit floor" || r.name == "Sunken flagstone") holes.Add(r.bounds);
+        return p =>
+        {
+            if (p.y >= top) return true;
+            foreach (var h in holes)
+                if (p.x > h.min.x && p.x < h.max.x && p.z > h.min.z && p.z < h.max.z && p.y > h.max.y - .0005f) return true;
+            return false;
+        };
+    }
+
+    // The built faces that would flicker on a floor or pocket (models' own faces left out), each a line in the report.
+    static int BuiltFlicker(DungeonGenerator root, string label, StringBuilder report)
+    {
+        int n = 0;
+        foreach (var f in CoplanarCheck.Run(root.transform, seen: Seen(root)))
+        {
+            if (!Built(root, f.ra) || !Built(root, f.rb)) continue;
+            n++;
+            report.AppendLine($"{label} flicker, {root.DescribeRoomAt(f.at)}: {f}");
+        }
+        return n;
+    }
+
+    // Built by the generator: a wall, floor, ceiling or trim box, a room's kit block, or a merged chunk of them (a chunk
+    // made of a material those pieces use). Anything else is an imported model.
+    static bool Built(DungeonGenerator floor, Renderer r)
+    {
+        if (r == null) return false;
+        if (floor.IsArchitecture(r) || r.GetComponentInParent<DungeonKitBlock>(true) != null) return true;
+        if (r.name != "Static chunk") return false;
+        var materials = new System.Collections.Generic.HashSet<Material>();
+        foreach (var piece in floor.GetComponentsInChildren<MeshRenderer>(true)) if (floor.IsArchitecture(piece)) materials.Add(piece.sharedMaterial);
+        return materials.Contains(r.sharedMaterial);
+    }
+
+    // Builds floors of a level (as Run does, their portal pockets too) and looks on each for faces that would flicker
+    // (CoplanarCheck: two opaque faces turned the same way in one plane, overlapping). Every find fails the floor. The
+    // finds are written to Temp/flicker.log with what they were built from, grouped by the rooms they lie in.
+    public static string Flicker(string levelPath, int seeds = 6, int floors = 4)
+    {
+#if UNITY_EDITOR
+        var level = UnityEditor.AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
+        if (level == null) return "no level at " + levelPath;
+        var report = new StringBuilder();
+        int built = 0, bad = 0, finds = 0, inModels = 0;
+        var models = new StringBuilder();
+        var byRoom = new System.Collections.Generic.Dictionary<string, int>();
+        var previous = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        var testScene = BeginTestScene();
+        try
+        {
+            for (int i = 0; i < seeds; i++)
+            {
+                int seed = 1000 + i * 7919;
+                for (int floor = 1; floor <= floors && floor <= level.FloorCount; floor++)
+                {
+                    var go = new GameObject("Flicker test floor");
+                    go.transform.position = new Vector3(500, 0, 500);
+                    DungeonGenerator generator = null;
+                    try { generator = go.AddComponent<DungeonGenerator>(); generator.Build(level, unchecked(seed + floor * 104729), floor); built++; }
+                    catch (System.Exception e) { report.AppendLine($"seed {seed} floor {floor}: not built: {e.Message}"); generator = null; }
+                    if (generator != null)
+                    {
+                        var roots = new System.Collections.Generic.List<(string name, DungeonGenerator root)> { ("floor", generator) };
+                        try { PortalArch.PrebuildAll(generator, unchecked(seed + floor * 104729), new System.Collections.Generic.List<string>()); } catch { }
+                        foreach (var pocket in PortalArch.PocketsOf(generator)) if (pocket != null) roots.Add(("pocket", pocket));
+                        int here = 0;
+                        foreach (var (name, root) in roots)
+                            foreach (var f in CoplanarCheck.Run(root.transform, seen: Seen(root)))
+                            {
+                                // A model's own faces (a crate's planks, a chest's lid on its body) are the model's to fix: listed apart.
+                                if (!Built(root, f.ra) || !Built(root, f.rb)) { inModels++; models.AppendLine($"seed {seed} floor {floor} {name}: {f}"); continue; }
+                                here++;
+                                string room = root.DescribeRoomAt(f.at);
+                                int colon = room.IndexOf("): ");
+                                if (colon >= 0) room = room.Substring(colon + 3);
+                                report.AppendLine($"seed {seed} floor {floor} {name}, {room}: {f}");
+                                byRoom[room] = (byRoom.TryGetValue(room, out int n) ? n : 0) + 1;
+                            }
+                        if (here > 0) { bad++; finds += here; }
+                        foreach (var pocket in new System.Collections.Generic.List<DungeonGenerator>(PortalArch.PocketsOf(generator)))
+                            if (pocket != null) Object.DestroyImmediate(pocket.gameObject);
+                    }
+                    Object.DestroyImmediate(go);
+                    if (built % 10 == 0) FreeTestFloors();
+                }
+            }
+        }
+        finally { EndTestScene(testScene, previous); FreeTestFloors(); }
+        var rooms = new StringBuilder();
+        foreach (var kv in byRoom) rooms.Append($"{kv.Key} {kv.Value}, ");
+        string summary = $"{level.name}: {bad} of {built} floors have built faces that flicker ({finds} in all){(rooms.Length > 0 ? ": " + rooms.ToString().TrimEnd(',', ' ') : "")}; {inModels} more inside models (Temp/flicker models.log)";
+        System.IO.File.WriteAllText("Temp/flicker.log", summary + "\n" + report);
+        System.IO.File.WriteAllText("Temp/flicker models.log", models.ToString());
         return summary;
 #else
         return "editor only";

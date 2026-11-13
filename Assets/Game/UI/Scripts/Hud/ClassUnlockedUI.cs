@@ -14,6 +14,7 @@ public class ClassUnlockedUI : MonoBehaviour
     [SerializeField] Image portrait;
     [SerializeField] TMP_Text heading, className, line;
     [SerializeField, Min(0f), Tooltip("Seconds the card stays before it fades.")] float hold = 4f;
+    [SerializeField, Min(0f), Tooltip("A New place card (a place a rumour opened, the Arena) runs this share of a class card's time, fades included (the user, 2026-11-13: 40% shorter).")] float placeShare = .6f;
     [SerializeField, Min(0f), Tooltip("How far the card rises as it fades in (canvas units).")] float rise = 18f;
     [SerializeField, Tooltip("AudioManager UI Library key played as it shows.")] string soundKey = "classUnlocked";
 
@@ -37,7 +38,7 @@ public class ClassUnlockedUI : MonoBehaviour
     {
         if (pendingPlace == null || !GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return;
         var place = pendingPlace.Value; pendingPlace = null;
-        Play(place.name, place.picture, PlaceHeading, PlaceLine);
+        Play(place.name, place.picture, PlaceHeading, PlaceLine, placeShare);
     }
 
     public const string PlaceHeading = "New place", PlaceLine = "Now on the map in the room.";
@@ -61,10 +62,11 @@ public class ClassUnlockedUI : MonoBehaviour
         if (instance == null) return;
         instance.Play(unlocked != null && !string.IsNullOrEmpty(unlocked.displayName) ? unlocked.displayName : fallbackName,
             unlocked != null ? (ProgressionManager.HasInstance && ProgressionManager.Instance.SheetPortrait(unlocked) is Sprite s ? s : unlocked.sheetPortrait != null ? unlocked.sheetPortrait : unlocked.portrait) : null,
-            instance.classHeading, instance.classLine);
+            instance.classHeading, instance.classLine, 1f);
     }
 
-    void Play(string name, Sprite picture, string headingText, string lineText)
+    // share: of the card's whole time (fade in, hold, fade out).
+    void Play(string name, Sprite picture, string headingText, string lineText, float share)
     {
         if (group == null || card == null) return;
         if (className != null) className.text = name;
@@ -76,9 +78,9 @@ public class ClassUnlockedUI : MonoBehaviour
         card.anchoredPosition = rest - new Vector2(0f, rise);
         if (AudioManager.HasInstance && AudioManager.Instance.HasUI(soundKey)) AudioManager.Instance.PlayUI(soundKey);
         show = DOTween.Sequence().SetUpdate(true);
-        show.Append(group.DOFade(1f, .6f).SetEase(Ease.OutQuad));
-        show.Join(card.DOAnchorPos(rest, .8f).SetEase(Ease.OutQuad));
-        show.AppendInterval(hold);
-        show.Append(group.DOFade(0f, .9f).SetEase(Ease.InQuad));
+        show.Append(group.DOFade(1f, .6f * share).SetEase(Ease.OutQuad));
+        show.Join(card.DOAnchorPos(rest, .8f * share).SetEase(Ease.OutQuad));
+        show.AppendInterval(hold * share);
+        show.Append(group.DOFade(0f, .9f * share).SetEase(Ease.InQuad));
     }
 }

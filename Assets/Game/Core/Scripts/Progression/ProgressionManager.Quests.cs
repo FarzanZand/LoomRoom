@@ -38,7 +38,7 @@ public partial class ProgressionManager
         new Quest { id = SheetQuest, text = "Look at the character sheet on the hobby table." },
         new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
         new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
-        new Quest { id = DashQuest, text = "Dash: press {sprint}, holding left, right or back." },
+        new Quest { id = DashQuest, text = "Evade: press {sprint}, holding left, right or back." },
         new Quest { id = InventoryQuest, text = "Open your inventory ({inventory} or Tab)." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },

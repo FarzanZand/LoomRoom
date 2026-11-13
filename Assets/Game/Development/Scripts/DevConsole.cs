@@ -489,6 +489,7 @@ public class DevConsole : MonoBehaviour
             copy.name = level.name; copy.fixedSeed = 0;
             Print($"Loading {level.displayName}: win the first fight quickly and he adds an enemy; walk up to a chest and he takes it. meddle add|steal does it at once.");
             Close();
+            DebugDungeonSession.MarkTestStart();
             loader.Load(copy, skipReveal: true);
             return;
         }
@@ -546,6 +547,7 @@ public class DevConsole : MonoBehaviour
         if (stage > 0) copy.stages = copy.stages.Skip(stage).ToArray();
         DevGive.GoldAtNextRunStart();
         said = $"Loading {label} in {level.displayName}{(stage > 0 && copy.stages[0].biome != null ? $" ({copy.stages[0].biome.name})" : "")}.";
+        DebugDungeonSession.MarkTestStart();
         loader.Load(copy, skipReveal: true);
         return true;
     }

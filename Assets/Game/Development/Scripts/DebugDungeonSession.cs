@@ -28,12 +28,19 @@ public class DebugDungeonSession : MonoBehaviour
     // The Room button: an ordinary morning in the room with the normal save, nothing played first (ProgressionManager applies it).
     public static bool RoomStart { get; private set; }
     static DebugDungeonSettings settings;
+    // The game was started by a test shortcut, not as a player starts it: the toolbar's Debug, Dungeon, Room and Boss
+    // buttons, Asset Studio's Try it, the dev console's event and loadtemplate (MarkTestStart). The quest log stays hidden
+    // then (QuestLogUI; the user, 2026-11-13: quests are not relevant there); quests themselves are given and saved as
+    // ever, so a normal game afterwards has them. Until Play stops.
+    public static bool TestStart { get; private set; }
+    public static void MarkTestStart() => TestStart = true;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Initialize()
     {
         Active = false;
         RoomStart = false;
+        TestStart = false;
         CurrentMode = Mode.Arena;
         settings = null;
 #if UNITY_EDITOR
@@ -45,6 +52,7 @@ public class DebugDungeonSession : MonoBehaviour
         UnityEditor.SessionState.SetBool(RequestKey, false);
         UnityEditor.SessionState.SetBool(DungeonRequestKey, false);
         UnityEditor.SessionState.SetBool(RoomRequestKey, false);
+        TestStart = RoomStart || arena || dungeon || boss;
         if (RoomStart) { CurrentMode = Mode.Room; return; }
         CurrentMode = boss ? Mode.Boss : dungeon ? Mode.Dungeon : Mode.Arena;
         if (arena || dungeon || boss) settings = UnityEditor.AssetDatabase.LoadAssetAtPath<DebugDungeonSettings>(SettingsPath);

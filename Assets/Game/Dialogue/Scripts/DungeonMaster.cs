@@ -45,6 +45,24 @@ public class DungeonMaster : Singleton<DungeonMaster>
     [SerializeField, Min(200), Tooltip("Width of the lines in TikTok mode, in the 1920 x 1080 canvas: a 9:16 crop of it is 607 wide.")]
     float tiktokWidth = 560f;
     public static bool TikTokMode => HasInstance && Instance.tiktokMode;
+    // Where the lines stand just now, for a notice that stands on them (NewRuleUI): the middle of the top of the text
+    // there (every letter of it, the ones not typed yet too, so a notice doesn't jump as a line wraps; the lines' foot
+    // when nothing shows), in world space, the lines' width in screen pixels, and the text as it reads.
+    public static bool FeedTop(out Vector3 top, out float width, out string saying)
+    {
+        top = default; width = 0f; saying = "";
+        if (!HasInstance || Instance.label == null || !Instance.label.isActiveAndEnabled) return false;
+        var l = Instance.label; var r = l.rectTransform;
+        float y = r.rect.yMin;
+        if (!string.IsNullOrEmpty(l.text))
+        {
+            y += l.GetPreferredValues(l.text, r.rect.width, 0f).y;
+            saying = l.GetParsedText();
+        }
+        top = r.TransformPoint(new Vector3(r.rect.center.x, y, 0f));
+        width = r.rect.width * r.lossyScale.x;
+        return true;
+    }
     public static float TikTokWidth => HasInstance ? Instance.tiktokWidth : 560f;
     [SerializeField, Tooltip("With the bag open the lines keep to the gap between the character panel and the bag (1920 x 1080 canvas): their width there and how far left of the middle the gap's middle is.")]
     Vector2 bagOpenWidthAndShift = new(440f, -79f);

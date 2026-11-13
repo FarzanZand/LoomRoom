@@ -41,11 +41,15 @@ public partial class DungeonGenerator
         }
         var parent = new GameObject("Exit shaft").transform; parent.SetParent(geometry, false);
         var centre = Cell(cell);
+        // As a pit's sides (DungeonGenerator.Cuts): the sides facing z run over the corners and the ones facing x stop at them,
+        // and their tops lie 1 cm under the floor tiles round the shaft, never in one plane with another face (flicker).
+        const float under = .011f;
         foreach (var d in DungeonLayout.Neighbours)
         {
             var outward = new Vector3(d.x, 0f, d.y);
-            var wallSize = d.x != 0 ? new Vector3(WallThickness, depth, size + WallThickness * 2f) : new Vector3(size + WallThickness * 2f, depth, WallThickness);
-            ArchitectureBox("Shaft side", centre + outward * (size * .5f + WallThickness * .5f - .02f) + Vector3.down * (depth * .5f + .001f), wallSize,
+            float height = depth - under + .001f;
+            var wallSize = d.x != 0 ? new Vector3(WallThickness, height, size) : new Vector3(size + WallThickness * 2f, height, WallThickness);
+            ArchitectureBox("Shaft side", centre + outward * (size * .5f + WallThickness * .5f - .02f) + Vector3.down * (under + height * .5f), wallSize,
                 WallSurface(region, 0f, cell.x, cell.y, -d), parent);
         }
         ArchitectureBox("Shaft floor", centre + Vector3.down * (depth + .12f), new Vector3(size, .24f, size), FloorMaterial(region, cell.x, cell.y), parent);
@@ -128,8 +132,10 @@ public partial class DungeonGenerator
         Part("Kerb cap back", new Vector3(0, kerb + .05f, half + thick * .5f), new Vector3(size + thick * 2f + .08f, .1f, thick + .08f), trim);
         foreach (float x in new[] { -1f, 1f })
         {
-            Part("Kerb side", new Vector3(x * (half + thick * .5f), kerb * .5f, .05f), new Vector3(thick, kerb, size + .1f), walls);
-            Part("Kerb cap side", new Vector3(x * (half + thick * .5f), kerb + .05f, .05f), new Vector3(thick + .08f, .1f, size + .18f), trim);
+            // The sides and their caps end where the back and its cap begin: running on under them, their faces lay in the
+            // back's planes and flickered (the user, 2026-11-13).
+            Part("Kerb side", new Vector3(x * (half + thick * .5f), kerb * .5f, 0f), new Vector3(thick, kerb, size), walls);
+            Part("Kerb cap side", new Vector3(x * (half + thick * .5f), kerb + .05f, -.04f), new Vector3(thick + .08f, .1f, size), trim);
             // Posts either side of the mouth. No torches on them (the user, 2026-11-04: wall torches on the posts hung in
             // the air and clipped); the room's own lights and the glow below light the way down.
             Part("Post", new Vector3(x * (half + thick * .5f), .8f, -half - thick * .5f), new Vector3(thick + .1f, 1.6f, thick + .1f), walls);

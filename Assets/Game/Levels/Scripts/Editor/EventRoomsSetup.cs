@@ -239,6 +239,8 @@ public static class EventRoomsSetup
         // The roomier events are dressed from the floor's biome around their own pieces (the Card table was one table in
         // a bare room); the duel's bridge stays clear.
         if (name != "Duel bridge" && name != "Troll bridge") { t.replaceGeneratedProps = false; t.addFurnishing = true; }
+        // The bridges are ways through: a door at each end, each leading on into the floor (the user, 2026-11-13).
+        else t.wayThrough = true;
         t.roomEvent = DungeonRoomEvent.None;
         if (light != DungeonRoomLight.Normal) root.AddComponent<DungeonRoomMood>().kind = light;
         var e = root.AddComponent<ScriptedEventRoom>();
@@ -318,6 +320,7 @@ public static class EventRoomsSetup
             {
                 var cut = Marker(root, "Chasm", new Vector3(Mid + x, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
                 cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
+                cut.toWalls = true;   // lava from the bridge to the wall in any room (the user, 2026-11-13: no way round the bridge)
                 cut.fill = lava; cut.fillRepeat = 4f; cut.fillBelow = .9f;
                 cut.fillLightColour = new Color(1f, .42f, .13f); cut.fillLightIntensity = 22f; cut.fillLightRange = 9f; cut.fillLightEvery = 3;
             }
@@ -378,6 +381,7 @@ public static class EventRoomsSetup
                 {
                     var cut = Marker(root, "Chasm", new Vector3(Mid + x, 0f, 0f)).gameObject.AddComponent<DungeonFloorCut>();
                     cut.kind = DungeonFloorCut.Kind.Pit; cut.cells = new Vector2Int(3, 7);
+                cut.toWalls = true;   // lava from the bridge to the wall in any room (the user, 2026-11-13: no way round the bridge)
                     cut.fill = lava; cut.fillRepeat = 4f; cut.fillBelow = .9f;
                     cut.fillLightColour = new Color(1f, .42f, .13f); cut.fillLightIntensity = 22f; cut.fillLightRange = 9f; cut.fillLightEvery = 3;
                 }
@@ -407,6 +411,27 @@ public static class EventRoomsSetup
             Pool(biome, rooms);
         AssetDatabase.SaveAssets();
         return log.ToString();
+    }
+
+    // The two bridge rooms as built: their lava reaches the walls (DungeonFloorCut.toWalls) and they are ways through
+    // (DungeonRoomTemplate.wayThrough: a door at each end, each leading on), without rebuilding the rooms (their tuning
+    // and hand edits stay): BridgeLavaToWalls() from an eval. A rebuild sets both too.
+    public static string BridgeLavaToWalls()
+    {
+        var done = new System.Text.StringBuilder();
+        foreach (var name in new[] { "Duel bridge", "Troll bridge" })
+        {
+            string path = $"{RoomDir}/{name}.prefab";
+            var root = PrefabUtility.LoadPrefabContents(path);
+            int n = 0;
+            foreach (var cut in root.GetComponentsInChildren<DungeonFloorCut>(true)) if (cut.kind == DungeonFloorCut.Kind.Pit && !cut.toWalls) { cut.toWalls = true; n++; }
+            var template = root.GetComponent<DungeonRoomTemplate>();
+            if (template != null && !template.wayThrough) { template.wayThrough = true; n++; }
+            if (n > 0) PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+            done.Append($"{name}: {n} set; ");
+        }
+        return done.ToString();
     }
 
     // The tuning on the duel room being rebuilt (RebuildDuel), copied onto the new one so a rebuild never resets it.
@@ -452,7 +477,7 @@ public static class EventRoomsSetup
 
     // The bell: a 7 x 7 room two tiles high, the bell over the middle with its pull beside it, a plain chest at the back.
     static GameObject BellRoom(GameObject bell) => Room("Bell room", "bell",
-        "Pull the rope: the gates shut and a wave comes. Clear it and the chest gets better. Open the chest to stop.",
+        "Pull the rope, once: the gates shut and three waves come. Clear them and the chest comes back a tier better.",
         Rows(7, 7, new Vector2Int(3, 0), new Vector2Int(0, 3)), 2, (root, e) =>
         {
             var b = Put(root, bell, new Vector3(0f, 5.99f, .4f));
@@ -499,10 +524,13 @@ public static class EventRoomsSetup
             var table = Put(root, $"{Shared}/Tavern/Table.prefab", new Vector3(0f, 0f, .6f));
             var tb = table != null ? Bounds(table) : new Bounds(new Vector3(0, .8f, .6f), new Vector3(1.6f, 1.6f, 1f));
             float top = tb.max.y;
-            // He is small (a skeleton at .83) and the table is high: he sits a little raised and close in, so his head and
-            // hat show over the table.
-            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(0f, 0f, 1.58f), 180f);
-            var seat = Marker(root, "Dealer seat", new Vector3(0f, .12f, 1.45f), 180f);
+            // He is small (a skeleton at .83) on a full-size chair: he sits on its seat (its top is at .58 m; at seat
+            // height .365 the lowest of him is 9 mm over it), his back 4 cm clear of the backrest, his lower legs hanging in
+            // front of the seat, and the chair stands far enough from the table that his knees and hands stay clear of its
+            // edge (measured on his sitting pose, which holds through the shuffle; the user, 2026-11-13: at .12 he sat
+            // 24 cm deep in the chair).
+            Put(root, $"{Shared}/Tavern/Chair.prefab", new Vector3(0f, 0f, 1.83f), 180f);
+            var seat = Marker(root, "Dealer seat", new Vector3(0f, .365f, 1.65f), 180f);
             Put(root, sharp, seat.localPosition, 180f);
             var bet = Marker(root, "Bet", new Vector3(0f, 0f, .6f)).gameObject;
             Interactable(bet, new Vector3(0f, top * .5f, 0f), new Vector3(tb.size.x, top, tb.size.z));

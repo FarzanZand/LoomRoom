@@ -177,6 +177,10 @@ public class Flick : MonoBehaviour
 
     public static string Refusal(Player player, SpellDefinition spell)
     {
+        // An event's fighter waiting for the player to come and talk can't be flicked or knocked by the portal's die
+        // (EventProtection): refused before any mana is spent, with the puff on it and his word.
+        var aimed = Target(player, spell.flick);
+        if (aimed != null && EventProtection.Stops(aimed, player, SpellEffects.Chest(aimed))) { picked = null; return "Not yet"; }
         var floor = TableManager.Loader != null ? TableManager.Loader.Dungeon : null;
         bool portal = spell.flick.reach == FlickReach.Portal;
         // In a boss fight he is at the table already, busy with it: the player's own avatar in the room flicks instead.

@@ -10634,10 +10634,6 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
-  - text: Ow. I'm the Dungeon Master, not a target for your {spell}.
-    voice: {fileID: 0}
-    mumble: 1
-    inPerson: 0
   - text: '{A spell}. At me. Really?'
     voice: {fileID: 0}
     mumble: 1
@@ -10677,6 +10673,28 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   ownSpellGap: 12
+  protectedHit:
+  - text: Not yet. Let him have his say first.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Hold it. He hasn't said a word yet.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: No. Walk up and hear him out.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: He's waiting to talk to you. Go and talk.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Not until he's had his say.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  protectedHitGap: 4
   closeCallFraction: 0.25
   remarkGap: 15
   runRemarkDelay: 1.5
@@ -26618,7 +26636,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 440, y: 600}
+  m_SizeDelta: {x: 440, y: 574}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &204138203
 MonoBehaviour:
@@ -30405,7 +30423,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 52}
+  m_AnchoredPosition: {x: 0, y: 39}
   m_SizeDelta: {x: 392, y: 114}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &241132170
@@ -32250,6 +32268,7 @@ MonoBehaviour:
   className: {fileID: 1078515250}
   line: {fileID: 374138234}
   hold: 4
+  placeShare: 0.6
   rise: 18
   soundKey: classUnlocked
 --- !u!225 &258759993
@@ -37571,7 +37590,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -70}
+  m_AnchoredPosition: {x: 0, y: -83}
   m_SizeDelta: {x: 392, y: 114}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &318845455
@@ -44672,7 +44691,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'It costs 10 spoils and teaches the dash.
+  m_text: 'It costs 10 spoils and teaches Evade.
 
     The rest of the sheet opens after.'
   m_isRightToLeft: 0
@@ -58130,6 +58149,7 @@ MonoBehaviour:
   confirmNo: {fileID: 1468000394}
   mainMenuScene: Main Menu
   runLoss: Your run picks up at the start of this floor.
+  runEnds: This ends your run. The spoils you carry are lost.
 --- !u!114 &509792817
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -89859,7 +89879,7 @@ MonoBehaviour:
   veilBelow: {fileID: 1706127805}
   veilSide: {fileID: 1210473056}
   lessonTitleText: Train {skill} first
-  lessonBodyText: 'It costs {price} spoils and teaches the dash.
+  lessonBodyText: 'It costs {price} spoils and teaches Evade.
 
     The rest of the sheet opens after.'
   lessonRowHalfHeight: 43
@@ -91284,7 +91304,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   learnFirstLine:
-    text: Not yet. Learn to dash at the sheet first.
+    text: Not yet. Learn to evade at the sheet first.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -105497,7 +105517,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 412, y: 572}
+  m_SizeDelta: {x: 412, y: 546}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &919049546
 MonoBehaviour:
@@ -121591,7 +121611,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 440, y: 600}
+  m_SizeDelta: {x: 440, y: 574}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &1072175610
 CanvasGroup:
@@ -150041,6 +150061,8 @@ MonoBehaviour:
   - {fileID: 2800000, guid: 6c9d0704cd872ef4881c6571ec1e3dda, type: 3}
   - {fileID: 2800000, guid: a7eee1d8277dea14ba74684fa95c8aed, type: 3}
   - {fileID: 2800000, guid: dbd1d0a9981e81b4cbc3d56a69f54f6d, type: 3}
+  - {fileID: 2800000, guid: 3be6a07e08b20b3428c8510124934a27, type: 3}
+  - {fileID: 2800000, guid: 565164169663fd74d8e9b93a31a2c942, type: 3}
   paper: {fileID: 1260721784}
 --- !u!114 &1260721782
 MonoBehaviour:
@@ -171184,6 +171206,8 @@ MonoBehaviour:
   fadeIn: 0.15
   hold: 1.4
   fadeOut: 0.4
+  bigAt: {x: 0, y: 40}
+  bigScale: 1.6
 --- !u!225 &1404167887
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -175020,7 +175044,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 262}
+  m_AnchoredPosition: {x: 0, y: 249}
   m_SizeDelta: {x: 400, y: 36.399998}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1445375050
@@ -188796,7 +188820,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -79, y: 30}
-  m_SizeDelta: {x: 440, y: 600}
+  m_SizeDelta: {x: 440, y: 574}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1557112483
 MonoBehaviour:
@@ -244599,7 +244623,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 174}
+  m_AnchoredPosition: {x: 0, y: 161}
   m_SizeDelta: {x: 392, y: 114}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &1976096557
@@ -252730,7 +252754,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -192}
+  m_AnchoredPosition: {x: 0, y: -205}
   m_SizeDelta: {x: 392, y: 114}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &2053730468
@@ -346046,7 +346070,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can dash now. {sprint} and a direction, sideways or back.
+    text: You can evade now. {sprint} and a direction, sideways or back.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -346057,7 +346081,7 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
-    text: 'Dash: press {sprint}, holding left, right or back.'
+    text: 'Evade: press {sprint}, holding left, right or back.'
   startingPlayer: 0
   skipWakeUp: 0
   startAt: 0

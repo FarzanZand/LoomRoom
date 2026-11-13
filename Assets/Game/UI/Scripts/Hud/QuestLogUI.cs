@@ -83,7 +83,8 @@ public class QuestLogUI : MonoBehaviour
         {
             if (q == null || string.IsNullOrEmpty(q.id)) continue;
             int state = progression.QuestState(q.id);
-            bool show = (state == 1 || doneAt.ContainsKey(q.id)) && (!ProgressionManager.DungeonOnly(q.id) || InDungeon) && !(ProgressionManager.RoomOnly(q.id) && InDungeon);
+            // A game started by a test shortcut shows no quests (DebugDungeonSession.TestStart): no rows, so no pops or sounds.
+            bool show = !DebugDungeonSession.TestStart && (state == 1 || doneAt.ContainsKey(q.id)) && (!ProgressionManager.DungeonOnly(q.id) || InDungeon) && !(ProgressionManager.RoomOnly(q.id) && InDungeon);
             if (!show) { if (rows.TryGetValue(q.id, out var gone)) { Destroy(gone.gameObject); rows.Remove(q.id); poppedAt.Remove(q.id); } continue; }
             if (!rows.TryGetValue(q.id, out var row))
             {
@@ -122,12 +123,13 @@ public class QuestLogUI : MonoBehaviour
 
     // The table player is the one being played: in a dungeon (dungeon-only quests show).
     static bool InDungeon => PlayerManager.HasInstance && PlayerManager.Instance.ActiveKind == PlayerKind.Table;
-    bool shownInDungeon;
+    bool shownInDungeon, shownTestStart;
 
     void Update()
     {
         if (progression == null || input == null) Connect();
-        if (InDungeon != shownInDungeon) { shownInDungeon = InDungeon; Rebuild(); }
+        if (InDungeon != shownInDungeon || DebugDungeonSession.TestStart != shownTestStart)
+        { shownInDungeon = InDungeon; shownTestStart = DebugDungeonSession.TestStart; Rebuild(); }
         float now = Time.unscaledTime;
         if (doneAt.Count > 0)
         {

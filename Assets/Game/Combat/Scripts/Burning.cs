@@ -17,7 +17,7 @@ public class Burning : MonoBehaviour
 
     public static void Ignite(Character target, Character source, float perSecond, float seconds, GameObject flamePrefab)
     {
-        if (target == null || !target.IsAlive || perSecond <= 0f || seconds <= 0f) return;
+        if (target == null || !target.IsAlive || perSecond <= 0f || seconds <= 0f || EventProtection.Held(target)) return;
         var fire = target.GetComponent<Burning>();
         if (fire == null) fire = target.gameObject.AddComponent<Burning>();
         fire.Light(target, source, perSecond, seconds, flamePrefab);

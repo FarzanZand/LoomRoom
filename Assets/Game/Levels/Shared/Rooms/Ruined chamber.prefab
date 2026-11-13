@@ -317,8 +317,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'A dark fight room: no torches, only your own light, and its pack
-    asleep.'
+  description: 'A dark fight room: no torches, only your own light, and its pack asleep.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -339,11 +338,13 @@ MonoBehaviour:
   ceilingFrame: 0.3
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
   roomEvent: 3
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 1
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}

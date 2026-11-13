@@ -42,8 +42,29 @@ public partial class DungeonGenerator
         return true;
     }
 
+    // A cut marked To Walls is widened along the room's width, away from the room's middle, until the room ends (the user,
+    // 2026-11-13: a bridge room put into a room wider than its own kept a strip of floor along each side wall, a way
+    // round the bridge). outward: that side's direction, in cells. PitsHold widens the same way before it judges a room.
+    void WidenToWalls(HashSet<Vector2Int> cells, int room, Vector2Int outward)
+    {
+        if (outward == Vector2Int.zero) return;
+        foreach (var c in new List<Vector2Int>(cells))
+            for (var n = c + outward; Layout.InRoom(room, n); n += outward) cells.Add(n);
+    }
+    // The cell direction of a cut's outer side: the room's own x, on the side of the room's middle the cut lies
+    // (side: its x in the template; turn: the template's rotation on the floor). None for a cut on the middle line.
+    static Vector2Int OuterSide(float side, Quaternion turn)
+    {
+        if (Mathf.Abs(side) < .01f) return Vector2Int.zero;
+        var world = turn * (Vector3.right * Mathf.Sign(side));
+        return Mathf.Abs(world.x) >= Mathf.Abs(world.z) ? new Vector2Int(world.x >= 0f ? 1 : -1, 0) : new Vector2Int(0, world.z >= 0f ? 1 : -1);
+    }
+
     void BuildCuts(GameObject instance, int index)
     {
+        // First every cut's cells (cutCells holds them all), then the holes: a side at a corner runs on only where no other
+        // cut's hole lies (two pits side by side each ran a side over the other's edge, in one plane: flicker).
+        var kept = new List<(DungeonFloorCut cut, HashSet<Vector2Int> cells)>();
         foreach (var cut in instance.GetComponentsInChildren<DungeonFloorCut>(true))
         {
             if (cut == null) continue;
@@ -53,10 +74,16 @@ public partial class DungeonGenerator
             var cells = new HashSet<Vector2Int>();
             foreach (var p in cut.CellCentres(data.cellSize)) { var c = CellOf(p); if (Layout.InRoom(index, c)) cells.Add(c); }
             if (cells.Count == 0) { DestroyImmediate(cut.gameObject); continue; }
+            if (cut.toWalls && cut.kind == DungeonFloorCut.Kind.Pit)
+                WidenToWalls(cells, index, OuterSide(instance.transform.InverseTransformPoint(cut.transform.position).x, instance.transform.rotation));
             // A pit that would cut the room's ways in off from each other (a passage coming in beyond it) is left out: the
             // floor past it could not be reached (a tavern's only passage led into a broken floor's far side).
             if (cut.kind == DungeonFloorCut.Kind.Pit && !KeepsWaysJoined(index, cells)) { DestroyImmediate(cut.gameObject); continue; }
             cutCells.UnionWith(cells);
+            kept.Add((cut, cells));
+        }
+        foreach (var (cut, cells) in kept)
+        {
             float floorY = Cell(Layout.RoomCenter(index)).y;
             if (Board)
             {
@@ -83,14 +110,27 @@ public partial class DungeonGenerator
             {
                 var centre = Cell(c);
                 // Its sides: the room's lower wall stone, from the floor down to the bottom.
+                // Never two faces in one plane (the user, 2026-11-13: flicker): along a straight run each side ends at its
+                // cell's edge, so the next one starts where it ends; at an outer corner of the hole the side facing z runs on
+                // over the corner and the side facing x stops, as wall pieces meet. Its top is 1 cm under a neighbouring
+                // floor tile's top (1 mm under, the two tops flickered along the hole's edge), level with the floor only
+                // where no tile lies beside it.
                 foreach (var d in DungeonLayout.Neighbours)
                 {
-                    if (cells.Contains(c + d)) continue;
+                    // None between two holes side by side (another cut's): each would build one, back to back in one place.
+                    if (cells.Contains(c + d) || cutCells.Contains(c + d)) continue;
                     var outward = new Vector3(d.x, 0f, d.y);
-                    var wallSize = d.x != 0 ? new Vector3(WallThickness, depth, size + WallThickness * 2f) : new Vector3(size + WallThickness * 2f, depth, WallThickness);
+                    var along = new Vector2Int(d.y, d.x);
+                    float before = d.y != 0 && !cutCells.Contains(c - along) ? WallThickness : 0f;
+                    float after = d.y != 0 && !cutCells.Contains(c + along) ? WallThickness : 0f;
+                    // Under a floor tile (beside it, or at a corner it runs on under) 1 cm down; level with the floor only under a wall.
+                    float top = Open(c + d) || before > 0f && (Open(c - along) || Open(c + d - along)) || after > 0f && (Open(c + along) || Open(c + d + along)) ? .011f : .001f;
+                    float length = size + before + after, shift = (after - before) * .5f;
+                    var wallSize = d.x != 0 ? new Vector3(WallThickness, depth - top + .001f, length) : new Vector3(length, depth - top + .001f, WallThickness);
                     // Its inner face a little inside the hole, clear of the next floor column's side.
-                    ArchitectureBox("Cut side", centre + outward * (size * .5f + WallThickness * .5f - .02f) + Vector3.down * (depth * .5f + .001f), wallSize,
-                        WallSurface(index, 0f, c.x, c.y, -d), parent);
+                    var middle = centre + outward * (size * .5f + WallThickness * .5f - .02f) + new Vector3(along.x, 0f, along.y) * shift
+                        + Vector3.down * (top + (depth - top + .001f) * .5f);
+                    ArchitectureBox("Cut side", middle, wallSize, WallSurface(index, 0f, c.x, c.y, -d), parent);
                 }
                 var bottom = ArchitectureBox(cut.kind == DungeonFloorCut.Kind.Pit ? "Pit floor" : "Sunken flagstone", centre + Vector3.down * (depth + .12f),
                     new Vector3(size, .24f, size), FloorMaterial(index, c.x, c.y), parent);
