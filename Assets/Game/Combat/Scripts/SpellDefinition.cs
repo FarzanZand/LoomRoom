@@ -40,6 +40,10 @@ public class SpellDefinition : ScriptableObject
     public float chill;
     [ShowIf("@IsProjectile && chill > 0"), Min(0)] public float chillSeconds = 3f;
     [ShowIf("@IsProjectile && chill > 0"), AssetsOnly, Tooltip("Frost that clings to a chilled character.")] public SpellVisual chillEffect;
+    [ShowIf(nameof(IsProjectile)), Min(0), Tooltip("Every character it hurts burns for this share of the hit's damage in all, a tick a second for Burn Seconds (Burning).")]
+    public float burn;
+    [ShowIf("@IsProjectile && burn > 0"), Min(1)] public float burnSeconds = 3f;
+    [ShowIf("@IsProjectile && burn > 0"), AssetsOnly, Tooltip("Fire on a burning character (its BurnCoat chars the body while it burns).")] public SpellVisual burnEffect;
     [ShowIf(nameof(IsProjectile)), AssetsOnly, Tooltip("Left burning where it bursts: hurts every hostile standing in it.")]
     public GroundFire groundFire;
     [ShowIf("@IsProjectile && groundFire != null"), Min(.1f)] public float groundFireSeconds = 3f;
@@ -96,29 +100,56 @@ public class SpellDefinition : ScriptableObject
     // is Sorcery (the user, 2026-11-12).
     public AdventureSkill Skill => spell == LeftHandSpell.Heal || effect == SpellEffect.HelpingHand ? AdventureSkill.Thaumaturgy : AdventureSkill.Sorcery;
 
-    // A scroll's rules line: what the spell does, with no mana, and its charges.
-    public string ScrollLine(float power, int charges)
-    {
-        string does = RulesLine(0f, power);
-        const string free = "0 mana, ";
-        if (does.StartsWith(free)) does = does.Substring(free.Length);
-        else if (does.StartsWith("0 mana")) does = does.Substring(6).TrimStart(',', ' ');
-        return $"Casts {displayName} with no mana: {does}. {charges} {(charges == 1 ? "charge" : "charges")}.";
-    }
+    // ── Tooltip ────────────────────────────────────────────────────────────────
+    // A tome's and a scroll's tooltip (the user, 2026-11-13): the spell's numbers as label and value rows, as gear
+    // shows its stats, then its description, one short line saying what it does. No how-to and no flavour.
+    // Damage and healing are whole numbers, as every hit lands (CharacterStats.TakeDamage rounds halves up).
+    public const string ManaColor = "#7FA8D8";
 
-    // The tome's rules line: cost and what the spell does.
-    public string RulesLine(float cost, float power) => effect switch
+    public static int Whole(float value) => Mathf.Max(0, (int)Mathf.Floor(value + .5f));
+
+    public bool Heals => spell == LeftHandSpell.Heal || effect == SpellEffect.HelpingHand;
+    // Veils and summons have no damage or healing of their own.
+    public bool HasPower => power > 0f && effect != SpellEffect.ShadowVeil && effect != SpellEffect.RaiseTheFallen && effect != SpellEffect.Summon;
+
+    // The rows: cost is the mana it takes (a scroll passes its charges instead), power its damage or healing.
+    public string TooltipRows(float cost, float power, int scrollCharges = 0)
     {
-        SpellEffect.ShadowVeil => $"{cost:0.#} mana, unseen for {veil.seconds:0.#} seconds",
-        SpellEffect.RaiseTheFallen => $"{cost:0.#} mana, raises a fallen skeleton for {raise.summon.lifetime:0} seconds",
-        SpellEffect.Summon => $"{cost:0.#} mana, {(string.IsNullOrWhiteSpace(summon.summonName) ? "a summon" : summon.summonName)} fights for you for {summon.summon.lifetime:0} seconds",
-        SpellEffect.ChainLightning => $"{cost:0.#} mana, {power:0.#} damage, jumps to {chain.jumps} more",
-        SpellEffect.Flick when flick.reach == FlickReach.Portal => $"{cost:0.#} mana, {power:0.#} damage, a die shoots out of a portal at it",
-        SpellEffect.Flick when flick.reach == FlickReach.DieOnly => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks a die at it",
-        SpellEffect.Flick => $"{cost:0.#} mana, {power:0.#} damage, the Dungeon Master flicks it across the room",
-        SpellEffect.HelpingHand => $"{cost:0.#} mana, {power:0.#} healing from the Dungeon Master's hand",
-        _ => $"{cost:0.#} mana, {power:0.#} {(spell == LeftHandSpell.Heal ? "healing" : "damage")}",
-    };
+        var rows = new System.Collections.Generic.List<string>();
+        void Row(string label, string value, string colour = ItemData.TextColor) =>
+            rows.Add($"<color={ItemData.DimColor}>{label}</color><pos=48%><color={colour}>{value}</color>");
+        string Seconds(float s) => $"{s:0.#}s";
+        string Metres(float m) => $"{m:0}m";
+
+        if (HasPower) Row(Heals ? "Healing" : "Damage", $"<size=125%>{Whole(power)}</size>", Heals ? ItemData.GoodColor : ItemData.TextColor);
+        // The burn after the hit: its damage in all (the share Burn of the hit) and how long it takes.
+        if (HasPower && !Heals && IsProjectile && burn > 0f) Row("Burn", $"{Mathf.Max(1, Whole(power * burn))} over {Seconds(burnSeconds)}");
+        if (scrollCharges > 0) Row("Charges", scrollCharges.ToString());
+        else Row("Mana", $"{Whole(cost)}", ManaColor);
+        switch (effect)
+        {
+            case SpellEffect.ShadowVeil: Row("Duration", Seconds(veil.seconds)); break;
+            case SpellEffect.RaiseTheFallen: Row("Duration", Seconds(raise.summon.lifetime)); break;
+            case SpellEffect.Summon: Row("Duration", Seconds(summon.summon.lifetime)); break;
+            case SpellEffect.HelpingHand: Row("Duration", Seconds(helpingHand.holdSeconds)); break;
+            case SpellEffect.ChainLightning: Row("Jumps", chain.jumps.ToString()); Row("Range", Metres(chain.range)); break;
+            case SpellEffect.SweepingArc: Row("Range", Metres(sweep.length)); break;
+            case SpellEffect.Flick:
+                if (flick.stunSeconds > 0f) Row("Stun", Seconds(flick.stunSeconds));
+                Row("Range", Metres(flick.range));
+                break;
+            default:
+                if (groundArea) { Row("Radius", Metres(areaRadius)); Row("Range", Metres(areaRange)); }
+                else if (IsProjectile)
+                {
+                    if (pierce > 0) Row("Pierces", pierce.ToString());
+                    if (stunSeconds > 0f) Row("Stun", Seconds(stunSeconds));
+                    if (chill > 0f) Row("Slow", $"{chill * 100f:0}% for {Seconds(chillSeconds)}");
+                }
+                break;
+        }
+        return string.Join("\n", rows);
+    }
 }
 
 // What a spell does when it leaves the hand. Serialized by integer: append only.

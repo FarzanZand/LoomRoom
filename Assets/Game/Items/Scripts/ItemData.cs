@@ -317,23 +317,25 @@ public partial class ItemData : ScriptableObject
                 if (lines.Count > 0) lines.Add(RolledDivider);
                 lines.Add($"<color={SkillColor}>{line}</color>");
             }
-        if (spell != null)
-        {
-            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
-            lines.Add(spell.RulesLine(caster != null ? caster.Cost(spell) : spell.manaCost, caster != null ? caster.Power(spell) : spell.power));
-        }
-        if (IsScroll)
-        {
-            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
-            lines.Add($"<color={EffectColor}>{scrollSpell.ScrollLine(caster != null ? caster.Power(scrollSpell) : scrollSpell.power, charges)}</color>");
-        }
         Add(blocks, lines);
+        // A tome or a scroll: the spell's rows (SpellDefinition.TooltipRows), then its one line apart under them.
+        var castSpell = spell != null ? spell : IsScroll ? scrollSpell : null;
+        if (castSpell != null)
+        {
+            var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
+            float power = caster != null ? caster.Power(castSpell) : castSpell.power;
+            float cost = caster != null ? caster.Cost(castSpell) : castSpell.manaCost;
+            lines.Add(castSpell.TooltipRows(cost, power, IsScroll ? Mathf.Max(1, charges) : 0));
+            Add(blocks, lines);
+            if (!string.IsNullOrWhiteSpace(castSpell.description)) { lines.Add($"<color={TextColor}>{castSpell.description.Trim()}</color>"); Add(blocks, lines); }
+        }
 
         // Against the item it would replace (Equipment.SlotFor: a trinket goes to a free trinket slot first, so
         // with one free there is nothing to compare): every flat stat either item has.
         var gear = canBeEquipped && !IsConsumable && PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
         var equipped = Replaces();
-        if (equipped != null && withMain)
+        // Spell tomes compare in the equipped panel beside the tooltip, not in a line here.
+        if (equipped != null && withMain && castSpell == null)
         {
             var stats = new System.Collections.Generic.List<StatType>();
             foreach (var data in new[] { this, equipped })
@@ -352,10 +354,17 @@ public partial class ItemData : ScriptableObject
         }
         else if (markEquipped ?? (gear != null && gear.IsEquipped(this))) { lines.Add($"<color={DimColor}>Equipped</color>"); Add(blocks, lines); }
 
-        if (!string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
+        if (castSpell == null && !string.IsNullOrWhiteSpace(description)) { lines.Add($"<color={FlavourColor}><i>{description.Trim()}</i></color>"); Add(blocks, lines); }
         if (withPrice && value > 0 && itemType != ItemType.Key && itemType != ItemType.Spoils) { lines.Add($"<color={DimColor}>Worth {value} gold</color>"); Add(blocks, lines); }
         return string.Join("\n\n", blocks);
     }
+
+    // The tooltip for IMGUI (the Item Database's card), which knows neither TextMeshPro's <pos> nor sizes in percent:
+    // a row's value follows its label after a tab, and sizes are dropped.
+    public static string ForImgui(string tooltip) =>
+        System.Text.RegularExpressions.Regex.Replace(
+            System.Text.RegularExpressions.Regex.Replace(tooltip, @"<pos=[^>]*>", "\t"),
+            @"<size=[0-9.]+%>|</size>", "");
 
     // What the active player has in the slot this would go in (Equipment.SlotFor), or null: nothing there,
     // this item itself, or not gear. The tooltip compares against it.
@@ -420,7 +429,7 @@ public partial class ItemData : ScriptableObject
         if (stat == null && statModifiers != null)
             foreach (var m in statModifiers)
                 if (m != null) { stat = StatLine(m.stat, m.type, m.value, BlockOnly(m.stat)); break; }
-        if (spell != null) stat = $"{spell.manaCost:0.#} mana";
+        if (spell != null) stat = $"{SpellDefinition.Whole(spell.manaCost)} mana";
         stat ??= effect;
         return string.IsNullOrWhiteSpace(stat) ? kind : $"{kind}, {stat}";
     }

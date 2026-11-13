@@ -14,11 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
   spell: 13
   displayName: Dice Portal
-  description: Ask the Dungeon Master for a hand. A portal opens beside the enemy
-    you aim at, and a die shoots out of it and knocks it across the room.
+  description: A die from a portal knocks the enemy across the room.
   icon: {fileID: 21300000, guid: c4a21ee2574caf841a177bab57b84bf3, type: 3}
   manaCost: 13
-  power: 24
+  power: 25
   castSeconds: 0.6
   recoverySeconds: 0.4
   castMoveSpeed: 0.6
@@ -34,6 +33,9 @@ MonoBehaviour:
   chill: 0
   chillSeconds: 3
   chillEffect: {fileID: 0}
+  burn: 0
+  burnSeconds: 3
+  burnEffect: {fileID: 0}
   groundFire: {fileID: 0}
   groundFireSeconds: 3
   groundFireRadius: 1.6
@@ -154,10 +156,7 @@ MonoBehaviour:
     portalShootSound: {fileID: 8300000, guid: 96e8d2b2f49c9c04da308b5163a7efb0, type: 3}
     portalCloseSound: {fileID: 8300000, guid: f5cfb32746fb5e64089627f1820bf33d, type: 3}
     portalVolume: 0.9
-    lines:
-    - Heads up.
-    - Let's see what you roll.
-    - From over here.
+    lines: []
     snapSound: {fileID: 8300000, guid: 96e8d2b2f49c9c04da308b5163a7efb0, type: 3}
     snapVolume: 1
     hitSound: {fileID: 8300000, guid: c59016c6c83fe4bf4b59ac36ef371944, type: 3}
@@ -181,6 +180,7 @@ MonoBehaviour:
     appearDistance: 11
     clearOfRoof: 4
     appearFarthest: 24
+    appearAside: 9
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -221,6 +221,27 @@ MonoBehaviour:
     - Hold still.
     - Try not to need that again.
     color: {r: 1, g: 0.9, b: 0.6, a: 1}
+  summon:
+    prefab: {fileID: 0}
+    summonName: John
+    size: 1
+    distance: 2.5
+    gatherSeconds: 0.9
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 1
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2

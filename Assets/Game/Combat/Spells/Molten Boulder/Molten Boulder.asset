@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
   spell: 6
   displayName: Molten Boulder
-  description: A lump of glowing rock, thrown in an arc. It bursts where it lands
-    and leaves the ground burning.
+  description: Thrown in an arc. Leaves the ground burning.
   icon: {fileID: 21300000, guid: 49542cd6b7727a94ca41cc85882bb81a, type: 3}
   manaCost: 10
   power: 15
@@ -108,6 +107,7 @@ MonoBehaviour:
     appearDistance: 11
     appearAhead: 0.45
     clearOfRoof: 4
+    openSkyFromPlayer: 18
     appearFarthest: 20
     turnRight: 25
     range: 16
@@ -177,6 +177,7 @@ MonoBehaviour:
     appearDistance: 11
     clearOfRoof: 4
     appearFarthest: 24
+    appearAside: 9
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -217,6 +218,27 @@ MonoBehaviour:
     - Hold still.
     - Try not to need that again.
     color: {r: 1, g: 0.9, b: 0.6, a: 1}
+  summon:
+    prefab: {fileID: 0}
+    summonName: John
+    size: 1
+    distance: 2.5
+    gatherSeconds: 0.9
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 1
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2

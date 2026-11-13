@@ -129,7 +129,7 @@ public class Flick : MonoBehaviour
     // The enemy the running flick is for (a camera or test can follow it).
     public static Character Watched => running != null ? running.target : null;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { running = null; picked = null; }
+    static void ResetStatics() { running = null; picked = null; airborne.Clear(); }
 
     Character caster;   // the player, or in co-op a teammate's stand-in (Echo)
     SpellDefinition spell;
@@ -187,8 +187,11 @@ public class Flick : MonoBehaviour
             if (Running) return "Not yet";
             return Target(player, spell.flick) == null ? "Nothing to flick" : null;
         }
-        if (floor == null || !portal && (DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return "He can't reach you here";
-        if (Running || !portal && DungeonMasterReach.Busy) return "He's busy";
+        // The portal needs no Dungeon Master: the die comes out of the portal, so it is never "busy" (several can be open
+        // at once) and it has nothing to flick, only no target.
+        if (portal) return floor == null ? "Not here" : Target(player, spell.flick) == null ? "No target" : null;
+        if (floor == null || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null) return "He can't reach you here";
+        if (Running || DungeonMasterReach.Busy) return "He's busy";
         if (Target(player, spell.flick) == null) return "Nothing to flick";
         return null;
     }
@@ -197,11 +200,13 @@ public class Flick : MonoBehaviour
     {
         var target = Target(player, spell.flick);
         picked = null;
-        if (target == null || Running) return;
+        bool portal = spell.flick.reach == FlickReach.Portal;
+        if (target == null || !portal && Running) return;
         var go = new GameObject(spell.name + " (flick)");
         var flick = go.AddComponent<Flick>();
         flick.caster = player; flick.spell = spell; flick.settings = spell.flick; flick.power = power; flick.progress = progress; flick.target = target;
-        running = flick;
+        // Only his own flicks keep him busy (Running): a portal runs beside them.
+        if (!portal) running = flick;
         flick.StartCoroutine(flick.Run());
     }
 
@@ -209,16 +214,20 @@ public class Flick : MonoBehaviour
     // one (the host runs the enemies: it flies and is struck with the caster's power); on a guest it only shows.
     public static void Echo(Character caster, SpellDefinition spell, Character target, float power = 0f)
     {
-        if (caster == null || spell == null || target == null || !target.IsAlive || Running) return;
-        if (spell.flick.reach != FlickReach.Portal && (BossStageEncounter.Current != null || DungeonMasterReach.Busy || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return;
+        bool portal = spell != null && spell.flick.reach == FlickReach.Portal;
+        if (caster == null || spell == null || target == null || !target.IsAlive || !portal && Running) return;
+        if (!portal && (BossStageEncounter.Current != null || DungeonMasterReach.Busy || DungeonMasterReach.Hand == null || DungeonMasterReach.Seat == null)) return;
         var go = new GameObject(spell.name + " (flick, teammate)");
         var flick = go.AddComponent<Flick>();
         flick.caster = caster; flick.spell = spell; flick.settings = spell.flick; flick.power = power; flick.target = target;
-        running = flick;
+        // Only his own flicks keep him busy (Running): a portal runs beside them.
+        if (!portal) running = flick;
         flick.StartCoroutine(flick.Run());
     }
 
-    void OnDestroy() { if (running == this) running = null; }
+    // A flight cut off with its flick (the object destroyed) gives the body back its colliders and physics.
+    void OnDestroy() { if (running == this) running = null; if (flown != null) Ground(flown); }
+    Character flown;
 
     IEnumerator Run()
     {
@@ -842,6 +851,22 @@ public class Flick : MonoBehaviour
         // A co-op guest's copy of an enemy: the host's flies (and is struck there); its flight comes here on the host's
         // snapshots, so it flies one way everywhere.
         if (body.TryGetComponent<EnemyBrain>(out var copy) && copy.NetworkPuppet) yield break;
+        // Already flying from another die (another portal): the blow lands, the flight it is in goes on, since two
+        // flights at once would each take over and give back its colliders and brain.
+        if (airborne.ContainsKey(body))
+        {
+            var at = body.transform.position + Vector3.up;   // its colliders are off in flight, so not Chest()
+            SpellEffects.Strike(caster, body, damage, at, at - Flat(direction), spell.displayName);
+            yield break;
+        }
+        flown = body;
+        yield return FlyBody(body, direction, damage, fromFinger);
+        flown = null;
+    }
+
+    IEnumerator FlyBody(Character body, Vector3 direction, float damage, bool fromFinger)
+    {
+        if (body == null || !body.IsAlive) yield break;
         // A boss or an elite can't be sent flying (EnemyMotor.Steadfast): the blow lands where it stands, and it reels.
         if (body.TryGetComponent<EnemyMotor>(out var steady) && steady.Steadfast)
         {
@@ -892,7 +917,10 @@ public class Flick : MonoBehaviour
             if (settings.slamShake > 0f) DungeonMasterReach.Shake(settings.slamShake, .75f);
             bool lethal = body.Stats.CurrentHealth <= damage;
             if (lethal) Restore();
-            SpellEffects.Strike(caster, body, damage, at, at - dir, spell.displayName);
+            // The blow lands on the body's middle, not the wall or floor it meets: the damage number shows where it was
+            // struck, and one on the wall's or floor's own face was hidden by that face.
+            var middle = p + Vector3.up * height * .5f;
+            SpellEffects.Strike(caster, body, damage, middle, middle - dir, spell.displayName);
             progress?.Practise(spell.Skill, SkillAction.Cast);
             return !body.IsAlive;
         }

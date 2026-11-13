@@ -82,7 +82,7 @@ public static class DiscoBallSetup
         CopyKeepingId(Fire + "Fireball.asset", spellPath);
         var spell = AssetDatabase.LoadAssetAtPath<SpellDefinition>(spellPath);
         spell.displayName = "Disco Ball";
-        spell.description = "Throws a spinning disco ball that bursts into glitter.";
+        spell.description = "Bursts on what it hits.";
         spell.projectile = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "Disco Ball Projectile.prefab").GetComponent<SpellProjectile>();
         spell.impact = AssetDatabase.LoadAssetAtPath<GameObject>(Folder + "Disco Ball Impact.prefab").GetComponent<SpellVisual>();
         EditorUtility.SetDirty(spell);

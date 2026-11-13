@@ -18,8 +18,7 @@ MonoBehaviour:
   spell: {fileID: 11400000, guid: 7bdd4a6a2d8b41648a2a71e8c8bd8c31, type: 2}
   unlocksClass: {fileID: 0}
   rarity: 6
-  description: Hold it in your left hand to cast Frost Lance. A shard of ice that
-    flies straight through up to three enemies and slows them.
+  description: 
   icon: {fileID: 21300000, guid: c1f62819297dda24aada7334785d8e23, type: 3}
   iconSource:
     custom: 0
@@ -59,6 +58,8 @@ MonoBehaviour:
     knockbackForce: -1
     hitStopScale: 1
   damageSpread: 0
+  damageSpreadUp: 0
+  scaleWithFloor: 0
   effects: []
   useAudioSource: 0
   useAudio: {fileID: 0}

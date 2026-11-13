@@ -354619,7 +354619,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c04dd86de740594b8c77051febff8db, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProgressionManager
-  enemyBaseDamage: 0.869
+  enemyBaseDamage: 0.912
   enemyBaseHealth: 1
   boxKey: {fileID: 11400000, guid: 43fc2d8ebfdaf74469579723ca34a0a0, type: 2}
   classQuestLine:
@@ -354762,9 +354762,9 @@ MonoBehaviour:
     milestones:
     - value: 25
       ability: {fileID: 0}
-      unlock: Burning
-      description: 'Fireball sets what it hits on fire: a fifth of the hit again every second for 3 seconds.'
-      icon: {fileID: 21300000, guid: 665feea7fd5b7b94d8b11b1cf07a2fed, type: 3}
+      unlock: '?'
+      description: 
+      icon: {fileID: 0}
       trophy: {fileID: 11400000, guid: 90fcb602aa103114bba5a2c00f5127d6, type: 2}
     - value: 50
       ability: {fileID: 0}
@@ -357640,6 +357640,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: b13160b822d67ac4ea8cedf1a407cbf7, type: 2}
   - {fileID: 11400000, guid: 4bb227fa66d5f074c9d83918eb32cff4, type: 2}
   - {fileID: 11400000, guid: 498efce1b955ab844942a82518711287, type: 2}
+  - {fileID: 11400000, guid: bbf07747f34489144ad728a48e22e79a, type: 2}
 --- !u!1 &6257437584548409673
 GameObject:
   m_ObjectHideFlags: 0

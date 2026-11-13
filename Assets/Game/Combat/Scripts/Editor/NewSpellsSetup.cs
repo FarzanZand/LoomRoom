@@ -61,7 +61,7 @@ public static class NewSpellsSetup
         Light("Hurled Stone/Hurled Stone Impact.prefab", new Color(.9f, .85f, .7f), 0f, 1f);
         Light("Frost Lance/Frost Lance Hand.prefab", new Color(.6f, .85f, 1f), 1.3f, 2.5f);
         Light("Frost Lance/Frost Lance Impact.prefab", new Color(.6f, .85f, 1f), 1.2f, 2.5f);
-        Light("Frost Lance/Frost Lance Chill.prefab", new Color(.6f, .85f, 1f), .6f, 1.5f);
+        // The chill has no light (the user, 2026-11-13): inside the body it lit the frozen enemy's middle white (FrostCoat).
         Light("Raise the Fallen/Raise the Fallen Hand.prefab", new Color(.4f, 1f, .45f), 1.4f, 2.5f);
         Light("Raise the Fallen/Raise the Fallen Circle.prefab", new Color(.35f, 1f, .4f), 3f, 5f);
         Light("Raise the Fallen/Raise the Fallen Flash.prefab", new Color(.4f, 1f, .45f), 4f, 5f);
@@ -91,7 +91,7 @@ public static class NewSpellsSetup
         var veil = Spell("Shadow Veil", heal, retune, s =>
         {
             s.spell = LeftHandSpell.ShadowVeil; s.effect = SpellEffect.ShadowVeil;
-            s.description = "Wrap yourself in shadow. No enemy sees you until you strike, and the first blow is a backstab.";
+            s.description = "Unseen until you strike. Your first blow is a backstab.";
             s.manaCost = 20; s.power = 0; s.castSeconds = .5f; s.recoverySeconds = .3f; s.castMoveSpeed = .8f;
             s.veil.seconds = 8f; s.veil.revealDistance = 1.1f; s.veil.ambush = true;
             s.veil.wisps = Visual("Shadow Veil/Shadow Veil Wisps.prefab");
@@ -101,7 +101,7 @@ public static class NewSpellsSetup
         var chain = Spell("Chain Lightning", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.ChainLightning; s.effect = SpellEffect.ChainLightning;
-            s.description = "A bolt that leaps from the enemy you aim at to the ones near it, weaker with every jump.";
+            s.description = "Leaps to enemies near the target, weaker each jump.";
             s.manaCost = 16; s.power = 14; s.castSeconds = .55f; s.recoverySeconds = .35f;
             var c = s.chain;
             c.range = 16; c.aimCone = 14; c.jumps = 3; c.jumpRange = 7; c.falloff = .75f; c.stunSeconds = .35f; c.jumpDelay = .09f;
@@ -114,7 +114,7 @@ public static class NewSpellsSetup
         var sweep = Spell("Sweeping Arc", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.SweepingArc; s.effect = SpellEffect.SweepingArc;
-            s.description = "A beam that swings across everything in front of you.";
+            s.description = "Sweeps across everything in front of you.";
             s.manaCost = 18; s.power = 16; s.castSeconds = .6f; s.recoverySeconds = .5f;
             var w = s.sweep;
             w.arc = 120; w.sweepSeconds = .55f; w.length = 10; w.enemyHeight = 1.45f; w.warnSeconds = .45f;
@@ -126,7 +126,7 @@ public static class NewSpellsSetup
         var boulder = Spell("Molten Boulder", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.MoltenBoulder; s.effect = SpellEffect.Standard;
-            s.description = "A lump of glowing rock, thrown in an arc. It bursts where it lands and leaves the ground burning.";
+            s.description = "Thrown in an arc. Leaves the ground burning.";
             s.manaCost = 18; s.power = 26; s.castSeconds = .8f; s.recoverySeconds = .45f;
             s.projectile = Projectile("Molten Boulder/Molten Boulder Projectile.prefab"); s.radius = 2.2f; s.speed = 16; s.lifetime = 4f; s.gravity = 14f;
             s.groundFire = LoadPrefab("Molten Boulder/Molten Boulder Fire.prefab")?.GetComponent<GroundFire>();
@@ -137,7 +137,7 @@ public static class NewSpellsSetup
         var stone = Spell("Hurled Stone", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.HurledStone; s.effect = SpellEffect.Standard;
-            s.description = "A stone torn from the ground and thrown. Cheap, and it knocks what it hits off balance.";
+            s.description = "Thrown in an arc.";
             s.manaCost = 8; s.power = 12; s.castSeconds = .45f; s.recoverySeconds = .3f;
             s.projectile = Projectile("Hurled Stone/Hurled Stone Projectile.prefab"); s.radius = .8f; s.speed = 20; s.lifetime = 3f; s.gravity = 12f; s.stunSeconds = .8f;
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_02"); s.releaseSound = Clip("Magic/Mgc_Fire_Whoosh_03");
@@ -146,17 +146,17 @@ public static class NewSpellsSetup
         var lance = Spell("Frost Lance", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.FrostLance; s.effect = SpellEffect.Standard;
-            s.description = "A shard of ice that flies straight through up to three enemies and slows them.";
+            s.description = "Goes through enemies and slows them.";
             s.manaCost = 12; s.power = 13; s.castSeconds = .5f; s.recoverySeconds = .3f;
             s.projectile = Projectile("Frost Lance/Frost Lance Projectile.prefab"); s.radius = .5f; s.speed = 30; s.lifetime = 2f; s.gravity = 0f;
-            s.pierce = 3; s.chill = .4f; s.chillSeconds = 3f; s.chillEffect = Visual("Frost Lance/Frost Lance Chill.prefab");
+            s.pierce = 3; s.chill = .5f; s.chillSeconds = 3f; s.chillEffect = Visual("Frost Lance/Frost Lance Chill.prefab");
             s.chargeSound = Clip("Magic/Mgc_Ice_Cast_01"); s.releaseSound = Clip("Magic/Mgc_Ice_Throw_01");
             s.flightSound = null; s.impactSound = Clip("Magic/Mgc_Ice_Hit_01");
         });
         var raise = Spell("Raise the Fallen", heal, retune, s =>
         {
             s.spell = LeftHandSpell.RaiseTheFallen; s.effect = SpellEffect.RaiseTheFallen;
-            s.description = "Pull a broken skeleton's bones back together. It fights for you for half a minute.";
+            s.description = "A fallen skeleton gets up and fights for you.";
             s.manaCost = 25; s.power = 0; s.castSeconds = 1f; s.recoverySeconds = .4f; s.castMoveSpeed = .6f;
             var r = s.raise;
             r.reach = 10; r.raiseAs = soldier; r.gatherSeconds = 1.3f; r.riseSeconds = 1.4f;
@@ -171,7 +171,7 @@ public static class NewSpellsSetup
         var flick = Spell("Flick", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.Flick; s.effect = SpellEffect.Flick;
-            s.description = "Ask the Dungeon Master for a hand. He reaches in and flicks the enemy you aim at across the room.";
+            s.description = "Knocks the enemy across the room.";
             s.manaCost = 30; s.power = 30; s.castSeconds = .6f; s.recoverySeconds = .4f;
             var f = s.flick;
             f.reach = FlickReach.Appear; f.appearDistance = 13f; f.appearAhead = .75f;
@@ -192,7 +192,7 @@ public static class NewSpellsSetup
         var die = Spell("Die Throw", fireball, retune, s =>
         {
             s.spell = LeftHandSpell.DieThrow; s.effect = SpellEffect.Flick;
-            s.description = "Ask the Dungeon Master for a hand. He flicks a die at the enemy you aim at from where he stands, and it knocks it across the room.";
+            s.description = "A thrown die knocks the enemy across the room.";
             s.manaCost = 24; s.power = 24; s.castSeconds = .6f; s.recoverySeconds = .4f;
             s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(flick.flick));
             s.flick.reach = FlickReach.DieOnly; s.flick.mark = Visual("Die Throw/Die Throw Mark.prefab");
@@ -205,7 +205,7 @@ public static class NewSpellsSetup
         var help = Spell("Helping Hand", heal, retune, s =>
         {
             s.spell = LeftHandSpell.HelpingHand; s.effect = SpellEffect.HelpingHand;
-            s.description = "Ask the Dungeon Master for a hand. He appears in front of you and holds it over you, and the light from it heals you.";
+            s.description = "";
             s.manaCost = 28; s.power = 40; s.castSeconds = .7f; s.recoverySeconds = .4f; s.castMoveSpeed = .7f;
             var h = s.helpingHand;
             h.reach = HelpReach.Appear; h.appearDistance = 17f;
@@ -274,7 +274,7 @@ public static class NewSpellsSetup
         var spell = Spell(name, dieThrow, retune, s =>
         {
             s.spell = LeftHandSpell.DicePortal; s.effect = SpellEffect.Flick;
-            s.description = "Ask the Dungeon Master for a hand. A portal opens beside the enemy you aim at, and a die shoots out of it and knocks it across the room.";
+            s.description = "A die from a portal knocks the enemy across the room.";
             s.manaCost = 24; s.power = 24; s.castSeconds = .6f; s.recoverySeconds = .4f;
             s.flick = JsonUtility.FromJson<FlickSettings>(JsonUtility.ToJson(dieThrow.flick));
             var f = s.flick;
@@ -284,7 +284,7 @@ public static class NewSpellsSetup
             f.portalColor = new Color(.32f, .48f, 1f); f.portalRadius = .9f; f.portalDistance = 5.5f;
             f.portalOpenSeconds = .35f; f.portalHoldSeconds = .3f; f.portalCloseSeconds = .3f; f.portalDieSpeed = 20f; f.portalLight = 6f;
             f.portalOpenSound = Clip("Magic/Mgc_Fire_Cast_Start_01"); f.portalShootSound = Clip("Weapons/Wpn_Whoosh_02"); f.portalCloseSound = Clip("Magic/Mgc_Fire_Cast_Stop_01"); f.portalVolume = .9f;
-            f.lines = new[] { "Heads up.", "Let's see what you roll.", "From over here." };
+            f.lines = new string[0];   // the die comes out of a portal, not from the Dungeon Master: he says nothing (the user, 2026-11-13)
             s.chargeSound = Clip("Magic/Mgc_Water_Cast_01"); s.releaseSound = null; s.impactSound = null; s.flightSound = null;
         });
         spell.heldVisual = Visual($"{name}/{name} Hand.prefab");
@@ -300,7 +300,7 @@ public static class NewSpellsSetup
         }
         tome.itemName = Shown(name) + " Tome";
         tome.spell = spell;
-        tome.description = "Hold it in your left hand to cast " + Shown(name) + ". " + spell.description;
+        tome.description = ""; // the tooltip shows the spell's own line (2026-11-13)
         EditorUtility.SetDirty(tome);
         AssetDatabase.SaveAssets();
         Debug.Log($"[NewSpellsSetup] Dice Portal made; catalog {ItemDatabaseAuthoring.SyncCatalog()} items.");
@@ -323,7 +323,7 @@ public static class NewSpellsSetup
         var spell = Spell(name, raise, retune, s =>
         {
             s.spell = LeftHandSpell.SummonJohn; s.effect = SpellEffect.Summon;
-            s.description = "Call up John, a skeleton who fights for you for half a minute. One John at a time.";
+            s.description = "John, a skeleton, fights for you. One at a time.";
             s.manaCost = 30; s.power = 0; s.castSeconds = 1f; s.recoverySeconds = .4f; s.castMoveSpeed = .6f;
             s.icon = raise.icon;
             var c = s.summon;
@@ -388,7 +388,7 @@ public static class NewSpellsSetup
         }
         tome.itemName = Shown(name) + " Tome";
         tome.spell = spell;
-        tome.description = "Hold it in your left hand to cast " + Shown(name) + ". " + spell.description;
+        tome.description = ""; // the tooltip shows the spell's own line (2026-11-13)
         string iconPath = $"{Spells}{name}/{name} Tome icon.png";
         if (AssetImporter.GetAtPath(iconPath) is TextureImporter importer && (importer.textureType != TextureImporterType.Sprite || importer.filterMode != FilterMode.Point))
         {

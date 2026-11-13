@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpellDefinition
   spell: 7
   displayName: Hurled Stone
-  description: A stone torn from the ground and thrown. Cheap, and it knocks what
-    it hits off balance.
+  description: Thrown in an arc.
   icon: {fileID: 21300000, guid: 99b99f65337d5414287cc9e05986b989, type: 3}
   manaCost: 8
   power: 12
@@ -107,6 +106,10 @@ MonoBehaviour:
     reach: 0
     appearDistance: 11
     appearAhead: 0.45
+    clearOfRoof: 4
+    openSkyFromPlayer: 18
+    appearFarthest: 20
+    turnRight: 25
     range: 16
     aimCone: 10
     reachSeconds: 1.6
@@ -129,20 +132,52 @@ MonoBehaviour:
     dieArc: 7
     dieGravity: 16
     dieLight: 12
+    dieKnocks: []
+    dieRollSound: {fileID: 0}
+    dieVolume: 1
+    portalMaterial: {fileID: 0}
+    portalFrames: 8
+    portalFps: 12
+    portalColor: {r: 0.32, g: 0.48, b: 1, a: 1}
+    portalRadius: 0.8
+    portalDistance: 5.5
+    portalOpenSeconds: 0.35
+    portalHoldSeconds: 0.3
+    portalCloseSeconds: 0.3
+    portalDieSpeed: 20
+    portalLight: 6
+    portalOpenSound: {fileID: 0}
+    portalShootSound: {fileID: 0}
+    portalCloseSound: {fileID: 0}
+    portalVolume: 0.9
     lines:
     - Hold still.
     - Allow me.
     - Let me get that for you.
     snapSound: {fileID: 0}
     snapVolume: 1
+    hitSound: {fileID: 0}
+    hitVolume: 1
     slamSound: {fileID: 0}
     slamVolume: 1
+    hitShake: 1.2
+    slamShake: 1.5
+    lid:
+      open: {fileID: 0}
+      rising: {fileID: 0}
+      close: {fileID: 0}
+      land: {fileID: 0}
+      volume: 0.8
+      dust: 1
     mark: {fileID: 0}
     markColor: {r: 1, g: 0.85, b: 0.55, a: 1}
     markLight: 3
   helpingHand:
     reach: 1
     appearDistance: 11
+    clearOfRoof: 4
+    appearFarthest: 24
+    appearAside: 9
     reachSeconds: 1.4
     holdSeconds: 2.2
     handReach: 12
@@ -171,11 +206,39 @@ MonoBehaviour:
     burst: {fileID: 0}
     smashSound: {fileID: 0}
     smashVolume: 1
+    lid:
+      open: {fileID: 0}
+      rising: {fileID: 0}
+      close: {fileID: 0}
+      land: {fileID: 0}
+      volume: 0.8
+      dust: 1
     lines:
     - Here.
     - Hold still.
     - Try not to need that again.
     color: {r: 1, g: 0.9, b: 0.6, a: 1}
+  summon:
+    prefab: {fileID: 0}
+    summonName: John
+    size: 1
+    distance: 2.5
+    gatherSeconds: 0.9
+    riseSeconds: 1.4
+    circle: {fileID: 0}
+    flash: {fileID: 0}
+    gatherSound: {fileID: 0}
+    gatherVolume: 0.9
+    summon:
+      lifetime: 30
+      maxAtOnce: 1
+      end: 0
+      followDistance: 3
+      leash: 18
+      creditSummoner: 1
+      noLoot: 1
+      aura: {fileID: 0}
+      endEffect: {fileID: 0}
   groundArea: 0
   areaRadius: 2
   areaDelay: 1.2

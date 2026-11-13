@@ -185,11 +185,7 @@ public class SpellProjectile : MonoBehaviour
     {
         done = true;
         var centre = point + normal * surfaceOffset;
-        // Burning (Sorcery 25): a Fireball sets what it hits alight, a fifth of the hit each second for 3 seconds.
-        System.Action<Character> burn = spell.spell == LeftHandSpell.Fireball && progress != null && progress.InRun && progress.FirstMilestone(AdventureSkill.Sorcery)
-            ? t => Burning.Ignite(t, owner, power * .2f, 3f, spell.heldVisual != null ? spell.heldVisual.gameObject : null) : null;
-        System.Action<Character> onHit = t => { burn?.Invoke(t); OnHit(t); };
-        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName, onHit);
+        bool struck = Blast(owner, centre, spell.radius, power, collisionMask, Only, SourceName, OnHit);
         if (spell.groundFire != null) GroundFire.Spawn(spell.groundFire, centre, owner, spell.groundFireSeconds, spell.groundFireRadius, power * spell.groundFirePower, SourceName ?? spell.displayName);
         // One practice roll per cast that hurt an enemy, however many it caught.
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
@@ -260,12 +256,16 @@ public class SpellProjectile : MonoBehaviour
 
     public void Fizzle() { done = true; Burst(); }
 
-    // What the spell does to every character it hurts besides the damage: a stun, a chill.
+    // What the spell does to every character it hurts besides the damage: a stun, a chill, a burn.
     void OnHit(Character target)
     {
         if (target == null || !target.IsAlive) return;
         if (spell.stunSeconds > 0f && target.TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(spell.stunSeconds);
         if (spell.chill > 0f) Chill.Apply(target, spell.chill, spell.chillSeconds, spell.chillEffect);
+        // A burn: its share of the hit in all, a tick a second (the Fireball, half its hit over 5 seconds: the user,
+        // 2026-11-13). Sorcery's Burning milestone, which made a Fireball burn, is gone (now '?', to be decided).
+        if (spell.burn > 0f)
+            Burning.Ignite(target, owner, power * spell.burn / spell.burnSeconds, spell.burnSeconds, spell.burnEffect != null ? spell.burnEffect.gameObject : null);
     }
 
     // The direction to throw at a speed so a fall of gravity lands it on the target: the low arc, or 45 degrees up when

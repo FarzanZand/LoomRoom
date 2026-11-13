@@ -47,7 +47,7 @@ public class AdventurerClass : ScriptableObject
 
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();
-    [Tooltip("Gear the class starts with above Common, with properties set here (the Wizard's Rare Leather Helm with mana regeneration): worn like the equipment above. A property is an id from Items/Data/Item Properties (manaregen, mana, crit ...) and its value as the tooltip shows it.")]
+    [Tooltip("Gear the class starts with above Common, with properties set here (the Wizard's Rare amulet with mana regeneration): worn like the equipment above. A property is an id from Items/Data/Item Properties (manaregen, mana, crit ...) and its value as the tooltip shows it.")]
     public KitPiece[] rolledEquipment = Array.Empty<KitPiece>();
     [Tooltip("Spell tomes placed on the hotbar at the start of a run. Others are found in the dungeon.")] public ItemData[] spells = Array.Empty<ItemData>();
     public ItemStack[] supplies = Array.Empty<ItemStack>();

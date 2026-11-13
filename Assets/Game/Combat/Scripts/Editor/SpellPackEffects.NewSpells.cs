@@ -40,7 +40,10 @@ public static partial class SpellPackEffects
             new Art { prefab = "Frost Lance/Frost Lance Hand.prefab", effect = P + "Casting/Casting_Ice_LWRP.prefab", scale = .07f, charge = true, linger = .3f },
             new Art { prefab = "Frost Lance/Frost Lance Projectile.prefab", parent = "Art", effect = P + "Projectiles/Projectile_Ice_3_LWRP.prefab", scale = .45f },
             new Art { prefab = "Frost Lance/Frost Lance Impact.prefab", effect = P + "Explosion/Explosion_Ice_2_LWRP.prefab", scale = .12f, once = true, life = .45f, maxScreen = .07f },
-            new Art { prefab = "Frost Lance/Frost Lance Chill.prefab", effect = P + "Casting/Casting_Ice_LWRP.prefab", scale = .22f, charge = true, linger = .4f, maxScreen = .15f },
+            // Nothing of it shows (the user, 2026-11-13: a frozen enemy's body shows the cold, FrostCoat, with its own rime
+            // flakes and breath; the pack's glow lit the belly white and its ice and snow were smooth blue streaks beside the
+            // pixel body). Its root system can't be dropped, so it is muted.
+            new Art { prefab = "Frost Lance/Frost Lance Chill.prefab", effect = P + "Casting/Casting_Ice_LWRP.prefab", scale = .22f, charge = true, linger = .4f, maxScreen = .15f, drop = new[] { "Glow", "Sphere", "Ice", "Snow" }, mute = new[] { "Effect" } },
             // Raise the Fallen: a green rune in the palm; the rune circle and its rising wind under the bones; the flash as
             // they close; a faint circle under a skeleton the player raised.
             // Flick: a warm glint of the Dungeon Master's attention in the palm.

@@ -38,8 +38,8 @@ public static partial class SpellPackEffects
 
     // Fireball (2026-11-11, the user: more like the Molten Boulder, only it flies straight on and bursts on what it
     // hits): the boulder's own pack effects, a glowing lava rock in the hand and in the air and its burst of fire. The
-    // spell's numbers are untouched: no arc, no fire left on the ground, the fireball's own speed and range. The burst
-    // is a little smaller than the boulder's, as the fireball's blast is (radius 1.5 to its 2.2).
+    // spell's numbers are untouched: no arc, no fire left on the ground, the fireball's own speed and range. The rock and
+    // its trail were made a third bigger and the burst fuller on 2026-11-13 (the user).
     static readonly Art[] FireballArts =
     {
         new Art { prefab = "Fireball/Fireball Hand.prefab", effect = "Prefabs/Projectiles/Casting/Casting_Fire_4_LWRP.prefab", scale = .08f, charge = true, linger = .35f, remove = new[] { "Flame" } },
@@ -47,9 +47,13 @@ public static partial class SpellPackEffects
         // a fifth of a second after the throw and filled the view there (review 2026-11-12). It starts once the rock is
         // about a metre out, burns shorter and smaller, and is drawn with texels twice as coarse (a frame of the flame 32
         // texels across, not 64), so up close it reads as pixels rather than a soft airbrushed streak.
-        new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_4_LWRP.prefab", scale = .26f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" },
-            delays = new[] { ("Fire", .07f), ("Lava", .07f), ("Sparks", .07f) }, lives = new[] { ("Fire", .45f) }, sizes = new[] { ("Fire", .8f) }, maxScreen = .1f, divisor = 16 },
-        new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_2_LWRP.prefab", scale = .45f, once = true, life = .5f, maxScreen = .12f, remove = new[] { "Flash", "Flames", "Sparks", "Puff" } },
+        new Art { prefab = "Fireball/Fireball Projectile.prefab", parent = "Art", effect = "Prefabs/Projectiles/Projectiles/Projectile_Fire_4_LWRP.prefab", scale = .34f, remove = new[] { "Art/Core", "Art/Flame Tail", "Art/Embers" },
+            delays = new[] { ("Fire", .07f), ("Lava", .07f), ("Sparks", .07f) }, lives = new[] { ("Fire", .6f) }, sizes = new[] { ("Fire", .95f) }, maxScreen = .1f, divisor = 16 },
+        // Bigger and fuller since 2026-11-13 (the user: "a bit more impressive, a little bigger"): the pack's fuller fire
+        // burst (fireballs thrown out, a body of flame, a second blast), burning longer, its thrown fireballs cut short so none
+        // hang in the air, and without its soft red glows (they sat over the enemy as a smooth disc after the fire was gone).
+        new Art { prefab = "Fireball/Fireball Impact.prefab", effect = "Prefabs/Projectiles/Explosion/Explosion _Fire_3_LWRP.prefab", scale = .7f, once = true, life = .8f, maxScreen = .14f, remove = new[] { "Flash", "Flames", "Sparks", "Puff" },
+            drop = new[] { "Glow(Explosion)", "Glow(Explosion)" }, lives = new[] { ("Fireballs", .15f) } },
     };
 
     // Only the fireball's three effects, from an eval (Rebuild does every effect of this file).

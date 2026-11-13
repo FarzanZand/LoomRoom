@@ -89,7 +89,8 @@ public class DeathBurst : MonoBehaviour
         planning = null;
         foreach (var plan in plans)
         {
-            if (plan.smr == null || !plan.smr.enabled) continue;
+            // Active as well as enabled: an elite's glow shell is switched off (not disabled) as it dies.
+            if (plan.smr == null || !plan.smr.enabled || !plan.smr.gameObject.activeInHierarchy) continue;
             SplitSkinned(plan, parent);
             plan.smr.enabled = false;
         }
@@ -181,7 +182,7 @@ public class DeathBurst : MonoBehaviour
         var major = MajorBones(character.Animator);
         foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
         {
-            if (!smr.enabled || smr.sharedMesh == null) continue;
+            if (!smr.enabled || smr.sharedMesh == null || EliteEnemy.IsGlow(smr)) continue;
             var plan = new Plan { smr = smr };
             plans.Add(plan);
             var key = (smr.sharedMesh, character.Animator != null ? character.Animator.avatar : null);

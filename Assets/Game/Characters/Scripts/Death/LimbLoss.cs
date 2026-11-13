@@ -91,7 +91,7 @@ public class LimbLoss : MonoBehaviour
         var pieces = new List<Rigidbody>();
 
         foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
-            if (smr.enabled && smr.sharedMesh != null && Piece(smr, bones) is Rigidbody rb) pieces.Add(rb);
+            if (smr.enabled && smr.sharedMesh != null && !EliteEnemy.IsGlow(smr) && Piece(smr, bones) is Rigidbody rb) pieces.Add(rb);
         // What the limb holds comes off whole (the shield), not its skinned parts.
         foreach (var mr in root.GetComponentsInChildren<MeshRenderer>())
         {
