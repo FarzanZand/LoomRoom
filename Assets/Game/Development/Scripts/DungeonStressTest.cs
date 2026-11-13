@@ -127,6 +127,7 @@ public static class DungeonStressTest
 #endif
     }
 
+#if UNITY_EDITOR   // the flicker check's helpers: CoplanarCheck is editor-only
     // What can be seen on a walled floor: everything from the floor's top up, and below it only inside a pit's or a sunken
     // floor's hole, above its bottom (the undersides of the floor and of a pit's linings lie in the table).
     static System.Func<Vector3, bool> Seen(DungeonGenerator floor)
@@ -168,6 +169,8 @@ public static class DungeonStressTest
         foreach (var piece in floor.GetComponentsInChildren<MeshRenderer>(true)) if (floor.IsArchitecture(piece)) materials.Add(piece.sharedMaterial);
         return materials.Contains(r.sharedMaterial);
     }
+
+#endif
 
     // Builds floors of a level (as Run does, their portal pockets too) and looks on each for faces that would flicker
     // (CoplanarCheck: two opaque faces turned the same way in one plane, overlapping). Every find fails the floor. The
