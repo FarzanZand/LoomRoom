@@ -849,6 +849,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
 
         SavedRun(out var savedPlace, out var savedClass, out var savedDetail);
         UpdateMarker(savedPlace);
+        // The question marks and the start's glow: on the very first reveal nothing had laid them yet (they came only
+        // after the first run or the next Play), so the Crypt stood unmarked as the map was first seen.
+        RefreshNewPlaces();
         SayWonLine();
         if (card != null) card.ShowHint(true, Hint);
         InMapView = true;

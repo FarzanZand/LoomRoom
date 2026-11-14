@@ -68,6 +68,11 @@ public class LevelUpUI : MonoBehaviour
         if (progress == null) Bind();
         // Held back (a boss's last pose): it plays once the hold is over, after any skill popup on screen.
         if (waitingLevel > 0 && HoldUntil > 0f && Time.time >= HoldUntil && !ExperienceBarUI.Playing) { HoldUntil = 0f; PlayWaiting(); }
+        // Out of the way of the attribute points panel in the middle of the bag screen (it lay over the panel's title
+        // and first row when the bag was opened right after a level-up): faded out while it shows, back if the bag
+        // closes before the level-up is over.
+        if (group != null && show != null && show.IsActive())
+            group.alpha = Mathf.MoveTowards(group.alpha, AttributePointsUI.Showing ? 0f : 1f, Time.unscaledDeltaTime / .15f);
     }
 
     void Bind()

@@ -79,7 +79,13 @@ public class DebugDungeonSession : MonoBehaviour
         string studioClass = UnityEditor.SessionState.GetString(StudioClassKey, "");
         UnityEditor.SessionState.EraseString(StudioClassKey);
         var picked = studioClass.Length > 0 ? UnityEditor.AssetDatabase.LoadAssetAtPath<AdventurerClass>(UnityEditor.AssetDatabase.GUIDToAssetPath(studioClass)) : null;
-        if (picked != null) player.GetComponent<AdventurerProgress>().selectedClass = picked;
+        if (picked != null)
+        {
+            // A class not unlocked yet is unlocked here (this mode saves to loomroom-debug.json, never the player's
+            // saves): locked, the run's start fell back to the first class and the arena was played as the Warrior.
+            if (!picked.Unlocked && ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(picked.unlockFlag);
+            player.GetComponent<AdventurerProgress>().selectedClass = picked;
+        }
 #endif
 #if UNITY_EDITOR || DEBUG
         DevGive.GoldAtNextRunStart();
