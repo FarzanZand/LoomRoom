@@ -342,6 +342,12 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesSwingInsidePlayerReach))]
     [Min(0f), Tooltip("How much further than where its swing can begin an enemy's blow still lands (metres): a step back during the windup is not enough to get out, a dash is.")]
     public float enemyBlowBeyondStart = .2f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesSwingInsidePlayerReach))]
+    [Min(.5f), Tooltip("Scales how far every enemy melee blow lands, on top of the two above (1.1: 10% further, a skeleton's 1.55 m becomes 1.7). Where a swing begins is not changed, so more of a step back during the windup is still hit.")]
+    public float enemyBlowReach = 1.1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Min(.1f), Tooltip("How much faster every enemy attack goes from its start to its blow: the attack animation, the least windup and an attack's own hit delay all shorten by it (1.1: 10% faster). How often they attack is their cooldowns', not this.")]
+    public float enemySwingSpeed = 1.1f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;

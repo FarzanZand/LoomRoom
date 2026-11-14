@@ -905,7 +905,7 @@ public class EnemyBrain : MonoBehaviour
         if (Character.HasParameter(anim, "AttackSpeed", AnimatorControllerParameterType.Float))
         {
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
-            anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed : 1.35f) * statMul);
+            anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed * Mathf.Max(.1f, Tuning.enemySwingSpeed) : 1.35f) * statMul);
         }
         // The bow goes back to the side as soon as the arrow is away, while the release still plays: one blend, not the
         // release blending to the idle arms and then the bow hold blending in a moment later (the arm swung twice).

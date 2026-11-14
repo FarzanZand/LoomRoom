@@ -367234,6 +367234,8 @@ MonoBehaviour:
   enemiesSwingInsidePlayerReach: 1
   enemySwingInsideReach: 0.1
   enemyBlowBeyondStart: 0.2
+  enemyBlowReach: 1.1
+  enemySwingSpeed: 1.1
   enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3

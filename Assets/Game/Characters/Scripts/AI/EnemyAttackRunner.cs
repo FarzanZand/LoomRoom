@@ -38,7 +38,10 @@ public class EnemyAttackRunner
     List<EnemyAttack> Attacks => brain.Attacks;
 
     static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
-    public static float MinWindup => Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
+    // Every attack's own timing is shortened by CombatManager.enemySwingSpeed (the user, 2026-11-14: blows were still a
+    // bit too easy to dodge): the least windup, an attack's hit delay, and the animation (EnemyBrain.UpdateAnimator).
+    static float SwingSpeed => Tuning != null ? Mathf.Max(.1f, Tuning.enemySwingSpeed) : 1f;
+    public static float MinWindup => (Tuning != null ? Tuning.enemyMinimumWindup : 0.3f) / SwingSpeed;
     static float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
     static float CommitLead   => Tuning != null ? Tuning.enemyCommitBeforeHit : .25f;
     static float AimLead      => Tuning != null ? Tuning.enemyAimLead : 1f;
@@ -69,7 +72,7 @@ public class EnemyAttackRunner
         if (attack == null) return 0f;
         var tuning = Tuning;
         if (attack.IsRanged || tuning == null || !tuning.enemiesSwingInsidePlayerReach || tuning.playerMeleeReach <= 0f) return attack.EffectiveMaxRange * 1.1f;
-        return StartRange(attack) + tuning.enemyBlowBeyondStart;
+        return (StartRange(attack) + tuning.enemyBlowBeyondStart) * tuning.enemyBlowReach;
     }
 
     // How far this body reaches out toward what it faces, from its middle: its capsule's radius, or half its length
@@ -330,7 +333,7 @@ public class EnemyAttackRunner
         if (hitbox == null)
         {
             fallbackHitPending = true;
-            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay, MinWindup) : float.MaxValue;
+            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay / SwingSpeed, MinWindup) : float.MaxValue;
         }
     }
 
@@ -431,7 +434,7 @@ public class EnemyAttackRunner
     float EstimateHit()
     {
         if (current.fallbackHitDelay >= 0f && (brain.AttackRelay == null || brain.AttackRelay.GetHitbox(current.hitboxIndex) == null))
-            return attackStartedAt + Mathf.Max(current.fallbackHitDelay, MinWindup);
+            return attackStartedAt + Mathf.Max(current.fallbackHitDelay / SwingSpeed, MinWindup);
         var anim = Character.Animator;
         if (anim == null) return -1f;
         for (int layer = 0; layer < anim.layerCount; layer++)
