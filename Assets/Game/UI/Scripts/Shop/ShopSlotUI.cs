@@ -36,11 +36,15 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     public void Clear() => Bind(null, 0, false, null, null);
 
+    // Where a dragged pack item would land: green fits, red doesn't (ShopUI); null puts the plain cell back.
+    public void Tint(Color? colour) { if (background != null) background.color = colour ?? Color.white; }
+
     // The item's tooltip (the inventory's) beside the mouse, besides the details panel.
     public void OnPointerEnter(PointerEventData eventData) { hover?.Invoke(item); ShowTooltip(null); }
     public void OnPointerExit(PointerEventData eventData) => HideTooltip();
     public void OnDeselect(BaseEventData eventData) => HideTooltip();
-    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging) TooltipUI.Instance.Show(item, at); }
+    // Not while anything is being dragged: it would sit over the cells the drag is aimed at.
+    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging && !(ItemDragHandler.HasInstance && ItemDragHandler.Instance.IsDragging)) TooltipUI.Instance.Show(item, at); }
     static void HideTooltip() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
     public void OnPointerClick(PointerEventData eventData)
     {
@@ -50,12 +54,12 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnSubmit(BaseEventData eventData) => Sell();
     void Sell() { if (button == null || button.interactable) click?.Invoke(); }
 
-    // Dragged onto the wares, it sells (ShopUI).
+    // Dragged onto the wares, it sells; onto another cell of the pack, it moves there as in the bag (ShopUI).
     bool dragging;
     public void OnBeginDrag(PointerEventData eventData)
     {
         HideTooltip();
-        dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginDrag(item, icon);
+        dragging = item != null && eventData.button == PointerEventData.InputButton.Left && ShopUI.HasInstance && ShopUI.Instance.BeginPackDrag(this);
     }
     public void OnDrag(PointerEventData eventData) { }
     public void OnEndDrag(PointerEventData eventData)

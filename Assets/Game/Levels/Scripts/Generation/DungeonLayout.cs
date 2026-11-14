@@ -41,6 +41,42 @@ public sealed partial class DungeonLayout
     // A way in or out of a room: from its cell p, the cell toward d is floor that is not the room's (a passage or
     // another room).
     public bool IsOpening(int room, Vector2Int p, Vector2Int d) { var n = p + d; return InBounds(n) && floor[n.x, n.y] && !InRoom(room, n); }
+    // The separate ways into a room: groups of touching floor cells outside it that border it (a passage two cells wide
+    // is one way in).
+    public List<List<Vector2Int>> Doorways(int room)
+    {
+        var own = new HashSet<Vector2Int>(roomCells[room]);
+        var outside = new HashSet<Vector2Int>();
+        foreach (var p in roomCells[room])
+            foreach (var d in Directions) { var n = p + d; if (InBounds(n) && floor[n.x, n.y] && !own.Contains(n)) outside.Add(n); }
+        var groups = new List<List<Vector2Int>>();
+        var seen = new HashSet<Vector2Int>();
+        foreach (var c in outside)
+        {
+            if (!seen.Add(c)) continue;
+            var group = new List<Vector2Int> { c };
+            for (int i = 0; i < group.Count; i++)
+                foreach (var d in Directions) { var n = group[i] + d; if (outside.Contains(n) && seen.Add(n)) group.Add(n); }
+            groups.Add(group);
+        }
+        return groups;
+    }
+
+    // Passage cells that end in rock: floor outside every room with a single floor cell beside it.
+    public int PassageEnds()
+    {
+        int ends = 0;
+        for (int x = 0; x < floor.GetLength(0); x++) for (int y = 0; y < floor.GetLength(1); y++)
+        {
+            var p = new Vector2Int(x, y);
+            if (!floor[x, y] || RoomAt(p) >= 0) continue;
+            int around = 0;
+            foreach (var d in Directions) { var n = p + d; if (InBounds(n) && floor[n.x, n.y]) around++; }
+            if (around == 1) ends++;
+        }
+        return ends;
+    }
+
     public bool IsRectangular(int room) => roomCells[room].Count == rooms[room].width * rooms[room].height;
     // Grown layouts only: the shape each room was built from, and quarter turns for its template.
     public DungeonShape[] Shapes { get; private set; }

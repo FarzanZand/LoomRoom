@@ -10,6 +10,7 @@ public struct DungeonGrowthSettings
     public float widePercent;       // chance a corridor is two cells wide
     public float deadEndPercent;    // spurs, as a percentage of the room count
     public float loopPercent;       // extra connections, as a percentage of the room count
+    public float joinDeadEndPercent;   // rooms left with one way in that are given a second, as a percentage of them
     public int loopReach;           // furthest gap, in cells, a loop may bridge
 }
 
@@ -187,6 +188,7 @@ public sealed partial class DungeonLayout
 
         AddLoops();
         OpenEveryDoor();
+        JoinDeadEnds();
         AddDeadEnds();
         Finish();
     }
@@ -624,6 +626,94 @@ public sealed partial class DungeonLayout
             if (walked > 0 && walked < direct * 1.6f + 8) continue;
             if (Connect(a, b, (reach * 2 + 12) * 16)) loops--;
         }
+    }
+
+    // Rooms with one way in get a second (the user, 2026-11-14: "less dead ends"). After the loops, a share of the rooms
+    // left with a single doorway get a tunnel from a free door cell of theirs, away from the one they have, to the nearest
+    // floor that is a long walk from that doorway (a passage, or another room's door), so the new way out never just
+    // loops back into its own passage. Never the starting room with its one door, nor the exit (the stairs stay at the end
+    // of the walk and a boss stage keeps its one way in); a hand-built room only through its own marked doors. Rooms
+    // still one-way after a round are tried again once the round's tunnels are dug (they may give a nearer passage).
+    void JoinDeadEnds()
+    {
+        if (growth.joinDeadEndPercent <= 0) return;
+        int exit = rooms.Count - 1, first = doorAnchors[0] != null ? 1 : 0;
+        var leaves = new List<int>();
+        for (int room = first; room < exit; room++) if (Doorways(room).Count == 1) leaves.Add(room);
+        for (int i = leaves.Count - 1; i > 0; i--) { int j = growRandom.Next(i + 1); (leaves[i], leaves[j]) = (leaves[j], leaves[i]); }
+        int joins = Mathf.RoundToInt(leaves.Count * Mathf.Clamp(growth.joinDeadEndPercent, 0, 100) / 100f);
+        int maxCost = (Mathf.Clamp(growth.loopReach, 2, 30) * 2 + 26) * 16;
+        for (int round = 0; round < 2 && joins > 0; round++)
+            foreach (int leaf in leaves)
+            {
+                if (joins == 0) break;
+                var ways = Doorways(leaf);
+                if (ways.Count == 1 && TunnelOut(leaf, ways[0], maxCost)) joins--;
+            }
+    }
+
+    // Walk (cells, over floor) a second way out must be from the room's old doorway: less is a loop back into its own passage.
+    const int SecondWayWalk = 6;
+
+    // A tunnel from one of the room's door cells clear of its old doorway to floor more than SecondWayWalk from that doorway
+    // on foot: a passage cell, or a door cell of another room (neither the exit nor the starting room with its one door).
+    bool TunnelOut(int room, List<Vector2Int> oldWay, int maxCost)
+    {
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        var walk = Distances(oldWay[0]);
+        var near = new HashSet<Vector2Int>();
+        foreach (var c in oldWay) for (int dx = -2; dx <= 2; dx++) for (int dy = -2; dy <= 2; dy++) near.Add(c + new Vector2Int(dx, dy));
+        var sources = DoorCells(room, -1);
+        sources.RemoveAll(c => near.Contains(c) || occupant[c.x, c.y] != EmptyCell);
+        if (sources.Count == 0) return false;
+        var targets = new Dictionary<Vector2Int, int>();   // cell -> the room it is a door of, or -1 for a passage
+        for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++)
+            if (occupant[x, y] == CorridorCell && !near.Contains(new Vector2Int(x, y)) && walk[x, y] > SecondWayWalk) targets[new Vector2Int(x, y)] = -1;
+        for (int other = doorAnchors[0] != null ? 1 : 0; other < rooms.Count - 1; other++)
+        {
+            if (other == room) continue;
+            // a door of another room counts by the walk to the room cell just inside it
+            foreach (var q in DoorCells(other, -1))
+            {
+                if (near.Contains(q) || occupant[q.x, q.y] != EmptyCell) continue;
+                foreach (var d in Directions)
+                {
+                    var inside = q + d;
+                    if (occupant[inside.x, inside.y] == other && floor[inside.x, inside.y] && walk[inside.x, inside.y] > SecondWayWalk) { targets[q] = other; break; }
+                }
+            }
+        }
+        if (targets.Count == 0) return false;
+        var cost = new int[width, depth];
+        var previous = new Vector2Int[width, depth];
+        for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++) cost[x, y] = int.MaxValue;
+        var heap = new CellHeap();
+        var none = new Vector2Int(-1, -1);
+        foreach (var s in sources) { cost[s.x, s.y] = 0; previous[s.x, s.y] = none; heap.Push(0, s); }
+        Vector2Int end = none;
+        while (heap.Count > 0)
+        {
+            var (c, p) = heap.Pop();
+            if (c > cost[p.x, p.y]) continue;
+            if (targets.ContainsKey(p)) { end = p; break; }
+            foreach (var d in Directions)
+            {
+                var n = p + d;
+                if (!Inner(n) || near.Contains(n)) continue;
+                // Only fresh rock beside no room, or the floor it is heading for: never along a passage near the old way.
+                if (!targets.ContainsKey(n) && !(occupant[n.x, n.y] == EmptyCell && !Halo(n))) continue;
+                int next = c + 10 + noise[n.x, n.y];
+                if (next > maxCost || next >= cost[n.x, n.y]) continue;
+                cost[n.x, n.y] = next; previous[n.x, n.y] = p; heap.Push(next, n);
+            }
+        }
+        if (end == none) return false;
+        int owner = nextCorridor++;
+        for (var p = end; p != none; p = previous[p.x, p.y]) Dig(p, owner);
+        degree[room]++;
+        int joined = targets[end];
+        if (joined >= 0) { degree[joined]++; Connections.Add(new Vector2Int(room, joined)); }
+        return true;
     }
 
     static int Gap(RectInt a, RectInt b)

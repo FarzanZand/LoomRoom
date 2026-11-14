@@ -27,6 +27,17 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     Mesh fittedLintelMesh;
     public Collider barrier;
     public NavMeshObstacle obstacle;
+    // The open leaf is solid too (the user, 2026-11-14: enemies walked and hit through open doors): a box on the hinge
+    // round the leaf's own mesh and a navmesh cut of the same size, made at run time. Both stay off while it swings, so
+    // it never pushes, traps or launches what it passes through, and come on once it has stopped and nothing stands
+    // where it rests (a living character; loose pieces there are left out of its collisions instead); until then the spot
+    // is looked at again now and then. A closed door is the barrier above.
+    [Tooltip("Swing: the open leaf blocks walking, blows, sight, spells and arrows once it has stopped and its spot is clear.")]
+    public bool solidWhenOpen = true;
+    [Min(.02f), Tooltip("Swing: the least thickness of the open leaf's collider (local units).")] public float leafThickness = .1f;
+    BoxCollider leafCollider; NavMeshObstacle leafObstacle; bool leafSettled; float nextClearCheck;
+    static readonly Collider[] leafOverlaps = new Collider[64];
+    public bool LeafSolid => leafSettled;
     [Min(.1f)] public float liftHeight=2.8f;
     [Min(.1f)] public float openingSpeed=4f;
     [Min(1)] public float health=25;
@@ -74,6 +85,64 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             lintel.GetComponent<MeshFilter>().sharedMesh = fittedLintelMesh;
         }
     }
+    // The collider and cut fitted round the leaf's meshes where they hang now (the hinge has just changed side), off
+    // until the swing is over.
+    void PrepareLeaf()
+    {
+        if (!solidWhenOpen) return;
+        bool any = false; var bounds = new Bounds();
+        foreach (var filter in leafMesh.GetComponentsInChildren<MeshFilter>())
+        {
+            if (filter.sharedMesh == null) continue;
+            var local = filter.sharedMesh.bounds;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = local.center + Vector3.Scale(local.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                var p = leaf.InverseTransformPoint(filter.transform.TransformPoint(corner));
+                if (!any) { bounds = new Bounds(p, Vector3.zero); any = true; } else bounds.Encapsulate(p);
+            }
+        }
+        if (!any) return;
+        if (leafCollider == null)
+        {
+            leafCollider = leaf.gameObject.AddComponent<BoxCollider>();
+            leafObstacle = leaf.gameObject.AddComponent<NavMeshObstacle>();
+            leafObstacle.shape = NavMeshObstacleShape.Box; leafObstacle.carving = true; leafObstacle.carveOnlyStationary = true;
+        }
+        // A little short at its ends and top, so it never reaches into the jambs or the lintel.
+        var size = new Vector3(Mathf.Max(.1f, bounds.size.x - .06f), Mathf.Max(.1f, bounds.size.y - .04f), Mathf.Max(leafThickness, bounds.size.z));
+        leafCollider.size = size; leafCollider.center = bounds.center; leafCollider.enabled = false;
+        leafObstacle.size = size; leafObstacle.center = bounds.center; leafObstacle.enabled = false;
+        leafSettled = false; nextClearCheck = 0f;
+    }
+
+    // Nothing the leaf would push or shut in where it rests: no living character (with room for a navmesh agent's
+    // radius round it, which the cut would take away). Loose pieces there (a body's parts, a dropped item, debris) don't
+    // hold it up: the leaf is set down not touching them (Physics.IgnoreCollision, those colliders only), so none is
+    // pushed or thrown, and it still stops everything else.
+    bool LeafSpotClear()
+    {
+        var centre = leaf.TransformPoint(leafCollider.center);
+        var half = Vector3.Scale(leafCollider.size * .5f, leaf.lossyScale);
+        half = new Vector3(Mathf.Abs(half.x), Mathf.Abs(half.y), Mathf.Abs(half.z)) + new Vector3(.5f, 0f, .5f);
+        int count = Physics.OverlapBoxNonAlloc(centre, half, leafOverlaps, leaf.rotation, ~0, QueryTriggerInteraction.Ignore);
+        if (count == leafOverlaps.Length) return false;
+        for (int i = 0; i < count; i++)
+        {
+            var c = leafOverlaps[i];
+            if (c == leafCollider || c == barrier) continue;
+            if (c is CharacterController) return false;
+            var owner = c.GetComponentInParent<Character>();
+            if (owner != null && owner.IsAlive) return false;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            var c = leafOverlaps[i];
+            if (c != leafCollider && c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) Physics.IgnoreCollision(leafCollider, c, true);
+        }
+        return true;
+    }
+
     void OnDestroy() { if (fittedLintelMesh != null) Destroy(fittedLintelMesh); }
     public void Interact(Character who){if(CanInteract(who))Open(who.transform.position);}
     public void TakeDamage(DamageInfo info){if(open)return;health-=Mathf.Max(0,info.Amount);if(health<=0)Open(info.Source!=null ? info.Source.transform.position : (Vector3?)null);}
@@ -91,6 +160,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             leafMesh.localScale=new Vector3(side==authoredSide ? leafMeshScale.x : -leafMeshScale.x,leafMeshScale.y,leafMeshScale.z);
             // With the hinge on their left, turning the same way always takes the leaf away from them.
             swingTarget=closedRotation*Quaternion.Euler(0,-Mathf.Abs(swingDegrees),0);
+            PrepareLeaf();
         }
         open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
     void Update(){
@@ -100,6 +170,11 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             var target=swingTarget;
             leaf.localRotation=Quaternion.RotateTowards(leaf.localRotation,target,swingSpeed*Time.deltaTime);
             if(Quaternion.Angle(leaf.localRotation,target)<Mathf.Abs(swingDegrees)*.3f){barrier.enabled=false;obstacle.enabled=false;}
+            if(leafCollider!=null && !leafSettled && Time.time>=nextClearCheck && Quaternion.Angle(leaf.localRotation,target)<.5f)
+            {
+                nextClearCheck=Time.time+.25f;
+                if(LeafSpotClear()){leafCollider.enabled=true;leafObstacle.enabled=true;leafSettled=true;}
+            }
             return;
         }
         leaf.localPosition=Vector3.MoveTowards(leaf.localPosition,closedPosition+Vector3.up*liftHeight,openingSpeed*Time.deltaTime);

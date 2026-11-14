@@ -1,13 +1,15 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // The merchant screen. Left: the merchant's wares, supplies (consumables) above equipment. Right: the
 // player's pack like the inventory: the hotbar row, then the bag's whole grid, each bag item drawn once across the
 // cells it takes (bagItemTemplate, cloned per item, like ItemGridUI). Below: the hovered item. A ware is bought with
 // either mouse button or by dragging it onto the pack; a pack item is sold with a right click or by dragging it onto
-// the wares (the drop zones are the areas the rows and the cells cover).
+// the wares, and dragged onto another cell of the pack it moves there as in the bag (the drop zones are the areas the
+// rows and the cells cover).
 // Rows and cells are authored in the scene; this only fills them.
 public class ShopUI : Singleton<ShopUI>
 {
@@ -36,8 +38,15 @@ public class ShopUI : Singleton<ShopUI>
     [SerializeField] TavernTabsUI tavern;
     [Tooltip("Price line of a ware the player can't afford.")]
     [SerializeField] Color tooDearColor = new(.69f, .353f, .306f);
+    // Brighter than the bag's: the pack's grey cell sprite darkens a tint more (the bag's colours were hard to see here).
+    [Tooltip("Pack cells a dragged pack item would land on, when it fits there.")]
+    [SerializeField] Color fitsTint = new(.45f, 1f, .5f, 1f);
+    [Tooltip("... and when it doesn't.")]
+    [SerializeField] Color blockedTint = new(1f, .38f, .32f, 1f);
 
     Merchant merchant;
+    Vector4[] pads;
+    readonly List<ShopSlotUI> tinted = new();
     Player player;
     bool open;
     readonly List<(Inventory container, int slot)> packMap = new();
@@ -84,7 +93,7 @@ public class ShopUI : Singleton<ShopUI>
         Refresh();
         // The pack's cells answer across the gaps between them, so a big bag item has no dead spots (ItemGridUI). Measured
         // here, with the screen up and laid out: at Awake the cells did not stand where they are drawn yet.
-        if (packSlots != null) ItemGridUI.CoverGaps(packSlots);
+        if (packSlots != null) pads = ItemGridUI.CoverGaps(packSlots);
         if (tavern != null) tavern.Bind(m, p);
         // With a pad, a ware is selected at once (selecting shows it in the details, so the mouse keeps the help text).
         if (InputManager.PadConnected) SelectStart();
@@ -98,6 +107,7 @@ public class ShopUI : Singleton<ShopUI>
         // (the rows and cells had no navigation of their own) and stay on this screen.
         if (root != null) { root.GetComponentsInChildren(false, focusable); MenuFocus.LinkNearest(focusable); MenuFocus.Tint(focusable); }
         if (InputManager.MenuInputStarted && InputManager.NothingSelectedIn(root != null ? root.transform : null)) SelectStart();
+        Preview();
     }
     readonly System.Collections.Generic.List<Selectable> focusable = new();
 
@@ -311,7 +321,7 @@ public class ShopUI : Singleton<ShopUI>
     public enum DropZone { None, Wares, Pack }
     readonly Vector3[] corners = new Vector3[4];
 
-    // The ghost follows the pointer (ItemDragHandler's, as in the inventory); false when there is no shop open.
+    // A ware: the ghost follows the pointer (ItemDragHandler's, as in the inventory); false when there is no shop open.
     public bool BeginDrag(ItemData item, Image from)
     {
         if (!open || item == null) return false;
@@ -320,13 +330,93 @@ public class ShopUI : Singleton<ShopUI>
         return true;
     }
 
+    // A pack item: held by the grabbed cell, from its own stack, so a drop on the pack moves it as the bag does (the user,
+    // 2026-11-14: items can be moved about in the shop too) and a drop on the wares sells it.
+    public bool BeginPackDrag(ShopSlotUI slot)
+    {
+        int i = packSlots != null ? System.Array.IndexOf(packSlots, slot) : -1;
+        if (!open || i < 0 || i >= packMap.Count || !ItemDragHandler.HasInstance) return false;
+        var (container, anchor) = packMap[i];
+        var item = container != null && anchor >= 0 ? container.ItemAt(anchor) : null;
+        if (item == null) return false;
+        // The cell's size on the canvas the ghost is drawn on (the pack's cells are scaled).
+        var rt = (RectTransform)slot.transform;
+        rt.GetWorldCorners(corners);
+        var canvas = slot.GetComponentInParent<Canvas>();
+        float k = canvas != null ? Mathf.Max(.0001f, canvas.rootCanvas.transform.lossyScale.x) : 1f;
+        var cell = new Vector2(corners[2].x - corners[0].x, corners[2].y - corners[0].y) / k;
+        var size = container.SizeOf(item);
+        var grab = container.IsGrid ? container.CellOf(i - hotbarCells) - container.CellOf(anchor) : Vector2Int.zero;
+        ItemDragHandler.Instance.BeginFrom(container, anchor, item, new Vector2(cell.x * size.x, cell.y * size.y), cell, grab);
+        return true;
+    }
+
     public DropZone EndDrag(Vector2 screen)
     {
-        if (ItemDragHandler.HasInstance) ItemDragHandler.Instance.End();
-        if (!open) return DropZone.None;
-        if (Covers(packSlots, screen)) return DropZone.Pack;
-        if (Covers(supplyRows, screen) || Covers(gearRows, screen)) return DropZone.Wares;
-        return DropZone.None;
+        var drag = ItemDragHandler.HasInstance ? ItemDragHandler.Instance : null;
+        var zone = !open ? DropZone.None : Covers(packSlots, screen) ? DropZone.Pack
+            : Covers(supplyRows, screen) || Covers(gearRows, screen) ? DropZone.Wares : DropZone.None;
+        // A pack item let go on a cell of the pack: moved there by the bag's rules (swaps, refusals and all).
+        if (zone == DropZone.Pack && drag != null && drag.IsDragging && drag.SourceContainer != null)
+        {
+            int i = PackCellAt(screen);
+            Inventory container = null; int cell = -1;
+            if (i >= 0) (container, cell) = CellAt(i);
+            if (container != null && cell >= 0 && cell < container.SlotCount) ItemSlotUI.DropOnto(drag, container, cell);
+        }
+        drag?.End();
+        ClearTints();
+        return zone;
+    }
+
+    // Pack cell i as a container and its cell: the hotbar's, then the bag's row by row.
+    (Inventory container, int cell) CellAt(int i) => player == null ? (null, -1) : i < hotbarCells ? (player.Hotbar, i) : (player.Bag, i - hotbarCells);
+
+    // The pack cell under a screen point (each cell answers across the gaps round it), -1 for none.
+    int PackCellAt(Vector2 screen)
+    {
+        for (int i = 0; i < (packSlots?.Length ?? 0); i++)
+            if (packSlots[i] != null && packSlots[i].gameObject.activeInHierarchy &&
+                RectTransformUtility.RectangleContainsScreenPoint((RectTransform)packSlots[i].transform, screen, null, pads != null && i < pads.Length ? pads[i] : Vector4.zero))
+                return i;
+        return -1;
+    }
+
+    // While a pack item is dragged over the pack, the cells it would land on: green fits, red doesn't (as in the bag).
+    void Preview()
+    {
+        ClearTints();
+        var drag = ItemDragHandler.HasInstance ? ItemDragHandler.Instance : null;
+        if (drag == null || !drag.IsDragging || drag.SourceContainer == null || drag.Item == null || Mouse.current == null) return;
+        int i = PackCellAt(Mouse.current.position.ReadValue());
+        if (i < 0) return;
+        var (dst, cell) = CellAt(i);
+        if (dst == null || cell < 0 || cell >= dst.SlotCount) return;
+        if (!dst.IsGrid) { TintCell(i, dst.Accepts(drag.Item) && ItemSlotUI.Allowed(drag, dst, cell, out _)); return; }
+        int anchor = ItemSlotUI.TargetFor(drag, dst, cell);
+        var size = dst.SizeOf(drag.Item);
+        var hits = dst.Overlaps(drag.Item, anchor, drag.SourceContainer == dst ? drag.SourceIndex : -1);
+        bool ok = dst.Accepts(drag.Item) && hits.Count <= 1 && ItemSlotUI.Allowed(drag, dst, anchor, out _);
+        var at = dst.CellOf(anchor);
+        for (int x = 0; x < size.x; x++)
+            for (int y = 0; y < size.y; y++)
+            {
+                int index = hotbarCells + (at.y + y) * dst.GridWidth + at.x + x;
+                if (index < packSlots.Length) TintCell(index, ok);
+            }
+    }
+
+    void TintCell(int i, bool ok)
+    {
+        if (packSlots[i] == null) return;
+        packSlots[i].Tint(ok ? fitsTint : blockedTint);
+        tinted.Add(packSlots[i]);
+    }
+
+    void ClearTints()
+    {
+        foreach (var s in tinted) if (s != null) s.Tint(null);
+        tinted.Clear();
     }
 
     // Inside the box round every element (empty rows and cells count: the zone keeps its shape), with a margin.

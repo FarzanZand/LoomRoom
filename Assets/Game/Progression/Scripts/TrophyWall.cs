@@ -200,7 +200,18 @@ public class TrophyWall : MonoBehaviour, IInteractable
             if (mount.model != null) Destroy(mount.model);
             mount.model = Build(item, mount.anchor, !hung);
             mount.shownItem = item; mount.showingOutline = !hung;
+            // A hung trophy says what it is and what it unlocks while the crosshair rests on it (the user, 2026-11-14).
+            if (hung) { var m = milestone; mount.model.AddComponent<PropInfo>().Describe = () => Describe(item, m); }
         }
+    }
+
+    // A hung trophy's tooltip: its name, and the ability its milestone unlocks for every class, in a row and a line.
+    static (string, string, string) Describe(ItemData item, ProgressionManager.Milestone milestone)
+    {
+        string body = milestone != null && milestone.Known ? PropInfo.Row("Unlocks", milestone.Name) : "";
+        string what = milestone?.Description;
+        if (!string.IsNullOrEmpty(what)) body += (body.Length > 0 ? "\n" : "") + $"<color={ItemData.DimColor}>{what}</color>";
+        return (item.itemName, "TROPHY", body);
     }
 
     // The item's model, stripped to visuals, fitted to the trophy size and hung on the anchor.

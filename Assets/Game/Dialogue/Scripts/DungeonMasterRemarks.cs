@@ -42,6 +42,8 @@ public class DungeonMasterRemarks : MonoBehaviour
         new() { text = "Ow! Aim the {spell} down there, not up here." },
     };
     [TabGroup(Tabs, "Runs"), Min(0), Tooltip("Seconds before he answers another spell at him.")] public float spellHitGap = 8f;
+    [TabGroup(Tabs, "Runs"), Tooltip("His die: after this many of the player's spells have hit him in one run he throws a die at them that can't be escaped and kills at once (DungeonMasterDie). Not during a boss fight.")]
+    public DungeonMasterDieSettings die = new();
     // The user, 2026-11-11: comments when you cast a spell on yourself, meaning the room player: you standing at the
     // table while your figure plays. A spell flown up out of the dungeon into your own body there.
     [TabGroup(Tabs, "Runs"), Tooltip("The player's spell flies up out of the dungeon and hits the room player standing at the table (you). Not during a boss fight or the intro's practice. {spell}, {a spell} and {A spell} as above.")]
@@ -252,6 +254,8 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         var remarks = FindAnyObjectByType<DungeonMasterRemarks>();
         if (remarks == null || caster is not Player || Hold || BossStageEncounter.Current != null) return;
+        // Every hit counts toward his die, answered or not; the last of them is answered with the die itself.
+        if (remarks.DieDue((Player)caster)) return;
         if (Time.time - remarks.lastSpellHit < remarks.spellHitGap) return;
         var line = Pick(remarks.spellHitMe);
         if (line == null) return;
@@ -267,6 +271,30 @@ public class DungeonMasterRemarks : MonoBehaviour
         else if (!remarks.givingRule) remarks.StartCoroutine(remarks.GiveRuleAfterLine(rule));
     }
     const int TargetRule = 4;   // the fourth rule on RuleManager (its number on the sheet is the order given)
+
+    // His die (the user, 2026-11-14): the table player's spells that hit him are counted over the run (a run flag, so a
+    // continued run keeps the count and a new run starts it again, NewRun), and on the last of Die > Hits he throws his
+    // die at them (DungeonMasterDie): it can't be escaped and kills at once. The count starts again after a throw, so a
+    // revived player gets three more. Not during a boss fight (SpellHit is not called on for those).
+    public const string SpellHitsFlag = "run.dmSpellHits";
+    public static void NewRun() { if (ProgressionManager.HasInstance) ProgressionManager.Instance.SetFlag(SpellHitsFlag, 0); }
+    float lastCountedHit = -999f;
+    bool DieDue(Player player)
+    {
+        if (die == null || die.hits <= 0 || player.kind != PlayerKind.Table || !ProgressionManager.HasInstance) return false;
+        // One on its way already: nothing more to count or say until it has landed.
+        if (DungeonMasterDie.Running) return true;
+        // A spell that meets several parts of him in one moment is one hit.
+        if (Time.time - lastCountedHit < .3f) return false;
+        lastCountedHit = Time.time;
+        var progression = ProgressionManager.Instance;
+        int hits = progression.GetFlag(SpellHitsFlag) + 1;
+        if (hits < die.hits) { progression.SetFlag(SpellHitsFlag, hits); return false; }
+        if (!DungeonMasterDie.Throw(player, die)) return false;
+        progression.SetFlag(SpellHitsFlag, 0);
+        lastSpellHit = Time.time;
+        return true;
+    }
     bool givingRule;
     // The rule is given as he starts to say it, once his answer has been read: the sheet and whatever else shows a new
     // rule (RuleManager.Give) then land with his words, not the six seconds of his answer ahead of them.
@@ -274,8 +302,11 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         givingRule = true;
         yield return null;
-        while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking) yield return null;
+        // His die comes first when the hits came that quickly: its line is not followed by "New rule".
+        while (DungeonMaster.HasInstance && DungeonMaster.Instance.Speaking || DungeonMasterDie.Running) yield return null;
         givingRule = false;
+        // The die ended the run before he got to it: the rule is given the next time a spell hits him.
+        if (RunManager.HasInstance && RunManager.Instance.Ended) yield break;
         if (RuleManager.HasInstance && !RuleManager.Instance.Given(rule)) DungeonMaster.Say(RuleManager.Instance.Give(rule));
     }
 

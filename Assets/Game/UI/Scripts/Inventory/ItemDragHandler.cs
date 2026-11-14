@@ -49,6 +49,12 @@ public class ItemDragHandler : Singleton<ItemDragHandler>
         BeginDrag(null, null, -1, null, item, size, size, Vector2Int.zero);
     }
 
+    // From the shop's pack (ShopUI): a stack in a container, held by the grabbed cell, moved by the bag's rules on a drop.
+    public void BeginFrom(Inventory container, int index, ItemData item, Vector2 size, Vector2 cell, Vector2Int grab)
+    {
+        BeginDrag(null, container, index, null, item, size, cell, grab);
+    }
+
     // From the paper doll: a hand item is dragged out of its hotbar slot, a worn item out of its equipment slot.
     public void BeginEquipped(Inventory container, int index, EquipmentSlot? worn, ItemData item, Vector2 size)
     {

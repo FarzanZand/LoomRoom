@@ -334,6 +334,15 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(.2f), Tooltip("Metres either side of an enemy's committed swing line that its blow lands: a strafe (well under a metre aside before the blow) is hit, a dash after the commit (about two) gets out.")]
     public float enemySwingHalfWidth = 1f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Enemies begin a melee swing only from where the player's own swing reaches them (Hits > Reach > Player Melee Reach, plus the enemy's own body), so an enemy swinging at a player who stands still can be hit back. They come closer to do it. Off: each attack starts from its own range (about 2 m), further than the player reaches.")]
+    public bool enemiesSwingInsidePlayerReach = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesSwingInsidePlayerReach))]
+    [Min(0f), Tooltip("How far inside the player's reach on it an enemy is before it begins a melee swing (metres).")]
+    public float enemySwingInsideReach = .1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesSwingInsidePlayerReach))]
+    [Min(0f), Tooltip("How much further than where its swing can begin an enemy's blow still lands (metres): a step back during the windup is not enough to get out, a dash is.")]
+    public float enemyBlowBeyondStart = .2f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
@@ -392,8 +401,8 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(1f), Tooltip("Thickness multiplier for the player's melee hit queries.")]
     public float meleeWidthMultiplier = 1.25f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
-    [Min(0f), Tooltip("Player swings: every swing also hits anything out to this far from the player's chest, in the direction the blade is sweeping, so every swing and every weapon reaches the same distance. 0 = only where the blade goes.")]
-    public float playerMeleeReach = 2.5f;
+    [Min(0f), Tooltip("Player swings: how far every swing reaches, in metres from the player's middle to the nearest point of the target, in the direction the blade is sweeping. Every swing and weapon reaches this far and no further. The sword's tip gets 0.9 m ahead in first person (measured: 0.89 m in the two swings, 0.8 in the chop and the heavy); the rest is room for the player. At 1.1 a skeleton is hit with its middle within 1.45 m. Enemies begin their swings from just inside this (Enemies > Attack rhythm > Enemies Swing Inside Player Reach). 0 = only where the blade's own hit shape goes, each swing its own reach.")]
+    public float playerMeleeReach = 1.1f;
     [TabGroup("Tabs", "Hits"), FoldoutGroup("Tabs/Hits/Reach")]
     [Min(.05f), Tooltip("Thickness of that reach (radius of the capsule out from the chest).")]
     public float playerMeleeReachRadius = .35f;

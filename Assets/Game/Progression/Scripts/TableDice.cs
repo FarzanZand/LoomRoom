@@ -1,18 +1,16 @@
 using DG.Tweening;
 using UnityEngine;
 
-// The set of dice on the big table's border (the symbol puzzle's prize, ProgressionManager.Dice). While the dice are
-// carried, using the border puts them down: one after another with the equip chime, a small burst and a short warm
-// light, while the Dungeon Master says placedLine, in their own spot: a small cluster beside the candles at the cap's
-// end (the user, 2026-11-11: there, half as big, close together, not in a line; they went down where the border was
-// aimed at before). While they are carried, Spot Marker (the candles) glows, as every room item's place does. Once down
-// they stay, and Trading is higher while they lie there. The dice are plain children placed by hand: move, turn or add
-// them freely. Aiming at the border is caught by
-// interaction triggers this makes at start along the cap (Reach), each well under half the table's size, so it takes
-// the aim from the table's own Play (InteractController hands a small target on a big one the aim).
-public class TableDice : MonoBehaviour, IInteractable
+// The set of dice on the big table's border (the locked box's prize, ProgressionManager.Dice). While the dice are
+// carried, a faint ghost of them lies in their spot, a small cluster beside the candles at the cap's south end, ringed by
+// the quest outline, and using that ghost puts them down (RoomPlaceSpot; the user, 2026-11-14: the player walks to the
+// spot and sees them placed, as a trophy's plaque; using the table anywhere else no longer does it): one after another
+// with the equip chime, a small burst and a short warm light, while the Dungeon Master says placedLine. Once down they
+// stay, Trading is higher while they lie there, and the crosshair on them shows what they are and give (PropInfo). The
+// dice are plain children placed by hand: move, turn or add them freely (the ghost follows them).
+public class TableDice : MonoBehaviour
 {
-    [Tooltip("The dice lying on the border, shown once they are placed.")] public GameObject[] dice = { };
+    [Tooltip("The dice lying on the border, shown once they are placed; their ghost shows where they go while carried.")] public GameObject[] dice = { };
     public string placePrompt = "Put the dice on the table";
     [Tooltip("UI Library key played as each die goes down.")] public string putKey = "equipItem";
     [Tooltip("A die set down on wood, played where each one lands.")] public AudioClip[] knocks = { };
@@ -22,25 +20,29 @@ public class TableDice : MonoBehaviour, IInteractable
     public float flashRange = 25f, flashSeconds = .9f;
     public Color flashColor = new(1f, .78f, .45f);
     public DungeonMaster.Line placedLine = new() { text = "Lucky dice. The merchants will give you better prices now.", inPerson = true };
-    [Tooltip("The size of each box along the border that takes the aim while the dice are carried (local units; this object sits on the west frame's cap near its south end).")]
-    public Vector3 reachSize = new(5f, 4f, 40f);
-    [Tooltip("Where the boxes' middles lie along the cap (local z): together they cover the west side's whole length.")]
-    public float[] reachAlong = { 3f, 43f, 83f };
-    [Tooltip("Glows while the dice are carried (QuestGlow), marking where they go: the candles beside their spot.")]
-    public GameObject spotMarker;
-    QuestGlow glow;
+    [Tooltip("Under the dice's tooltip, after their Trading row.")] public string infoLine = "While they lie on the table.";
 
     // Where along the cap they went down before they had a spot of their own (kept so old saves load; unused).
     public const string SpotFlag = "room.dice.at";
 
     static ProgressionManager Meta => ProgressionManager.HasInstance ? ProgressionManager.Instance : null;
 
-    public string Prompt => placePrompt;
-    public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && Meta != null && Meta.DiceCarried;
-
-    public void Interact(Character who)
+    void Awake()
     {
-        if (!CanInteract(who)) return;
+        RoomPlaceSpot.Make(transform, dice, () => Meta != null && Meta.DiceCarried, Place, placePrompt);
+        gameObject.AddComponent<PropInfo>().Bind(Describe, dice);
+    }
+
+    (string, string, string) Describe()
+    {
+        string name = Meta != null && Meta.diceSet != null ? Meta.diceSet.itemName : "Set of dice";
+        int bonus = Meta != null ? Meta.diceTradingBonus : 0;
+        return (name, "", PropInfo.Row("Trading", $"+{bonus}") + (string.IsNullOrEmpty(infoLine) ? "" : $"\n<color={ItemData.DimColor}>{infoLine}</color>"));
+    }
+
+    void Place(Character who)
+    {
+        if (Meta == null || !Meta.DiceCarried) return;
         Meta.PlaceDice();
         Refresh();
         for (int i = 0; i < dice.Length; i++)
@@ -86,36 +88,17 @@ public class TableDice : MonoBehaviour, IInteractable
         flash.DOIntensity(0f, flashSeconds).SetEase(Ease.OutQuad).SetLink(flash.gameObject).OnComplete(() => Destroy(flash.gameObject));
     }
 
-    void Awake()
-    {
-        if (spotMarker != null) glow = spotMarker.AddComponent<QuestGlow>();
-        for (int i = 0; i < reachAlong.Length; i++)
-        {
-            var reach = new GameObject($"Dice reach {i + 1}") { layer = gameObject.layer };
-            reach.transform.SetParent(transform, false);
-            // Just above the cap, so a look at it never ends in the cap's own collider.
-            reach.transform.localPosition = new Vector3(0f, .3f + reachSize.y / 2f, reachAlong[i]);
-            var box = reach.AddComponent<BoxCollider>(); box.size = reachSize; box.isTrigger = true;
-            reach.AddComponent<InteractableTrigger>();
-        }
-    }
-
     void Start()
     {
         if (Meta != null) Meta.FlagChanged += OnFlag;
         Refresh();
     }
     void OnDestroy() { if (Meta != null) Meta.FlagChanged -= OnFlag; }
-    void Update() { if (glow != null) glow.Show(Meta != null && Meta.DiceCarried); }
     void OnFlag(string key, int value) { if (key == ProgressionManager.DiceFlag) Refresh(); }
 
     public void Refresh()
     {
         bool down = Meta != null && Meta.DicePlaced;
-        for (int i = 0; i < dice.Length; i++)
-        {
-            if (dice[i] == null) continue;
-            dice[i].SetActive(down);
-        }
+        foreach (var die in dice) if (die != null) die.SetActive(down);
     }
 }

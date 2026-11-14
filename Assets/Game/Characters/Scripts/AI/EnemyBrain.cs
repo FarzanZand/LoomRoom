@@ -309,12 +309,17 @@ public class EnemyBrain : MonoBehaviour
         get
         {
             float r = 0f;
-            foreach (var a in Attacks) if (a != null) r = Mathf.Max(r, a.EffectiveMaxRange);
+            foreach (var a in Attacks) if (a != null) r = Mathf.Max(r, StartRange(a));
             return r > 0f ? r : 1.8f;
         }
     }
 
-    float PreferredDistance => (CloseIn ? MeleeRange : MaxAttackRange) * Profile.preferredRangeFraction;
+    // Where an attack can begin from (EnemyAttackRunner.StartRange: melee swings begin inside the player's own reach).
+    float StartRange(EnemyAttack a) => attackRunner != null ? attackRunner.StartRange(a) : a.EffectiveMaxRange;
+
+    // Never nearer than a body's width off the target's personal space, however short its reach: it holds its distance
+    // without crowding or bumping into the player.
+    float PreferredDistance => Mathf.Max(Tuning != null ? Tuning.personalSpace + .35f : .9f, (CloseIn ? MeleeRange : MaxAttackRange) * Profile.preferredRangeFraction);
 
     // A caster that fights up close (EnemyData.closesIn) holds the distance of its melee attacks, not its spells'.
     bool CloseIn => Data != null && Data.caster && Data.closesIn && Data.attacks != null && Data.attacks.Count > 0;
@@ -323,14 +328,14 @@ public class EnemyBrain : MonoBehaviour
         get
         {
             float r = 0f;
-            foreach (var a in Data.attacks) if (a != null) r = Mathf.Max(r, a.EffectiveMaxRange);
+            foreach (var a in Data.attacks) if (a != null) r = Mathf.Max(r, StartRange(a));
             return r > 0f ? r : 1.8f;
         }
     }
 
     bool AnyAttackCoversDistance(float dist)
     {
-        foreach (var a in Attacks) if (a != null && dist >= a.minRange && dist <= a.EffectiveMaxRange) return true;
+        foreach (var a in Attacks) if (a != null && dist >= a.minRange && dist <= StartRange(a)) return true;
         return false;
     }
 

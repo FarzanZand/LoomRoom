@@ -332,7 +332,9 @@ public class CombatTestBot : MonoBehaviour
                 if (seen) threat = true;
             }
             Block(threat);
-            if (best > 1.9f && player.Motor != null && player.Motor.Controller != null)
+            // Close enough to hit: the player's reach is to the enemy's surface (CombatManager.playerMeleeReach), so a little inside it.
+            float swingFrom = CombatManager.HasInstance && CombatManager.Instance.playerMeleeReach > 0f ? CombatManager.Instance.playerMeleeReach + .2f : 1.9f;
+            if (best > swingFrom && player.Motor != null && player.Motor.Controller != null)
             {
                 var to = nearest.transform.position - player.transform.position; to.y = 0f;
                 player.Motor.Controller.Move(to.normalized * 3.6f * Time.deltaTime + Vector3.down * .5f * Time.deltaTime);

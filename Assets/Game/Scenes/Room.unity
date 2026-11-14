@@ -10647,6 +10647,44 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   spellHitGap: 8
+  die:
+    hits: 3
+    lines:
+    - text: That's three. *My turn.*
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    - text: Three times. I counted. *Catch.*
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    - text: You get three. *I only need one.*
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    - text: I warned you. *Roll for survival.*
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    - text: Enough. *Hold still.*
+      voice: {fileID: 0}
+      mumble: 1
+      inPerson: 0
+    looks: {fileID: 11400000, guid: 77d21cb41686d634dbdbfb76e479e632, type: 2}
+    dieScale: 1
+    reachSeconds: 1.2
+    windup: 0.4
+    flightSeconds: 2.4
+    arc: 7
+    diveAngle: 30
+    hitShake: 2.2
+    throwSpeed: 10
+    throwUp: 6.5
+    throwGravity: 24
+    throwFriction: 16
+    tumbleSeconds: 0.85
+    tumbleTurns: 1
+    killerName: the Dungeon Master's die
   ownSpellHit:
   - text: Did you just {spell} yourself?
     voice: {fileID: 0}
@@ -83047,12 +83085,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
-  reachSize: {x: 5, y: 4, z: 40}
-  reachAlong:
-  - 3
-  - 43
-  - 83
-  spotMarker: {fileID: 508582017}
+  infoLine: While they lie on the table.
 --- !u!1 &733873576
 GameObject:
   m_ObjectHideFlags: 0
@@ -135105,6 +135138,8 @@ MonoBehaviour:
   iconPadding: 4
   tavern: {fileID: 884563216}
   tooDearColor: {r: 0.69, g: 0.353, b: 0.306, a: 1}
+  fitsTint: {r: 0.45, g: 1, b: 0.5, a: 1}
+  blockedTint: {r: 1, g: 0.38, b: 0.32, a: 1}
 --- !u!1 &1138478271
 GameObject:
   m_ObjectHideFlags: 0
@@ -289614,6 +289649,11 @@ MonoBehaviour:
   crouchInterval: 0.7
   velocityThreshold: 0.1
   pitchVariance: 0.05
+  stepWithArms: 1
+  armsBobLayer: Walk Bob
+  armsStepTimes:
+  - 0.25
+  - 0.75
   effects:
   - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
   - {fileID: 11400000, guid: 99b10437d3809c04488069d0d24fff74, type: 2}
@@ -289631,6 +289671,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b6ad8533484d58442b6965c71d3da2cc, type: 3}
   - {fileID: 8300000, guid: df1d04c020543db44bab5ce83a87908e, type: 3}
   - {fileID: 8300000, guid: 0b391562553b6f0468bd06c57e9e7d20, type: 3}
+  jumpStartVolume: 0.5
   jumpingTimeThreshold: 0.3
   jumpMaxThresholdTime: 1
   jumpImpulseIntensity: 1
@@ -355285,6 +355326,11 @@ MonoBehaviour:
   crouchInterval: 0.7
   velocityThreshold: 0.1
   pitchVariance: 0.05
+  stepWithArms: 1
+  armsBobLayer: Walk Bob
+  armsStepTimes:
+  - 0.25
+  - 0.75
   effects:
   - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
   - {fileID: 11400000, guid: 99b10437d3809c04488069d0d24fff74, type: 2}
@@ -355302,6 +355348,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b6ad8533484d58442b6965c71d3da2cc, type: 3}
   - {fileID: 8300000, guid: df1d04c020543db44bab5ce83a87908e, type: 3}
   - {fileID: 8300000, guid: 0b391562553b6f0468bd06c57e9e7d20, type: 3}
+  jumpStartVolume: 0.5
   jumpingTimeThreshold: 0.3
   jumpMaxThresholdTime: 1
   jumpImpulseIntensity: 1
@@ -367184,6 +367231,9 @@ MonoBehaviour:
   enemyTellAudio: {fileID: 0}
   enemyHitFacingAngle: 80
   enemySwingHalfWidth: 1
+  enemiesSwingInsidePlayerReach: 1
+  enemySwingInsideReach: 0.1
+  enemyBlowBeyondStart: 0.2
   enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3
@@ -367202,7 +367252,7 @@ MonoBehaviour:
   knockbackDuration: 0.22
   meleeReachMultiplier: 1.2
   meleeWidthMultiplier: 1.25
-  playerMeleeReach: 2.5
+  playerMeleeReach: 1.1
   playerMeleeReachRadius: 0.35
   criticalHitsEnabled: 1
   critChance: 0.08
