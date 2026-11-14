@@ -36,6 +36,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   rumoured: 1
+  forSale: 0
   rumour: Someone sells good things under the hill past the Crypt. He keeps hired
     blades at his door.
   rumourTold: There's a peddler with a stall in a cellar under the hill. Good wares,

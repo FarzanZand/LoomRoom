@@ -230,6 +230,8 @@ public partial class TableLevelData : ScriptableObject
     public float loopPercent = 15;
     [TabGroup(Tabs, Map), ShowIf(nameof(IsGrown)), Range(2, 24), Tooltip("Furthest gap, in cells, a loop connection may tunnel across.")]
     public int loopReach = 10;
+    [TabGroup(Tabs, Map), ShowIf(nameof(IsGrown)), Range(0, 100), Tooltip("Rooms left with only one way in that get a second passage to a nearby room, as a share of them. Never the starting room or the stairs' room.")]
+    public float joinDeadEndPercent = 0;
     [TabGroup(Tabs, Map), ShowIf(nameof(IsGrown)), Range(0, 4), Tooltip("How much tunnels wander. 0 digs the shortest route.")]
     public float corridorWander = 1.2f;
     [TabGroup(Tabs, Map), ShowIf(nameof(IsGrown)), Range(0, 100), Tooltip("Chance a tunnel is two cells wide.")]
@@ -294,7 +296,7 @@ public partial class TableLevelData : ScriptableObject
     public DungeonGrowthSettings Growth => new DungeonGrowthSettings
     {
         spacing = roomSpacing, wander = corridorWander, widePercent = wideCorridorPercent,
-        deadEndPercent = deadEndPercent, loopPercent = loopPercent, loopReach = loopReach,
+        deadEndPercent = deadEndPercent, loopPercent = loopPercent, loopReach = loopReach, joinDeadEndPercent = joinDeadEndPercent,
     };
     public static DungeonShapeChoice[] DefaultShapes() => new[]
     {

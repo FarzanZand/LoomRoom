@@ -126,7 +126,7 @@ public class Hitbox : MonoBehaviour
             count = Overlap(matrix, rotation);
             for(int i=0;i<count;i++) ProcessHit(overlapBuffer[i]);
             // The player's reach is the same for every swing and weapon: out from the chest to playerMeleeReach, the
-            // way the blade is sweeping now.
+            // way the blade is sweeping now. It is also the most any swing reaches (WithinPlayerReach).
             if (owner is Player && CombatManager.HasInstance && CombatManager.Instance.playerMeleeReach > 0f)
             {
                 var tuning = CombatManager.Instance;
@@ -178,12 +178,33 @@ public class Hitbox : MonoBehaviour
         }
     }
 
+    // The player's swings reach playerMeleeReach and no further (the user, 2026-11-14: "pretty much where the weapons
+    // actually reach when they swing", the same for all attacks; 1 m: the sword's tip gets .9 m ahead, plus a little
+    // room): the level distance from the player's middle to the nearest point of what was touched. The blade's own
+    // hit shape is far fatter and longer than the sword that is drawn (it reached 2.0-2.35 m, each swing its own), so
+    // without this each attack had another reach.
+    bool WithinPlayerReach(Collider other)
+    {
+        if (!(owner is Player) || !CombatManager.HasInstance) return true;
+        float reach = CombatManager.Instance.playerMeleeReach;
+        if (reach <= 0f) return true;
+        var from = owner.transform.position;
+        var bounds = other.bounds;
+        // Level with the body touched, so the nearest point is the nearest in plan.
+        from.y = Mathf.Clamp(from.y + 1.1f, bounds.min.y, bounds.max.y);
+        bool exact = other is BoxCollider || other is SphereCollider || other is CapsuleCollider || (other is MeshCollider mesh && mesh.convex);
+        var nearest = exact ? other.ClosestPoint(from) : bounds.ClosestPoint(from);
+        nearest -= from; nearest.y = 0f;
+        return nearest.sqrMagnitude <= reach * reach;
+    }
+
     void ProcessHit(Collider other)
     {
         if (!Active || owner == null || !owner.IsAlive) return;
         if (owner != null && other.transform.IsChildOf(owner.transform)) return;
         var damageable = other.GetComponentInParent<IDamageable>();
         if (damageable == null || hitThisSwing.Contains(damageable)) return;
+        if (!WithinPlayerReach(other)) return;
 
         var target = other.GetComponentInParent<Character>();
         if (target != null)

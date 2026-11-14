@@ -2,11 +2,15 @@ using UnityEngine;
 
 // Foot locking for humanoid enemies, so feet step instead of skating. While something would slide them (a hit's
 // knockback slide, EnemyMotor.IsKnockedBack; the guard fading in or out while the enemy stands, EnemyGuard's "Guard
-// stance" layer; the enemy's own swing, played on the spot, whose lunge dragged the back foot across the floor) each
-// foot is held where it stood the frame before. A held foot the animation pulls further than a short reach away takes a
+// stance" layer; the enemy's own swing, played on the spot, whose lunge dragged the back foot across the floor; the last
+// two only once the body has nearly stopped) each foot is held where it stood the frame before. A held foot the animation pulls further than a short reach away takes a
 // real step there (eased in and out, lifted a little, never below the spot it was held on) and is held again; one foot
 // steps at a time. When nothing holds them any more each foot steps to where the animation has it, the one with
-// furthest to go first and the other once it has nearly landed, and the IK lets go.
+// furthest to go first and the other once it has nearly landed, and the IK lets go; if the body walks off meanwhile,
+// both catch up with the animation's own stride as a walking foot does.
+// Where the animation has a foot is its IK goal: a humanoid clip needs its foot goal curves (LeftFootT/Q, RightFootT/Q),
+// or the goal reads as the body's centre and a held foot is pulled up to the pelvis (the bow clips and Strafe Right had
+// none until 2026-11-14).
 // While the enemy walks, runs or circles (nothing of the above holding it) a foot the animation has on the ground is
 // pinned where it touched down, and handed back with a quick catch-up as the animation lifts it into its swing: the
 // clips' strides don't match every body's proportions, and the body turns as it circles the player, so the stance foot
@@ -48,6 +52,7 @@ public class EnemyFootPlant : MonoBehaviour
         public float weight, done, length, lift, groundY;
         public bool home;                        // this step ends the lock: let go on landing
         public bool stance, quick;               // pinned by walking; a quick catch-up with no lift
+        public bool waiting;                     // free under a lock, in the air: held once the animation puts it down
     }
 
     Animator anim;
@@ -94,8 +99,11 @@ public class EnemyFootPlant : MonoBehaviour
         bool guardFading = guardLayer >= 0 && Mathf.Abs(guard - lastGuard) > 1e-4f;
         lastGuard = guard;
         bool still = motor == null || Flat(motor.LegVelocity).magnitude < SettleBelow;
+        bool moving = motor != null && Flat(motor.LegVelocity).magnitude > WalkingAbove;
         bool swinging = brain != null && brain.IsSwinging;
-        bool hold = on && (sliding || swinging || guardFading && still);
+        // A swing holds the feet only once the body has (nearly) stopped: begun while it still ran in, the feet were held
+        // where they stood as the body went on, and the legs stretched out flat behind it (2026-11-14).
+        bool hold = on && (sliding || (swinging || guardFading) && still);
         float reach = sliding ? (tuning != null ? tuning.footPlantReach : .4f) : SwingReach;
         float release = tuning != null ? tuning.footPlantRelease : .2f;
 
@@ -109,9 +117,13 @@ public class EnemyFootPlant : MonoBehaviour
         {
             // The lock ends: every held foot goes home, the furthest first.
             locked = false;
+            left.waiting = right.waiting = false;
             var first = Gap(left) >= Gap(right) ? left : right;
-            GoHome(first, false); GoHome(first == left ? right : left, true);
+            GoHome(first, false, moving); GoHome(first == left ? right : left, true, moving);
         }
+        // The body moving off while a foot is still on its way home (or waiting its turn): an eased step at StepSpeed
+        // can't keep up with a run, and the leg trailed up behind the body; it catches up as a walking foot does instead.
+        if (moving && !locked) { Hurry(left); Hurry(right); }
         if (!alive) { Free(left); Free(right); return; }
         if (plantPending) return;   // planted in the next IK pass
 
@@ -123,6 +135,7 @@ public class EnemyFootPlant : MonoBehaviour
         // A held foot left too far behind steps after the body (one foot at a time).
         if (locked)
         {
+            HoldOnceDown(left); HoldOnceDown(right);
             var lagging = Gap(left) >= Gap(right) ? left : right;
             var other = lagging == left ? right : left;
             if (lagging.state == State.Held && Gap(lagging) > reach && other.state != State.Stepping) BeginStep(lagging, false);
@@ -147,11 +160,20 @@ public class EnemyFootPlant : MonoBehaviour
 
     float Gap(Foot foot) => foot.state == State.Free ? 0f : Flat(foot.wants - foot.at).magnitude;
 
-    // Sends a foot home; second: it waits for the other to have nearly landed (done < 0 marks the wait).
-    void GoHome(Foot foot, bool second)
+    // Sends a foot home; second: it waits for the other to have nearly landed (done < 0 marks the wait). quick: the body
+    // is walking off, so both go at once as walking catch-ups (they follow the animation's own stride).
+    void GoHome(Foot foot, bool second, bool quick)
     {
-        if (foot.state == State.Held) { BeginStep(foot, true); if (second) foot.done = -1f; }
+        if (foot.state == State.Held) { BeginStep(foot, true, quick); if (second && !quick) foot.done = -1f; }
         else if (foot.state == State.Stepping) foot.home = true;
+    }
+
+    // A foot stepping home with an eased step, or waiting to, turned into a walking catch-up from where it is now.
+    void Hurry(Foot foot)
+    {
+        if (foot.state != State.Stepping || foot.quick || !foot.home) return;
+        foot.at += Vector3.up * foot.lift;
+        BeginStep(foot, true, true);
     }
 
     void BeginStep(Foot foot, bool home, bool quick = false)
@@ -168,7 +190,7 @@ public class EnemyFootPlant : MonoBehaviour
                 if (foot.done < 0f)
                 {
                     if (other.state == State.Stepping && other.done >= 0f && other.done < FirstLanding) return;
-                    BeginStep(foot, true);
+                    BeginStep(foot, true, foot.quick);
                 }
                 if (foot.length <= .01f) { Land(foot); return; }
                 if (foot.quick)
@@ -208,7 +230,22 @@ public class EnemyFootPlant : MonoBehaviour
         else foot.state = State.Held;
     }
 
-    static void Free(Foot foot) { foot.state = State.Free; foot.weight = 0f; foot.lift = 0f; foot.home = false; foot.stance = false; foot.quick = false; }
+    static void Free(Foot foot) { foot.state = State.Free; foot.weight = 0f; foot.lift = 0f; foot.home = false; foot.stance = false; foot.quick = false; foot.waiting = false; }
+
+    // A foot the lock left to the animation while it was in the air is held where the animation sets it down.
+    void HoldOnceDown(Foot foot)
+    {
+        if (!foot.waiting || foot.state != State.Free || foot.wants.y > Ground() + ContactOff) return;
+        foot.at = foot.wants; foot.turn = foot.wantsTurn; foot.groundY = foot.at.y;
+        foot.state = State.Held; foot.weight = 1f; foot.lift = 0f; foot.home = false; foot.stance = false; foot.quick = false; foot.waiting = false;
+    }
+
+    // The height an ankle has on the ground here: the floor plus the lowest the animation has had an ankle.
+    float Ground()
+    {
+        float floor = motor != null ? motor.transform.position.y : transform.position.y;
+        return floor + (lowestAnkle < .5f ? lowestAnkle : .1f);
+    }
 
     void OnAnimatorIK(int layer)
     {
@@ -241,9 +278,14 @@ public class EnemyFootPlant : MonoBehaviour
         {
             foot.at = fresh ? foot.before : foot.wants;
             foot.turn = fresh ? foot.turnBefore : foot.wantsTurn;
-            foot.groundY = foot.at.y;
         }
         else foot.at += Vector3.up * foot.lift;   // caught mid-step home or letting go: held where it is
+        // Caught in the air (the lock began mid-stride: a swing as the body stopped from a run, free or still letting go
+        // after the last lock): held there, the leg stayed kicked up behind the body through the swing, and stepped down
+        // from there it hung for a quarter of a second more (2026-11-14). The animation keeps it until it puts it on the
+        // ground, and the lock holds it from there (Update).
+        if (foot.at.y > Ground() + ContactOff) { Free(foot); foot.waiting = true; return; }
+        foot.groundY = foot.at.y;
         foot.state = State.Held; foot.weight = 1f; foot.lift = 0f; foot.home = false; foot.stance = false; foot.quick = false;
     }
 

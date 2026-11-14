@@ -1086,6 +1086,7 @@ public static class CoopWorld
         {
             if (e.floorKey != FloorKey) return;
             if (e.amount == 0) DungeonMasterRemarks.SpellHitFromNetwork(e.id, CoopSpells.Spell(e.item.ToString()));
+            else if (e.amount == 2) DungeonMasterRemarks.DieFromNetwork(CharacterOf(e.slot), e.id);
             else DungeonMasterRemarks.ProtectedHitFromNetwork(e.id, e.position);
             return;
         }

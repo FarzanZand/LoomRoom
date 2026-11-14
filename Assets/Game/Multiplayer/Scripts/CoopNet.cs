@@ -134,7 +134,7 @@ public enum CoopEventKind : byte
     DevSpawn = 33,      // a guest's spawn window: the host makes the enemy (amount = MultiplayerManager.enemyPrefabs index, item = its name)
     BossBeaten = 34,
     SpellAffliction = 36, // a player's spell stunned, chilled or burned an enemy (id = it, item = the spell, amount = its power x 100): the host does it, the others show it
-    DmRemark = 37,      // the Dungeon Master answered a player (amount 0: a spell hit him, item = the spell; 1: a blow on a fighter he holds, position = its puff), id = his line
+    DmRemark = 37,      // the Dungeon Master answered a player (amount 0: a spell hit him, item = the spell; 1: a blow on a fighter he holds, position = its puff; 2: he threw his die at the sender), id = his line
     ArenaTalk = 35,     // the Arena fighter's say: host, amount 0, it is said to the player in slot id; a guest, amount 1, theirs is over    // host, only to a player catching up: the stage's boss is dead (position = where it fell; its chest and the way on)
 }
 

@@ -115,13 +115,14 @@ public partial class CampaignManager : Singleton<CampaignManager>
     public bool RumourBought(CampaignEncounter e) => e != null && PM != null && PM.HasFlag(RumourPrefix + e.id);
 
     // The rumours the tavern keeper can sell: places off the map for want of one, in an act that is open, not yet
-    // played; in campaign order (act, then the manager's list).
+    // played, and for sale (CampaignEncounter.forSale; only the Arena for now, the user, 2026-11-14); in campaign order
+    // (act, then the manager's list).
     public List<CampaignEncounter> Rumours()
     {
         var list = new List<CampaignEncounter>();
         if (PM == null) return list;
         foreach (var e in AllEncounters)
-            if (e != null && e.rumoured && e.act <= OpenAct && !RumourBought(e) && Shut(e) && !Earned(e)) list.Add(e);
+            if (e != null && e.rumoured && e.forSale && e.act <= OpenAct && !RumourBought(e) && Shut(e) && !Earned(e)) list.Add(e);
         // By act, keeping the list's order within an act (List.Sort is not stable).
         var byAct = new List<CampaignEncounter>();
         for (int act = 1; byAct.Count < list.Count; act++) foreach (var e in list) if (e.act == act) byAct.Add(e);
@@ -859,6 +860,9 @@ public partial class CampaignManager : Singleton<CampaignManager>
         // Co-op: runs aren't saved and continued (the party plays from the host's pick each time).
         if (Coop.Running) { savedPlace = null; savedClass = null; }
         UpdateMarker(savedPlace);
+        // The question marks and the start's glow: on the very first reveal nothing had laid them yet (they came only
+        // after the first run or the next Play), so the Crypt stood unmarked as the map was first seen.
+        RefreshNewPlaces();
         SayWonLine();
         if (card != null) card.ShowHint(true, Hint);
         InMapView = true;

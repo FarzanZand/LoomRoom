@@ -261,7 +261,7 @@ MonoBehaviour:
   chargeReadyAudio: {fileID: 0}
   blockFrontalDot: -0.3
   blockStaminaCost: 10
-  shieldStaminaPerSecond: 4
+  shieldRegenMultiplier: 0.5
   shieldBash: {fileID: 11400000, guid: 05f425b93046cd74a80863b65255ba10, type: 2}
   deflect: {fileID: 11400000, guid: e3f721e348b7cef468084c9a4d1881ce, type: 2}
   dash:
@@ -306,6 +306,7 @@ MonoBehaviour:
   blockHitStopScale: 0.65
   playerKnockbackSpeedLimit: 2.5
   playerKnockbackDecay: 12
+  cullUnseenEnemyAnimation: 1
   enemyAttackCommitTime: 0.65
   enemyCommitBeforeHit: 0.25
   enemyAimLead: 1
@@ -318,6 +319,9 @@ MonoBehaviour:
   enemyTellAudio: {fileID: 0}
   enemyHitFacingAngle: 85
   enemySwingHalfWidth: 1
+  enemiesSwingInsidePlayerReach: 1
+  enemySwingInsideReach: 0.1
+  enemyBlowBeyondStart: 0.2
   enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3
@@ -336,7 +340,7 @@ MonoBehaviour:
   knockbackDuration: 0.22
   meleeReachMultiplier: 1.2
   meleeWidthMultiplier: 1.25
-  playerMeleeReach: 2.5
+  playerMeleeReach: 1.1
   playerMeleeReachRadius: 0.35
   criticalHitsEnabled: 1
   critChance: 0.08
@@ -344,6 +348,7 @@ MonoBehaviour:
   critMultiplier: 1.75
   critHitStopScale: 2.5
   critAudio: {fileID: 11400000, guid: c6a2858c4e28f704bad62aba7cdb9f3d, type: 2}
+  playCritAudio: 0
   backstabsEnabled: 1
   fireCircleOnHit: {fileID: 11400000, guid: 09cafb216649d504bb5720e749d48439, type: 2}
   backstabMultiplier: 2.5

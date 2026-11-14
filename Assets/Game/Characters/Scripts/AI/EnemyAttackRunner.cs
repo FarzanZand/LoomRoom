@@ -40,7 +40,10 @@ public class EnemyAttackRunner
     List<EnemyAttack> Attacks => brain.Attacks;
 
     static CombatManager Tuning => CombatManager.HasInstance ? CombatManager.Instance : null;
-    public static float MinWindup => Tuning != null ? Tuning.enemyMinimumWindup : 0.3f;
+    // Every attack's own timing is shortened by CombatManager.enemySwingSpeed (the user, 2026-11-14: blows were still a
+    // bit too easy to dodge): the least windup, an attack's hit delay, and the animation (EnemyBrain.UpdateAnimator).
+    static float SwingSpeed => Tuning != null ? Mathf.Max(.1f, Tuning.enemySwingSpeed) : 1f;
+    public static float MinWindup => (Tuning != null ? Tuning.enemyMinimumWindup : 0.3f) / SwingSpeed;
     static float CommitTime   => Tuning != null ? Tuning.enemyAttackCommitTime : 0.4f;
     static float CommitLead   => Tuning != null ? Tuning.enemyCommitBeforeHit : .25f;
     static float AimLead      => Tuning != null ? Tuning.enemyAimLead : 1f;
@@ -48,6 +51,48 @@ public class EnemyAttackRunner
     const float LeadMostDegrees = 60f;
     const float LeadMostSpeed = 3.5f;   // about the player's walk (3.24 m/s)
     static float RecoveryTime => Tuning != null ? Tuning.enemyRecoveryTime : 0.18f;
+
+    // ── Reach ─────────────────────────────────────────────────────────
+
+    // How near the target must be for this attack to begin. A melee attack begins only from where the player's own
+    // swing reaches this enemy (the user, 2026-11-14: standing still, enemies swung from where he could not hit them
+    // back): the player's reach to the nearest point of a body plus this body's own front, less a little, and never
+    // more than the attack's own range. Ranged attacks keep their range. The same for every target, so an enemy and a
+    // summon fight each other from that distance too.
+    public float StartRange(EnemyAttack attack)
+    {
+        if (attack == null) return 0f;
+        float own = attack.EffectiveMaxRange;
+        var tuning = Tuning;
+        if (attack.IsRanged || tuning == null || !tuning.enemiesSwingInsidePlayerReach || tuning.playerMeleeReach <= 0f) return own;
+        return Mathf.Min(own, Mathf.Max(.5f, tuning.playerMeleeReach + BodyFront - tuning.enemySwingInsideReach));
+    }
+
+    // How far away the blow of an attack that has begun still lands.
+    public float LandRange(EnemyAttack attack)
+    {
+        if (attack == null) return 0f;
+        var tuning = Tuning;
+        if (attack.IsRanged || tuning == null || !tuning.enemiesSwingInsidePlayerReach || tuning.playerMeleeReach <= 0f) return attack.EffectiveMaxRange * 1.1f;
+        return (StartRange(attack) + tuning.enemyBlowBeyondStart) * tuning.enemyBlowReach;
+    }
+
+    // How far this body reaches out toward what it faces, from its middle: its capsule's radius, or half its length
+    // for one that lies along the body (a rat). Read once.
+    float bodyFront = -1f;
+    float BodyFront
+    {
+        get
+        {
+            if (bodyFront >= 0f) return bodyFront;
+            var capsule = brain.GetComponent<CapsuleCollider>();
+            var scale = brain.transform.lossyScale;
+            bodyFront = capsule == null ? .35f
+                : capsule.direction == 2 ? Mathf.Max(capsule.radius * Mathf.Abs(scale.x), capsule.height * .5f * Mathf.Abs(scale.z))
+                : capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+            return bodyFront;
+        }
+    }
 
     public bool IsSwinging => current != null;
     // A bow shot whose arrow is already away (the release is playing out).
@@ -190,7 +235,7 @@ public class EnemyAttackRunner
 
     public EnemyAttack PickAttack(float dist)
     {
-        if (Opener != null && Attacks.Contains(Opener) && dist <= Opener.EffectiveMaxRange) return Opener;
+        if (Opener != null && Attacks.Contains(Opener) && dist <= StartRange(Opener)) return Opener;
         var attacks = Attacks;
         float totalWeight = 0f;
         for (int i = 0; i < attacks.Count; i++)
@@ -213,7 +258,7 @@ public class EnemyAttackRunner
         // Cornered (backing off into a wall), a ranged attack is used however close the target is: there is nowhere
         // left to get its range from.
         float min = brain.Cornered && a != null && a.IsRanged ? 0f : a != null ? a.minRange : 0f;
-        return a != null && dist >= min && dist <= a.EffectiveMaxRange && i < cooldowns.Count && cooldowns[i] <= 0f
+        return a != null && dist >= min && dist <= StartRange(a) && i < cooldowns.Count && cooldowns[i] <= 0f
             && (!a.IsSpell || a.spellCast.spell == null || a.spellCast.spell.effect == SpellEffect.Standard || SpellEffects.CanCast(a.spellCast.spell, Character));
     }
 
@@ -298,7 +343,7 @@ public class EnemyAttackRunner
         if (hitbox == null)
         {
             fallbackHitPending = true;
-            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay, MinWindup) : float.MaxValue;
+            fallbackHitAt = attack.fallbackHitDelay >= 0f ? Time.time + Mathf.Max(attack.fallbackHitDelay / SwingSpeed, MinWindup) : float.MaxValue;
         }
     }
 
@@ -400,7 +445,7 @@ public class EnemyAttackRunner
     float EstimateHit()
     {
         if (current.fallbackHitDelay >= 0f && (brain.AttackRelay == null || brain.AttackRelay.GetHitbox(current.hitboxIndex) == null))
-            return attackStartedAt + Mathf.Max(current.fallbackHitDelay, MinWindup);
+            return attackStartedAt + Mathf.Max(current.fallbackHitDelay / SwingSpeed, MinWindup);
         var anim = Character.Animator;
         if (anim == null) return -1f;
         for (int layer = 0; layer < anim.layerCount; layer++)
@@ -478,7 +523,7 @@ public class EnemyAttackRunner
         // impact only distance and a generous arc around the committed direction count.
         Vector3 self = brain.transform.position;
         float dist = Perception.HorizontalDist(self, target.transform.position);
-        if (dist > current.EffectiveMaxRange * 1.1f || Mathf.Abs(target.transform.position.y - self.y) > 1f) return;
+        if (dist > LandRange(current) || Mathf.Abs(target.transform.position.y - self.y) > 1f) return;
         Vector3 toward = target.transform.position - self; toward.y = 0f;
         // The swing's own band: in front of the committed aim (within enemyHitFacingAngle) and no farther to its side than
         // enemySwingHalfWidth. A strafe moves the target well under a metre aside before the blow and is hit at any range;

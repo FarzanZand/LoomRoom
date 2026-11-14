@@ -83,7 +83,7 @@ public class TooltipUI : Singleton<TooltipUI>
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
-        anchor = at;
+        anchor = at; point = null;
         keepClear = at != null ? clear : null;
         var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
         bool worn = thisCopyEquipped ?? (gear != null && gear.IsEquipped(item));
@@ -212,9 +212,17 @@ public class TooltipUI : Singleton<TooltipUI>
         FollowMouse();
     }
 
+    // At a fixed screen point instead of the mouse (a room prop under the crosshair, PropInfoLook).
+    public void ShowTextAt(string title, string subtitle, string description, Vector2 screen)
+    {
+        ShowText(title, subtitle, description);
+        point = screen;
+        FollowMouse();
+    }
+
     public void ShowText(string title, string subtitle, string description)
     {
-        anchor = null;
+        anchor = null; point = null;
         ShowLines(title, subtitle, description);
         // A text tooltip with no body (a stat with nothing to list) is its title alone, no line under it.
         if (rarityLine != null && string.IsNullOrEmpty(description)) rarityLine.gameObject.SetActive(false);
@@ -242,7 +250,7 @@ public class TooltipUI : Singleton<TooltipUI>
 
     public void Hide()
     {
-        anchor = null;
+        anchor = null; point = null;
         fade?.Kill();
         if (panel != null) panel.SetActive(false);
         HideCompare();
@@ -257,12 +265,14 @@ public class TooltipUI : Singleton<TooltipUI>
     readonly Vector3[] corners = new Vector3[4];
     // Shown for a selected control: placed beside it, not at the mouse (null: the mouse).
     RectTransform anchor;
+    // Shown at a fixed screen point (ShowTextAt), not at the mouse (null: the mouse).
+    Vector2? point;
     // An area the tooltip stays wholly to one side of (screen pixels), with an anchor; null: just the anchor.
     Rect? keepClear;
 
     void FollowMouse()
     {
-        if (rect == null || anchor == null && Mouse.current == null) return;
+        if (rect == null || anchor == null && point == null && Mouse.current == null) return;
         Vector2 mouse;
         float halfWidth = 0f;
         if (anchor != null)
@@ -274,7 +284,7 @@ public class TooltipUI : Singleton<TooltipUI>
             // Clear of the whole area sideways, still level with the control.
             if (keepClear is Rect area) { mouse.x = area.center.x; halfWidth = area.width * .5f; }
         }
-        else mouse = Mouse.current.position.ReadValue();
+        else mouse = point ?? Mouse.current.position.ReadValue();
         float pivotX = mouse.x < Screen.width  * 0.5f ? 0f : 1f;
         float pivotY = mouse.y < Screen.height * 0.5f ? 0f : 1f;
         rect.pivot = new Vector2(pivotX, pivotY);

@@ -408,7 +408,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     }
 
     // The slot the dragged item's top-left would take when dropped on cell `index` of `dst`.
-    static int TargetFor(ItemDragHandler drag, Inventory dst, int index)
+    public static int TargetFor(ItemDragHandler drag, Inventory dst, int index)
     {
         if (!dst.IsGrid) return index;
         var grab = drag.SourceContainer == dst ? drag.GrabOffset : Vector2Int.zero;
@@ -460,25 +460,30 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (!ItemDragHandler.HasInstance || !ItemDragHandler.Instance.IsDragging) return;
         var drag = ItemDragHandler.Instance;
-        // Equipment reconciles ownership after the transfer; hands require a hotbar slot.
-        if (drag.Item != null && Container != null)
-        {
-            int to = TargetFor(drag, Container, Index);
-            if (!Allowed(drag, Container, to, out string reason)) Refuse(reason);
-            else if (drag.WornSlot.HasValue)
-            {
-                var eq = Owner != null ? Owner.Equipment : null;
-                if (eq == null || !eq.UnequipInto(drag.WornSlot.Value, Container, to)) Refuse(null);
-            }
-            else if (Owner != null && HeldSlot(Owner.Equipment, drag.SourceContainer, drag.SourceIndex) is EquipmentSlot hand
-                     && Container.role != InventoryRole.Hotbar && Container.Overlaps(drag.Item, to).Count == 0)
-            {
-                if (!Owner.Equipment.UnequipHandInto(hand, Container, to)) Refuse(null);
-            }
-            else if (drag.SourceContainer != null && !(drag.SourceContainer == Container && drag.SourceIndex == to) &&
-                     !Inventory.Move(drag.SourceContainer, drag.SourceIndex, Container, to))
-                Refuse(null);
-        }
+        DropOnto(drag, Container, Index);
         drag.End();
+    }
+
+    // The dragged item let go on cell `cell` of `container`, by the bag's rules (the shop's pack moves items with it too).
+    // Equipment reconciles ownership after the transfer; hands require a hotbar slot. Leaves the drag to the caller to end.
+    public static void DropOnto(ItemDragHandler drag, Inventory container, int cell)
+    {
+        if (drag == null || drag.Item == null || container == null) return;
+        var owner = container.GetComponentInParent<Player>();
+        int to = TargetFor(drag, container, cell);
+        if (!Allowed(drag, container, to, out string reason)) Refuse(reason);
+        else if (drag.WornSlot.HasValue)
+        {
+            var eq = owner != null ? owner.Equipment : null;
+            if (eq == null || !eq.UnequipInto(drag.WornSlot.Value, container, to)) Refuse(null);
+        }
+        else if (owner != null && HeldSlot(owner.Equipment, drag.SourceContainer, drag.SourceIndex) is EquipmentSlot hand
+                 && container.role != InventoryRole.Hotbar && container.Overlaps(drag.Item, to).Count == 0)
+        {
+            if (!owner.Equipment.UnequipHandInto(hand, container, to)) Refuse(null);
+        }
+        else if (drag.SourceContainer != null && !(drag.SourceContainer == container && drag.SourceIndex == to) &&
+                 !Inventory.Move(drag.SourceContainer, drag.SourceIndex, container, to))
+            Refuse(null);
     }
 }

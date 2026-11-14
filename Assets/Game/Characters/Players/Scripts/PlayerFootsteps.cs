@@ -24,6 +24,14 @@ public class PlayerFootsteps : MonoBehaviour
     [SerializeField] float velocityThreshold = 0.1f;
     [SerializeField, Range(0f, 0.2f)] float pitchVariance = 0.05f;
 
+    [Header("In step with the arms")]
+    [Tooltip("Steps land where the first-person arms' walk bob dips (the user, 2026-11-14: the footsteps on the arms' cadence), at every pace: walking, sprinting and crouching alike, since the arms keep one beat. Off, or on a player without that layer (the room player), the intervals above set the pace.")]
+    [SerializeField] bool stepWithArms = true;
+    [Tooltip("The animator layer whose clip is the arms' walk bob.")]
+    [SerializeField] string armsBobLayer = "Walk Bob";
+    [Tooltip("Where in the walk bob's cycle a foot lands (normalized time): the two dips of the arms.")]
+    [SerializeField] float[] armsStepTimes = { .25f, .75f };
+
     [Header("Surfaces")]
     [Tooltip("Surface sound presets matched against terrain layers.")]
     [SerializeField] SurfaceSFX[] effects;
@@ -33,6 +41,8 @@ public class PlayerFootsteps : MonoBehaviour
     [Header("Jump & Land")]
     [Tooltip("Sounds played when the jump starts.")]
     [SerializeField] AudioClip[] jumpStartSounds;
+    [Tooltip("Volume of the jump's grunt (Jump Start Sounds); halved from 1 on 2026-11-14 (the user).")]
+    [SerializeField, Range(0f, 1f)] float jumpStartVolume = .5f;
     [Tooltip("Minimum airborne time required to trigger landing effects (seconds).")]
     [SerializeField] float jumpingTimeThreshold = 0.3f;
     [Tooltip("Maximum airborne time considered when calculating landing impulse strength (seconds).")]
@@ -58,6 +68,9 @@ public class PlayerFootsteps : MonoBehaviour
     int   lastFootstepIndex = -1;
     int   lastLandIndex     = -1;
     int   jumpStartIndex;
+    Animator armsAnimator;
+    int   armsLayer = -1;
+    float lastArmsPhase = -1f;
 
     void Awake()
     {
@@ -65,6 +78,38 @@ public class PlayerFootsteps : MonoBehaviour
         player  = GetComponent<Player>();
         checker = GetComponent<TerrainChecker>();
         if (feetTransform == null) feetTransform = transform;
+        FindArms();
+    }
+
+    // The animator holding the arms' walk bob layer, if this player has one.
+    void FindArms()
+    {
+        armsAnimator = null; armsLayer = -1;
+        if (!stepWithArms || string.IsNullOrEmpty(armsBobLayer)) return;
+        foreach (var a in GetComponentsInChildren<Animator>(true))
+        {
+            if (a.runtimeAnimatorController == null) continue;
+            int layer = a.GetLayerIndex(armsBobLayer);
+            if (layer >= 0) { armsAnimator = a; armsLayer = layer; return; }
+        }
+    }
+
+    // The walk bob's place in its cycle (0-1), or -1 while it can't be read.
+    float ArmsPhase()
+    {
+        if (armsAnimator == null || armsLayer < 0 || !armsAnimator.isActiveAndEnabled || armsLayer >= armsAnimator.layerCount) return -1f;
+        float t = armsAnimator.GetCurrentAnimatorStateInfo(armsLayer).normalizedTime;
+        return t - Mathf.Floor(t);
+    }
+
+    // True when the phase went past one of the step times since last frame.
+    bool CrossedStep(float from, float to)
+    {
+        foreach (float at in armsStepTimes)
+        {
+            if (to >= from ? at > from && at <= to : at > from || at <= to) return true;
+        }
+        return false;
     }
 
     void OnEnable()
@@ -81,9 +126,18 @@ public class PlayerFootsteps : MonoBehaviour
 
     void Update()
     {
+        // In step with the arms: the phase is followed every frame, walking or not, so a step falls on the beat.
+        float phase = stepWithArms && armsAnimator != null ? ArmsPhase() : -1f;
+        float lastPhase = lastArmsPhase;
+        lastArmsPhase = phase;
         if (!motor.IsGrounded || !motor.IsMoving) return;
         float horizontal = new Vector3(motor.Velocity.x, 0f, motor.Velocity.z).magnitude;
         if (horizontal < velocityThreshold) return;
+        if (phase >= 0f)
+        {
+            if (lastPhase >= 0f && CrossedStep(lastPhase, phase)) PlayFootstep();
+            return;
+        }
 
         float interval = motor.State switch
         {
@@ -102,7 +156,7 @@ public class PlayerFootsteps : MonoBehaviour
         if (jumpStartSounds != null && jumpStartSounds.Length > 0 && AudioManager.HasInstance)
         {
             jumpStartIndex = (jumpStartIndex + 1) % jumpStartSounds.Length;
-            AudioManager.Instance.PlaySFX(jumpStartSounds[jumpStartIndex], feetTransform.position, 1f, 0.025f);
+            AudioManager.Instance.PlaySFX(jumpStartSounds[jumpStartIndex], feetTransform.position, jumpStartVolume, 0.025f);
         }
         jumpShakingImpulseSource?.GenerateImpulse();
     }

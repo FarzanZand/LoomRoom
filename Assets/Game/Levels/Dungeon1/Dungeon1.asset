@@ -504,6 +504,7 @@ MonoBehaviour:
   roomSpacing: {x: 1, y: 2}
   loopPercent: 10
   loopReach: 10
+  joinDeadEndPercent: 100
   corridorWander: 0.5
   wideCorridorPercent: 45
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
