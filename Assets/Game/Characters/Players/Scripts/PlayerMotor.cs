@@ -58,6 +58,23 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     // (the dash stops at the enemy itself). Zero = walk as usual.
     public Vector3 DashVelocity { get; set; }
     Vector3 walkVelocity, lungeVelocity;
+    float swingSlow = 1f;      // share of the walking speed kept just now (1 = not slowed)
+    int swingSlowFrame = -1;
+
+    // The share of the walking speed a swing leaves, eased; moved once a frame however often it is read.
+    float SwingSlow()
+    {
+        var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
+        if (tuning == null || !tuning.swingSlowsPlayer || player == null || player.Combat == null) return swingSlow = 1f;
+        if (swingSlowFrame == Time.frameCount) return swingSlow;
+        swingSlowFrame = Time.frameCount;
+        float slowed = Mathf.Clamp(tuning.swingMoveSpeed, .1f, 1f);
+        bool swinging = tuning.swingSlowWholeSwing ? player.Combat.Swinging : player.Combat.WindingUpOrStriking;
+        float seconds = swinging ? tuning.swingSlowEaseIn : tuning.swingSlowEaseOut;
+        float target = swinging ? slowed : 1f;
+        swingSlow = seconds > 0f ? Mathf.MoveTowards(swingSlow, target, (1f - slowed) / seconds * Time.deltaTime) : target;
+        return swingSlow = Mathf.Clamp(swingSlow, slowed, 1f);
+    }
     float lungeUntil;
     // A short step along direction (the swing's lunge), added to walking.
     public void Lunge(Vector3 direction, float distance, float seconds)
@@ -272,10 +289,11 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;
         Speed *= speedMul;
-        // Swinging slows the walk (CombatManager.swingSlowsPlayer): through a swing's windup and strike, not its
-        // recovery. The dash has its own speed and is not slowed.
-        if (player != null && player.Combat != null && CombatManager.HasInstance && CombatManager.Instance.swingSlowsPlayer && player.Combat.WindingUpOrStriking)
-            Speed *= Mathf.Clamp(CombatManager.Instance.swingMoveSpeed, .1f, 1f);
+        // Swinging slows the walk (CombatManager.swingSlowsPlayer): through the whole swing, or with
+        // swingSlowWholeSwing off only its windup and strike. The dash has its own speed and is not slowed. The share
+        // of the speed kept eases down as a swing starts and back up after it (swingSlowEaseIn, swingSlowEaseOut; the
+        // user, 2026-11-15: it snapped), at the pace that covers the whole drop in that time.
+        Speed *= SwingSlow();
 
         Transform orientation = player != null && player.Look != null ? player.Look.YawTransform : transform;
         Vector3 forward = orientation.forward; forward.y = 0f; forward.Normalize();

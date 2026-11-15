@@ -366995,7 +366995,8 @@ MonoBehaviour:
   strikeLunge: 0
   strikeLungeTime: 0.12
   swingSlowsPlayer: 1
-  swingMoveSpeed: 0.7
+  swingMoveSpeed: 0.6
+  swingSlowWholeSwing: 1
   heavyStrikeScale: 2
   strikeKick: {x: 0.4, y: 0, z: 0.2}
   hitKick: {x: 0.6, y: 0, z: 0.3}
@@ -367242,7 +367243,7 @@ MonoBehaviour:
   enemySwingMeetsBlow: 1
   enemyWindupSpeedMost: 3.5
   enemiesStepIntoSwing: 1
-  enemySwingStepMost: 0.3
+  enemySwingStepMost: 0.25
   enemySwingStepSpeed: 3
   enemiesWalkWhileAttacking: 0
   enemyAttackWalkSpeed: 0.5

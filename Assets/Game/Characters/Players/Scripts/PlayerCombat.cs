@@ -125,6 +125,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // closed (each combo hit's; a held charge counts), not the recovery after it. PlayerMotor walks slower meanwhile
     // (CombatManager.swingSlowsPlayer). A hitbox still open from the hit before doesn't count as this swing's.
     public bool WindingUpOrStriking => IsAttacking && !cancelling && !strikeOver;
+    // The whole swing, its recovery too, until the arm hands back to rest (CombatManager.swingSlowWholeSwing, the user,
+    // 2026-11-15: the slow that ended with the hitbox covered only about half of a combo pressed hit after hit, which
+    // left a few centimetres between backing off and backing off while swinging, too little for an online game).
+    public bool Swinging => IsAttacking && !cancelling && !HandingBack();
     bool strikeOver, strikeWasOpen, strikeSeenOpen;
     void NewSwing() { strikeOver = false; strikeSeenOpen = false; }
 
