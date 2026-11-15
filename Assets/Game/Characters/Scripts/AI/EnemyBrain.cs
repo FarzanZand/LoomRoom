@@ -171,6 +171,11 @@ public class EnemyBrain : MonoBehaviour
     float FootworkPace => Profile.footworkPace * Mathf.Max(.3f, transform.lossyScale.y);
     public bool CanOpenHitbox => attackRunner != null && attackRunner.CanOpenHitbox;
     public bool IsSwinging    => attackRunner != null && attackRunner.IsSwinging;
+    // Walking in on its target while it attacks (CombatManager.enemiesWalkWhileAttacking): its legs walk under the swing.
+    public bool WalkingIntoSwing => attackRunner != null && attackRunner.IsSwinging && attackRunner.WalkingIn;
+    // The distance it holds from its target in a fight, and how fast it walks while it attacks.
+    public float HoldDistance => PreferredDistance;
+    public float AttackWalkSpeed => ChaseSpeed * (Tuning != null ? Tuning.enemyAttackWalkSpeed : .5f);
     // When the current swing's blow lands (Time.time), or -1 while unknown or not swinging.
     // Returns true while it is steering the enemy itself (this frame the brain doesn't move it).
     public System.Func<bool> MovementOverride { get; set; }
@@ -905,7 +910,9 @@ public class EnemyBrain : MonoBehaviour
         if (Character.HasParameter(anim, "AttackSpeed", AnimatorControllerParameterType.Float))
         {
             float statMul = Character.Stats != null ? Character.Stats.GetMultiplier(StatType.AttackSpeed) : 1f;
-            anim.SetFloat("AttackSpeed", (Tuning != null ? Tuning.enemyAttackAnimationSpeed * Mathf.Max(.1f, Tuning.enemySwingSpeed) : 1.35f) * statMul);
+            float usual = (Tuning != null ? Tuning.enemyAttackAnimationSpeed * Mathf.Max(.1f, Tuning.enemySwingSpeed) : 1.35f) * statMul;
+            // Until its blow lands a melee attack is played so that the weapon arrives with it (EnemyAttackRunner.SwingAnimationSpeed).
+            anim.SetFloat("AttackSpeed", attackRunner != null ? attackRunner.SwingAnimationSpeed(usual) : usual);
         }
         // The bow goes back to the side as soon as the arrow is away, while the release still plays: one blend, not the
         // release blending to the idle arms and then the bow hold blending in a moment later (the arm swung twice).

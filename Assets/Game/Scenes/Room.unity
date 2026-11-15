@@ -346111,7 +346111,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can evade now. {sprint} and a direction, sideways or back.
+    text: You can evade now. {sprint} and a direction.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
@@ -366994,6 +366994,8 @@ MonoBehaviour:
   comboResetTime: 0.6
   strikeLunge: 0
   strikeLungeTime: 0.12
+  swingSlowsPlayer: 1
+  swingMoveSpeed: 0.7
   heavyStrikeScale: 2
   strikeKick: {x: 0.4, y: 0, z: 0.2}
   hitKick: {x: 0.6, y: 0, z: 0.3}
@@ -367182,6 +367184,7 @@ MonoBehaviour:
     staminaCost: 10
     sideDistance: 2.6
     backDistance: 1.82
+    forwardDistance: 2.6
     duration: 0.45
     falloff: 0.7
     cooldown: 0.2
@@ -367224,7 +367227,7 @@ MonoBehaviour:
   enemyAimLead: 1
   enemyRecoveryTime: 0.12
   enemyCooldownMultiplier: 0.8
-  enemyMinimumWindup: 0.45
+  enemyMinimumWindup: 0.5
   enemyAttackTell: 1
   enemyTellColor: {r: 1.8, g: 1.15, b: 0.6, a: 1}
   enemyTellDuration: 0.14
@@ -367236,6 +367239,13 @@ MonoBehaviour:
   enemyBlowBeyondStart: 0.2
   enemyBlowReach: 1.1
   enemySwingSpeed: 1
+  enemySwingMeetsBlow: 1
+  enemyWindupSpeedMost: 3.5
+  enemiesStepIntoSwing: 1
+  enemySwingStepMost: 0.3
+  enemySwingStepSpeed: 3
+  enemiesWalkWhileAttacking: 0
+  enemyAttackWalkSpeed: 0.5
   enemyAttackAnimationSpeed: 1.25
   fightNoiseRadius: 8
   wallMuffle: 0.3

@@ -408,7 +408,7 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   lessonTrophyMounted:
-    text: You can evade now. {sprint} and a direction, sideways or back.
+    text: You can evade now. {sprint} and a direction.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

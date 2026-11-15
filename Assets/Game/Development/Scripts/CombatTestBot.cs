@@ -37,6 +37,8 @@ using UnityEngine;
 //                           (it walks too; a press during a dash is buffered, PlayerDash.buffer)
 //   approach <metres> [speed]  walk straight at the enemy, facing it, until that close (up to 4 s)
 //   pin [off]               the enemy can't walk (it still turns and attacks)
+//   keys <forward|back|left|right|none>  hold that movement key, as a player does (through PlayerMotor), until changed
+//   waitswing [seconds]     wait until the enemy begins its next swing (up to 8 s), then that much longer
 //   behind <metres> [speed]  walk round the enemy to stand that far behind its back, facing it (up to 6 s)
 public class CombatTestBot : MonoBehaviour
 {
@@ -105,6 +107,14 @@ public class CombatTestBot : MonoBehaviour
                     case "blockon": Block(true); break;
                     case "blockoff": Block(false); break;
                     case "wait": yield return new WaitForSeconds(F(1, .5f)); break;
+                    case "waitswing":
+                        {
+                            var swinger = enemy != null ? enemy.GetComponent<EnemyBrain>() : null;
+                            for (float t = 0f; swinger != null && swinger.IsSwinging && t < 4f; t += Time.deltaTime) yield return null;   // one already going is let finish
+                            for (float t = 0f; swinger != null && !swinger.IsSwinging && t < 8f; t += Time.deltaTime) yield return null;
+                            if (F(1, 0f) > 0f) yield return new WaitForSeconds(F(1, 0f));
+                            break;
+                        }
                     case "counter":
                         // Wait until the enemy starts a swing (up to 6 s), then attack at once.
                         var brain = enemy != null ? enemy.GetComponent<EnemyBrain>() : null;
@@ -154,6 +164,13 @@ public class CombatTestBot : MonoBehaviour
                             break;
                         }
                     case "rest": if (player.Stats != null) player.Stats.RestoreStamina(9999f); break;
+                    case "keys":
+                        {
+                            string way = parts.Length > 1 ? parts[1] : "none";
+                            var move = way == "forward" ? Vector2.up : way == "back" ? Vector2.down : way == "left" ? Vector2.left : way == "right" ? Vector2.right : Vector2.zero;
+                            typeof(InputManager).GetProperty("Move").GetSetMethod(true).Invoke(InputManager.Instance, new object[] { move });
+                            break;
+                        }
                     case "dash":
                         {
                             string way = parts.Length > 1 ? parts[1] : "none";
@@ -384,6 +401,8 @@ public class CombatTestBot : MonoBehaviour
         enemy.transform.rotation = Quaternion.LookRotation(-forward);
         enemy.Damaged += OnEnemyDamaged;
         enemy.Died += OnEnemyDied;
+        var enemyBrain = enemy.GetComponent<EnemyBrain>();
+        if (enemyBrain != null) { enemyBrain.StateChanged -= OnEnemyState; enemyBrain.StateChanged += OnEnemyState; }
         Log($"placed {enemy.name} at {distance} m, hp {enemy.Stats.CurrentHealth:0}");
     }
 
@@ -395,6 +414,14 @@ public class CombatTestBot : MonoBehaviour
     }
 
     void OnEnemyDied() => Log("enemy died");
+
+    // An enemy swing's start and end, with how far its middle is from the player's.
+    void OnEnemyState(EnemyState from, EnemyState to)
+    {
+        if (enemy == null || from != EnemyState.Attack && to != EnemyState.Attack) return;
+        var gap = enemy.transform.position - player.transform.position; gap.y = 0f;
+        Log($"enemy swing {(to == EnemyState.Attack ? "begins" : "ends")} at {gap.magnitude:0.00} m");
+    }
 
     IEnumerator MeasurePush(Transform target, Vector3 from)
     {

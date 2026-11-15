@@ -201,7 +201,7 @@ public class EnemyAttackRunner
         if (Character != null && Character.Animator != null)
             foreach (var attack in Attacks)
                 if (attack != null) AnimatorHelper.ResetTrigger(Character.Animator, attack.animatorTrigger);
-        fallbackHitPending = false; current = null; attackWasPlaying = false;
+        fallbackHitPending = false; current = null; attackWasPlaying = false; WalkingIn = false;
         if (brain.Loadout != null) brain.Loadout.SetArrowNocked(false);
         DropHandSpell();
         if (brain.AttackRelay != null) brain.AttackRelay.DisableHitbox();
@@ -284,6 +284,9 @@ public class EnemyAttackRunner
         attackWasPlaying = false;
         swingAudioPlayed = false;
         HitAt = -1f;
+        stepped = 0f;
+        stepKeep = Perception.Target != null ? Perception.HorizontalDist(brain.transform.position, Perception.Target.transform.position) : 0f;
+        if (Tuning != null) stepKeep = Mathf.Max(stepKeep, Tuning.personalSpace + .35f);
         var hitbox = brain.AttackRelay != null ? brain.AttackRelay.GetHitbox(attack.hitboxIndex) : null;
         if (hitbox != null) hitbox.SetProfile(attack.hit);
 
@@ -346,7 +349,9 @@ public class EnemyAttackRunner
         if (target == null) { Cancel(); brain.SetState(brain.Profile.defaultState); return; }
         if (current == null) { brain.SetState(EnemyState.Chase); return; }
 
-        Motor.Stop();
+        // On the spot, unless it moves in on its target: walking through the attack, or the lunge.
+        WalkingIn = WalkIntoSwing(target);
+        if (!WalkingIn) { Motor.Stop(); StepIntoSwing(target); }
 
         // Windup: keep tracking the target so circling does not trivially dodge. Then commit.
         // A drawn bow keeps aiming until the arrow is loosed.
@@ -390,6 +395,53 @@ public class EnemyAttackRunner
         }
     }
 
+    // Stepping into the swing (the user, 2026-11-15: backing off while swinging walked out of every blow, as the swing was
+    // played on the spot and the player was past its reach by the time it landed). One fixed rule for every target, as
+    // attacks commonly carry a set step forward: how far (enemySwingStepMost) decides whether backing off works. A
+    // rule that followed only an attacking target was tried the same day and dropped (the user). Until the blow lands, a melee swing
+    // whose target has got further away than where the swing began steps after it: along its own aim (the body's
+    // facing, then the committed line), by no more than the gap, CombatManager.enemySwingStepSpeed and
+    // enemySwingStepMost a swing. Only the distance along the aim counts, so a dash aside is not followed, and it never
+    // comes nearer than the swing began at (which is outside the target's personal space).
+    // Each attack can opt out of both ways of moving in (EnemyAttack.movesIn); a cast or a bow shot never moves.
+    float stepKeep, stepped;
+    bool BlowAhead => fallbackHitPending || HitAt < 0f || Time.time < HitAt;
+    bool MovesIn => current != null && !current.IsRanged && current.movesIn;
+    void StepIntoSwing(Character target)
+    {
+        var tuning = Tuning;
+        if (tuning == null || !tuning.enemiesStepIntoSwing || tuning.enemiesWalkWhileAttacking || !MovesIn || !BlowAhead || !Perception.TargetVisible) return;
+        float left = tuning.enemySwingStepMost - stepped;
+        if (left <= 0f) return;
+        Vector3 aim = directionCommitted ? committedForward : brain.transform.forward; aim.y = 0f;
+        if (aim.sqrMagnitude < .0001f) return;
+        aim.Normalize();
+        Vector3 to = target.transform.position - brain.transform.position; to.y = 0f;
+        float gap = Vector3.Dot(to, aim) - stepKeep;
+        if (gap <= .01f) return;
+        stepped += Motor.Step(aim * Mathf.Min(gap, left, tuning.enemySwingStepSpeed * Time.deltaTime));
+    }
+
+    // Walking while attacking (the user, 2026-11-15: "the main problem is that enemies just stand still while attacking
+    // ... why not just have them keep walking when attacking but at slower speed"; CombatManager.enemiesWalkWhileAttacking):
+    // through the whole melee attack it walks on at enemyAttackWalkSpeed of its chase speed until its target is at the
+    // distance it holds in a fight (EnemyBrain.HoldDistance, never inside personal space). Like the lunge it goes along
+    // its own aim and counts only the distance along it, so a dash aside is not followed. It walks as it chases (the
+    // agent, so its velocity is its legs' and they walk under the swing: EnemyGuard's "Attack walk" layer).
+    public bool WalkingIn { get; private set; }
+    bool WalkIntoSwing(Character target)
+    {
+        var tuning = Tuning;
+        if (tuning == null || !tuning.enemiesWalkWhileAttacking || !MovesIn || !Perception.TargetVisible) return false;
+        Vector3 aim = directionCommitted ? committedForward : brain.transform.forward; aim.y = 0f;
+        if (aim.sqrMagnitude < .0001f) return false;
+        aim.Normalize();
+        Vector3 to = target.transform.position - brain.transform.position; to.y = 0f;
+        if (Vector3.Dot(to, aim) - brain.HoldDistance <= .05f) return false;
+        Motor.Strafe(aim, brain.AttackWalkSpeed);
+        return true;
+    }
+
     public void CommitDirection()
     {
         if (current == null || directionCommitted) return;
@@ -429,6 +481,41 @@ public class EnemyAttackRunner
     }
 
     public bool IsPlayingAttack() => AnimatorHelper.AnyLayerHasTag(Character.Animator, AttackTag);
+
+    // The speed the attack's clip is played at now (EnemyBrain.UpdateAnimator; usual is the speed it would have). The
+    // blow of a melee attack with no hitbox lands on a timer (fallbackHitAt: the attack's delay, never under the least
+    // windup), while the clip's own hit frame came later: the standard swing's blow at 0.45 s, its weapon coming through
+    // at 0.65 (the user, 2026-11-15: "looks like I get hit when sword is not even facing me"). Until the blow the clip
+    // is played as fast as it takes for its hit frame to come up when the timer runs out (CombatManager.enemySwingMeetsBlow),
+    // worked out again every frame from what is left of both, so a late start of the state is made up for; after it,
+    // the usual speed.
+    public float SwingAnimationSpeed(float usual)
+    {
+        var tuning = Tuning;
+        if (tuning == null || !tuning.enemySwingMeetsBlow || current == null || current.IsRanged || !fallbackHitPending || fallbackHitAt > Time.time + 30f) return usual;
+        var anim = Character.Animator;
+        if (anim == null) return usual;
+        float most = Mathf.Max(1f, tuning.enemyWindupSpeedMost);
+        float left = fallbackHitAt - Time.time;
+        for (int layer = 0; layer < anim.layerCount; layer++)
+        {
+            bool next = anim.IsInTransition(layer) && anim.GetNextAnimatorStateInfo(layer).IsTag("Attack");
+            var state = next ? anim.GetNextAnimatorStateInfo(layer) : anim.GetCurrentAnimatorStateInfo(layer);
+            if (!state.IsTag("Attack")) continue;
+            if (next) anim.GetNextAnimatorClipInfo(layer, clipInfos); else anim.GetCurrentAnimatorClipInfo(layer, clipInfos);
+            foreach (var info in clipInfos)
+            {
+                if (info.clip == null) continue;
+                float hitTime = HitEventTime(info.clip);
+                if (hitTime < 0f) continue;
+                float clipLeft = hitTime - state.normalizedTime * info.clip.length;
+                if (clipLeft <= 0f) return usual;                 // the hit frame has played: the blow is this frame's
+                if (left <= .005f) return most;
+                return Mathf.Clamp(clipLeft / left, .5f, most);
+            }
+        }
+        return usual;
+    }
 
     // The hit event's time in the attack clip now playing, as a moment in game time (never before the minimum windup).
     float EstimateHit()

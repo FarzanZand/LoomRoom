@@ -141,6 +141,12 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(.01f), Tooltip("Seconds the lunge takes.")]
     public float strikeLungeTime = .12f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
+    [Tooltip("The table player walks slower while their own swing winds up and strikes (light, combo and heavy, a held charge too), and at full speed again once its hitbox has closed. The dash is not slowed. Off: swinging never slows walking.")]
+    public bool swingSlowsPlayer = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
+    [Range(.1f, 1f), Tooltip("Share of the walking speed kept while a swing winds up and strikes (0.5: half speed).")]
+    public float swingMoveSpeed = .5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
     [Min(0), Tooltip("Times the lunge and the camera kicks for a heavy swing.")]
     public float heavyStrikeScale = 2f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
@@ -348,6 +354,27 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Min(.1f), Tooltip("How much faster every enemy attack goes from its start to its blow: the attack animation, the least windup and an attack's own hit delay all shorten by it (1.1: 10% faster). How often they attack is their cooldowns', not this.")]
     public float enemySwingSpeed = 1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("The weapon arrives when the blow lands: until the blow, an enemy's melee attack is played as fast (or slow) as it takes for the clip's own hit frame to come up at that moment, then at its usual speed again. When the blow lands is not changed. Off: the clip plays at one speed throughout, and the blow of the standard swing lands about 0.2 s before the weapon comes through (the blow at 0.45 s, the clip's hit frame at 0.65).")]
+    public bool enemySwingMeetsBlow = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemySwingMeetsBlow))]
+    [Range(1f, 6f), Tooltip("The fastest an attack is played to get its weapon there in time (times the clip's own speed).")]
+    public float enemyWindupSpeedMost = 3.5f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("An enemy's melee swing carries a short step forward: during the windup, until the blow lands, it steps after a target that is getting away, by no more than Enemy Swing Step Most, whatever the target is doing. So a player already backing off when the swing begins walks out of it, and one who starts backing late, or is slowed by their own swing (Player > Strike feel > Swing Slows Player), is caught. It steps along its own aim only: a dash aside still gets out, and it never comes nearer than where the swing began. Each attack can opt out (EnemyAttack > Moves In); casts and bow shots never move. Off (and Enemies Walk While Attacking off): every swing is played on the spot.")]
+    public bool enemiesStepIntoSwing = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesStepIntoSwing))]
+    [Min(0f), Tooltip("The most an enemy steps forward in one swing (metres). This is what decides whether backing off works: at 0.25 a player already backing off when the swing begins gets out and one who begins after it does not; at 0.35 most plain retreats are caught; at 1 nearly everything short of a dash is.")]
+    public float enemySwingStepMost = .25f;
+    [Min(0f), TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesStepIntoSwing))]
+    [Tooltip("How fast it steps in (metres a second). The player backs off at about 1.5 and walks forward at 3.5.")]
+    public float enemySwingStepSpeed = 3f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
+    [Tooltip("Walk while attacking: an enemy keeps walking toward its target through the whole melee attack, slower than it chases, its legs walking under the swing, until it is at the distance it holds in a fight (never inside personal space). It walks along its own aim only, so a dash aside is not followed. Each attack can opt out (EnemyAttack > Moves In); casts and bow shots never move. On, it takes the place of the lunge above.")]
+    public bool enemiesWalkWhileAttacking = false;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesWalkWhileAttacking))]
+    [Range(.1f, 1f), Tooltip("Share of its chase speed an enemy walks at while it attacks (0.5: a skeleton's 4.2 m/s becomes 2.1; the player backs off at about 1.6).")]
+    public float enemyAttackWalkSpeed = .5f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Playback speed of enemy attack animations (the AttackSpeed animator parameter).")]
     [Range(.5f,2.5f)] public float enemyAttackAnimationSpeed = 1.35f;

@@ -22,6 +22,8 @@ public class EnemyAttack
     public float  cooldown = 1.5f;
     [FoldoutGroup("Timing and reach"), Tooltip("Target must be within this angle of the enemy's forward before the attack fires.")]
     [Range(0f, 180f)] public float facingAngle = 45f;
+    [FoldoutGroup("Timing and reach"), Tooltip("The enemy may move in on its target during this attack (CombatManager > Enemies > Attack rhythm: the lunge, or walking while attacking). Off: this attack is always played on the spot (a heavy attack that stays planted).")]
+    public bool movesIn = true;
     [FoldoutGroup("Timing and reach"), Tooltip("Hitbox index enabled by this attack's animation events (EnableHitboxAt).")]
     public int    hitboxIndex = 0;
     [FoldoutGroup("Timing and reach"), Tooltip("Seconds after the trigger before damage is applied when there is no hitbox / animation event. -1 = rely on hitbox events only.")]
