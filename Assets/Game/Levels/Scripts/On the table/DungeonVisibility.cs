@@ -177,7 +177,10 @@ public class DungeonVisibility : MonoBehaviour
             renderer = r, hidden = hidden, always = always,
             minX = Mathf.Clamp(min.x - 1, 0, width - 1), maxX = Mathf.Clamp(max.x + 1, 0, width - 1),
             minY = Mathf.Clamp(min.y - 1, 0, depth - 1), maxY = Mathf.Clamp(max.y + 1, 0, depth - 1),
-            tall = b.max.y > dungeon.transform.position.y + storey + .3f,
+            // Never a particle system: its bounds are loose (a wall torch's fire at 2 m read as reaching 4.3 m), so from
+            // the landing room, which has a skylight, every fire on the floor was drawn through the walls (127 of 166
+            // fire systems on a floor 4, 128 draw calls and half a millisecond a frame, 2026-11-16).
+            tall = !(r is ParticleSystemRenderer) && b.max.y > dungeon.transform.position.y + storey + .3f,
         });
     }
 
