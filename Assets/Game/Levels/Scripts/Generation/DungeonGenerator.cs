@@ -699,6 +699,8 @@ public partial class DungeonGenerator : MonoBehaviour
         if (SliceDue) { Pause(); yield return null; Resume(); }
         // A pocket is played beside its floor: the floor's own ambience goes on playing.
         if (!data.pocket) gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
+        // Dust in the air round the table player, on every floor (a pocket is played in its floor's air).
+        if (!data.pocket) gameObject.AddComponent<DungeonAir>().Initialize();
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
