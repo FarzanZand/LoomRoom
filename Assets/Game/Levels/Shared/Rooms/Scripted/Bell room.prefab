@@ -56,8 +56,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 1
-  description: 'Pull the rope: the gates shut and a wave comes. Clear it and the
-    chest gets better. Open the chest to stop.'
+  description: 'Pull the rope: the gates shut and a wave comes. Clear it and the chest gets better. Open the chest to stop.'
   paintFootprint: 1
   footprint: {fileID: 0}
   allowRotation: 1
@@ -78,11 +77,14 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
+  overrideEnemyCountRestrictions: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -104,8 +106,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: bell
-  summary: 'Pull the rope: the gates shut and a wave comes. Clear it and the chest
-    gets better. Open the chest to stop.'
+  summary: 'Pull the rope: the gates shut and a wave comes. Clear it and the chest gets better. Open the chest to stop.'
   entrance: {fileID: 2491832813480546101}
   countsAsEvent: 1
 --- !u!114 &3258820998786154157
@@ -124,8 +125,10 @@ MonoBehaviour:
   chest: {fileID: 4869872310830436034}
   toll: {fileID: 8300000, guid: 4fa5f8f03690bb94cb58706d3f88e5ba, type: 3}
   tollVolume: 1
-  waves: 02000000030000000400000005000000
+  waves: 02000000030000000400000005000000i
+  maxRings: 1
   wavesPerRing: 3
+  eliteInLastWave: 1
   legendaryLast: 1
   maxTier: 2
   ringLines:
@@ -151,6 +154,12 @@ MonoBehaviour:
     mumble: 1
     inPerson: 0
   - text: The last of them.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  chestUnrungPrompt: Ring the bell first
+  chestUnrungLine:
+    text: The bell first.
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0

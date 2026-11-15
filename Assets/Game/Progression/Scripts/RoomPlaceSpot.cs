@@ -20,20 +20,23 @@ public class RoomPlaceSpot : MonoBehaviour, IInteractable
     Color ghostColour = Color.white;
     bool shown;
 
-    // How far the use box reaches round the ghost, in room units (about 22 to the metre): small things are hard to aim at.
-    const float Margin = 2.5f;
+    // How far the use box reaches round the ghost by default, in room units (about 22 to the metre): small things are hard
+    // to aim at. The owner can give its own (TableDice.aimMargin).
+    public const float Margin = 2.5f;
+    float margin = Margin;
 
     public string Prompt => prompt;
     public bool CanInteract(Character who) => who is Player p && p.kind == PlayerKind.Room && carried != null && carried();
     public void Interact(Character who) { if (CanInteract(who)) place?.Invoke(who); }
 
-    // owner: the object the spot hangs under (it moves with it). props: what gets placed.
-    public static RoomPlaceSpot Make(Transform owner, GameObject[] props, Func<bool> carried, Action<Character> place, string prompt)
+    // owner: the object the spot hangs under (it moves with it). props: what gets placed. margin: how far the use box
+    // reaches past the props on every side, in room units.
+    public static RoomPlaceSpot Make(Transform owner, GameObject[] props, Func<bool> carried, Action<Character> place, string prompt, float margin = Margin)
     {
         var go = new GameObject("Place spot") { layer = owner.gameObject.layer };
         go.transform.SetParent(owner, false);
         var spot = go.AddComponent<RoomPlaceSpot>();
-        spot.carried = carried; spot.place = place; spot.prompt = prompt;
+        spot.carried = carried; spot.place = place; spot.prompt = prompt; spot.margin = Mathf.Max(0f, margin);
         spot.Build(props);
         return spot;
     }
@@ -87,7 +90,7 @@ public class RoomPlaceSpot : MonoBehaviour, IInteractable
             var box = gameObject.AddComponent<BoxCollider>();
             box.isTrigger = true;
             box.center = local.Value.center;
-            box.size = local.Value.size + new Vector3(Margin / Mathf.Max(.0001f, Mathf.Abs(s.x)), Margin / Mathf.Max(.0001f, Mathf.Abs(s.y)), Margin / Mathf.Max(.0001f, Mathf.Abs(s.z))) * 2f;
+            box.size = local.Value.size + new Vector3(margin / Mathf.Max(.0001f, Mathf.Abs(s.x)), margin / Mathf.Max(.0001f, Mathf.Abs(s.y)), margin / Mathf.Max(.0001f, Mathf.Abs(s.z))) * 2f;
             gameObject.AddComponent<InteractableTrigger>();
         }
         ghostMaterials.AddRange(made.Values);

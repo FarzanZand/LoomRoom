@@ -11,6 +11,7 @@ public class PropInfo : MonoBehaviour
     // Title, kind line (empty for none) and body: read each time the tooltip opens, so it says how things stand now.
     public Func<(string title, string kind, string body)> Describe;
     Renderer[] parts;
+    float pad;   // how far past its renderers a look still finds it, in world units on every side
 
     static readonly List<PropInfo> all = new();
     public static IReadOnlyList<PropInfo> All => all;
@@ -18,17 +19,19 @@ public class PropInfo : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => all.Clear();
 
-    // pieces: the objects it answers for (null: everything under it).
-    public void Bind(Func<(string, string, string)> describe, GameObject[] pieces = null)
+    // pieces: the objects it answers for (null: everything under it). pad: how far past them a look still finds it, in
+    // world units on every side (small props are hard to aim at).
+    public void Bind(Func<(string, string, string)> describe, GameObject[] pieces = null, float pad = 0f)
     {
         Describe = describe;
+        this.pad = Mathf.Max(0f, pad);
         if (pieces == null) { parts = null; return; }
         var list = new List<Renderer>();
         foreach (var p in pieces) if (p != null) list.AddRange(p.GetComponentsInChildren<Renderer>(true));
         parts = list.ToArray();
     }
 
-    // Where it is now: the bounds of its shown renderers, none while nothing of it is shown.
+    // Where it is now: the bounds of its shown renderers and the pad round them, none while nothing of it is shown.
     public bool Shown(out Bounds bounds)
     {
         bounds = default;
@@ -38,6 +41,7 @@ public class PropInfo : MonoBehaviour
             if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
             if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds);
         }
+        if (any && pad > 0f) bounds.Expand(pad * 2f);
         return any;
     }
 

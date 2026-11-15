@@ -68,8 +68,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonRoomTemplate
   kind: 0
-  description: 'The merchant''s stall room: the shop for levels without a tavern
-    (the Arena, the intro, the Peddler''s Cellar, the test arenas).'
+  description: 'The merchant''s stall room: the shop for levels without a tavern (the Arena, the intro, the Peddler''s Cellar, the test arenas).'
   paintFootprint: 0
   footprint: {fileID: 0}
   allowRotation: 1
@@ -83,11 +82,14 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 1
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 0
+  overrideEnemyCountRestrictions: 1
   roomEvent: 0
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 1
   lightColor: {r: 1, g: 0.72, b: 0.42, a: 1}
@@ -109,8 +111,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScriptedEventRoom
   eventName: shop
-  summary: 'The merchant''s stall: where he stands when a floor''s tavern doesn''t
-    fit.'
+  summary: 'The merchant''s stall: where he stands when a floor''s tavern doesn''t fit.'
   entrance: {fileID: 0}
   countsAsEvent: 0
 --- !u!1 &1471501655186130260
