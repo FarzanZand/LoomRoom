@@ -305,15 +305,43 @@ public static class EventRoomsSetup
         go.AddComponent<InteractableTrigger>();
     }
 
+    // The two bridge rooms as built get a way in two cells wide at each end, the bridge's own width (columns 3 and 4 of
+    // the first and last rows marked as doors), without rebuilding the rooms: BridgeDoubleDoors() from an eval. A rebuild
+    // marks them too.
+    public static string BridgeDoubleDoors()
+    {
+        var done = new System.Text.StringBuilder();
+        foreach (var name in new[] { "Duel bridge", "Troll bridge" })
+        {
+            string path = $"{RoomDir}/{name}.prefab";
+            var root = PrefabUtility.LoadPrefabContents(path);
+            var template = root.GetComponent<DungeonRoomTemplate>();
+            int n = 0;
+            if (template != null && template.rows != null && template.rows.Length == 9)
+                foreach (int row in new[] { 0, 8 })
+                {
+                    var cells = template.rows[row].ToCharArray();
+                    foreach (int column in new[] { 3, 4 })
+                        if (column < cells.Length && cells[column] != '+') { cells[column] = '+'; n++; }
+                    template.rows[row] = new string(cells);
+                }
+            if (n > 0) PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+            done.Append($"{name}: {n} door cells marked; ");
+        }
+        return done.ToString();
+    }
+
     // The duel: an 8 x 9 hall two tiles high, a chasm of lava three cells wide down each side, a bridge two cells wide up
     // the middle from the south door to the north one, the duellist in the middle of it facing the south (the user,
     // 2026-11-12: the bridge was one cell wide in a 7 x 9 hall, and the chasms were dry). The room's pivot is its centre
     // cell, column 4 of 0-7, so the bridge (columns 3 and 4) runs up the line Mid metres west of it; everything is laid
-    // along that line. The doors are in column 4, on the bridge.
+    // along that line. The doors are two cells wide, columns 3 and 4, the bridge's own width (the user, 2026-11-15: they
+    // stood in column 4 only, off the bridge's middle), so each end takes the level's double door.
     const float Mid = -1f;
     static GameObject Duel(GameObject duellist, HouseRule rule) => Room("Duel bridge", "duel",
         "A duellist waits on a bridge. Face him one on one; a foul brings his friends.",
-        Rows(8, 9, new Vector2Int(4, 0), new Vector2Int(4, 8)), 2, (root, e) =>
+        Rows(8, 9, new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(3, 8), new Vector2Int(4, 8)), 2, (root, e) =>
         {
             var lava = LavaMaterial();
             foreach (var x in new[] { -5f, 5f })
@@ -374,7 +402,7 @@ public static class EventRoomsSetup
         var talk = Load<BossDialogueData>(TrollTalkPath);
         var room = Room("Troll bridge", "troll",
             "The Bridge Troll stands on a bridge over lava. Pay his toll of 30 gold to pass, or fight him.",
-            Rows(8, 9, new Vector2Int(4, 0), new Vector2Int(4, 8)), 2, (root, e) =>
+            Rows(8, 9, new Vector2Int(3, 0), new Vector2Int(4, 0), new Vector2Int(3, 8), new Vector2Int(4, 8)), 2, (root, e) =>
             {
                 var lava = LavaMaterial();
                 foreach (var x in new[] { -5f, 5f })

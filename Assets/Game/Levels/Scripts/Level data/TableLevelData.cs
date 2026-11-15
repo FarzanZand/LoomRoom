@@ -238,6 +238,8 @@ public partial class TableLevelData : ScriptableObject
     public float wideCorridorPercent = 15;
     [TabGroup(Tabs, Map), ShowIf(D), Title("Doors", HorizontalLine = false), LabelText("Door Prefab"), Tooltip("Editable door prefab, one cell wide. Instantiated at selected room entrances.")]
     public GameObject doorPrefab;
+    [TabGroup(Tabs, Map), ShowIf(D), LabelText("Double Door Prefab"), Tooltip("A door two cells wide (DungeonDoubleDoor: two leaves hinged at its outer edges that open together). Placed where a room that asks for doors on its ways in (a way through: the bridge rooms) has a way in two cells wide. Empty: such a way in is narrowed to one cell and gets the door above.")]
+    public GameObject doubleDoorPrefab;
     [TabGroup(Tabs, Map), ShowIf(D), Title("Reveal", HorizontalLine = false), Tooltip("While the floor is built on the table, the starting room's wall on the viewer's side and its ceiling stay hidden (from the room they show only their dark outside), and come back when the player arrives. The intro uses it.")]
     public bool hideStartWallInReveal;
 

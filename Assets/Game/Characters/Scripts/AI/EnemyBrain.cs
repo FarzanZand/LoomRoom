@@ -324,7 +324,30 @@ public class EnemyBrain : MonoBehaviour
 
     // Never nearer than a body's width off the target's personal space, however short its reach: it holds its distance
     // without crowding or bumping into the player.
-    float PreferredDistance => Mathf.Max(Tuning != null ? Tuning.personalSpace + .35f : .9f, (CloseIn ? MeleeRange : MaxAttackRange) * Profile.preferredRangeFraction);
+    float PreferredDistance
+    {
+        get
+        {
+            float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
+            float range = CloseIn ? MeleeRange : MaxAttackRange;
+            // An enemy that lunges holds just inside where its attack begins, beyond the player's reach, not a share of it.
+            return Mathf.Max(least, LungeHold ? range - .1f : range * Profile.preferredRangeFraction);
+        }
+    }
+
+    // It fights by lunging (CombatManager.enemiesLungeIntoSwing): its longest attack, the one its distance is held for,
+    // is a melee attack that steps in.
+    bool LungeHold
+    {
+        get
+        {
+            if (attackRunner == null || Data == null || Data.attacks == null) return false;
+            float range = CloseIn ? MeleeRange : MaxAttackRange;
+            foreach (var a in Data.attacks)
+                if (a != null && attackRunner.Lunges(a) && StartRange(a) >= range - .001f) return true;
+            return false;
+        }
+    }
 
     // A caster that fights up close (EnemyData.closesIn) holds the distance of its melee attacks, not its spells'.
     bool CloseIn => Data != null && Data.caster && Data.closesIn && Data.attacks != null && Data.attacks.Count > 0;
@@ -649,7 +672,9 @@ public class EnemyBrain : MonoBehaviour
         if (HandleHeightGap(targetPos, dist)) return;
 
         // Approach. Look at the target once close so the run-in becomes a strafe-run.
-        Motor.SetAutoBraking(false);
+        // An enemy that lunges brakes as it comes up to its distance: coasting on, it ended 20 cm nearer, inside the
+        // player's reach.
+        Motor.SetAutoBraking(LungeHold);
         Motor.SetStoppingDistance(PreferredDistance);
         var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
         if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 1.5f, filter))
@@ -682,8 +707,11 @@ public class EnemyBrain : MonoBehaviour
             float wave = Mathf.Sin((Time.time / Mathf.Max(.5f, swayPeriod) + swayPhase) * Mathf.PI * 2f);
             float sway = p.spacingSway * (wave > 0f ? wave : wave * .3f);
             float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
-            preferred = Mathf.Clamp(preferred + sway, least, Mathf.Max(least, MaxAttackRange - .1f));
+            preferred = Mathf.Clamp(preferred + sway, LungeHold ? preferred : least, Mathf.Max(least, MaxAttackRange - .1f));
         }
+        // An enemy that lunges comes no nearer than its distance, but stands its ground when the target steps in: it
+        // backs off only out of the target's personal space.
+        if (LungeHold) preferred = Mathf.Clamp(dist, Tuning != null ? Tuning.personalSpace + .35f : .9f, preferred);
         Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.0001f) toTarget = transform.forward;
         toTarget.Normalize();

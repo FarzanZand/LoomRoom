@@ -51,9 +51,34 @@ public static class DungeonShapeGrid
     };
     static Color ColorOf(char c) { foreach (var b in Brushes) if (b.c == c) return b.color; return Color.magenta; }
 
-    // Inspector painter. Every change goes through Undo on the owner and returns true.
-    public static bool Painter(Object owner, ref int width, ref int height, ref string[] rows)
+    // What a room template adds to the painter (DungeonRoomTemplate: its pits and sunken floors, which are child
+    // objects, not cells in the rows): brushes painted in strokes over cells, handed over when the mouse is let go, a
+    // colour drawn over a cell, and a say over a plain brush on such a cell (Erase on a pit takes that cell out of it).
+    public class Extras
     {
+        public (char c, string label, Color color)[] brushes;
+        // Cell (x, y; y = 0 the south row) -> a colour drawn over it, or null.
+        public System.Func<int, int, Color?> overlay;
+        // A finished stroke with one of the extra brushes over these cells. True when something changed.
+        public System.Func<char, System.Collections.Generic.HashSet<Vector2Int>, bool> stroke;
+        // A plain brush pressed or dragged onto a cell: true when the extras took it (the cell is then not painted).
+        public System.Func<char, int, int, bool> click;
+        // Lines under the grid.
+        public System.Action footer;
+    }
+    static bool stroking;
+    static readonly System.Collections.Generic.HashSet<Vector2Int> strokeCells = new();
+    static bool IsExtra(Extras extras, char c)
+    {
+        if (extras?.brushes == null) return false;
+        foreach (var b in extras.brushes) if (b.c == c) return true;
+        return false;
+    }
+
+    // Inspector painter. Every change goes through Undo on the owner and returns true.
+    public static bool Painter(Object owner, ref int width, ref int height, ref string[] rows, Extras extras = null)
+    {
+        if (!IsExtra(extras, brush) && System.Array.FindIndex(Brushes, b => b.c == brush) < 0) brush = '#';
         bool changed = false;
         if (rows == null || rows.Length != height) { rows = Resized(rows, width, height); }
         UnityEditor.EditorGUILayout.BeginHorizontal();
@@ -66,29 +91,83 @@ public static class DungeonShapeGrid
             rows = Resized(rows, w, h); width = w; height = h; changed = true;
         }
 
-        UnityEditor.EditorGUILayout.BeginHorizontal();
-        foreach (var b in Brushes)
+        void BrushButton((char c, string label, Color color) b)
         {
             var old = GUI.backgroundColor;
             GUI.backgroundColor = brush == b.c ? b.color * 1.6f : b.color;
             if (GUILayout.Toggle(brush == b.c, b.label, "Button")) brush = b.c;
             GUI.backgroundColor = old;
         }
+        UnityEditor.EditorGUILayout.BeginHorizontal();
+        foreach (var b in Brushes) BrushButton(b);
         UnityEditor.EditorGUILayout.EndHorizontal();
+        if (extras?.brushes != null)
+        {
+            UnityEditor.EditorGUILayout.BeginHorizontal();
+            foreach (var b in extras.brushes) BrushButton(b);
+            UnityEditor.EditorGUILayout.EndHorizontal();
+        }
+        bool extraBrush = IsExtra(extras, brush);
 
         // North is up, as on the map and in the Scene view from above.
-        float cell = Mathf.Clamp((UnityEditor.EditorGUIUtility.currentViewWidth - 40) / Mathf.Max(width, height), 8, 26);
-        var area = GUILayoutUtility.GetRect(width * cell, height * cell, GUILayout.ExpandWidth(false));
+        int gw = width, gh = height;
+        float cell = Mathf.Clamp((UnityEditor.EditorGUIUtility.currentViewWidth - 40) / Mathf.Max(gw, gh), 8, 26);
+        var area = GUILayoutUtility.GetRect(gw * cell, gh * cell, GUILayout.ExpandWidth(false));
+        int control = GUIUtility.GetControlID(FocusType.Passive);
         var e = Event.current;
-        for (int x = 0; x < width; x++) for (int y = 0; y < height; y++)
+        Vector2Int? CellAt(Vector2 mouse)
         {
-            var r = new Rect(area.x + x * cell, area.y + (height - 1 - y) * cell, cell - 1, cell - 1);
+            int cx = Mathf.FloorToInt((mouse.x - area.x) / cell), cy = gh - 1 - Mathf.FloorToInt((mouse.y - area.y) / cell);
+            return cx >= 0 && cx < gw && cy >= 0 && cy < gh ? new Vector2Int(cx, cy) : null;
+        }
+        Color? strokeColour = null;
+        if (extraBrush) foreach (var b in extras.brushes) if (b.c == brush) strokeColour = b.color;
+        for (int x = 0; x < gw; x++) for (int y = 0; y < gh; y++)
+        {
+            var r = new Rect(area.x + x * cell, area.y + (gh - 1 - y) * cell, cell - 1, cell - 1);
             UnityEditor.EditorGUI.DrawRect(r, ColorOf(Get(rows, x, y)));
-            if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0 && r.Contains(e.mousePosition) && Get(rows, x, y) != brush)
+            var over = extras?.overlay?.Invoke(x, y);
+            if (over.HasValue) UnityEditor.EditorGUI.DrawRect(new Rect(r.x + 2, r.y + 2, r.width - 4, r.height - 4), over.Value);
+            if (stroking && extraBrush && strokeCells.Contains(new Vector2Int(x, y)))
+                UnityEditor.EditorGUI.DrawRect(new Rect(r.x + 2, r.y + 2, r.width - 4, r.height - 4), strokeColour.Value * 1.3f);
+            if (extraBrush) continue;
+            if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0 && r.Contains(e.mousePosition))
             {
+                if (extras?.click != null && extras.click(brush, x, y)) { changed = true; e.Use(); continue; }
+                if (Get(rows, x, y) == brush) continue;
                 UnityEditor.Undo.RecordObject(owner, "Paint shape");
-                Set(rows, height, x, y, brush); changed = true;
+                Set(rows, gh, x, y, brush); changed = true;
                 e.Use();
+            }
+        }
+        // An extra brush paints a stroke: every cell the mouse passes over, handed over as one when it is let go.
+        if (extraBrush)
+        {
+            switch (e.GetTypeForControl(control))
+            {
+                case EventType.MouseDown:
+                    if (e.button == 0 && CellAt(e.mousePosition) is Vector2Int from)
+                    {
+                        stroking = true; strokeCells.Clear(); strokeCells.Add(from);
+                        GUIUtility.hotControl = control; e.Use();
+                    }
+                    break;
+                case EventType.MouseDrag:
+                    if (stroking && GUIUtility.hotControl == control)
+                    {
+                        if (CellAt(e.mousePosition) is Vector2Int to) strokeCells.Add(to);
+                        e.Use();
+                    }
+                    break;
+                case EventType.MouseUp:
+                    if (stroking && GUIUtility.hotControl == control)
+                    {
+                        GUIUtility.hotControl = 0; stroking = false;
+                        if (extras.stroke != null && extras.stroke(brush, new System.Collections.Generic.HashSet<Vector2Int>(strokeCells))) changed = true;
+                        strokeCells.Clear();
+                        e.Use();
+                    }
+                    break;
             }
         }
         UnityEditor.EditorGUIUtility.AddCursorRect(area, UnityEditor.MouseCursor.ArrowPlus);
@@ -102,7 +181,17 @@ public static class DungeonShapeGrid
         var shape = ToShape(width, height, rows, owner.name);
         if (shape.FloorCount == 0) UnityEditor.EditorGUILayout.HelpBox("Paint at least one floor cell.", UnityEditor.MessageType.Error);
         else if (!shape.IsConnected()) UnityEditor.EditorGUILayout.HelpBox("Floor cells are split into separate pockets. Every floor cell must be reachable.", UnityEditor.MessageType.Warning);
-        else UnityEditor.EditorGUILayout.HelpBox($"{shape.FloorCount} floor cells. Centre at {shape.center}.", UnityEditor.MessageType.None);
+        else
+        {
+            // Two Door cells side by side on the edge are one doorway two cells wide (DungeonLayout.WidenFromPairedDoor).
+            int wide = 0;
+            for (int x = 0; x < gw; x++) for (int y = 0; y < gh; y++)
+                if (Get(rows, x, y) == '+' && (Get(rows, x + 1, y) == '+' || Get(rows, x, y + 1) == '+')) wide++;
+            UnityEditor.EditorGUILayout.HelpBox($"{shape.FloorCount} floor cells. Centre at {shape.center}."
+                + (wide > 0 ? $" {wide} wide doorway{(wide > 1 ? "s" : "")}." : "")
+                + "\nTwo Doors side by side make one doorway two cells wide (a room with its own way-in door keeps one cell).", UnityEditor.MessageType.None);
+        }
+        extras?.footer?.Invoke();
 
         if (changed) UnityEditor.EditorUtility.SetDirty(owner);
         return changed;

@@ -17,6 +17,9 @@ MonoBehaviour:
   boardReveal: 0
   ownBoardPieces: 0
   ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 0
     roofed: 0
@@ -154,6 +157,8 @@ MonoBehaviour:
   templateChance: 0.7
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
@@ -169,6 +174,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.1
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -201,6 +211,10 @@ MonoBehaviour:
   encounterChance: {x: 0.4, y: 0.6}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 2
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0
+  eliteFloors: 3
   features: []
   loot: {fileID: 0}
   merchantChance: 1
@@ -283,6 +297,8 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: 6b190885359363a4ba347cab4be462eb, type: 2}
     floors: 1
     boss: 0
+    extraFloors: 0
+    damageScale: 1
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
@@ -292,29 +308,64 @@ MonoBehaviour:
     tier2: 0
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 2
     tier1: 50
     tier2: 50
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 3
     tier1: 25
     tier2: 75
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   - fromFloor: 4
     tier1: 0
     tier2: 100
     tier3: 0
     tier4: 0
+    tier5: 0
+    tier6: 0
+    tier7: 0
+    tier8: 0
+    tier9: 0
+    tier10: 0
+    tier11: 0
+    tier12: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  eventRoomsPerFloor: {x: 0, y: 1}
+  tavernEvery: 1
   startingChest: 1
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems: []
+  startingChestTome: 0
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
@@ -330,9 +381,11 @@ MonoBehaviour:
   roomSpacing: {x: 1, y: 2}
   loopPercent: 10
   loopReach: 10
+  joinDeadEndPercent: 0
   corridorWander: 0.5
   wideCorridorPercent: 45
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
+  doubleDoorPrefab: {fileID: 2428514974889106930, guid: 74b348ca4f4bf224899136afbcdd2d3e, type: 3}
   hideStartWallInReveal: 0
   mapTemplate: {fileID: 0}
   authoredMap: '###############################

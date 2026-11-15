@@ -377,9 +377,11 @@ MonoBehaviour:
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   eventRoomsPerFloor: {x: 0, y: 1}
+  tavernEvery: 1
   startingChest: 0
   startingChestConsumable: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
   startingChestItems: []
+  startingChestTome: 0
   fixedSeed: 0
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
@@ -395,9 +397,11 @@ MonoBehaviour:
   roomSpacing: {x: 1, y: 2}
   loopPercent: 10
   loopReach: 10
+  joinDeadEndPercent: 0
   corridorWander: 0.5
   wideCorridorPercent: 45
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
+  doubleDoorPrefab: {fileID: 2428514974889106930, guid: 74b348ca4f4bf224899136afbcdd2d3e, type: 3}
   hideStartWallInReveal: 0
   mapTemplate: {fileID: 7641791405145484976, guid: 59542db2491d39a4d9d06b61ff8e4c3e, type: 3}
   authoredMap: 

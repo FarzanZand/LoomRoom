@@ -148,12 +148,27 @@ public partial class DungeonGenerator
     // The merchant's room (the tavern) can ask for a door on every way in (DungeonRoomTemplate.wayInDoor): one door per
     // opening cell, as the ambush's gates, in place of any other door on those passages (the starting room's keeps its own).
     readonly System.Collections.Generic.Dictionary<(Vector2Int, Vector2Int), GameObject> doorPrefabs = new();
+    // The two cells of a way in that share one double door (TableLevelData.doubleDoorPrefab): each names the other.
+    readonly System.Collections.Generic.Dictionary<(Vector2Int, Vector2Int), Vector2Int> doorPairs = new();
     void AddWayInDoors()
     {
         doorPrefabs.Clear();
+        doorPairs.Clear();
         // The merchant's room first, then every other room that asks for doors (a way through: the bridge rooms).
         if (MerchantRoom > 0) WayInDoors(MerchantRoom);
-        for (int room = 1; room < Layout.rooms.Count; room++) if (room != MerchantRoom) WayInDoors(room);
+        // The entrance only when it is a way through itself (a test run opening in a bridge room): its doors then stand
+        // as they do in a run, in place of the starting room's one door.
+        for (int room = 0; room < Layout.rooms.Count; room++)
+        {
+            if (room == MerchantRoom) continue;
+            if (room == 0)
+            {
+                var first = TemplatePrefab(0);
+                var template = first != null ? first.GetComponent<DungeonRoomTemplate>() : null;
+                if (template == null || !template.wayThrough) continue;
+            }
+            WayInDoors(room);
+        }
     }
 
     void WayInDoors(int room)
@@ -165,7 +180,10 @@ public partial class DungeonGenerator
         // Its own door, or for a way through the level's.
         var door = template.wayInDoor != null ? template.wayInDoor : template.wayThrough ? data.doorPrefab : null;
         if (door == null) return;
-        NarrowWaysInto(room);
+        // A way through takes the level's double door where its way in is two cells wide (the user, 2026-11-15: the
+        // bridge rooms' doors stood on one of the bridge's two cells); a room with a door of its own keeps one cell.
+        var twoWide = template.wayInDoor == null && template.wayThrough ? data.doubleDoorPrefab : null;
+        NarrowWaysInto(room, twoWide != null ? 2 : 1);
         foreach (var cell in Layout.RoomCells(room))
             foreach (var dir in DungeonLayout.Neighbours)
             {
@@ -183,12 +201,23 @@ public partial class DungeonGenerator
                 doorways.Add((cell, dir));
                 doorPrefabs[(cell, dir)] = door;
             }
+        if (twoWide == null) return;
+        foreach (var cell in Layout.RoomCells(room))
+            foreach (var dir in DungeonLayout.Neighbours)
+            {
+                var mate = cell + new Vector2Int(dir.y, -dir.x);
+                if (doorPairs.ContainsKey((cell, dir)) || doorPairs.ContainsKey((mate, dir))) continue;
+                if (!Layout.IsOpening(room, cell, dir) || !Layout.InRoom(room, mate) || !Layout.IsOpening(room, mate, dir)) continue;
+                doorPairs[(cell, dir)] = mate; doorPairs[(mate, dir)] = cell;
+                doorPrefabs[(cell, dir)] = twoWide; doorPrefabs[(mate, dir)] = twoWide;
+            }
     }
 
     // A passage two cells wide met the tavern with two doors side by side, and its plaster showed from the passage in the
     // gap between them (the user, twice): each run of ways in along one of its walls is narrowed to one cell, the
     // passage's cells in front of the others made rock, as long as the floor stays in one piece.
-    void NarrowWaysInto(int room)
+    // keepCells: how many cells of each run stay open (2 for a room that takes double doors).
+    void NarrowWaysInto(int room, int keepCells = 1)
     {
         foreach (var dir in DungeonLayout.Neighbours)
         {
@@ -202,11 +231,12 @@ public partial class DungeonGenerator
                 var run = new List<Vector2Int>();
                 for (var c = start; Layout.InRoom(room, c) && Layout.IsOpening(room, c, dir); c += side) run.Add(c);
                 done.UnionWith(run);
-                if (run.Count < 2) continue;
+                if (run.Count <= keepCells) continue;
                 var keep = run[(run.Count - 1) / 2];
+                var keepToo = keepCells > 1 ? run[(run.Count - 1) / 2 + 1] : keep;
                 foreach (var c in run)
                 {
-                    if (c == keep) continue;
+                    if (c == keep || c == keepToo) continue;
                     var outside = c + dir;
                     Layout.floor[outside.x, outside.y] = false;
                     if (!FloorInOnePiece()) { Layout.floor[outside.x, outside.y] = true; continue; }
@@ -236,7 +266,8 @@ public partial class DungeonGenerator
         DestroyImmediate(outer.GetComponent<Collider>());
     }
 
-    void WayInJambsOutside(Vector3 pos, Vector2Int dir, int passage, float top)
+    // skipSide: the side (-1 or 1 along the wall) with no jamb, where the other leaf of a double door stands; 0 lines both.
+    void WayInJambsOutside(Vector3 pos, Vector2Int dir, int passage, float top, int skipSide = 0)
     {
         var outward = new Vector3(dir.x, 0f, dir.y);
         var along = new Vector3(dir.y, 0f, dir.x);
@@ -249,6 +280,7 @@ public partial class DungeonGenerator
             var size = dir.x != 0 ? new Vector3(depth, y1 - y0, lining) : new Vector3(lining, y1 - y0, depth);
             foreach (int s in new[] { -1, 1 })
             {
+                if (s == skipSide) continue;
                 var at = pos + along * s * (half - lining * .5f) + outward * (.01f + depth * .5f) + Vector3.up * ((y0 + y1) * .5f);
                 var jamb = ArchitectureBox("Door jamb (passage)", at, size, WallMaterial(passage, row * tile), transform);
                 DestroyImmediate(jamb.GetComponent<Collider>());

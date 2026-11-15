@@ -508,6 +508,7 @@ MonoBehaviour:
   corridorWander: 0.5
   wideCorridorPercent: 45
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
+  doubleDoorPrefab: {fileID: 2428514974889106930, guid: 74b348ca4f4bf224899136afbcdd2d3e, type: 3}
   hideStartWallInReveal: 0
   mapTemplate: {fileID: 0}
   authoredMap: 

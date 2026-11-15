@@ -155,6 +155,9 @@ public partial class CombatManager : Singleton<CombatManager>
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
     [Range(0f, 1f), Tooltip("Seconds the walk takes to ease back up to full speed after a swing. 0: full speed at once.")]
     public float swingSlowEaseOut = .25f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
+    [Tooltip("Off: a swing does not slow the player while they move backward (a back diagonal too), only forward and sideways. On: backward too.")]
+    public bool swingSlowWhenBacking = false;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
     [Min(0), Tooltip("Times the lunge and the camera kicks for a heavy swing.")]
     public float heavyStrikeScale = 2f;
@@ -378,6 +381,15 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(0f), TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesStepIntoSwing))]
     [Tooltip("How fast it steps in (metres a second). The player backs off at about 1.5 and walks forward at 3.5.")]
     public float enemySwingStepSpeed = 3f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf(nameof(enemiesStepIntoSwing))]
+    [Tooltip("Enemies wait outside the player's reach and step in with the blow. A melee enemy comes no nearer than Enemy Wait Outside Reach beyond where the player's swing reaches it, and holds there while its attack recharges (it does not back off from a player who steps in). Its attack winds up there, then, with its aim locked, it steps in so that the blow lands as it arrives just inside the player's reach, where it stays through its recovery. So it is inside the player's reach only once it has committed to a blow: a player who backs off cannot hit it, swinging or not, and one who stands, blocks or dodges can hit back after the blow. Off: enemies stand inside the player's reach between swings and step after a retreating target by Enemy Swing Step Most.")]
+    public bool enemiesLungeIntoSwing = true;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf("@enemiesStepIntoSwing && enemiesLungeIntoSwing")]
+    [Range(0f, 1f), Tooltip("How far beyond the player's reach a melee enemy begins its attack from (metres); it holds 0.1 nearer than that. More is a longer step in and more room, less is closer to standing in the player's face.")]
+    public float enemyWaitOutsideReach = .1f;
+    [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf("@enemiesStepIntoSwing && enemiesLungeIntoSwing")]
+    [Min(0f), Tooltip("How much further than its striking distance the step in follows a target that backs off (metres). 0: a player who starts backing off within about a quarter of a second of the tell walks out of the blow; 0.25: only one already backing off does.")]
+    public float enemyLungeFollow = .25f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Walk while attacking: an enemy keeps walking toward its target through the whole melee attack, slower than it chases, its legs walking under the swing, until it is at the distance it holds in a fight (never inside personal space). It walks along its own aim only, so a dash aside is not followed. Each attack can opt out (EnemyAttack > Moves In); casts and bow shots never move. On, it takes the place of the lunge above.")]
     public bool enemiesWalkWhileAttacking = false;
