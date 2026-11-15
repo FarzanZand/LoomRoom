@@ -254,16 +254,7 @@ public partial class AssetStudioWindow
         var im = BalanceManager<InventoryManager>(InventoryManagerPath, out bool imScene);
         var cm = BalanceManager<CombatManager>(CombatManagerPath, out _);
         var pm = BalanceManager<ProgressionManager>(ProgressionManagerPath, out _);
-        GUILayout.BeginHorizontal();
-        GUILayout.Label("Balance", titleStyle);
-        GUILayout.FlexibleSpace();
-        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if (imScene && scene.isDirty)
-        {
-            GUILayout.Label("<color=#e0a85a>● Room has unsaved changes</color>", new GUIStyle(StudioSkin.Label) { richText = true, wordWrap = false }, GUILayout.Height(28));
-            if (GUILayout.Button("Save scene", GUILayout.Width(110), GUILayout.Height(28))) UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
-        }
-        GUILayout.EndHorizontal();
+        GUILayout.Label("Balance", titleStyle);   // the unsaved scene is said in the top bar, in every view (SaveChip)
         GUILayout.BeginHorizontal();
         foreach (var t in BalanceTabs)
             if (GUILayout.Toggle(balanceTab == t, t, StudioSkin.Tab, GUILayout.Width(110), GUILayout.Height(28)) && balanceTab != t) { balanceTab = t; cellsBefore.Clear(); lastEdit = null; GUI.FocusControl(null); }
@@ -647,6 +638,11 @@ public partial class AssetStudioWindow
     void DropsTab(TableLevelData d, InventoryManager im, ProgressionManager pm)
     {
         Question("How often each rarity drops: per kill, per chest, per floor");
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("How often a drop happens and how good it is. Which item it is (each item's tier and weight, floor by floor) is on the Dungeon's Loot page.", new GUIStyle(dim) { wordWrap = false });
+        if (GUILayout.Button("Open Dungeon > Loot", GUILayout.Width(210), GUILayout.Height(22))) { OpenDungeonAt(d, WholeRun); GoTo("loot"); }
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
         float rolls = ChestRolls(d);
         float killScale = im.dropChanceMultiplier * im.enemyDropMultiplier;
         float PerFloor(int f, int r) => fightKills * OddsOf(im, im.enemyDrops, killScale, f).rarity[r] + dropChests * ChestPiece(d, im, f).rarity[r];

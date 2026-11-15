@@ -31,8 +31,9 @@ public partial class AssetStudioWindow
     {
         const float bar = 34f, buttonW = 220f;
         var strip = new Rect(r.x, r.y, r.width, bar);
-        if (GUI.Toggle(new Rect(strip.x, strip.y, buttonW, 28), showingStats, "  Stats   <color=#a9a49a>attributes, skills</color>", showingStats ? cellSelected : cell) && !showingStats) OpenStats();
-        if (GUI.Toggle(new Rect(strip.x + buttonW + 6, strip.y, buttonW, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
+        // Tab buttons, as Balance, Dialogue and every other switch between panels in the window has.
+        if (GUI.Toggle(new Rect(strip.x, strip.y, buttonW, 28), showingStats, "Stats   <color=#a9a49a>attributes, skills</color>", StudioSkin.Tab) && !showingStats) OpenStats();
+        if (GUI.Toggle(new Rect(strip.x + buttonW + 6, strip.y, buttonW, 28), showingSubstats, $"Substats   <color=#a9a49a>{SubstatCount} on gear</color>", StudioSkin.Tab) && !showingSubstats) OpenSubstats();
         var panel = new Rect(r.x, r.y + bar, r.width, r.height - bar);
         if (showingSubstats) DrawSubstats(panel); else DrawStats(panel);
     }
@@ -53,7 +54,7 @@ public partial class AssetStudioWindow
         var rules = pm != null ? pm.classRules : null;
         Title("Stats", "The attributes and skills, what each gives, and what every class starts with. Edit any number in place.");
         if (pm == null || rules == null) { GUILayout.Label("<color=#e0a85a>No ProgressionManager with class rules found.</color>", dim); return; }
-        GUILayout.Label(inScene ? "The tracks (sheet levels, what a point gives, prices) are on the room's ProgressionManager in the open scene: save the scene after changing them. Classes and skills are assets, saved at once." : "<color=#e0a85a>The room scene isn't open: the tracks shown are the ProgressionManager prefab's, which the scene's own manager doesn't follow. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
+        GUILayout.Label(inScene ? "The tracks (sheet levels, what a point gives, prices) are on the room's ProgressionManager in the open scene (kept when the scene is saved). Classes and skills are assets, saved at once." : "<color=#e0a85a>The room scene isn't open: the tracks shown are the ProgressionManager prefab's, which the scene's own manager doesn't follow. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
         var classes = (rules.classes ?? Array.Empty<AdventurerClass>()).Where(c => c != null).ToList();
         void TrackChanged() { EditorUtility.SetDirty(pm); if (inScene) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(pm.gameObject.scene); }
         void ClassChanged(AdventurerClass c) { EditorUtility.SetDirty(c); AssetDatabase.SaveAssetIfDirty(c); }
@@ -106,7 +107,11 @@ public partial class AssetStudioWindow
         GUILayout.BeginVertical(StudioSkin.Inset);
         GUILayout.BeginHorizontal();
         GUILayout.Label("Skill", head, GUILayout.Width(nameW));
-        GUILayout.Label(new GUIContent("On the sheet", "Free levels / levels / ranks a level: it starts at free x ranks and reaches levels x ranks."), head, GUILayout.Width(150));
+        // The three boxes of "on the sheet", each named (they were three bare numbers under one title).
+        GUILayout.Label(new GUIContent("Free", "Levels given on the sheet from the start."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Lvls", "Levels the sheet has for it in all."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Each", "Ranks a level gives."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Ranks", "Where it starts and the most the sheet raises it to: free x each, levels x each."), head, GUILayout.Width(51));
         GUILayout.Label(new GUIContent("At rank 100", "The rank bonus (and its second bonus) at rank 100; it grows with the rank."), head, GUILayout.Width(2 * (40 + bonusW) + 12));
         GUILayout.Label("Milestones", head, GUILayout.Width(milestoneW));
         foreach (var c in classes) GUILayout.Label(new GUIContent(c.displayName, $"The {c.displayName}'s starting ranks, on top of the sheet's."), head, GUILayout.Width(classW));

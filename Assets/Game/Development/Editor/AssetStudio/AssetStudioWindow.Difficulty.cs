@@ -81,27 +81,6 @@ public partial class AssetStudioWindow
     GUIStyle Wrapped => new(dim) { wordWrap = true };
     GUIStyle Unit => new(dim) { fixedHeight = 18, alignment = TextAnchor.MiddleLeft, wordWrap = false, clipping = TextClipping.Clip };   // a word beside a number field
 
-    // The levels page's Balance tab.
-    void BalanceTab(AssetStudioWorld.Level l)
-    {
-        var d = l.data;
-        ReadGameWide();
-        var floors = RunDifficulty(l);
-        Section("HOW HARD THE RUN GETS");
-        GUILayout.Label(Summary(floors), new GUIStyle(StudioSkin.Label) { richText = true }, GUILayout.Width(pageWidth));
-        GUILayout.Space(4);
-        DifficultyChart(l, floors);
-        Section("DUNGEON ACTS AND STAGES");
-        GUILayout.Label("A stage can bring a difficulty jump (a new biome after a boss): its enemies then grow as if that many floors further down, and the jump carries on through the run. Elites are each biome's.", Wrapped, GUILayout.Width(pageWidth));
-        StageSteps(l);
-        Section("GROWTH");
-        GrowthFields(d);
-        Section("FLOOR BY FLOOR");
-        FloorTable(l, floors);
-        Section("GEAR BY FLOOR");
-        Fields(d, "gearByFloor", "startingChest");
-    }
-
     // One line: how far the run climbs and where its biggest jump is.
     static string Summary(List<FloorDifficulty> floors)
     {
@@ -405,25 +384,5 @@ public partial class AssetStudioWindow
         return w > 0 ? (hp / w, dmg / w, w) : (0, 0, 0);
     }
 
-    // The Run tab's stage strip, under each stage: its jump and its biome's elites, edited in place.
-    void StageStepRow(TableLevelData d, AssetStudioWorld.Stage st)
-    {
-        GUILayout.BeginHorizontal();
-        GUILayout.Space(10);
-        var stage = StageOf(d, st);
-        if (stage != null)
-        {
-            float extra = Mathf.Max(0f, EditorGUILayout.DelayedFloatField(stage.extraFloors, GUILayout.Width(32)));
-            GUILayout.Label(new GUIContent(stage.extraFloors > 0 ? "<color=#e0a85a>jump</color>" : "jump", "Difficulty jump: from this stage's first floor on, enemies grow as if this many floors deeper, in floors' worth of growth (added up with earlier stages'). The Balance tab shows the run."), Unit, GUILayout.Width(54));
-            if (!Mathf.Approximately(extra, stage.extraFloors)) { Undo.RecordObject(d, "Extra floors"); stage.extraFloors = extra; EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d); }
-        }
-        if (st.biome != null)
-        {
-            var b = st.biome;
-            float chance = Mathf.Clamp(EditorGUILayout.DelayedFloatField(Mathf.Round(b.eliteChance * 1000f) / 10f, GUILayout.Width(32)), 0f, 50f) / 100f;
-            GUILayout.Label(new GUIContent("% elites", "How often a generated enemy on this biome's floors is an elite (the biome's, shared wherever it runs). The Balance tab shows what one has."), Unit, GUILayout.Width(60));
-            if (!Mathf.Approximately(chance, b.eliteChance)) { Undo.RecordObject(b, "Elite chance"); b.eliteChance = chance; EditorUtility.SetDirty(b); AssetDatabase.SaveAssetIfDirty(b); }
-        }
-        GUILayout.EndHorizontal();
-    }
+
 }

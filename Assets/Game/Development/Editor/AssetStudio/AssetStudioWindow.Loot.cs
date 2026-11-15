@@ -146,19 +146,9 @@ public partial class AssetStudioWindow
         GUILayout.FlexibleSpace();
         if (lootManager != null)
         {
-            GUILayout.Label(new GUIContent("Tomes are", "InventoryManager > Tome Share: of every gear drop, how often it is a spell tome instead. One share for all tomes together, so more spells don't make tomes more common."), dim, GUILayout.Width(74));
-            EditorGUI.BeginChangeCheck();
-            float percent = EditorGUILayout.DelayedFloatField(Mathf.Round(lootManager.tomeShare * 1000f) / 10f, GUILayout.Width(44));
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(lootManager, "Tome share");
-                lootManager.tomeShare = Mathf.Clamp01(percent / 100f);
-                EditorUtility.SetDirty(lootManager);
-                if (EditorUtility.IsPersistent(lootManager)) AssetDatabase.SaveAssetIfDirty(lootManager);
-                else { PrefabUtility.RecordPrefabInstancePropertyModifications(lootManager); UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(lootManager.gameObject.scene); Toast("Tome share is on the room's InventoryManager: save the scene to keep it."); }
-                ReadLoot(d, true);
-            }
-            GUILayout.Label("% of gear drops", dim, GUILayout.Width(110));
+            // How often a tome comes at all is a "how often" number: shown here, changed on Balance > Drops.
+            GUILayout.Label(new GUIContent($"Tomes are {LootPercent(lootManager.tomeShare)} of gear drops", "InventoryManager > Tome Share: of every gear drop, how often it is a spell tome instead. One share for all tomes together, so more spells don't make tomes more common."), dim);
+            if (GUILayout.Button(new GUIContent("change", "Balance > Drops: Spell tomes."), GUILayout.Width(70), GUILayout.Height(20))) { OpenBalance(); balanceTab = "Drops"; }
         }
         GUILayout.EndHorizontal();
         GUILayout.Space(4);

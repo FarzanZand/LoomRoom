@@ -63,12 +63,15 @@ public partial class AssetStudioWindow
     string worldRepick;   // a node key to pick again once the tree is built (after a recompile)
 
     AssetStudioWorld.Model World => world ??= AssetStudioWorld.Build();
+    static bool UndoOffered => AssetStudioWorld.PrefabUndo.MadeThisSession;
 
     void OpenWorld()
     {
         studioView = StudioView.World;
         var saved = EditorPrefs.GetString(WorldOpenKey, "");
         if (saved.Length > 0) { worldOpen.Clear(); foreach (var k in saved.Split('|')) if (k.Length > 0) worldOpen.Add(k); }
+        // The right panel shows this view's pick, when nothing is shown yet (picked again once the tree is drawn).
+        if (inspected == null && selected == null && !string.IsNullOrEmpty(worldPickedKey)) worldRepick = worldPickedKey;
         GUI.FocusControl(null);
     }
 
@@ -350,7 +353,12 @@ public partial class AssetStudioWindow
             }
             float lw = Mathf.Min(labelStyle.CalcSize(new GUIContent(label)).x + 6, right - x - 20);
             GUI.Label(new Rect(x, row.y + 2, lw, 18), label, labelStyle);
-            if (!string.IsNullOrEmpty(n.note)) GUI.Label(new Rect(x + lw + 4, row.y + 3, Mathf.Max(0, right - x - lw - 6), 16), n.warn ? $"<color=#e0a85a>{n.note}</color>" : n.note, NoteStyle);
+            float noteWidth = Mathf.Max(0, right - x - lw - 6);
+            if (!string.IsNullOrEmpty(n.note) && noteWidth > 24)
+            {
+                string note = Fit(n.note, NoteStyle, noteWidth);
+                GUI.Label(new Rect(x + lw + 4, row.y + 3, noteWidth, 16), new GUIContent(n.warn ? $"<color=#e0a85a>{note}</color>" : note, note != n.note ? n.note : null), NoteStyle);
+            }
             // A biome stage takes rooms dropped on it; a place takes a level.
             if (row.Contains(ev.mousePosition) && (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && Accepts(n, DragAndDrop.objectReferences))
             {
@@ -377,7 +385,9 @@ public partial class AssetStudioWindow
     }
     WorldNode dragFrom;
 
-    GUIStyle tagStyle, noteStyle;
+    // Not kept through a script reload: Unity gives a kept null style back as an empty one (black text in its own font,
+    // no clipping), which the ??= below then never replaced, so after any recompile the tree's notes ran over the tags.
+    [NonSerialized] GUIStyle tagStyle, noteStyle;
     GUIStyle TagStyle => tagStyle ??= new GUIStyle(EditorStyles.miniLabel) { alignment = TextAnchor.MiddleCenter, padding = new RectOffset(0, 0, 0, 1) };
     GUIStyle NoteStyle => noteStyle ??= new GUIStyle(dimLine ?? EditorStyles.miniLabel) { richText = true, clipping = TextClipping.Clip };
 
@@ -416,7 +426,7 @@ public partial class AssetStudioWindow
         if (n.kind == WorldKind.Header || n.kind == WorldKind.Group || n.kind == WorldKind.Act) ToggleOpen(n.key);
         else if (n.hasChildren && !n.open) ToggleOpen(n.key);
         if (n.kind == WorldKind.Level && n.level != null) PointLevelPage(n.level, -1);
-        else if (n.kind == WorldKind.Stage && n.level != null) { PointLevelPage(n.level, n.stage); levelTab = RunTabIndex; }
+        else if (n.kind == WorldKind.Stage && n.level != null) PointLevelPage(n.level, n.stage);
         else if (n.kind == WorldKind.Stage && n.biome != null) { levelPath = null; levelDefaults = false; levelBiomePath = AssetDatabase.GetAssetPath(n.biome); levelPageScroll = Vector2.zero; }
         else if (n.kind == WorldKind.Defaults) { levelPath = null; levelBiomePath = null; levelDefaults = true; levelPageScroll = Vector2.zero; }
         ShowAsset(n.asset);
@@ -490,7 +500,7 @@ public partial class AssetStudioWindow
         {
             // Edits to the campaign manager and realm map prefabs (and the places and events made with them) aren't on
             // Ctrl+Z: this puts the files back.
-            if (AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
+            if (UndoOffered && AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
             { Toast(AssetStudioWorld.PrefabUndo.UndoLast()); worldPicked = null; RefreshLibrary(); GUIUtility.ExitGUI(); }
             switch (worldPane)
             {
@@ -527,7 +537,7 @@ public partial class AssetStudioWindow
         var m = World;
         if (n == null)
         {
-            Title("World", "Every act's places, events and levels in one tree. Pick a level for its page: its run, the rooms each floor can have, its look, balance, sound and lines. New... makes a level, a biome, a room, a place or an event already filed and linked.");
+            Title("World", "The campaign: every act's places and events, and the levels they play. A level's floors are made in Dungeon: pick it here for its card and Open in Dungeon. New... makes a level, a biome, a room, a place or an event already filed and linked.");
             return;
         }
         switch (n.kind)
@@ -809,7 +819,9 @@ public partial class AssetStudioWindow
 
     // How a level's floors are laid out (generated, rooms in a row, or a map template) and its own rooms: the World's
     // level pane and the Levels page's Map tab.
-    void LayoutSection(TableLevelData d)
+    // ownRooms: the level's own rooms (starting room, shop room, New room) listed under it; off where the page has them
+    // already (the Dungeon's way-in page).
+    void LayoutSection(TableLevelData d, bool ownRooms = true)
     {
         if (d.layoutMode == DungeonLayoutMode.Authored)
         {
@@ -839,6 +851,7 @@ public partial class AssetStudioWindow
             if (Big("Give it a map template", "A fixed layout held in a prefab: paint the map and build each room under its Room child.")) NewMapFor(d);
             GUILayout.EndHorizontal();
         }
+        if (!ownRooms) return;
         Section("ITS OWN ROOMS");
         RoomField(d, d, "Starting room", d.startingRoom, v => d.startingRoom = v);
         // The shop room is on the base biome's Level tab.
@@ -1137,11 +1150,11 @@ public partial class AssetStudioWindow
     // A stage of a level's run, or its base biome (index -1).
     void PickStage(TableLevelData level, int index)
     {
-        if (level != null && World.LevelOf(level) != null)
+        if (level != null && World.LevelOf(level) is AssetStudioWorld.Level known)
         {
-            OpenLevel(level, index); levelTab = RunTabIndex;
-            var row = worldRows.FirstOrDefault(n => n.key == (index < 0 ? "base:" : "stage:") + World.LevelOf(level).path + (index < 0 ? "" : ":" + index));
-            if (row != null) { worldPicked = row; worldPickedKey = row.key; }
+            // A dungeon's stage is its floor page in Dungeon; a staged level's base biome is its Look page there.
+            if (level.IsDungeon && index < 0 && known.Staged) { OpenDungeonAt(level, WholeRun); GoTo("look", level.baseBiome); }
+            else OpenLevel(level, index);
             return;
         }
         var l = World.LevelOf(level);

@@ -31,7 +31,13 @@ public partial class AssetStudioWindow
     static readonly string[] UnlockTypes = { "Class", "Place", "Room item", "Ability", "Feature", "Campaign event" };
     const int ReviveDeaths = 3;   // RunRecapUI.reviveAfterDeaths (not serialized: the code's number)
 
-    void OpenUnlockables() { studioView = StudioView.Unlockables; GUI.FocusControl(null); }
+    void OpenUnlockables()
+    {
+        studioView = StudioView.Unlockables;
+        // The right panel shows this view's pick, when nothing is shown yet.
+        if (inspected == null && selected == null && Unlockables().FirstOrDefault(u => u.type + ":" + u.name == unlockPicked) is Unlockable picked && picked.assets.Count > 0) ShowAsset(picked.assets[0]);
+        GUI.FocusControl(null);
+    }
 
     List<Unlockable> Unlockables()
     {
