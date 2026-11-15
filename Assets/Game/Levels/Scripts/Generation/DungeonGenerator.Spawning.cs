@@ -47,6 +47,8 @@ public partial class DungeonGenerator
         var choices = Biome != null ? Biome.roomTemplates : null;
         if (Authored || choices == null || choices.Length == 0) return pool;
         var rng = new System.Random(unchecked(seed + 130363));
+        // The run's own number, the same on each of its floors (TableLevelLoader seeds floor n with run + (n - 1) * 104729).
+        int runKey = unchecked(seed - (FloorNumber - 1) * 104729);
         data.BiomeAt(FloorNumber, out int floorInBiome, out _);
         var used = new System.Collections.Generic.Dictionary<GameObject, int>();
         // Rooms built around a feature this floor switches off (a chasm, a shrine, candlelight) are left out.
@@ -83,7 +85,7 @@ public partial class DungeonGenerator
             bool eventsLeft = events < mostEvents;
             var pick = WeightedPick.Choose(choices, c => c != null && c.template != null && (c.rooms & role) != 0 && floorInBiome >= c.fromFloor && Allowed(c.template)
                 && !used.ContainsKey(c.template) && (eventsLeft || !IsEvent(c.template)) && Fresh(c.template)
-                ? c.weight / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
+                ? c.weight * FloorTurn(c.template, runKey) / (1f + 2f * (used.TryGetValue(c.template, out var n) ? n : 0)) : 0, rng);
             if (pick == null) continue;
             pool[i] = pick.template;
             used[pick.template] = (used.TryGetValue(pick.template, out var k) ? k : 0) + 1;
@@ -116,6 +118,28 @@ public partial class DungeonGenerator
             }
         }
         return pool;
+    }
+
+    // ── Different rooms from floor to floor ──
+    // The same hand-built rooms came up floor after floor: half of a floor's were also on the floor before (measured over
+    // 25 runs of Dungeon1's four floors; Rat nest, Cell block and Collapsed stair on three floors in four), because nearly
+    // the whole pool is tried on every floor and the same small rooms are the ones that fit. Each run gives every room of
+    // the pool its own place on a wheel, and a floor deals only the 60% of the wheel it points at, turned four tenths round
+    // each floor: two floors in a row share a fifth of their rooms (20%, was 51%), a run still shows as many different
+    // rooms (16.7 of the pool, was 17.0), and a floor has about one hand-built room fewer (7.2, was 8.5; a generated room
+    // stands in its place). From the run's seed and the room's name alone, so the floor is the same on every machine and
+    // when it is built again from its checkpoint. Event rooms keep their own once-a-run rule.
+    // Room Repeat Weight: the share of its weight a room outside the floor's part keeps (0: left out; 1: the old way,
+    // every room on every floor).
+    public static float RoomRepeatWeight = 0f;
+    float FloorTurn(GameObject template, int runKey)
+    {
+        if (RoomRepeatWeight >= 1f || template == null || IsEvent(template)) return 1f;
+        uint h = 2166136261u;
+        foreach (char ch in template.name) h = unchecked((h ^ ch) * 16777619u);
+        h = unchecked((uint)Scramble(unchecked((int)h ^ runKey)));
+        float place = (h & 0xFFFFFF) / (float)0x1000000;
+        return Mathf.Repeat(place - FloorNumber * .4f, 1f) < .6f ? 1f : RoomRepeatWeight;
     }
 
     // ── Events once a run ──
