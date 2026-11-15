@@ -122,7 +122,7 @@ public partial class IntroController
         PushDialogue();
         yield return GlideIntoSeat();
         yield return SayAll(lampLines);
-        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) });
+        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule, false) });
         yield return SheetAndDice(practiceClass != null ? practiceClass.displayName : "", practiceClass != null ? practiceClass.description : "", sheetLines);
         yield return WaitForTable();
         PlayPractice(false);
