@@ -617,13 +617,27 @@ public sealed partial class DungeonLayout
         if (path.Count >= 4 && growRandom.NextDouble() * 100 < growth.widePercent)
         {
             int side = growRandom.Next(2) == 0 ? 1 : -1;
+            // The cells beside the path that can be dug, then only those with another beside them: one alone (a single
+            // straight cell between two bends, or one with rock kept clear either side) was a one-cell nook in the
+            // passage's wall, a dead end 2 m deep (1.5 a floor on Dungeon1).
+            var beside = new Vector2Int?[path.Count];
             for (int i = 1; i < path.Count - 1; i++)
             {
                 var along = path[i + 1] - path[i - 1];
                 if (along.x != 0 && along.y != 0) continue;   // a bend
                 var perpendicular = new Vector2Int(-Math.Sign(along.y), Math.Sign(along.x)) * side;
                 var q = path[i] + perpendicular;
-                if (Inner(q) && occupant[q.x, q.y] == EmptyCell && !Halo(q)) Dig(q, owner);
+                if (Inner(q) && occupant[q.x, q.y] == EmptyCell && !Halo(q)) beside[i] = q;
+            }
+            // Open beside it once dug: the path's cell, floor already there, or another cell to be dug.
+            var toDig = new HashSet<Vector2Int>();
+            foreach (var q in beside) if (q.HasValue) toDig.Add(q.Value);
+            foreach (var q in beside)
+            {
+                if (!q.HasValue) continue;
+                int open = 0;
+                foreach (var d in Directions) { var n = q.Value + d; if (toDig.Contains(n) || InBounds(n) && occupant[n.x, n.y] != EmptyCell) open++; }
+                if (open >= 2) Dig(q.Value, owner);
             }
         }
         WidenFromPairedDoor(a, b, path, owner);
