@@ -178,7 +178,9 @@ public class CombatTestBot : MonoBehaviour
                             string way = parts.Length > 1 ? parts[1] : "none";
                             var move = way == "forward" ? Vector2.up : way == "back" ? Vector2.down : way == "left" ? Vector2.left : way == "right" ? Vector2.right : Vector2.zero;
                             var dash = player.GetComponent<PlayerDash>();
-                            Log("dash " + way + " " + (dash != null && dash.TryStart(move) ? "started" : "refused"));
+                            bool started = dash != null && dash.TryStart(move);
+                            Log("dash " + way + " " + (started ? "started" : "refused"));
+                            if (started) StartCoroutine(MeasureDash());
                             break;
                         }
                     case "walk":
@@ -423,6 +425,28 @@ public class CombatTestBot : MonoBehaviour
         if (enemy == null || from != EnemyState.Attack && to != EnemyState.Attack) return;
         var gap = enemy.transform.position - player.transform.position; gap.y = 0f;
         Log($"enemy swing {(to == EnemyState.Attack ? "begins" : "ends")} at {gap.magnitude:0.00} m");
+        if (to == EnemyState.Attack) StartCoroutine(MeasureBlow());
+    }
+
+    // Where a dash took the player, in the view's own frame as it began: metres to the right and metres forward.
+    IEnumerator MeasureDash()
+    {
+        var yaw = player.Look != null ? player.Look.YawTransform : player.transform;
+        Vector3 from = player.transform.position, right = yaw.right, forward = yaw.forward;
+        right.y = 0f; forward.y = 0f; right.Normalize(); forward.Normalize();
+        yield return new WaitForSeconds(.5f);
+        Vector3 moved = player.transform.position - from; moved.y = 0f;
+        Log($"  dash moved {Vector3.Dot(moved, right):0.00} m right, {Vector3.Dot(moved, forward):0.00} m forward");
+    }
+
+    // How far the enemy's middle is from the player's as its blow is due (the least windup after the swing began): the
+    // distance an enemy's reach is held against.
+    IEnumerator MeasureBlow()
+    {
+        yield return new WaitForSeconds(CombatManager.HasInstance ? CombatManager.Instance.enemyMinimumWindup : .5f);
+        if (enemy == null || player == null) yield break;
+        var gap = enemy.transform.position - player.transform.position; gap.y = 0f;
+        Log($"enemy blow due at {gap.magnitude:0.00} m");
     }
 
     IEnumerator MeasurePush(Transform target, Vector3 from)

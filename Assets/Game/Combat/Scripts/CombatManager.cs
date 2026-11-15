@@ -141,11 +141,20 @@ public partial class CombatManager : Singleton<CombatManager>
     [Min(.01f), Tooltip("Seconds the lunge takes.")]
     public float strikeLungeTime = .12f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
-    [Tooltip("The table player walks slower while their own swing winds up and strikes (light, combo and heavy, a held charge too), and at full speed again once its hitbox has closed. The dash is not slowed. Off: swinging never slows walking.")]
+    [Tooltip("The table player walks slower while their own swing plays (light, combo and heavy, a held charge too). The dash is not slowed. Off: swinging never slows walking.")]
     public bool swingSlowsPlayer = true;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
-    [Range(.1f, 1f), Tooltip("Share of the walking speed kept while a swing winds up and strikes (0.5: half speed).")]
+    [Range(.1f, 1f), Tooltip("Share of the walking speed kept while a swing plays (0.5: half speed).")]
     public float swingMoveSpeed = .5f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
+    [Tooltip("On: the slow lasts the whole swing, its recovery too, until the arm hands back to rest, so a combo pressed hit after hit is slowed throughout. Off: only through each hit's windup and strike, full speed again once its hitbox has closed (about half the time while pressing a combo). On doubles the distance between backing off and backing off while swinging, which is what an enemy's blow tells apart.")]
+    public bool swingSlowWholeSwing = true;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
+    [Range(0f, .5f), Tooltip("Seconds the walk takes to ease down to Swing Move Speed as a swing starts. 0: it drops at once. Each 0.1 s lets a player backing off cover about 3 cm more before an enemy's blow, on the first swing of a retreat only.")]
+    public float swingSlowEaseIn = .12f;
+    [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
+    [Range(0f, 1f), Tooltip("Seconds the walk takes to ease back up to full speed after a swing. 0: full speed at once.")]
+    public float swingSlowEaseOut = .25f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel")]
     [Min(0), Tooltip("Times the lunge and the camera kicks for a heavy swing.")]
     public float heavyStrikeScale = 2f;
