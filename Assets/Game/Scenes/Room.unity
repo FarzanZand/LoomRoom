@@ -79441,8 +79441,8 @@ MonoBehaviour:
   popScale: 1.25
   popSeconds: 0.5
   pulse: {fileID: 1467674559}
-  newQuestSound: 
-  doneQuestSound: 
+  newQuestSound: questNew
+  doneQuestSound: questDone
 --- !u!114 &701559100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -359843,6 +359843,18 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 61b75eddb4b8e4341a6e206cd9f51fdf, type: 3}
     data: {fileID: 0}
     volume: 1
+    pitch: 1
+  - key: questNew
+    source: 0
+    clip: {fileID: 8300000, guid: 74cf2a12fc2474c66a0da84836cf242b, type: 3}
+    data: {fileID: 0}
+    volume: 0.35
+    pitch: 1
+  - key: questDone
+    source: 0
+    clip: {fileID: 8300000, guid: 7dcfda333c2504f94a6dd8190fc3b41b, type: 3}
+    data: {fileID: 0}
+    volume: 0.3
     pitch: 1
   mixer: {fileID: 24100000, guid: 171c2312a45918546ad66f788389635e, type: 2}
   sfxPoolSize: 48

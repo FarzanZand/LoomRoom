@@ -116,9 +116,16 @@ public class QuestLogUI : MonoBehaviour
         return text.Substring(0, last) + ' ' + text.Substring(last + 1);
     }
 
+    // Several quests given or done in one moment (a run's start) play their sound once: the copies would stack.
+    static string lastSound;
+    static float lastSoundAt = -1f;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetSound() { lastSound = null; lastSoundAt = -1f; }
     static void Sound(string key)
     {
-        if (!string.IsNullOrEmpty(key) && AudioManager.HasInstance && AudioManager.Instance.HasUI(key)) AudioManager.Instance.PlayUI(key);
+        if (string.IsNullOrEmpty(key) || !AudioManager.HasInstance || !AudioManager.Instance.HasUI(key)) return;
+        if (key == lastSound && Time.unscaledTime - lastSoundAt < .15f) return;
+        lastSound = key; lastSoundAt = Time.unscaledTime;
+        AudioManager.Instance.PlayUI(key);
     }
 
     // The table player is the one being played: in a dungeon (dungeon-only quests show).
