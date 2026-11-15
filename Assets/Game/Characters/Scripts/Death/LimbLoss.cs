@@ -6,9 +6,16 @@ using UnityEngine.Rendering;
 // A limb that comes off (the Black Knight in the Arena: his left arm, on the third blow the player lands). The skinned
 // mesh is baked in the pose on screen and the triangles that follow the limb's bones become one physics piece thrown
 // off to its side; on the body those bones are shrunk to nothing at the joint, so the limb is gone from the mesh and a
-// stump is left. Whatever the limb held (a shield in the hand) falls with it. Blood spurts from the stump for a moment
-// and he says his line, a bark, so the fight goes on. Works on any humanoid; after it the death (DeathBurst or the
-// ragdoll) takes the body as it is.
+// stump is left. Whatever the limb held (a shield in the hand) falls with it. Blood spurts from the stump and he says
+// his line, a bark, so the fight goes on. Works on any humanoid; after it the death (DeathBurst or the ragdoll) takes
+// the body as it is.
+// The blood is comedy level (the user, 2026-11-15: "make it just be so much more, I mean, comedy levels. Also make the
+// head gush upwards when that gets chopped up too"): after the first spurt the stump jets in heartbeats for a quarter
+// of a minute, and when his head comes off the neck gushes straight up. His head is his helmet (the body has no head
+// under it): it is knocked off on a counted blow of its own (Head Hits; the user, the same day: "arm should fall of
+// after 6 hits, head should fall off after 12", after a blow to the head took it off on the first hit by HelmetPop's
+// chance, which is 0 on him now) and he fights on without it. All of it stops the moment he dies (the user: "he
+// doesn't need to keep bleeding after you killed him"): the drops in the air fall, and no more come.
 [RequireComponent(typeof(Character)), DefaultExecutionOrder(9000)]
 public class LimbLoss : MonoBehaviour
 {
@@ -34,20 +41,37 @@ public class LimbLoss : MonoBehaviour
     [Tooltip("Played once at the stump as the limb comes off (the Black Knight: Sound Effects Library > Blood Guts Bones > Blood_Squirts_01).")]
     public AudioClip bleedSound;
     [Range(0, 1)] public float bleedVolume = 1f;
-    // Doubled on 2026-11-12 (the user): twice the drops, harder, for twice as long (about 4 s).
-    [Min(0), Tooltip("Drops in the first spurt (times the character's gore amount).")] public int firstSpurt = 280;
-    [Min(0), Tooltip("Drops in each spurt after it.")] public int spurt = 80;
-    [Min(0), Tooltip("Spurts after the first; each waits a little longer than the one before (Spurt Gap, a quarter more each time).")] public int spurts = 9;
-    [Min(.02f), Tooltip("Seconds before the second spurt.")] public float spurtGap = .185f;
-    [Min(.1f), Tooltip("How hard the first spurt and the rest leave the stump (times the spray's own speed).")] public float firstSpurtSpeed = 1.8f, spurtSpeed = 1.15f;
+    [Min(1f), Tooltip("How many times as much blood leaves a wound in its first moment as after (it settles within half a second).")]
+    public float firstGout = 2.5f;
+    [Min(0), Tooltip("Seconds the stump goes on jetting. Over its last stretch it weakens to a dribble.")]
+    public float gushSeconds = 16f;
+    [Min(0), Tooltip("Drops a second at the top of a heartbeat (times the character's gore amount).")] public float gushDrops = 1800f;
+    [Min(.1f), Tooltip("Heartbeats a second: each throws the jet out far, and it sinks back before the next.")] public float gushBeats = 1.6f;
+    [Min(0), Tooltip("Metres a second the drops leave at the top of a heartbeat (7.5 carries about 3 m from shoulder height).")] public float gushSpeed = 7.5f;
+    [Range(-1f, 1f), Tooltip("How far the jet points down (-1) or up (1) as it leaves sideways.")] public float gushTilt = .3f;
+    [Range(0f, .5f), Tooltip("How far the jet fans out.")] public float gushSpread = .05f;
+    [Min(0), Tooltip("Stains the jet leaves at most, spread over its time (the floor keeps 260 in all).")] public int gushStains = 90;
     [Tooltip("Metres out from the shoulder joint, to its side, and down, where the blood leaves (under the shoulder armour, not through it).")]
     public float sprayOut = .02f, sprayDown = .05f;   // .14 and .1 started it in the air beside him (the user, 2026-11-12)
-    [Range(-1f, 1f), Tooltip("How far the spurts point down (-1) or up (1) as they leave sideways (the user, 2026-11-12: down, it looked like bleeding up through the armour).")]
-    public float sprayTilt = -.45f;
     [Min(.1f), Tooltip("The drops' size against a hit's blood (smaller and finer: the stump's spurts showed big squares).")]
     public float dropSize = .6f;
-    [Min(0), Tooltip("The splash blobs' size against a hit's (at 1 they grew with the spurt's speed to a quarter of a metre).")]
-    public float blobSize = .45f;
+
+    [Header("Head")]
+    [Min(0), Tooltip("Blows the player lands before his head comes off (his helmet, knocked off through HelmetPop, whatever part of him the blow lands on). 0: never by count.")]
+    public int headHits = 12;
+    [Tooltip("When his head comes off while he lives (a helmet on the head bone that is his whole head, knocked off on its counted blow), the neck gushes straight up and the head trails blood.")]
+    public bool neckGushes = true;
+    [Min(0), Tooltip("Seconds the neck gushes when the head is knocked off while he still fights.")] public float neckSeconds = 14f;
+    [Min(0), Tooltip("Drops a second (times the character's gore amount).")] public float neckDrops = 2600f;
+    // A tight, thick column that stays in view from sword range: at 8.5 m/s and a wide fan (the first try) it left the top
+    // of the view and came back as loose drops all over the screen, and nothing read as coming out of the neck.
+    [Min(0), Tooltip("Metres a second the drops leave the neck at the top of a heartbeat (6.3 rises about 1.3 m).")] public float neckSpeed = 6.3f;
+    [Range(0f, .5f)] public float neckSpread = .1f;
+    [Range(0f, 1f), Tooltip("How much of the neck's fountain comes in heartbeats, so the column pumps up and down (0 steady, 1 as the arm's jet).")] public float neckBeat = .6f;
+    [Min(0), Tooltip("Stains the neck's fountain leaves at most.")] public int neckStains = 110;
+    [Min(0), Tooltip("Seconds the head itself trails blood from its neck hole as it flies and where it lands.")] public float headSeconds = 3f;
+    [Min(0)] public float headDrops = 500f;
+    [Min(0), Tooltip("Metres a second the head's drops leave it.")] public float headSpeed = 3.6f;
 
     Character character;
     int hits;
@@ -55,21 +79,76 @@ public class LimbLoss : MonoBehaviour
     readonly List<Transform> shrunk = new();
     public bool Lost => lost;
 
+    // A wound that keeps bleeding: a point and a direction on a bone (or on the loose head). `up` is how much the blood
+    // is turned to straight up, whichever way the wound points. `inside` is the collider it lies within (GoreManager.Feed).
+    sealed class Wound { public Transform on; public Vector3 point, axis; public float up; public Collider inside; }
+    bool dead;   // he has died: every wound stops
+    Transform headBone, headPiece;   // the head bone and the helmet hung on it
+    Vector3 holePoint, holeAxis;     // the neck hole in the helmet's own space
+    bool headOff;
+
     void Awake() => character = GetComponent<Character>();
-    void OnEnable() => character.Damaged += OnDamaged;
-    void OnDisable() => character.Damaged -= OnDamaged;
+    void OnEnable() { character.Damaged += OnDamaged; character.Died += OnDied; }
+    void OnDisable() { character.Damaged -= OnDamaged; character.Died -= OnDied; }
+
+    void Start()
+    {
+        var anim = character.Animator;
+        headBone = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (headBone == null || headBone.parent == null) return;
+        foreach (var mr in headBone.GetComponentsInChildren<MeshRenderer>())
+            if (mr.TryGetComponent<MeshFilter>(out var filter) && filter.sharedMesh != null) { headPiece = mr.transform; break; }
+        if (headPiece == null) return;
+        holePoint = headPiece.InverseTransformPoint(headBone.position);
+        holeAxis = headPiece.InverseTransformDirection((headBone.parent.position - headBone.position).normalized);
+    }
 
     void OnDamaged(DamageInfo info)
     {
-        if (lost || info.Source is not Player || info.Blocked || info.Amount <= 0f || !character.IsAlive) return;
-        if (++hits >= hitsToLose) StartCoroutine(Cut(info));
+        if (info.Source is not Player || info.Blocked || info.Amount <= 0f || !character.IsAlive) return;
+        hits++;
+        if (!lost && hits >= hitsToLose) StartCoroutine(Cut(info));
+        if (headHits > 0 && hits == headHits && !headOff && TryGetComponent<HelmetPop>(out var helmet) && helmet.Pop(info) && stunSeconds > 0f && TryGetComponent<EnemyBrain>(out var brain))
+            brain.Stun(stunSeconds);
     }
 
     // Kept shrunk after the animation and every bone tweak of the frame.
     void LateUpdate()
     {
         foreach (var b in shrunk) if (b != null) b.localScale = Vector3.one * .0001f;
+        CheckHead();
     }
+
+    // ── The head ──
+
+    // The helmet has left the head bone, knocked off while he lives: the neck starts. (Thrown with the rest of him as he
+    // falls apart, nothing bleeds.)
+    void CheckHead()
+    {
+        if (headOff || !neckGushes || headPiece == null || headBone == null || headPiece.IsChildOf(headBone)) return;
+        headOff = true;
+        if (dead || !character.IsAlive) return;
+        var gore = character.data != null ? character.data.gore : null;
+        if (gore == null || !GoreManager.HasInstance) return;
+        var neck = headBone.parent;
+        Vector3 at = headBone.position, axis = (headBone.position - neck.position).normalized;
+        var neckWound = new Wound { on = neck, point = neck.InverseTransformPoint(at), axis = neck.InverseTransformDirection(axis), up = 4f, inside = GetComponent<Collider>() };
+        if (bleedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(bleedSound, at, bleedVolume);
+        StartCoroutine(Gush(neckWound, neckSeconds, neckDrops, neckSpeed, neckSpread, neckStains, neckBeat, 0f, 0f));
+        var head = new Wound { on = headPiece, point = holePoint, axis = holeAxis, up = 1.3f, inside = LooseCollider(headPiece) };
+        StartCoroutine(Gush(head, headSeconds, headDrops, headSpeed, .16f, 24, 0f, 0f, 0f));
+    }
+
+    void OnDied() => dead = true;
+
+    // The collider a loose piece lands on (the box it was given as it came off; a helmet's own are switched off).
+    static Collider LooseCollider(Transform piece)
+    {
+        foreach (var c in piece.GetComponents<Collider>()) if (c.enabled && !c.isTrigger) return c;
+        return null;
+    }
+
+    // ── The arm ──
 
     IEnumerator Cut(DamageInfo info)
     {
@@ -106,7 +185,14 @@ public class LimbLoss : MonoBehaviour
         DeathPhysics.IgnorePlayers(pieces);
         StartCoroutine(DeathPhysics.Settle(pieces, settleSeconds));
         if (stunSeconds > 0f && TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(stunSeconds);
-        StartCoroutine(Bleed(root, side));
+        var gore = character.data != null ? character.data.gore : null;
+        if (gore != null && GoreManager.HasInstance)
+        {
+            // The jet: on the bone the limb hung from, so it turns and leans with him.
+            var on = root.parent != null ? root.parent : transform;
+            var armWound = new Wound { on = on, point = on.InverseTransformPoint(stump), axis = on.InverseTransformDirection(side), up = gushTilt, inside = GetComponent<Collider>() };
+            StartCoroutine(Gush(armWound, gushSeconds, gushDrops, gushSpeed, gushSpread, gushStains, 1f, sprayOut, sprayDown));
+        }
         if (bleedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(bleedSound, stump, bleedVolume);
 
         if (lineDelay > 0f) yield return new WaitForSeconds(lineDelay);
@@ -114,18 +200,49 @@ public class LimbLoss : MonoBehaviour
             PortraitDialogueUI.Current.Bark(words.limbLostLine, character, !string.IsNullOrWhiteSpace(words.bossName) ? words.bossName : character.TheNameCap, 1.6f, words.placement, true);
     }
 
-    // Spurts from just under the stump (the shrunk bone stays at the shoulder joint, inside the armour), out to the side and down.
-    IEnumerator Bleed(Transform at, Vector3 side)
+    // A wound's blood for some seconds: one stream of its own (GoreManager.Stream), fed every frame from where the wound
+    // is now, the way it points now. `beat` is how much of it comes in heartbeats (1: a jet thrown far on each beat that
+    // sinks back between them; 0: steady). It starts `outward` metres along the wound's direction and `down` under it
+    // (the arm: just under the shoulder armour, not through it). Over its last stretch it weakens to a dribble.
+    IEnumerator Gush(Wound w, float seconds, float perSecond, float speed, float spread, int stains, float beat, float outward, float down)
     {
         var gore = character.data != null ? character.data.gore : null;
-        if (gore == null || !GoreManager.HasInstance) yield break;
-        for (int i = 0; i <= spurts && at != null; i++)
+        if (gore == null || !GoreManager.HasInstance || seconds <= 0f || perSecond <= 0f || speed <= 0f) yield break;
+        var manager = GoreManager.Instance;
+        perSecond *= gore.amount;
+        // Long enough to go up, come down and reach the floor from head height.
+        float life = Mathf.Clamp(2f * speed / manager.DropGravity + .7f, .8f, 3f);
+        float average = Mathf.Lerp(1f, .5f, beat);
+        var stream = manager.Stream(gore, Mathf.CeilToInt(perSecond * life * 1.15f * Mathf.Max(1f, firstGout * .6f)) + 60, stains, perSecond * seconds * average);
+        if (stream == null) yield break;
+        float fadeSeconds = Mathf.Min(3.5f, seconds * .35f), started = Time.time, until = started + seconds, owed = 0f;
+        while (!dead && Time.time < until && w.on != null && stream != null && manager != null)
         {
-            int drops = i == 0 ? firstSpurt : spurt;
-            Vector3 from = at.position + side * sprayOut + Vector3.down * sprayDown;
-            GoreManager.Instance.SprayAt(gore, from, side + Vector3.up * sprayTilt + Random.insideUnitSphere * .2f, drops, i == 0 ? firstSpurtSpeed : spurtSpeed, dropSize, blobSize);
-            yield return new WaitForSeconds(spurtGap * (1f + i * .25f));
+            float dt = Time.deltaTime, t = Time.time - started;
+            // 1 at each heartbeat, sinking after it.
+            float pulse = Mathf.Exp(-Mathf.Repeat(t * gushBeats, 1f) * 3.2f);
+            float strength = Mathf.Lerp(1f, .22f + .78f * pulse, beat) * Mathf.Lerp(.15f, 1f, Mathf.Clamp01((until - Time.time) / Mathf.Max(.01f, fadeSeconds)));
+            owed += perSecond * strength * (1f + (firstGout - 1f) * Mathf.Exp(-t * 6f)) * dt;
+            if (owed >= 1f)
+            {
+                Vector3 axis = w.on.TransformDirection(w.axis).normalized;
+                Vector3 from = w.on.TransformPoint(w.point) + axis * outward + Vector3.down * down;
+                // A slow sway, so a fountain is never a ruled line.
+                Vector3 aim = (axis + Vector3.up * w.up + new Vector3(Mathf.Sin(t * 2.3f), 0f, Mathf.Cos(t * 1.7f)) * .06f).normalized;
+                float reach = speed * (.4f + .6f * strength);
+                // A jet's drops leave at about one speed, so it is a line in the air; a steady fountain's spread out,
+                // so it fills its whole height and falls back in a ring.
+                float slowest = Mathf.Lerp(.5f, .9f, beat);
+                for (; owed >= 1f; owed -= 1f)
+                {
+                    Vector3 velocity = (aim + Random.insideUnitSphere * spread).normalized * (reach * Random.Range(slowest, 1.05f));
+                    // Started somewhere along this frame's flight, so a fast stream is a line and not a puff a frame.
+                    manager.Feed(stream, gore, from + velocity * (Random.value * dt), velocity, dropSize, life, w.inside);
+                }
+            }
+            yield return null;
         }
+        if (stream != null) Destroy(stream.gameObject, life + .5f);
     }
 
     // The triangles of this renderer that follow the limb's bones, as one piece where they are on screen.

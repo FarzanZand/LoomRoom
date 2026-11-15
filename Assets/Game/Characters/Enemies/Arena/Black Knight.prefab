@@ -56,6 +56,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Black Knight
       objectReference: {fileID: 0}
+    - target: {fileID: 9052612283945094846, guid: 12fc5591ee45d044595ac7ada4cce424, type: 3}
+      propertyPath: chance
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -93,17 +97,28 @@ MonoBehaviour:
   settleSeconds: 5
   bleedSound: {fileID: 8300000, guid: dc30582816da7214f8e10701855684ae, type: 3}
   bleedVolume: 1
-  firstSpurt: 280
-  spurt: 80
-  spurts: 9
-  spurtGap: 0.185
-  firstSpurtSpeed: 1.8
-  spurtSpeed: 1.15
+  firstGout: 2.5
+  gushSeconds: 16
+  gushDrops: 1800
+  gushBeats: 1.6
+  gushSpeed: 7.5
+  gushTilt: 0.3
+  gushSpread: 0.05
+  gushStains: 90
   sprayOut: 0.02
   sprayDown: 0.05
-  sprayTilt: -0.45
   dropSize: 0.6
-  blobSize: 0.8
+  headHits: 12
+  neckGushes: 1
+  neckSeconds: 14
+  neckDrops: 2600
+  neckSpeed: 6.3
+  neckSpread: 0.1
+  neckBeat: 0.6
+  neckStains: 110
+  headSeconds: 3
+  headDrops: 500
+  headSpeed: 3.6
 --- !u!114 &1594286743929704932
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -236,6 +251,7 @@ MonoBehaviour:
     maxRange: 1.65
     cooldown: 2.1
     facingAngle: 45
+    movesIn: 1
     hitboxIndex: 0
     fallbackHitDelay: 0.7
     hit:
