@@ -641,8 +641,14 @@ public class EnemyAttackRunner
         var damageable = target.GetComponent<IDamageable>();
         if (damageable == null) return;
         if (Tuning != null && !Tuning.HasMeleeLineOfSight(Character, target, info.HitPoint)) return;
+        BlowLandRange = LandRange(current);
         damageable.TakeDamage(info);
+        BlowLandRange = 0f;
     }
+
+    // Co-op: while a timed melee blow is being dealt, how far it lands (a blow on another player is judged again on their
+    // own screen against it, CoopWorld.DodgedHere); 0 otherwise.
+    public float BlowLandRange { get; private set; }
 
     // ── Bow ───────────────────────────────────────────────────────────
 

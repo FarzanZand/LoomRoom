@@ -264,7 +264,12 @@ public static class CoopWorld
                 hit.slot = (byte)Mathf.Clamp(coopPlayer.SlotIndex, 0, 254);
                 if (hit.hitPoint == Vector3.zero) hit.hitPoint = target.transform.position + Vector3.up;
                 // A melee blow's locked aim, for its owner's own judgement of a dash (DodgedHere); its swing field is free.
-                if (info.Source.TryGetComponent<EnemyBrain>(out var swinger)) hit.swing = swinger.CommittedForward;
+                if (info.Source.TryGetComponent<EnemyBrain>(out var swinger))
+                {
+                    hit.swing = swinger.CommittedForward;
+                    // A timed blow's reach and where it came from, so its owner can tell they had already backed out of it.
+                    if (swinger.BlowLandRange > 0f) { hit.from = swinger.transform.position; hit.reach = swinger.BlowLandRange; }
+                }
                 coopPlayer.HitRpc(hit);
             }
             return true;
@@ -384,10 +389,18 @@ public static class CoopWorld
     // while they are dashing, or just after, and finds them clearly out of the swing's band here (no farther from its line
     // than CombatManager.enemySwingHalfWidth, as EnemyAttackRunner judges) missed: their dash beat it on their own screen.
     // Standing still, walking or strafing is judged as the host judged it.
-    const float DodgeAfterDash = .8f, DodgeMargin = .25f;
+    // Backing off is judged here too (2026-11-15, enemies step into their swing): a timed blow lands out to its reach from
+    // where the enemy stood, and the host measured from where it last saw this player, a moment behind. One that finds
+    // them, where they were as it struck (half a round trip ago, the trail), farther than that reach and ReachMargin from
+    // where the enemy stood missed them: they had backed out of it, as they would alone. Measured on a Blue Hood Skeleton
+    // with the host far off: backing off alone, its second blow came at 1.87-1.89 m (reach 1.71) and now misses in two runs of three;
+    // backing off while swinging (slowed, and stepped after) its blows came at 1.62-1.85 m and still land. The margin
+    // between the two is a few centimetres, as it is alone.
+    const float DodgeAfterDash = .8f, DodgeMargin = .25f, ReachMargin = .15f;
     static bool DodgedHere(NetDamage hit, Player player)
     {
         var src = Enemy(hit.enemy);
+        if (hit.reach > 0f && (hit.flags & 64) == 0 && Vector3.Distance(Flat(PositionAgo(player.transform.position, HalfRoundTrip())), Flat(hit.from)) > hit.reach + ReachMargin) return true;
         if (src == null || hit.direction.sqrMagnitude < .01f || (hit.flags & 64) != 0 || src.data is not EnemyData data) return false;
         // Melee only: the attack when the host says which, else an enemy with no bow or spell (it can only have swung).
         var attack = hit.attack >= 0 && hit.attack < data.attacks.Count ? data.attacks[hit.attack] : null;
@@ -426,6 +439,40 @@ public static class CoopWorld
     }
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
 
+    // A guest's own table player over the last frames, to judge a host's blow where they were as it struck.
+    static readonly Vector3[] trail = new Vector3[96];
+    static readonly float[] trailAt = new float[96];
+    static int trailHead, trailCount;
+    static void RecordTrail()
+    {
+        if (!Coop.IsGuest || !PlayerManager.HasInstance) { trailCount = 0; return; }
+        var p = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
+        if (p == null) return;
+        trailHead = (trailHead + 1) % trail.Length;
+        trail[trailHead] = p.transform.position; trailAt[trailHead] = Time.unscaledTime;
+        trailCount = Mathf.Min(trailCount + 1, trail.Length);
+    }
+    // Where the local table player was that many seconds ago (the oldest kept, if longer; now, with none kept).
+    static Vector3 PositionAgo(Vector3 now, float seconds)
+    {
+        if (trailCount == 0 || seconds <= 0f) return now;
+        float at = Time.unscaledTime - seconds;
+        int k = trailHead;
+        for (int i = 0; i < trailCount; i++)
+        {
+            k = (trailHead - i + trail.Length) % trail.Length;
+            if (trailAt[k] <= at) return trail[k];
+        }
+        return trail[k];
+    }
+    static float HalfRoundTrip()
+    {
+        var net = NetworkManager.Singleton;
+        if (net == null || net.NetworkConfig == null || net.NetworkConfig.NetworkTransport == null || !net.IsClient || net.IsServer) return 0f;
+        try { return Mathf.Min(.4f, net.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId) * .0005f); }
+        catch { return 0f; }
+    }
+
     // Deflect for another player's stand-in: their shield is up with Deflect learned (they say so) and faces the shot
     // (the stand-in turns with their look), as PlayerCombat.Deflects judges it for the player themselves. The host's
     // real shot goes back and hurts; a guest's copy bounces the same way, so everyone sees it.
@@ -452,6 +499,7 @@ public static class CoopWorld
 
     public static void Tick()
     {
+        RecordTrail();
         if (Coop.IsGuest && waiting.Count > 0 && TableManager.Loader != null && !TableManager.Loader.Busy)
         {
             var events = waiting.ToArray(); waiting.Clear();

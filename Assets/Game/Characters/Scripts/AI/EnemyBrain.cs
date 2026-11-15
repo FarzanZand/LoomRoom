@@ -163,6 +163,8 @@ public class EnemyBrain : MonoBehaviour
     EnemyAttackRunner attackRunner;
     // Co-op: the aim its last swing locked (CoopWorld.DodgedHere).
     public Vector3 CommittedForward => attackRunner != null ? attackRunner.CommittedForward : Vector3.zero;
+    // Co-op: how far the timed melee blow being dealt right now lands (0: none, or a hitbox's blow).
+    public float BlowLandRange => attackRunner != null ? attackRunner.BlowLandRange : 0f;
     float recoveryUntil, staggerImmuneUntil;
     // Footwork: the step back after a swing, and this enemy's own rhythm of stepping in and back while it circles.
     float stepBackUntil, swayPeriod = -1f, swayPhase;

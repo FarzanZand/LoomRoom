@@ -47,6 +47,8 @@ public struct NetDamage : INetworkSerializable
     public FixedString128Bytes weapon;
     public bool spared;           // host -> guests: it took no health (the boss shielded during a beam: IMMUNE)
     public bool finisher;         // the combo's last hit (DamageInfo.Finisher: Heavy without being a charged heavy attack)
+    public Vector3 from;          // host -> a struck player: where the enemy stood as its timed blow landed
+    public float reach;           // host -> a struck player: how far that blow lands (0: not a timed melee blow)
 
     const byte Heavy = 1, Critical = 2, Backstab = 4, Magic = 8, Blocked = 16, Parried = 32, FromEffect = 64, DiedFlag = 128;
     public bool Died { get => (flags & DiedFlag) != 0; set => flags = (byte)(value ? flags | DiedFlag : flags & ~DiedFlag); }
@@ -91,6 +93,7 @@ public struct NetDamage : INetworkSerializable
         s.SerializeValue(ref hitPoint); s.SerializeValue(ref direction); s.SerializeValue(ref swing);
         s.SerializeValue(ref knockback); s.SerializeValue(ref flags); s.SerializeValue(ref attack);
         s.SerializeValue(ref health); s.SerializeValue(ref stun); s.SerializeValue(ref weapon); s.SerializeValue(ref spared); s.SerializeValue(ref finisher);
+        s.SerializeValue(ref from); s.SerializeValue(ref reach);
     }
 }
 
