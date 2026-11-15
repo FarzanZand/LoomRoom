@@ -31,8 +31,9 @@ public partial class AssetStudioWindow
     {
         const float bar = 34f, buttonW = 220f;
         var strip = new Rect(r.x, r.y, r.width, bar);
-        if (GUI.Toggle(new Rect(strip.x, strip.y, buttonW, 28), showingStats, "  Stats   <color=#a9a49a>attributes, skills</color>", showingStats ? cellSelected : cell) && !showingStats) OpenStats();
-        if (GUI.Toggle(new Rect(strip.x + buttonW + 6, strip.y, buttonW, 28), showingSubstats, $"  Substats   <color=#a9a49a>{SubstatCount} on gear</color>", showingSubstats ? cellSelected : cell) && !showingSubstats) OpenSubstats();
+        // Tab buttons, as Balance, Dialogue and every other switch between panels in the window has.
+        if (GUI.Toggle(new Rect(strip.x, strip.y, buttonW, 28), showingStats, "Stats   <color=#a9a49a>attributes, skills</color>", StudioSkin.Tab) && !showingStats) OpenStats();
+        if (GUI.Toggle(new Rect(strip.x + buttonW + 6, strip.y, buttonW, 28), showingSubstats, $"Substats   <color=#a9a49a>{SubstatCount} on gear</color>", StudioSkin.Tab) && !showingSubstats) OpenSubstats();
         var panel = new Rect(r.x, r.y + bar, r.width, r.height - bar);
         if (showingSubstats) DrawSubstats(panel); else DrawStats(panel);
     }
@@ -53,11 +54,12 @@ public partial class AssetStudioWindow
         var rules = pm != null ? pm.classRules : null;
         Title("Stats", "The attributes and skills, what each gives, and what every class starts with. Edit any number in place.");
         if (pm == null || rules == null) { GUILayout.Label("<color=#e0a85a>No ProgressionManager with class rules found.</color>", dim); return; }
-        GUILayout.Label(inScene ? "The tracks (sheet levels, what a point gives, prices) are on the room's ProgressionManager in the open scene: save the scene after changing them. Classes and skills are assets, saved at once." : "<color=#e0a85a>The room scene isn't open: the tracks shown are the ProgressionManager prefab's, which the scene's own manager doesn't follow. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
+        GUILayout.Label(inScene ? "The tracks (sheet levels, what a point gives, prices) are on the room's ProgressionManager in the open scene (kept when the scene is saved). Classes and skills are assets, saved at once." : "<color=#e0a85a>The room scene isn't open: the tracks shown are the ProgressionManager prefab's, which the scene's own manager doesn't follow. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
         var classes = (rules.classes ?? Array.Empty<AdventurerClass>()).Where(c => c != null).ToList();
         void TrackChanged() { EditorUtility.SetDirty(pm); if (inScene) UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(pm.gameObject.scene); }
         void ClassChanged(AdventurerClass c) { EditorUtility.SetDirty(c); AssetDatabase.SaveAssetIfDirty(c); }
-        const float nameW = 150, classW = 76;
+        // Wide enough for the longest class name and the longest unit text at the window's font (they ran into each other).
+        const float nameW = 150, classW = 104, unitW = 146, bonusW = 214, milestoneW = 230;
         var head = new GUIStyle(gold) { fontSize = StudioSkin.Size - 2, wordWrap = false, clipping = TextClipping.Clip };
 
         // ── Attributes ──
@@ -68,7 +70,7 @@ public partial class AssetStudioWindow
         GUILayout.Label("Attribute", head, GUILayout.Width(nameW));
         GUILayout.Label(new GUIContent("Base", "The score with nothing bought."), head, GUILayout.Width(50));
         GUILayout.Label(new GUIContent("Levels", "Levels on the sheet (given ones included): the most the sheet raises it."), head, GUILayout.Width(56));
-        GUILayout.Label("A point above the base gives", head, GUILayout.Width(420));
+        GUILayout.Label("A point above the base gives", head, GUILayout.Width(3 * (40 + unitW) + 12));
         foreach (var c in classes) GUILayout.Label(new GUIContent(c.displayName, $"The {c.displayName}'s own points in this attribute, in its runs."), head, GUILayout.Width(classW));
         GUILayout.EndHorizontal();
         foreach (var t in pm.tracks.Where(t => t != null && t.kind == MetaTrackKind.Attribute))
@@ -78,9 +80,9 @@ public partial class AssetStudioWindow
             GUILayout.Label(t.displayName, StudioSkin.Strong, GUILayout.Width(nameW - 26));
             int bs = EditorGUILayout.DelayedIntField(t.baseScore, GUILayout.Width(44)); GUILayout.Space(6);
             int lv = Mathf.Max(1, EditorGUILayout.DelayedIntField(t.levels, GUILayout.Width(44))); GUILayout.Space(12);
-            float b1 = EditorGUILayout.DelayedFloatField(t.bonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(t.unit, t.unit), Unit, GUILayout.Width(96));
-            float b2 = EditorGUILayout.DelayedFloatField(t.secondBonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(string.IsNullOrEmpty(t.secondUnit) ? "-" : t.secondUnit, t.secondUnit), Unit, GUILayout.Width(96));
-            float b3 = EditorGUILayout.DelayedFloatField(t.thirdBonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(string.IsNullOrEmpty(t.thirdUnit) ? "-" : t.thirdUnit, t.thirdUnit), Unit, GUILayout.Width(96));
+            float b1 = EditorGUILayout.DelayedFloatField(t.bonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(t.unit, t.unit), Unit, GUILayout.Width(unitW));
+            float b2 = EditorGUILayout.DelayedFloatField(t.secondBonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(string.IsNullOrEmpty(t.secondUnit) ? "-" : t.secondUnit, t.secondUnit), Unit, GUILayout.Width(unitW));
+            float b3 = EditorGUILayout.DelayedFloatField(t.thirdBonusPerPoint, GUILayout.Width(40)); GUILayout.Label(new GUIContent(string.IsNullOrEmpty(t.thirdUnit) ? "-" : t.thirdUnit, t.thirdUnit), Unit, GUILayout.Width(unitW));
             if (bs != t.baseScore || lv != t.levels || !Mathf.Approximately(b1, t.bonusPerPoint) || !Mathf.Approximately(b2, t.secondBonusPerPoint) || !Mathf.Approximately(b3, t.thirdBonusPerPoint))
             { Undo.RecordObject(pm, "Attribute"); t.baseScore = bs; t.levels = lv; t.bonusPerPoint = b1; t.secondBonusPerPoint = b2; t.thirdBonusPerPoint = b3; TrackChanged(); }
             foreach (var c in classes)
@@ -93,7 +95,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
         GUILayout.BeginHorizontal();
-        GUILayout.Label("", GUILayout.Width(nameW + 50 + 56 + 420 + 18));
+        GUILayout.Label("", GUILayout.Width(nameW + 50 + 56 + 3 * (40 + unitW) + 12 + 18));
         foreach (var c in classes) { int sum = c.strength + c.dexterity + c.constitution + c.intelligence; GUILayout.Label($"sum {(sum > 0 ? "+" : "")}{sum}", dimLine, GUILayout.Width(classW)); }
         GUILayout.EndHorizontal();
         GUILayout.EndVertical();
@@ -105,9 +107,13 @@ public partial class AssetStudioWindow
         GUILayout.BeginVertical(StudioSkin.Inset);
         GUILayout.BeginHorizontal();
         GUILayout.Label("Skill", head, GUILayout.Width(nameW));
-        GUILayout.Label(new GUIContent("On the sheet", "Free levels / levels / ranks a level: it starts at free x ranks and reaches levels x ranks."), head, GUILayout.Width(150));
-        GUILayout.Label(new GUIContent("At rank 100", "The rank bonus (and its second bonus) at rank 100; it grows with the rank."), head, GUILayout.Width(400));
-        GUILayout.Label("Milestones", head, GUILayout.Width(170));
+        // The three boxes of "on the sheet", each named (they were three bare numbers under one title).
+        GUILayout.Label(new GUIContent("Free", "Levels given on the sheet from the start."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Lvls", "Levels the sheet has for it in all."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Each", "Ranks a level gives."), head, GUILayout.Width(33));
+        GUILayout.Label(new GUIContent("Ranks", "Where it starts and the most the sheet raises it to: free x each, levels x each."), head, GUILayout.Width(51));
+        GUILayout.Label(new GUIContent("At rank 100", "The rank bonus (and its second bonus) at rank 100; it grows with the rank."), head, GUILayout.Width(2 * (40 + bonusW) + 12));
+        GUILayout.Label("Milestones", head, GUILayout.Width(milestoneW));
         foreach (var c in classes) GUILayout.Label(new GUIContent(c.displayName, $"The {c.displayName}'s starting ranks, on top of the sheet's."), head, GUILayout.Width(classW));
         GUILayout.EndHorizontal();
         foreach (var t in pm.tracks.Where(t => t != null && t.kind == MetaTrackKind.Skill))
@@ -124,15 +130,15 @@ public partial class AssetStudioWindow
             if (s != null)
             {
                 float a = EditorGUILayout.DelayedFloatField(s.bonusAt100, GUILayout.Width(40));
-                GUILayout.Label(new GUIContent(Shown(s.bonusText, s.bonusAt100 * 100f), Shown(s.bonusText, s.bonusAt100 * 100f)), Unit, GUILayout.Width(150));
+                GUILayout.Label(new GUIContent(Shown(s.bonusText, s.bonusAt100 * 100f), Shown(s.bonusText, s.bonusAt100 * 100f)), Unit, GUILayout.Width(bonusW));
                 float e = EditorGUILayout.DelayedFloatField(s.extraAt100, GUILayout.Width(40));
                 string extra = string.IsNullOrEmpty(s.extraText) ? "-" : Shown(s.extraText, s.extraFlat ? s.extraAt100 : s.extraAt100 * 100f);
-                GUILayout.Label(new GUIContent(extra, extra), Unit, GUILayout.Width(150));
+                GUILayout.Label(new GUIContent(extra, extra), Unit, GUILayout.Width(bonusW));
                 if (!Mathf.Approximately(a, s.bonusAt100) || !Mathf.Approximately(e, s.extraAt100)) { Undo.RecordObject(s, "Skill bonus"); s.bonusAt100 = a; s.extraAt100 = e; EditorUtility.SetDirty(s); AssetDatabase.SaveAssetIfDirty(s); }
             }
-            else GUILayout.Label("<color=#e0a85a>no skill data</color>", new GUIStyle(dim) { richText = true }, GUILayout.Width(400));
+            else GUILayout.Label("<color=#e0a85a>no skill data</color>", new GUIStyle(dim) { richText = true }, GUILayout.Width(2 * (40 + bonusW) + 12));
             string ms = t.milestones == null || t.milestones.Count == 0 ? "-" : string.Join(", ", t.milestones.Select(m => $"{m.value} {m.Name}"));
-            GUILayout.Label(new GUIContent(ms, ms), new GUIStyle(dimLine) { clipping = TextClipping.Clip }, GUILayout.Width(170));
+            GUILayout.Label(new GUIContent(ms, ms), new GUIStyle(dimLine) { clipping = TextClipping.Clip }, GUILayout.Width(milestoneW));
             foreach (var c in classes)
             {
                 int v = c.StartingRank(t.skill);
@@ -148,7 +154,7 @@ public partial class AssetStudioWindow
             GUILayout.EndHorizontal();
         }
         GUILayout.BeginHorizontal();
-        GUILayout.Label("", GUILayout.Width(nameW + 150 + 400 + 170 + 18));
+        GUILayout.Label("", GUILayout.Width(nameW + 150 + 2 * (40 + bonusW) + 12 + milestoneW + 18));
         var totals = classes.Select(c => c.skills?.Sum() ?? 0).ToList();
         int usual = totals.GroupBy(x => x).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault();
         for (int i = 0; i < classes.Count; i++) GUILayout.Label(totals[i] == usual ? $"total {totals[i]}" : $"<color=#e0a85a>total {totals[i]}</color>", new GUIStyle(dimLine) { richText = true }, GUILayout.Width(classW));

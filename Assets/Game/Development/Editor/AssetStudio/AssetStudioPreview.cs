@@ -205,6 +205,9 @@ public class AssetStudioPreview : IDisposable
 
     public void Draw(Rect r, EditorWindow window)
     {
+        // A window squeezed to nothing (or not laid out yet) has no room to draw in: a render texture of no width
+        // fails with errors in the console.
+        if (r.width < 8 || r.height < 8) return;
         EditorGUI.DrawRect(r, Backgrounds[background]);
         switch (mode)
         {
@@ -275,7 +278,7 @@ public class AssetStudioPreview : IDisposable
     {
         var bar = new Rect(r.x + 8, r.y + 6, 255, 18);
         look = (Look)GUI.Toolbar(bar, (int)look, LookNames, EditorStyles.miniButton);
-        var d = new Rect(bar.xMax + 6, bar.y, 86, 18);
+        var d = new Rect(bar.xMax + 6, bar.y, 112, 18);   // wide enough for its words in the window's font
         showDensity = GUI.Toggle(d, showDensity, new GUIContent("Texel density", "Every texel as a checker square, tinted by texels per metre: green on the target, blue fewer, red more"), EditorStyles.miniButton);
         if (!showDensity) return;
         var line = new Rect(r.x + 8, bar.yMax + 4, 400, 18);

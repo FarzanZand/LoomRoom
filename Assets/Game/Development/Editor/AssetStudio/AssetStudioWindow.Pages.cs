@@ -47,8 +47,8 @@ public partial class AssetStudioWindow
                     GUILayout.Label("Eaten at the tavern once a run; it lasts until the run ends. Write Effect Text as the screen should say it.", dim);
                     break;
                 case TableLevelData level:
-                    GUILayout.Label("Levels have their own page, with their run, rooms and look.", dim);
-                    if (GUILayout.Button("Open " + level.name + "'s page", GUILayout.Height(30), GUILayout.Width(280))) OpenLevel(level, -1);
+                    GUILayout.Label("A level is made in Dungeon: its floors, rooms, look, loot and difficulty.", dim);
+                    if (GUILayout.Button("Open " + level.name + " in Dungeon", GUILayout.Height(30), GUILayout.Width(280))) OpenLevel(level, -1);
                     break;
                 case DungeonBiome biome:
                     GUILayout.Label("A biome is edited on the page of a level that runs it.", dim);

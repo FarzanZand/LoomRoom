@@ -432,8 +432,12 @@ public partial class AssetStudioWindow
         }
         GUILayout.EndVertical();
         GUILayout.Space(6);
+        // Each stage's own step is the dungeon's: shown here, changed on its Difficulty page.
         pageWidth = wide ? left : keep;
+        if (GUILayout.Button(new GUIContent("Each stage's step: change in Dungeon > Difficulty", "The difficulty jump, Damage x and elites of each stage belong to the dungeon."), GUILayout.Width(pageWidth), GUILayout.Height(24))) { OpenDungeonAt(l.data, WholeRun); GoTo("difficulty", l.data.balance); }
+        GUI.enabled = false;
         StageSteps(l);
+        GUI.enabled = true;
         pageWidth = keep;
         GUILayout.EndVertical();
         if (wide) GUILayout.Space(12); else GUILayout.Space(8);

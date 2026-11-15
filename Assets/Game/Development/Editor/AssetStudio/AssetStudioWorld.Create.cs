@@ -632,8 +632,13 @@ public static partial class AssetStudioWorld
         }
 
         // A new step, keeping the prefabs as they are now. Calls within the same moment (one button) join one step.
+        // A step was begun in this editor session: the window offers its Undo only then (a step left on disk from an
+        // earlier session stayed on every World page as a banner, about a place deleted weeks ago).
+        public static bool MadeThisSession => UnityEditor.SessionState.GetBool("LoomRoom.Studio.UndoThisSession", false);
+
         public static void Begin(string name, params string[] prefabs)
         {
+            UnityEditor.SessionState.SetBool("LoomRoom.Studio.UndoThisSession", true);
             var steps = Steps;
             if (open == null || !steps.Contains(open) || EditorApplication.timeSinceStartup - openedAt > .5)
             {

@@ -41,6 +41,18 @@ public partial class AssetStudioWindow
         }
     }
 
+    // The Dungeon view on this level: at a stage's floor page, or (WholeRun) on the run's first page.
+    const int WholeRun = int.MinValue;
+    void OpenDungeonAt(TableLevelData level, int stage)
+    {
+        if (level == null) return;
+        studioView = StudioView.Dungeon;
+        dungeonPath = AssetDatabase.GetAssetPath(level);
+        var st = stage == WholeRun ? null : World.LevelOf(level)?.RunStages.FirstOrDefault(s => s.index == stage);
+        if (st != null) GoTo("floor:" + st.index, st.biome != null ? (UnityEngine.Object)st.biome : level);
+        else GoTo("timeline", level);
+    }
+
     void OpenDungeon()
     {
         studioView = StudioView.Dungeon;
@@ -69,9 +81,10 @@ public partial class AssetStudioWindow
         const float playHeight = 214;
         GUILayout.BeginArea(new Rect(r.x + 10, r.y + 8, r.width - 20, r.height - playHeight - 12));
         // Which dungeon: Dungeon1 unless another is picked.
-        var dungeons = World.levels.Where(x => !x.tool && x.data != null && x.data.IsDungeon).OrderBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
+        // Every dungeon, the test levels (the intro's, the debug arenas) last: this is the one place a level is made.
+        var dungeons = World.levels.Where(x => x.data != null && x.data.IsDungeon).OrderBy(x => x.tool ? 1 : 0).ThenBy(x => x.act == 0 ? 99 : x.act).ThenBy(x => x.order).Select(x => x.data).ToList();
         int at = Mathf.Max(0, dungeons.IndexOf(d));
-        int pick = EditorGUILayout.Popup(at, dungeons.Select(x => DungeonLabel(x)).ToArray());
+        int pick = EditorGUILayout.Popup(at, dungeons.Select(x => DungeonLabel(x) + (World.LevelOf(x) is AssetStudioWorld.Level known && known.tool ? "  · test level" : "")).ToArray());
         if (dungeons.Count > 0 && pick != at) { dungeonPath = AssetDatabase.GetAssetPath(dungeons[pick]); GoTo("timeline", dungeons[pick]); }
         if (l == null) { GUILayout.Label("No dungeon to show.", dim); GUILayout.EndArea(); DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), null); return; }
         dungeonListScroll = GUILayout.BeginScrollView(dungeonListScroll);
@@ -87,7 +100,16 @@ public partial class AssetStudioWindow
             string what = st.biome == null ? "<color=#e0a85a>no biome</color>" : st.biome.name + (st == guardianStage ? "  ·  boss" : "");
             PageButton("floor:" + st.index, floors, what, st.biome);
         }
-        PageButton("tavern", "The tavern", "on every floor: food, rumours, rest", d.baseBiome != null ? d.baseBiome.shopRoom : null);
+        // More floors: a stage of a biome, new or one there is.
+        if (GUILayout.Button(new GUIContent("<color=#b8ae9c>+ Add floors...</color>", "A new stage at the end of the run: floors of a new biome, or of a biome there is."), cell, GUILayout.Height(24)))
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Floors of a new biome..."), false, () => { StartForm(WorldPane.NewBiome); formLevel = d; });
+            menu.AddSeparator("");
+            foreach (var b in World.biomes) { var biome = b; menu.AddItem(new GUIContent("Floors of/" + b.name), false, () => { AssetStudioWorld.AddStage(d, biome); RefreshWorld(); }); }
+            menu.ShowAsContext();
+        }
+        PageButton("tavern", "The tavern", TavernFloors(d) + ": food, rumours, rest", d.baseBiome != null ? d.baseBiome.shopRoom : null);
         if (guardianStage != null) PageButton("boss", "The boss", guardianStage.biome.guardian.boss.name, guardianStage.biome.guardian.boss);
         GUILayout.Space(8);
         GUILayout.Label("THE WHOLE DUNGEON", gold);
@@ -98,6 +120,7 @@ public partial class AssetStudioWindow
         PageButton("difficulty", "Difficulty", "balance, health and damage by floor", d.balance);
         PageButton("words", "The Dungeon Master", "what he says in this dungeon", null);
         PageButton("sound", "Music and sound", "", null);
+        PageButton("look", "Look", "the room's light, the default style", d.baseBiome);
         GUILayout.EndScrollView();
         GUILayout.EndArea();
         DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), l);
@@ -208,11 +231,12 @@ public partial class AssetStudioWindow
                 case "timeline": TimelinePage(l); break;
                 case "words": WordsPage(l); break;
                 case "sound": SoundPage(l); break;
+                case "look": LookPage(l); break;
                 default: OverviewPage(l); break;
             }
         }
         finally { GUILayout.EndScrollView(); GUILayout.EndArea(); }
-        if (AssetPreview.IsLoadingAssetPreviews()) Repaint();
+        if (PicturesShown && AssetPreview.IsLoadingAssetPreviews()) Repaint();
     }
 
     // A page's header: its title, a line under it, and its play buttons on the right.
@@ -253,7 +277,7 @@ public partial class AssetStudioWindow
         Section("THE RUN, FLOOR BY FLOOR");
         GUILayout.Label("Click a floor to change what is on it.", dim);
         var guardian = GuardianStage(l);
-        const float w = 176, h = 196;
+        const float w = 208, h = 226;   // room for four lines under the picture (the boss's line ran out of the card)
         GUILayout.BeginHorizontal();
         foreach (var st in l.RunStages)
         {
@@ -273,7 +297,7 @@ public partial class AssetStudioWindow
                 string lines = $"{kinds} kinds of enemy, {b.minEnemiesPerRoom}-{b.maxEnemiesPerRoom} a room\n{rooms} hand-built rooms\n" +
                     (b.merchantChance >= 1 ? "a tavern" : b.merchantChance > 0 ? $"a tavern {b.merchantChance * 100:0}% of the time" : "no tavern") +
                     (st == guardian ? $"\n<color=#e24b4a>{b.guardian.boss.name} waits at the end</color>" : "");
-                GUI.Label(new Rect(card.x + 10, pic.yMax + 4, card.width - 20, 74), lines, new GUIStyle(dim) { richText = true, wordWrap = true });
+                GUI.Label(new Rect(card.x + 10, pic.yMax + 4, card.width - 20, h - 44 - 74 - 10), lines, new GUIStyle(dim) { richText = true, wordWrap = true });
             }
             if (Event.current.type == EventType.MouseDown && card.Contains(Event.current.mousePosition)) { GoTo("floor:" + st.index, b); Event.current.Use(); }
             GUILayout.Space(6);
@@ -318,6 +342,8 @@ public partial class AssetStudioWindow
         GUILayout.Label("The pieces drop in from the far end toward the entrance, the entrance slams down last, then the lamps come on.", dim);
         Fields(reveal, "cascadeSeconds", "variety", "entrancePause", "entranceShake", "lightsSeconds");
         if (reveal != null && GUILayout.Button("Every build setting...", GUILayout.Width(200), GUILayout.Height(24))) ShowAsset(reveal);
+
+        LayoutSection(d, false);   // generated, rooms in a row, or a map template
 
         Section("THE FIRST ROOM");
         GUILayout.BeginHorizontal();
@@ -382,12 +408,40 @@ public partial class AssetStudioWindow
             GUILayout.Label("Floors in this stage", dim, GUILayout.Width(130));
             int n = EditorGUILayout.DelayedIntField(stage.floors, GUILayout.Width(40));
             GUILayout.Space(12);
-            bool boss = GUILayout.Toggle(stage.boss, new GUIContent(" Boss on its last floor", "Its biome's guardian waits there."), GUILayout.Width(190));
+            bool boss = EditorGUILayout.ToggleLeft(new GUIContent("Boss on its last floor", "Its biome's guardian waits there."), stage.boss, GUILayout.Width(210));
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             if (n != stage.floors || boss != stage.boss) SetStage(d, st.index, n, boss);
+            // Its place in the run.
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("In the run", dim, GUILayout.Width(130));
+            GUI.enabled = st.index > 0;
+            if (GUILayout.Button(new GUIContent("Earlier", "These floors come one stage earlier in the run."), GUILayout.Width(80), GUILayout.Height(22))) { AssetStudioWorld.MoveStage(d, st.index, -1); RefreshWorld(); GoTo("floor:" + (st.index - 1), b); GUIUtility.ExitGUI(); }
+            GUI.enabled = st.index < d.stages.Length - 1;
+            if (GUILayout.Button(new GUIContent("Later", "These floors come one stage later in the run."), GUILayout.Width(80), GUILayout.Height(22))) { AssetStudioWorld.MoveStage(d, st.index, 1); RefreshWorld(); GoTo("floor:" + (st.index + 1), b); GUIUtility.ExitGUI(); }
+            GUI.enabled = true;
+            GUILayout.Space(12);
+            if (GUILayout.Button(new GUIContent("Take off the run", "These floors leave the run. The biome itself stays, and can be added again."), GUILayout.Width(150), GUILayout.Height(22))
+                && EditorUtility.DisplayDialog("Take off the run", $"Take {b.name} ({FloorsLabel(st).ToLowerInvariant()}) off {d.name}'s run? The biome itself stays.", "Take off", "Keep"))
+            { RemoveStage(d, st.index); GoTo("timeline", d); GUIUtility.ExitGUI(); }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+        }
+        else if (st.IsBase && !l.Staged)
+        {
+            // A level with no stages: its floors and boss are the level's own.
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Floors", dim, GUILayout.Width(130));
+            int n = EditorGUILayout.DelayedIntField(d.floors, GUILayout.Width(40));
+            GUILayout.Space(12);
+            bool boss = EditorGUILayout.ToggleLeft(new GUIContent("Boss on its last floor", "Its biome's guardian waits there."), d.bossOnLastFloor, GUILayout.Width(210));
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+            if (n != d.floors || boss != d.bossOnLastFloor) SetBaseRun(d, n, boss);
         }
         BiomeKind(b);
+        Fields(b, "roomCount", "lightRadius");
+        GUILayout.Label("Room Count and Light Radius 0: the dungeon's own (The way in; the Lighting Manager).", dim);
 
         Section("WHAT YOU MEET HERE");
         EnemyRows(b, st.firstFloor, st.lastFloor);
@@ -489,20 +543,30 @@ public partial class AssetStudioWindow
         menu.ShowAsContext();
     }
 
+    // An enemy's picture in a slot. With Pictures off (the sidebar's switch) it takes no room: the row is its name.
     void EnemyPicture(GameObject enemy, float size)
     {
+        if (!PicturesShown) { GUILayout.Space(2); return; }
         var r = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
         GUI.DrawTexture(r, StudioSkin.Slot);
-        var pic = enemy != null ? AssetPreview.GetAssetPreview(enemy) ?? AssetPreview.GetMiniThumbnail(enemy) : null;
+        var pic = Picture(enemy);
         if (pic != null) GUI.DrawTexture(new Rect(r.x + 2, r.y + 2, r.width - 4, r.height - 4), pic, ScaleMode.ScaleToFit);
     }
 
-    // A room template's picture at this size; returns its rect.
+    // A room template's picture at this size; returns its rect. With Pictures off it is a small slot to click (its
+    // kind's badge in it, drawn by the caller or here), and the room is seen in the preview once clicked.
     Rect RoomPicture(GameObject room, float w, float h)
     {
+        if (!PicturesShown)
+        {
+            var small = GUILayoutUtility.GetRect(36, 36, GUILayout.Width(36), GUILayout.Height(36));
+            GUI.DrawTexture(small, StudioSkin.Slot);
+            if (room == null) GUI.Label(small, "-", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
+            return small;
+        }
         var r = GUILayoutUtility.GetRect(w, h, GUILayout.Width(w), GUILayout.Height(h));
         GUI.DrawTexture(r, StudioSkin.Slot);
-        var pic = room != null ? AssetPreview.GetAssetPreview(room) : null;
+        var pic = Picture(room, false);
         if (pic != null) GUI.DrawTexture(new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8), pic, ScaleMode.ScaleToFit);
         else GUI.Label(r, room != null ? room.name : "none", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
         return r;
@@ -560,13 +624,36 @@ public partial class AssetStudioWindow
         return new EnemyNumbers { health = hp * wideHealth, damage = dmg * wideDamage, armor = arm, xp = data is EnemyData e ? e.experience : 0 };
     }
 
+    // ── Look ──
+
+    // What every floor shares: the bedroom's light while the dungeon is on the table, a board's light, and the styles
+    // every floor falls back on (the base biome's). A floor's own styles and lighting are on its page.
+    void LookPage(AssetStudioWorld.Level l)
+    {
+        PageHeader("Look", "What every floor shares: how the bedroom looks while this dungeon is on the table, and the room styles every floor falls back on. A floor's own styles and lighting are on its page.");
+        LookTab(l);
+    }
+
     // ── The tavern ──
+
+    // Which of the dungeon's floors have a tavern, in words, as the game decides it (TableLevelData.MerchantChance: the
+    // level's Tavern Every, then the floor's biome's chance): "on floors 2 and 4", "on every floor", "on no floor".
+    static string TavernFloors(TableLevelData d)
+    {
+        int floors = Mathf.Max(1, d.FloorCount);
+        var has = Enumerable.Range(1, floors).Where(f => d.MerchantChance(f) > 0f).ToList();
+        if (has.Count == 0) return "on no floor";
+        bool sure = has.All(f => d.MerchantChance(f) >= 1f);
+        string which = has.Count == floors ? "on every floor" : has.Count == 1 ? "on floor " + has[0]
+            : "on floors " + string.Join(", ", has.Take(has.Count - 1)) + " and " + has[has.Count - 1];
+        return sure ? which : which + " (by chance)";
+    }
 
     void TavernPage(AssetStudioWorld.Level l)
     {
         var d = l.data;
         var room = d.baseBiome != null ? d.baseBiome.shopRoom : null;
-        PageHeader("The tavern", "A walled-off room behind a shield door on the floors that have one (the level's Tavern Every): the keeper's wares, a hot meal, rumours and a fire to rest by.",
+        PageHeader("The tavern", $"A walled-off room behind a shield door, {TavernFloors(d)}: the keeper's wares, a hot meal, rumours and a fire to rest by.",
             ("Walk into it", "A run that opens in the tavern.", () => Toast(room != null ? GameLauncher.PlayRoom(room) : "No tavern room.")),
             ("Visit it in the arena", "The Debug arena has a tavern west of its floor.", () => { if (!DebugDungeonToolbar.StartDebug()) Toast("Unity is busy: try again in a moment."); }));
 
@@ -577,17 +664,33 @@ public partial class AssetStudioWindow
         GUILayout.BeginVertical();
         if (d.baseBiome != null) RoomField(d, d.baseBiome, "Tavern room", room, v => d.baseBiome.shopRoom = v);
         if (room != null && GUILayout.Button("Open to build", GUILayout.Height(26), GUILayout.Width(200))) AssetDatabase.OpenAsset(room);
-        GUILayout.Label("How often a floor has one:", dim);
+        GUILayout.EndVertical();
+        GUILayout.EndHorizontal();
+
+        // Which floors have one: the level's Tavern Every first (it rules floors out), then each floor's own chance.
+        Section("WHICH FLOORS HAVE ONE");
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(new GUIContent("A tavern every", "The level's Tavern Every: 2 puts one on floors 2, 4, 6 and on; 1 lets every floor have one. On those floors the floor's own chance below decides."), GUILayout.Width(118));
+        int every = Mathf.Max(1, EditorGUILayout.DelayedIntField(d.tavernEvery, GUILayout.Width(40)));
+        GUILayout.Label(every == 1 ? "floor" : "floors", dim, GUILayout.Width(52));
+        GUILayout.Label($"<color=#e8c46a>In this dungeon: {TavernFloors(d)}.</color>", new GUIStyle(StudioSkin.Label) { richText = true });
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+        if (every != d.tavernEvery) { Undo.RecordObject(d, "Tavern every"); d.tavernEvery = every; EditorUtility.SetDirty(d); AssetDatabase.SaveAssetIfDirty(d); }
+        GUILayout.Label("Chance on a floor that can have one:", dim);
         foreach (var st in l.RunStages.Where(s => s.biome != null))
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label($"{FloorsLabel(st)} · {st.biome.name}", GUILayout.Width(200));
-            float chance = EditorGUILayout.Slider(st.biome.merchantChance, 0, 1);
+            float chance = EditorGUILayout.Slider(st.biome.merchantChance, 0, 1, GUILayout.Width(260));
+            // What that comes to on this stage's own floors.
+            var has = Enumerable.Range(st.firstFloor, st.lastFloor - st.firstFloor + 1).Where(f => d.MerchantChance(f) > 0f).ToList();
+            GUILayout.Label(has.Count == 0 ? "<color=#8f8a80>none of its floors is a tavern floor</color>"
+                : $"floor{(has.Count == 1 ? "" : "s")} {string.Join(", ", has)}{(st.biome.merchantChance < 1f ? $": {st.biome.merchantChance * 100:0}% of the time" : "")}", new GUIStyle(dim) { richText = true });
+            GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             if (!Mathf.Approximately(chance, st.biome.merchantChance)) { Undo.RecordObject(st.biome, "Tavern chance"); st.biome.merchantChance = chance; EditorUtility.SetDirty(st.biome); AssetDatabase.SaveAssetIfDirty(st.biome); }
         }
-        GUILayout.EndVertical();
-        GUILayout.EndHorizontal();
 
         var hearth = room != null ? room.GetComponentInChildren<TavernHearth>(true) : null;
         if (hearth != null)
@@ -909,12 +1012,17 @@ public partial class AssetStudioWindow
     void LootPage(AssetStudioWorld.Level l)
     {
         var d = l.data;
-        PageHeader("Loot", "What drops on these floors: the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
+        PageHeader("Loot", "What drops on these floors: every item's share floor by floor (edit its tier and weight there), the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
+
+        LootTable(l);   // AssetStudioWindow.Loot
 
         Section("GEAR BY FLOOR");
-        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", dim);
+        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", new GUIStyle(dim) { wordWrap = true }, GUILayout.Width(pageWidth));
+        // Only the rows this dungeon's floors reach are drawn as bars (the list under them holds every row, also those
+        // kept for floors a longer run would have).
+        int rowsBeyond = d.gearByFloor != null ? d.gearByFloor.Count(x => x != null && x.fromFloor > d.FloorCount) : 0;
         if (d.gearByFloor != null)
-            foreach (var row in d.gearByFloor.Where(x => x != null))
+            foreach (var row in d.gearByFloor.Where(x => x != null && x.fromFloor <= d.FloorCount))
             {
                 var shares = row.Shares; float sum = Mathf.Max(.01f, shares.Sum());
                 var bar = GUILayoutUtility.GetRect(10, 18, GUILayout.ExpandWidth(true));
@@ -931,6 +1039,7 @@ public partial class AssetStudioWindow
                     x += w;
                 }
             }
+        if (rowsBeyond > 0) GUILayout.Label($"{rowsBeyond} more row{(rowsBeyond == 1 ? "" : "s")} for floors past this dungeon's {d.FloorCount} are kept in the list below.", dim);
         Fields(d, "gearByFloor");
 
         Section("EACH FLOOR'S LOOT");
@@ -975,9 +1084,9 @@ public partial class AssetStudioWindow
         var inv = AssetDatabase.LoadAssetAtPath<GameObject>(InventoryManagerPath)?.GetComponent<InventoryManager>();
         if (inv != null)
         {
-            Section("EVERY DUNGEON: DROPS AND RARITY");
-            GUILayout.Label("InventoryManager: what each kind of source drops, the rarity steps and the whole-game multipliers.", dim);
-            Fields(inv, "dropChanceMultiplier", "enemyDropMultiplier", "rarityChanceMultiplier", "goldMultiplier", "tomeShare", "merchantRarity", "enemyDrops", "breakableDrops", "chestDrops", "rarities");
+            Section("HOW OFTEN ANYTHING DROPS");
+            GUILayout.Label("This page is about which item a drop is. How often a kill, a chest or a breakable gives one, the rarity chances, gold and the whole-game multipliers are on Balance > Drops, with what they come to on each floor.", new GUIStyle(dim) { wordWrap = true }, GUILayout.Width(pageWidth));
+            if (GUILayout.Button("Open Balance > Drops", GUILayout.Width(240), GUILayout.Height(26))) { OpenBalance(); balanceTab = "Drops"; }
         }
     }
 
@@ -1031,7 +1140,13 @@ public partial class AssetStudioWindow
         }
 
         Section("THE LEVEL'S BALANCE");
+        GUILayout.BeginHorizontal(GUILayout.Width(pageWidth));
+        GUILayout.Label("How enemies grow floor by floor. Shown here; changed on Balance > Enemies, beside the hits to kill and to die it comes to.", new GUIStyle(dim) { wordWrap = true });
+        if (GUILayout.Button("Change in Balance > Enemies", GUILayout.Width(250), GUILayout.Height(24))) { OpenBalance(); balanceTab = "Enemies"; }
+        GUILayout.EndHorizontal();
+        GUI.enabled = false;
         GrowthFields(d);
+        GUI.enabled = true;
         Section("FLOOR BY FLOOR");
         FloorTable(l);
         if (GUILayout.Button("Show ProgressionManager", GUILayout.Width(240), GUILayout.Height(24)))

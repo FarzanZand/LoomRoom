@@ -129,15 +129,112 @@ public class GoreManager : Singleton<GoreManager>
         }
     }
 
+    // ── Streams ───────────────────────────────────────────────────────
+
+    // Blood that keeps coming from one place (a stump that will not stop, LimbLoss): a spray of its own that the caller
+    // feeds drop by drop (Feed), so a fountain of many seconds is one particle system and not one a spurt. It lies in
+    // world space and goes with the floor. It leaves at most `stains` stains, spread over the `expectedDrops` it will be
+    // fed, so its pool builds up while it runs and then stays: left to the floor's own chance it would take all of the
+    // floor's stains in a second and keep moving them about. null when the creature has no blood to spray.
+    // A wound lies inside its body's own collider, and a drop that starts inside a collider dies there (measured: of a
+    // jet from the Black Knight's shoulder, inside his capsule, one drop in ten got out). So a stream has a second spray
+    // under it that collides with nothing, for the stretch inside the body and StreamClear metres beyond it: Feed puts
+    // a short-lived drop there and starts the real one where that ends. Beyond it, because a body that steps forward
+    // runs its collider over drops that have only just left it (the Black Knight's neck fountain came and went with
+    // his footwork until they were handed over well clear of him).
+    // A drop that falls right by the eye would fill a corner of the screen as one square: no drop of a stream is drawn
+    // larger than this share of the view (a drop two metres off is far under it).
+    const float StreamDropOnScreen = .016f;
+    const float StreamClear = .45f;
+
+    public ParticleSystem Stream(GoreProfile gore, int mostDrops, int stains, float expectedDrops)
+    {
+        if (gore == null || gore.kind == BloodKind.None || gore.kind == BloodKind.BoneDust || sprayPrefab == null) return null;
+        var go = Instantiate(sprayPrefab.gameObject, LevelRoot());
+        go.name = "Blood stream";
+        go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        var ps = go.GetComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var main = ps.main;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.maxParticles = Mathf.Max(1, mostDrops);
+        main.loop = true;
+        var emission = ps.emission; emission.enabled = false;
+        var shape = ps.shape; shape.enabled = false;
+        if (go.TryGetComponent<ParticleSystemRenderer>(out var drawn)) drawn.maxParticleSize = StreamDropOnScreen;
+        if (go.TryGetComponent<GoreDroplets>(out var drops))
+        {
+            drops.Color = gore.Stains ? gore.color : Color.clear;
+            drops.StainsLeft = stains;
+            drops.StainShare = Mathf.Clamp01(stains / Mathf.Max(1f, expectedDrops * Mathf.Max(.01f, stainChance)));
+            drops.SkipBodies = true;
+        }
+        var innerGo = Instantiate(sprayPrefab.gameObject, go.transform);
+        innerGo.name = "Inside the body";
+        innerGo.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+        if (innerGo.TryGetComponent<GoreDroplets>(out var innerDrops)) Destroy(innerDrops);
+        var inner = innerGo.GetComponent<ParticleSystem>();
+        inner.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        var innerMain = inner.main;
+        innerMain.simulationSpace = ParticleSystemSimulationSpace.World;
+        innerMain.maxParticles = Mathf.Max(60, mostDrops);
+        innerMain.loop = true;
+        var innerEmission = inner.emission; innerEmission.enabled = false;
+        var innerShape = inner.shape; innerShape.enabled = false;
+        var innerCollision = inner.collision; innerCollision.enabled = false;
+        if (innerGo.TryGetComponent<ParticleSystemRenderer>(out var innerDrawn)) innerDrawn.maxParticleSize = StreamDropOnScreen;
+        ps.Play(true);
+        return ps;
+    }
+
+    // How hard the spray's drops fall (the prefab's gravity), for working out how far a stream carries.
+    public float DropGravity => Physics.gravity.magnitude * (sprayPrefab != null ? sprayPrefab.main.gravityModifier.constant : 1f);
+
+    // One drop into a stream: where it starts, its velocity, its size against a hit's drops, the seconds it lives.
+    // inside: the collider of the body the wound is in, when it starts within it.
+    public void Feed(ParticleSystem stream, GoreProfile gore, Vector3 at, Vector3 velocity, float size, float life, Collider inside = null)
+    {
+        if (stream == null || gore == null || sprayPrefab == null) return;
+        if (!sizeRanges.TryGetValue(sprayPrefab, out var sizes)) { var s0 = sprayPrefab.main.startSize; sizeRanges[sprayPrefab] = sizes = new Vector2(s0.constantMin, s0.constantMax); }
+        var drop = new ParticleSystem.EmitParams
+        {
+            position = at, velocity = velocity, startLifetime = life,
+            startSize = Random.Range(sizes.x, sizes.y) * size,
+            startColor = Color.Lerp(gore.color, gore.color * .7f, Random.value),
+        };
+        float speed = velocity.magnitude;
+        if (inside != null && inside.enabled && speed > .01f)
+        {
+            // How far it flies before it collides with anything: to where it leaves the body (found by looking back at
+            // the body along its flight) and StreamClear on; from a wound just outside the body (a neck leant out
+            // past his collider), StreamClear.
+            Vector3 dir = velocity / speed;
+            float away = (inside.ClosestPoint(at) - at).magnitude, run = 0f;
+            if (away < .0003f) { if (inside.Raycast(new Ray(at + dir * 4f, -dir), out var hit, 4f)) run = Vector3.Distance(at, hit.point) + StreamClear; }
+            else if (away < StreamClear) run = StreamClear;
+            if (run > 0f)
+            {
+                float seconds = run / speed;
+                var inner = stream.transform.childCount > 0 ? stream.transform.GetChild(0).GetComponent<ParticleSystem>() : null;
+                if (inner != null) { drop.startLifetime = seconds; inner.Emit(drop, 1); }
+                drop.position = at + velocity * seconds + Vector3.down * (.5f * DropGravity * seconds * seconds);
+                drop.velocity = velocity + Vector3.down * (DropGravity * seconds);
+                drop.startLifetime = Mathf.Max(.05f, life - seconds);
+            }
+        }
+        stream.Emit(drop, 1);
+    }
+
     // ── Stains ────────────────────────────────────────────────────────
 
     // A drop landed: a stain flat on the surface, in the creature's colour, kept for the floor. On a breakable (`on`) it
     // is that object's child, so it goes when the object breaks.
-    public void Stain(Vector3 point, Vector3 normal, Color color, Transform on = null)
+    // True when a stain was left.
+    public bool Stain(Vector3 point, Vector3 normal, Color color, Transform on = null)
     {
-        if (stainMaterial == null || color.a <= 0f || Random.value > stainChance) return;
+        if (stainMaterial == null || color.a <= 0f || Random.value > stainChance) return false;
         var root = LevelRoot();
-        if (root == null) return;
+        if (root == null) return false;
         if (stainMeshes == null || stainMeshes.Length == 0) stainMeshes = BuildStainMeshes();
         block ??= new MaterialPropertyBlock();
         GameObject stain;
@@ -163,6 +260,7 @@ public class GoreManager : Singleton<GoreManager>
         renderer.SetPropertyBlock(null);
         renderer.sharedMaterial = StainShade(color, Random.Range(0, 3));
         stains.Enqueue(stain);
+        return true;
     }
 
     Material StainShade(Color color, int shade)

@@ -151,7 +151,7 @@ public partial class AssetStudioWindow
         if (f.bossFloor) lines.Add($"<color=#e24b4a>{b.guardian.boss.name}</color>" + (b.guardian.arena != null ? " in " + b.guardian.arena.name : ""));
         GUILayout.Label(string.Join("\n", lines), new GUIStyle(dim) { richText = true, wordWrap = true }, GUILayout.Width(inner));
         if (GUILayout.Button(new GUIContent("Its rooms...", "This floor in World's Rooms tab: every room that can come up here."), GUILayout.Height(22)))
-        { OpenLevel(d, -1); levelTab = RoomsTabIndex; roomsFloor = f.floor; }
+        { GoTo("rooms"); roomsFloor = f.floor; }
 
         // loot
         TimelineSection("LOOT");

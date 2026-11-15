@@ -63,7 +63,7 @@ public partial class AssetStudioWindow
         var quests = AllQuests(pm);
         int count = quests.Count + (intro != null ? intro.roomQuests.Count(q => q != null) : 0);
         Title("Quests", $"{count} quests: the short tasks the quest log shows until they are done, in the order a player meets them. Edit a quest's text in place.");
-        GUILayout.Label(inScene ? "The quests are on the room's ProgressionManager and IntroController in the open scene: save the scene after changing a text." : "<color=#e0a85a>The room scene isn't open: the quests shown are the ProgressionManager prefab's, and the intro's practice quests aren't shown. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
+        GUILayout.Label(inScene ? "The quests are on the room's ProgressionManager and IntroController in the open scene (kept when the scene is saved)." : "<color=#e0a85a>The room scene isn't open: the quests shown are the ProgressionManager prefab's, and the intro's practice quests aren't shown. Open Room.unity to edit the ones the game reads.</color>", Wrapped, GUILayout.Width(pageWidth));
         if (Application.isPlaying) GUILayout.Label("<color=#6fd46a>Playing: each quest's state is shown, and the buttons give, complete or reset it.</color>", new GUIStyle(dim) { richText = true });
         var head = new GUIStyle(gold) { fontSize = StudioSkin.Size - 2 };
         float textW = Mathf.Clamp(pageWidth * .3f, 220, 380), ruleW = Mathf.Max(160, (pageWidth - textW - 90 - 120 - 200) / 2f);

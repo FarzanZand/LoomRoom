@@ -166,14 +166,15 @@ public partial class AssetStudioWindow
     void DialogueStyles()
     {
         if (dialogueArea != null) return;
-        dialogueArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = 13, padding = new RectOffset(6, 6, 5, 5) };
+        dialogueArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = StudioSkin.Size, padding = new RectOffset(6, 6, 4, 4) };   // the window's own size: the pixel font is uneven at any other
         dialogueArea.normal.textColor = dialogueArea.focused.textColor = dialogueArea.hover.textColor = new Color(.93f, .91f, .87f);
-        dialogueHeader = new GUIStyle(EditorStyles.boldLabel) { fontSize = 13, richText = true };
+        dialogueHeader = new GUIStyle(EditorStyles.boldLabel) { fontSize = StudioSkin.Size, richText = true };
         dialogueWhen = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true, richText = true, normal = { textColor = new Color(.66f, .64f, .6f) } };
         dialogueSmall = new GUIStyle(EditorStyles.miniButton) { fontSize = 11, padding = new RectOffset(2, 2, 1, 1) };
     }
 
-    const float DialogueButtons = 310;   // the controls at the right of each line
+    const float DialogueButtons = 310;   // the controls at the right of each line, stacked in rows (a narrow window)
+    const float DialogueButtonsOneRow = 690, OneRowAbove = 1400;   // the same controls on one row, and the list width it needs
     // PortraitSpeaker, by number. Character (PortraitSpeaker.Other): anyone else, shown by the box's own model (the tavern keeper).
     static readonly GUIContent[] Speakers = { new("Boss", "The fight's boss, in its box."), new("Dungeon Master", "Said in his own feed, not in the box."), new("Character", "Anyone else (the tavern keeper, a dungeon NPC): the box shows the model set on it.") };
 
@@ -300,14 +301,18 @@ public partial class AssetStudioWindow
         });
         Btn("Rescan", "Find the lines again (after lines were added in an inspector, or a scene was opened).", () => { RescanDialogue(); Toast($"{dialogue.Count} lines."); });
         var scene = EditorSceneManager.GetActiveScene();
-        if (scene.isDirty && !EditorApplication.isPlaying) Btn("Save scene", $"Lines in {scene.name} are saved with the scene.", () => { CommitDialogue(true); EditorSceneManager.SaveScene(scene); });
 
         GUI.Label(new Rect(bar.x, bar.y + 24, bar.width, 18),
             $"{dialogueShown.Count} of {dialogue.Count} lines · edits go straight into the asset or scene they live in (Ctrl+Z undoes) · {{killer}} and the like are filled in by the game", dim);
 
         // ── Lines ──
         var list = new Rect(r.x + 4, r.y + 86, r.width - 8, r.height - 90);
-        float textWidth = list.width - 16 - 52 - DialogueButtons - 12;
+        // A line is as high as its text (the user's UX review, 2026-11-15: ten lines to a screen of 485). Where the
+        // window is wide enough its switches, list buttons and voice sit on one row beside it; in a narrow window they
+        // are stacked in three rows as before, and the line is as high as they are.
+        bool oneRow = list.width >= OneRowAbove;
+        float buttons = oneRow ? DialogueButtonsOneRow : DialogueButtons;
+        float textWidth = list.width - 16 - 52 - buttons - 12;
         bool grouped = dialogueSort == 0;
         // Heights (headers in "Where it plays", wrapped text), worked out when the width or the list changes.
         if (!Mathf.Approximately(dialogueWidth, textWidth))
@@ -320,9 +325,9 @@ public partial class AssetStudioWindow
                 float h = 0;
                 if (grouped && l.category != lastCat) { h += 30; lastCat = l.category; lastField = null; }
                 string fieldKey = l.Group;
-                if (!grouped || fieldKey != lastField) { h += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)); lastField = fieldKey; }
+                if (!grouped || fieldKey != lastField) { h += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + buttons)); lastField = fieldKey; }
                 string t = dialoguePending.TryGetValue(LineId(l), out var pend) ? pend : l.text;
-                h += Mathf.Max((l.arrayPath != null ? 46 : 26) + (AssetStudioDialogue.HasVoice(l) ? 22 : 0), dialogueArea.CalcHeight(new GUIContent(string.IsNullOrEmpty(t) ? " " : t), textWidth - Indent(l))) + 6;
+                h += Mathf.Max(oneRow ? 24 : (l.arrayPath != null ? 46 : 26) + (AssetStudioDialogue.HasVoice(l) ? 22 : 0), dialogueArea.CalcHeight(new GUIContent(string.IsNullOrEmpty(t) ? " " : t), textWidth - Indent(l))) + 6;
                 dialogueHeights.Add(h);
             }
         }
@@ -349,10 +354,10 @@ public partial class AssetStudioWindow
                 {
                     // A conversation's rows say their own place (Line 3 › Answer 1) when sorted otherwise.
                     bool place = !string.IsNullOrEmpty(l.context) && (!l.Conversation || !grouped);
-                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (place ? $"  <color=#a9a49a>› {l.context}</color>" : "") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = 12, normal = { textColor = new Color(.86f, .84f, .8f) } });
-                    if (!string.IsNullOrEmpty(l.when)) GUI.Label(new Rect(10, cy + 19, textWidth + DialogueButtons, dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)), l.when, dialogueWhen);
+                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (place ? $"  <color=#a9a49a>› {l.context}</color>" : "") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = StudioSkin.Size, normal = { textColor = new Color(.86f, .84f, .8f) } });
+                    if (!string.IsNullOrEmpty(l.when)) GUI.Label(new Rect(10, cy + 19, textWidth + buttons, dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + buttons)), l.when, dialogueWhen);
                 }
-                cy += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons));
+                cy += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + buttons));
                 field2 = fieldKey;
             }
             if (visible)
@@ -390,10 +395,10 @@ public partial class AssetStudioWindow
                 // dropped here gets an AudioData of its own (AssetStudioDialogue.VoiceFor).
                 if (AssetStudioDialogue.HasVoice(l))
                 {
-                    float vy = cy + (l.arrayPath != null ? 46 : 24);
+                    float vy = oneRow ? cy + 3 : cy + (l.arrayPath != null ? 46 : 24), vx = oneRow ? bx2 + 436 : bx2;
                     string instead = l.rich ? "his mumble" : "the typing blips";
-                    GUI.Label(new Rect(bx2, vy, 40, 18), new GUIContent("Voice", $"A recorded voice, played instead of {instead}. Drop an AudioClip or an AudioData on the field; empty: {instead}."), dialogueWhen);
-                    var at = new Rect(bx2 + 40, vy, 208, 18);
+                    GUI.Label(new Rect(vx, vy, 40, 18), new GUIContent("Voice", $"A recorded voice, played instead of {instead}. Drop an AudioClip or an AudioData on the field; empty: {instead}."), dialogueWhen);
+                    var at = new Rect(vx + 40, vy, oneRow ? 150 : 208, 18);
                     // An AudioClip dragged onto the field (the field itself only takes AudioData).
                     var ev = Event.current;
                     if ((ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && at.Contains(ev.mousePosition)
@@ -409,10 +414,10 @@ public partial class AssetStudioWindow
                 if (AssetStudioDialogue.CanAddChild(l))
                 {
                     bool box = l.kind == AssetStudioDialogue.Kind.Box;
-                    var at = box ? new Rect(bx2 + 114, cy + 24, 44, 20) : new Rect(bx2, cy + 3, 56, 20);
+                    var at = oneRow ? new Rect(bx2 + 374, cy + 2, 56, 20) : box ? new Rect(bx2 + 114, cy + 24, 44, 20) : new Rect(bx2, cy + 3, 56, 20);
                     if (GUI.Button(at, box ? new GUIContent("+ ans", "An answer for the player to pick after this box.") : new GUIContent("+ reply", "A box said after this answer."), dialogueSmall)) { changed = l; action = 5; }
                 }
-                float b = bx2 + 250;
+                float b = bx2 + (oneRow ? 636 : 250);
                 if (!l.Conversation)
                 {
                     GUI.enabled = EditorApplication.isPlaying && DungeonMaster.HasInstance;
@@ -424,11 +429,11 @@ public partial class AssetStudioWindow
                 { if (l.owner is Component c) Selection.activeObject = c.gameObject; else Selection.activeObject = l.owner; EditorGUIUtility.PingObject(l.owner); }
                 if (l.arrayPath != null)
                 {
-                    var row2 = cy + 24;
-                    if (GUI.Button(new Rect(bx2, row2, 22, 20), new GUIContent("↑", "Earlier in its list."), dialogueSmall)) { changed = l; action = 1; }
-                    if (GUI.Button(new Rect(bx2 + 24, row2, 22, 20), new GUIContent("↓", "Later in its list."), dialogueSmall)) { changed = l; action = 2; }
-                    if (GUI.Button(new Rect(bx2 + 48, row2, 40, 20), new GUIContent("+ line", "A new empty line after this one, in the same list."), dialogueSmall)) { changed = l; action = 3; }
-                    if (GUI.Button(new Rect(bx2 + 90, row2, 22, 20), new GUIContent("✕", "Remove this line from its list."), dialogueSmall)) { changed = l; action = 4; }
+                    float row2 = oneRow ? cy + 2 : cy + 24, lx = oneRow ? bx2 + 256 : bx2;
+                    if (GUI.Button(new Rect(lx, row2, 22, 20), new GUIContent("↑", "Earlier in its list."), dialogueSmall)) { changed = l; action = 1; }
+                    if (GUI.Button(new Rect(lx + 24, row2, 22, 20), new GUIContent("↓", "Later in its list."), dialogueSmall)) { changed = l; action = 2; }
+                    if (GUI.Button(new Rect(lx + 48, row2, 40, 20), new GUIContent("+ line", "A new empty line after this one, in the same list."), dialogueSmall)) { changed = l; action = 3; }
+                    if (GUI.Button(new Rect(lx + 90, row2, 22, 20), new GUIContent("✕", "Remove this line from its list."), dialogueSmall)) { changed = l; action = 4; }
                 }
             }
             y += h;

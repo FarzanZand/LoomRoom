@@ -26,12 +26,20 @@ public class HelmetPop : MonoBehaviour
         var anim = GetComponentInChildren<Animator>();
         var head = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Head) : null;
         if (head == null || Vector3.Distance(info.HitPoint, head.position) > headRadius * Mathf.Max(.01f, transform.lossyScale.y)) return;
+        Pop(info);
+    }
+
+    // Knocked off for certain by this blow, wherever it landed (LimbLoss: the Black Knight's head, which is his helmet,
+    // on a counted blow; his Chance here is 0). False when there is none to knock off.
+    public bool Pop(DamageInfo info)
+    {
+        if (popped) return false;
         // A helmet is either a mesh hung on the head bone or a skinned attachment; its name says which it is.
         Renderer helmet = null;
         foreach (var r in GetComponentsInChildren<Renderer>())
             if ((r is MeshRenderer || r is SkinnedMeshRenderer) && r.enabled && r.gameObject.activeInHierarchy &&
                 System.Array.Exists(helmetNames, n => r.name.IndexOf(n, System.StringComparison.OrdinalIgnoreCase) >= 0)) { helmet = r; break; }
-        if (helmet == null) return;
+        if (helmet == null) return false;
         popped = true;
         if (helmet is SkinnedMeshRenderer skinned) Knock(skinned, info);
         else Loosen(helmet.transform, info);
@@ -40,6 +48,7 @@ public class HelmetPop : MonoBehaviour
             float lose = Mathf.Min(armorLost, Mathf.Max(0f, character.Stats.GetFinal(StatType.Armor)));
             if (lose > 0f) character.Stats.AddModifier(new StatModifier(StatType.Armor, -lose, ModifierType.Flat, this));
         }
+        return true;
     }
 
     // A rigid helmet on the head bone comes off whole.

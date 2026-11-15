@@ -4,10 +4,15 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-// Asset Studio in the game's own UI look: the inventory's plain grey stone frames and slots (UI/Sprites/Inventory, drawn
-// at two screen pixels per art pixel as in the game), gold titles, off-white text and the PixelOperator fonts (editor
-// copies in Fonts/, imported as hinted raster at 16 px so every letter stays on whole pixels). While the window draws
-// (Use), Unity's own controls inside it take the fonts and colours too; they are put back as soon as it is done.
+// Asset Studio in the game's own UI look: the inventory's plain grey stone frames and slots (UI/Sprites/Inventory), gold
+// titles, off-white text and the PixelOperator fonts (editor copies in Fonts/, imported as hinted raster at 16 px so
+// every letter stays on whole pixels). Buttons and slots are drawn at two screen pixels per art pixel as in the game;
+// the panels' frame is drawn one to one (the user, 2026-11-15: text and art ran into each other): doubled, its rim and
+// inner shadow were 16 px deep and every heading and row placed 6-8 px inside a panel sat on top of them. One to one
+// the rim is 8 px, and it is drawn 3 px outside the panel's rect (overflow), so anything 6 px inside is clear of it.
+// Scroll bars are the skin's own (a dark track, a grey thumb), not the editor's pale ones.
+// While the window draws (Use), Unity's own controls inside it take the fonts and colours too; they are put back as
+// soon as it is done.
 public static class StudioSkin
 {
     public static readonly Color Back = new(.075f, .075f, .085f), Text = new(.902f, .902f, .902f), Dim = new(.847f, .8f, .706f),
@@ -17,7 +22,7 @@ public static class StudioSkin
 
     static bool made;
     static Font body, bold;
-    static Texture2D frame, slot, slotHover, slotDown, slotOn, field, fieldFocus, row, rowOn, line;
+    static Texture2D frame, slot, slotHover, slotDown, slotOn, field, fieldFocus, row, rowOn, line, track, thumb, thumbHover;
     static GUISkin skin;
 
     public static Font Body { get { Make(); return body; } }
@@ -35,7 +40,9 @@ public static class StudioSkin
     public static GUIStyle Tab => Style(ref tab, () => SlotStyle(TextAnchor.MiddleCenter));
     public static GUIStyle Row => Style(ref rowStyle, () => new GUIStyle(Label) { wordWrap = false, clipping = TextClipping.Clip, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(8, 6, 2, 2), hover = { background = row, textColor = Color.white }, normal = { textColor = Text } });
     public static GUIStyle RowOn => Style(ref rowOnStyle, () => new GUIStyle(Row) { normal = { background = rowOn, textColor = Color.white }, hover = { background = rowOn, textColor = Color.white }, border = new RectOffset(2, 2, 2, 2) });
-    public static GUIStyle Panel => Style(ref panel, () => new GUIStyle { normal = { background = frame }, border = new RectOffset(16, 16, 16, 16), padding = new RectOffset(14, 14, 12, 12) });
+    public static GUIStyle Panel => Style(ref panel, () => new GUIStyle { normal = { background = frame }, border = new RectOffset(8, 8, 8, 8), overflow = new RectOffset(FrameOut, FrameOut, FrameOut, FrameOut), padding = new RectOffset(12, 12, 10, 10) });
+    // How far a panel's frame is drawn outside its rect, and how far inside the rect its rim and shadow reach.
+    public const int FrameOut = 3, FrameIn = 5;
     public static GUIStyle Inset => Style(ref inset, () => new GUIStyle { normal = { background = slot }, border = new RectOffset(8, 8, 8, 8), padding = new RectOffset(10, 10, 8, 8) });
     static GUIStyle title, section, label, strong, faint, faintLine, button, tab, rowStyle, rowOnStyle, panel, inset;
     static GUIStyle Style(ref GUIStyle s, Func<GUIStyle> make) { Make(); return s ??= make(); }
@@ -56,7 +63,7 @@ public static class StudioSkin
         // Read straight from the files (the sprites' own import settings are the game's), doubled point for point.
         var frameArt = Load(Sprites + "Plain frame grey.png");
         var slotArt = Load(Sprites + "Plain slot grey.png");
-        frame = Double(frameArt, null);
+        frame = frameArt;   // one to one (see the top of the file)
         slot = Double(slotArt, null);
         slotHover = Double(slotArt, c => new Color(Mathf.Min(1, c.r * 1.35f + .02f), Mathf.Min(1, c.g * 1.35f + .02f), Mathf.Min(1, c.b * 1.38f + .02f), c.a));
         slotDown = Double(slotArt, c => new Color(c.r * .75f, c.g * .75f, c.b * .75f, c.a));
@@ -66,7 +73,10 @@ public static class StudioSkin
         field = Flat(new Color(.09f, .09f, .1f));
         fieldFocus = GoldEdge(Flat(new Color(.09f, .09f, .1f), 8), 1);
         line = Flat(new Color(.27f, .27f, .29f));
-        foreach (var t in new[] { frame, slot, slotHover, slotDown, slotOn, row, rowOn, field, fieldFocus, line }) { t.hideFlags = HideFlags.HideAndDontSave; t.filterMode = FilterMode.Point; }
+        track = Flat(new Color(.105f, .105f, .115f));
+        thumb = Edged(new Color(.36f, .36f, .39f), new Color(.2f, .2f, .22f));
+        thumbHover = Edged(new Color(.52f, .5f, .46f), new Color(.2f, .2f, .22f));
+        foreach (var t in new[] { frame, slot, slotHover, slotDown, slotOn, row, rowOn, field, fieldFocus, line, track, thumb, thumbHover }) { t.hideFlags = HideFlags.HideAndDontSave; t.filterMode = FilterMode.Point; }
         title = section = label = strong = faint = faintLine = button = tab = rowStyle = rowOnStyle = panel = inset = null;
         skin = null;
     }
@@ -102,6 +112,18 @@ public static class StudioSkin
         return t;
     }
 
+    // A flat block with a one-pixel edge (a scroll bar's thumb).
+    static Texture2D Edged(Color fill, Color edge)
+    {
+        const int size = 8;
+        var t = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                t.SetPixel(x, y, x == 0 || y == 0 || x == size - 1 || y == size - 1 ? edge : fill);
+        t.Apply();
+        return t;
+    }
+
     // The game marks what is in hand with a gold frame: the outer ring of pixels turned gold.
     static Texture2D GoldEdge(Texture2D t, int width)
     {
@@ -132,9 +154,37 @@ public static class StudioSkin
             skin.textField.normal.background = field; skin.textField.focused.background = fieldFocus; skin.textField.hover.background = field;
             skin.textField.border = new RectOffset(2, 2, 2, 2);
             skin.textField.normal.textColor = skin.textField.focused.textColor = Text;
+            Bars(skin);
             return skin;
         }
     }
+
+    // Scroll bars in the window's own colours: a dark track 12 px wide with a grey thumb, no arrow buttons.
+    static void Bars(GUISkin s)
+    {
+        void Track(GUIStyle st, bool vertical)
+        {
+            st.normal.background = st.hover.background = st.active.background = st.focused.background = track;
+            Plain(st);
+            st.border = new RectOffset(0, 0, 0, 0); st.padding = new RectOffset(0, 0, 0, 0); st.margin = new RectOffset(0, 0, 0, 0); st.overflow = new RectOffset(0, 0, 0, 0);
+            if (vertical) { st.fixedWidth = BarWidth; st.fixedHeight = 0; } else { st.fixedHeight = BarWidth; st.fixedWidth = 0; }
+        }
+        void Thumb(GUIStyle st, bool vertical)
+        {
+            st.normal.background = thumb; st.hover.background = st.active.background = thumbHover;
+            Plain(st);
+            st.border = new RectOffset(2, 2, 2, 2); st.padding = new RectOffset(0, 0, 0, 0); st.margin = new RectOffset(0, 0, 0, 0); st.overflow = new RectOffset(0, 0, 0, 0);
+            if (vertical) { st.fixedWidth = BarWidth; st.fixedHeight = 0; } else { st.fixedHeight = BarWidth; st.fixedWidth = 0; }
+        }
+        // The editor's own high-resolution pictures (the arrows, the pale bars) are drawn in place of the backgrounds
+        // set here unless they are taken out too.
+        void Plain(GUIStyle st) { foreach (var state in new[] { st.normal, st.hover, st.active, st.focused, st.onNormal, st.onHover, st.onActive, st.onFocused }) state.scaledBackgrounds = System.Array.Empty<Texture2D>(); }
+        void None(GUIStyle st) { Plain(st); foreach (var state in new[] { st.normal, st.hover, st.active, st.focused, st.onNormal, st.onHover, st.onActive, st.onFocused }) state.background = null; st.fixedWidth = 0; st.fixedHeight = 0; st.border = new RectOffset(0, 0, 0, 0); st.padding = new RectOffset(0, 0, 0, 0); st.margin = new RectOffset(0, 0, 0, 0); }
+        Track(s.verticalScrollbar, true); Thumb(s.verticalScrollbarThumb, true);
+        Track(s.horizontalScrollbar, false); Thumb(s.horizontalScrollbarThumb, false);
+        None(s.verticalScrollbarUpButton); None(s.verticalScrollbarDownButton); None(s.horizontalScrollbarLeftButton); None(s.horizontalScrollbarRightButton);
+    }
+    public const int BarWidth = 12;
 
     // EditorGUI's styles take the game's fonts and colours while the window draws; Unity's own look stays everywhere
     // else (they are put back when the window is done, even if its drawing stops early).

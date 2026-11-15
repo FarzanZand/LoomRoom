@@ -4,21 +4,19 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-// Asset Studio's level page, shown in World (AssetStudioWindow.World) when a level, one of its stages or a shared biome is
-// picked in the tree: one page per level that reads like its run. A header with what it is and Play buttons; tabs Run,
-// Rooms (AssetStudioWindow.Rooms: what can come up on each floor), Map, Look, Balance, Sound and Dialogue.
-// Run shows the floors as a strip of stages (the biome each runs on, its boss) and, for the stage picked, what its
-// floors are made of: the enemies (weight drawn as a bar), the boss and loot, the hand-built rooms as pictures and the
-// room styles as tiled samples (AssetStudioStyles). Everything else is still in the inspector on the right, which shows
-// the level or the picked stage's biome. Changes go through Undo and are saved at once.
+// What World shows for a level, one of its stages or a biome picked in its tree (AssetStudioWindow.World). A level is
+// made in one place, the Dungeon view (the user's UX review, 2026-11-15: this page's seven tabs were a second copy of the
+// Dungeon's pages, and the Biomes view a third). So here a level is a card: what it is, where it is on the map, its
+// problems, Play, and Open in Dungeon, with its floors listed to open one there. A biome a level runs is a card too
+// (where it runs, each a way into Dungeon); a biome no level runs has nowhere else to be edited and gets its whole page
+// here (BiomeView, AssetStudioWindow.Biomes). The panels the Dungeon's pages are built from live in this file: the
+// enemies, the boss and loot, the room tiles, the room styles, the look, sound and lines of a level.
 public partial class AssetStudioWindow
 {
     [SerializeField] string levelPath, levelBiomePath;
-    [SerializeField] int levelStage = -1, levelTab;
+    [SerializeField] int levelStage = -1;
     [SerializeField] bool levelDefaults;
     Vector2 levelPageScroll;
-    static readonly string[] LevelTabs = { "Run", "Rooms", "Map", "Look", "Balance", "Sound", "Dialogue" };
-    const int RunTabIndex = 0, RoomsTabIndex = 1, BalanceTabIndex = 4;
     readonly Dictionary<DungeonRoomStyle, Texture2D> styleThumbs = new();
     [SerializeField] int roomTileSort;   // the pictures of a pool's rooms: as listed, by kind or by name
     static readonly string[] RoomTileSorts = { "As listed", "By kind", "By name" };
@@ -30,11 +28,12 @@ public partial class AssetStudioWindow
     TableLevelData PickedLevel => string.IsNullOrEmpty(levelPath) ? null : AssetDatabase.LoadAssetAtPath<TableLevelData>(levelPath);
     DungeonBiome PickedBiome => string.IsNullOrEmpty(levelBiomePath) ? null : AssetDatabase.LoadAssetAtPath<DungeonBiome>(levelBiomePath);
 
-    // A level's page in World, its row picked in the tree (its act opened); stage: the stage picked on its Run tab (-1: its
-    // first stage, or its base biome).
+    // Shows a level from anywhere (a name clicked, Where used, the search): a dungeon opens in the Dungeon view, at that
+    // stage's floor page (-1: the whole run); a town level, which has no floors, as its card in World.
     void OpenLevel(TableLevelData level, int stage)
     {
         if (level == null) return;
+        if (level.IsDungeon) { OpenDungeonAt(level, stage < 0 ? WholeRun : stage); return; }
         var l = World.LevelOf(level);
         if (!showingWorld) OpenWorld();
         OpenInTree(l);
@@ -77,15 +76,16 @@ public partial class AssetStudioWindow
         if (worldPane != WorldPane.Picked) { DrawWorldMiddle(ref r); return; }
         GUI.Box(r, GUIContent.none);
         pageWidth = r.width - 28 - 18;   // less the scroll bar
+        ReadGameWide();
         GUILayout.BeginArea(new Rect(r.x + 14, r.y + 12, r.width - 28, r.height - 24));
         levelPageScroll = GUILayout.BeginScrollView(levelPageScroll);
         try
         {
-            if (AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
+            if (UndoOffered && AssetStudioWorld.PrefabUndo.Last is string last && GUILayout.Button("Undo: " + last, EditorStyles.miniButton))
             { Toast(AssetStudioWorld.PrefabUndo.UndoLast()); worldPicked = null; RefreshLibrary(); GUIUtility.ExitGUI(); }
             if (levelDefaults) DefaultsPane(AssetDatabase.LoadAssetAtPath<TableLevelDefaults>(AssetStudioWorld.DefaultsPath));
-            else if (PickedBiome is DungeonBiome shared) { Title(shared.name, "A biome file: " + SharedLine(shared)); StageEditor(null, null, shared); }
-            else if (World.LevelOf(PickedLevel) is AssetStudioWorld.Level l) LevelPage(l);
+            else if (PickedBiome is DungeonBiome shared) BiomeCard(shared);
+            else if (World.LevelOf(PickedLevel) is AssetStudioWorld.Level l) LevelCard(l);
             else Title("Levels", "Pick a level on the left, or make one with + New level.");
         }
         finally { GUILayout.EndScrollView(); GUILayout.EndArea(); }
@@ -97,7 +97,26 @@ public partial class AssetStudioWindow
         return users.Count == 0 ? "no level runs it." : "run by " + string.Join(", ", users.Select(u => u.data.name)) + ": a change here shows in each.";
     }
 
-    void LevelPage(AssetStudioWorld.Level l)
+    // A biome picked in World. One that levels run: where it runs, each a way to its floor's page in Dungeon. One that
+    // no level runs: its whole page, since it has no floor page to be edited on.
+    void BiomeCard(DungeonBiome b)
+    {
+        var runs = World.levels.SelectMany(x => x.RunStages.Where(st => st.biome == b).Select(st => (level: x, stage: st))).ToList();
+        if (runs.Count == 0) { BiomeView(b); return; }
+        Title(b.name, $"\"{b.displayName}\" · a biome file · " + SharedLine(b));
+        Section("WHERE IT RUNS");
+        GUILayout.Label("A biome is edited on its floor's page in Dungeon: who lives there, its rooms, look, loot and lines. A change there shows in every level that runs it.", new GUIStyle(dim) { wordWrap = true }, GUILayout.Width(pageWidth));
+        GUILayout.Space(4);
+        foreach (var (level, stage) in runs)
+        {
+            var data = level.data; int index = stage.index;
+            if (GUILayout.Button($"{DungeonLabel(data)}  <color=#b8ae9c>{FloorsLabel(stage).ToLowerInvariant()}{(level.tool ? " · test level" : "")}</color>   <color=#e8c46a>open in Dungeon</color>", cell, GUILayout.Height(30), GUILayout.Width(Mathf.Min(pageWidth, 620))))
+                OpenDungeonAt(data, index);
+        }
+    }
+
+    // A level picked in World: what it is, where it is on the map, and the way into Dungeon, where its floors are made.
+    void LevelCard(AssetStudioWorld.Level l)
     {
         var d = l.data;
         // The header: what it is and how to play it.
@@ -109,7 +128,8 @@ public partial class AssetStudioWindow
         GUILayout.Label($"{where} · {what}", dim);
         GUILayout.EndVertical();
         GUILayout.FlexibleSpace();
-        GUILayout.BeginVertical(GUILayout.Width(180));
+        GUILayout.BeginVertical(GUILayout.Width(200));
+        if (d.IsDungeon && GUILayout.Button(new GUIContent("<color=#e8c46a>Open in Dungeon</color>", "Where this level is made: its floors, enemies, rooms, look, loot, difficulty, sound and lines."), GUILayout.Height(34))) OpenDungeonAt(d, WholeRun);
         if (d.IsDungeon && GUILayout.Button(new GUIContent("Play floor 1", "Generate its first floor and play it."), GUILayout.Height(30))) Toast(GameLauncher.PlayLevel(d));
         var bossStage = l.RunStages.LastOrDefault(st => st.boss && AssetStudioWorld.HasGuardian(st.biome));
         if (bossStage != null && GUILayout.Button(new GUIContent("Play the boss", $"Straight to floor {bossStage.lastFloor}, where {bossStage.biome.guardian.boss.name} waits."), GUILayout.Height(30)))
@@ -122,69 +142,19 @@ public partial class AssetStudioWindow
         GUILayout.Space(8);
 
         if (!d.IsDungeon) { GUILayout.Label("A town level: it has no floors to edit here. Its settings are in the inspector on the right.", dim); return; }
-        levelTab = GUILayout.Toolbar(levelTab, LevelTabs, StudioSkin.Tab, GUILayout.Height(32));
-        GUILayout.Space(8);
-        switch (levelTab)
-        {
-            case RunTabIndex: RunTab(l); break;
-            case RoomsTabIndex: FloorRooms(l); break;
-            case 2: LayoutSection(d); break;
-            case 3: LookTab(l); break;
-            case BalanceTabIndex: BalanceTab(l); break;
-            case 5: SoundTab(l); break;
-            default: DialogueTab(d); break;
-        }
-    }
-
-    // ── Run: the stages and the picked one ──
-
-    void RunTab(AssetStudioWorld.Level l)
-    {
-        var d = l.data;
-        GUILayout.BeginHorizontal();
-        // The strip: one row per stage, top floor first.
-        GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(250));
-        GUILayout.Label("The run", gold);
+        Section("ITS RUN");
+        GUILayout.Label("Its floors are made in Dungeon: who lives there, the rooms, the look, loot, difficulty, sound and lines. Click a floor to open it there.", new GUIStyle(dim) { wordWrap = true }, GUILayout.Width(pageWidth));
         GUILayout.Space(4);
         var run = l.RunStages;
-        if (run.Count == 0) GUILayout.Label("<color=#e0a85a>No stages and no base biome: its floors have nothing to run on.</color>", dim);
-        string act = null;
+        if (run.Count == 0) GUILayout.Label("<color=#e0a85a>No stages and no base biome: its floors have nothing to run on. Open it in Dungeon to add floors.</color>", new GUIStyle(dim) { richText = true, wordWrap = true }, GUILayout.Width(pageWidth));
         foreach (var st in run)
         {
-            // the dungeon act a stage belongs to, over its first stage (Dungeon1: the Cellars, the Realms, the Ruins)
-            if (l.Staged && DungeonAct(st.biome) != act) { act = DungeonAct(st.biome); GUILayout.Label(act.ToUpperInvariant(), new GUIStyle(gold) { fontSize = StudioSkin.Size - 2 }); }
-            string floors = st.lastFloor > st.firstFloor ? $"F{st.firstFloor}-{st.lastFloor}" : $"F{st.firstFloor}";
-            string boss = st.boss && AssetStudioWorld.HasGuardian(st.biome) ? "  <color=#e24b4a>boss</color>" : "";
-            bool on = st.index == levelStage || (st.IsBase && !l.Staged);
-            if (GUILayout.Button($"<color=#b8ae9c>{floors}</color>  {(st.biome != null ? st.biome.name : "<color=#e0a85a>no biome</color>")}{boss}", on ? cellSelected : cell, GUILayout.Height(30)))
-            { levelStage = st.index; ShowAsset(st.biome != null ? (UnityEngine.Object)st.biome : d); }
-            if (d.IsDungeon) StageStepRow(d, st);
-            GUILayout.Space(2);
+            string boss = st.boss && AssetStudioWorld.HasGuardian(st.biome) ? $"  <color=#e24b4a>boss: {st.biome.guardian.boss.name}</color>" : "";
+            bool on = st.index == levelStage && l.Staged;
+            int index = st.index;
+            if (GUILayout.Button($"{FloorsLabel(st)}  <color=#b8ae9c>{(st.biome != null ? st.biome.name : "no biome")}</color>{boss}", on ? cellSelected : cell, GUILayout.Height(28), GUILayout.Width(Mathf.Min(pageWidth, 620))))
+                OpenDungeonAt(d, index);
         }
-        if (l.Staged && l.baseStage != null)
-        {
-            GUILayout.Space(6);
-            bool on = levelStage == -1;
-            if (GUILayout.Button("<color=#b8ae9c>every floor</color>  base biome", on ? cellSelected : cell, GUILayout.Height(30))) { levelStage = -1; ShowAsset(l.baseStage.biome); }
-        }
-        GUILayout.Space(6);
-        if (GUILayout.Button("+ Add a stage", GUILayout.Height(28)))
-        {
-            var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("New biome stage..."), false, () => { StartForm(WorldPane.NewBiome); formLevel = d; });
-            menu.AddSeparator("");
-            foreach (var b in World.biomes) menu.AddItem(new GUIContent("Existing biome/" + b.name), false, () => { AssetStudioWorld.AddStage(d, b); RefreshWorld(); });
-            menu.ShowAsContext();
-        }
-        if (!l.Staged && l.baseStage == null && d.baseBiome == null && GUILayout.Button("Make the base biome", GUILayout.Height(28))) { d.MakeBaseBiome(); AssetDatabase.SaveAssets(); RefreshLibrary(); GUIUtility.ExitGUI(); }
-        GUILayout.EndVertical();
-
-        GUILayout.Space(8);
-        GUILayout.BeginVertical();
-        var picked = run.FirstOrDefault(st => st.index == levelStage) ?? (levelStage == -1 ? l.baseStage : null) ?? run.FirstOrDefault();
-        if (picked != null) StageEditor(l, picked, picked.biome);
-        GUILayout.EndVertical();
-        GUILayout.EndHorizontal();
     }
 
     // What a stage's floors are made of. l and st are null for a biome file shown on its own.
@@ -237,7 +207,7 @@ public partial class AssetStudioWindow
         GUILayout.EndVertical();
         GUILayout.Space(6);
         GUILayout.BeginVertical(StudioSkin.Inset, GUILayout.Width(250));
-        BossAndLoot(b);
+        BossAndLoot(b, st);
         GUILayout.EndVertical();
         GUILayout.EndHorizontal();
         GUILayout.Space(6);
@@ -258,10 +228,7 @@ public partial class AssetStudioWindow
             var s = spawns[i];
             if (s == null) continue;
             GUILayout.BeginHorizontal(GUILayout.Height(36));
-            var icon = GUILayoutUtility.GetRect(32, 32, GUILayout.Width(32), GUILayout.Height(32));
-            GUI.DrawTexture(icon, StudioSkin.Slot);
-            var pic = s.enemy != null ? AssetPreview.GetAssetPreview(s.enemy) ?? AssetPreview.GetMiniThumbnail(s.enemy) : null;
-            if (pic != null) GUI.DrawTexture(new Rect(icon.x + 2, icon.y + 2, icon.width - 4, icon.height - 4), pic, ScaleMode.ScaleToFit);
+            EnemyPicture(s.enemy, 32);
             GUILayout.BeginVertical();
             if (GUILayout.Button(s.enemy != null ? s.enemy.name : "<color=#e0a85a>empty</color>", cell, GUILayout.Height(18)) && s.enemy != null) ShowAsset(s.enemy);
             var bar = GUILayoutUtility.GetRect(10, 6, GUILayout.ExpandWidth(true));
@@ -317,17 +284,22 @@ public partial class AssetStudioWindow
         }
     }
 
-    void BossAndLoot(DungeonBiome b)
+    // st: the stage these floors are (null for a biome file on its own). A biome's guardian only waits on a stage whose
+    // Boss On Last Floor is on: with it off the box says so, where it used to name a boss that never comes.
+    void BossAndLoot(DungeonBiome b, AssetStudioWorld.Stage st = null)
     {
         GUILayout.Label("Boss", gold);
         var g = b.guardian;
-        if (g != null && g.enabled && g.boss != null)
+        bool set = g != null && g.enabled && g.boss != null;
+        if (st != null && !st.boss)
+        {
+            GUILayout.Label("None on these floors: they end at the stairs.", dim);
+            if (set) GUILayout.Label($"<color=#8f8a80>{g.boss.name} is set up on the biome and waits only where a stage has its boss switched on.</color>", new GUIStyle(dim) { richText = true, wordWrap = true });
+        }
+        else if (set)
         {
             GUILayout.BeginHorizontal();
-            var icon = GUILayoutUtility.GetRect(32, 32, GUILayout.Width(32), GUILayout.Height(32));
-            GUI.DrawTexture(icon, StudioSkin.Slot);
-            var pic = AssetPreview.GetAssetPreview(g.boss) ?? AssetPreview.GetMiniThumbnail(g.boss);
-            if (pic != null) GUI.DrawTexture(new Rect(icon.x + 2, icon.y + 2, 28, 28), pic, ScaleMode.ScaleToFit);
+            EnemyPicture(g.boss, 32);
             GUILayout.BeginVertical();
             if (GUILayout.Button(g.boss.name, cell, GUILayout.Height(18))) ShowAsset(g.boss);
             GUILayout.Label((g.arena != null ? "in " + g.arena.name : "in a generated room") + (g.arena != null && g.arena.GetComponentInChildren<DungeonStage>(true) != null ? ", a stage fight" : ""), dim);
@@ -363,7 +335,8 @@ public partial class AssetStudioWindow
         var order = Enumerable.Range(0, pool.Length).ToList();
         if (roomTileSort == 1) order = order.OrderBy(i => AssetStudioRoomKinds.Rank(pool[i]?.template)).ThenBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
         else if (roomTileSort == 2) order = order.OrderBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
-        const float w = 112, h = 92;
+        // With Pictures off (the sidebar's switch) a room is a low tile with its name; on, a picture over its name.
+        float w = PicturesShown ? 112 : 168, h = PicturesShown ? 92 : 28;
         // The page's width less the run strip and the frames round it.
         float width = Mathf.Max(w, position.width - CategoryWidth - ListWidth - InspectorWidth - Pad * 5 - (reserved >= 0 ? reserved : l != null ? 300 : 60));
         int perRow = Mathf.Max(1, Mathf.FloorToInt(width / (w + 6)));
@@ -377,7 +350,7 @@ public partial class AssetStudioWindow
                 GUI.DrawTexture(r, StudioSkin.Slot);
                 if (k == pool.Length)
                 {
-                    GUI.Label(r, "+ Add a room\nor drop one here", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
+                    GUI.Label(r, PicturesShown ? "+ Add a room\nor drop one here" : "+ Add or drop a room", new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter });
                     var ev = Event.current;
                     if (ev.type == EventType.MouseDown && r.Contains(ev.mousePosition)) { RoomMenu(l, b, pool); ev.Use(); }
                     if (r.Contains(ev.mousePosition) && (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && DragAndDrop.objectReferences.Any(o => o is GameObject g && g.GetComponent<DungeonRoomTemplate>() != null))
@@ -390,13 +363,26 @@ public partial class AssetStudioWindow
                 }
                 var c = pool[order[k]];
                 if (c == null) continue;
-                var pic = c.template != null ? AssetPreview.GetAssetPreview(c.template) : null;
-                if (pic != null) GUI.DrawTexture(new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 30), pic, ScaleMode.ScaleToFit);
-                if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 4, r.y + 4, 28, 28), c.template);
                 // Hovering a room shows what it is (DungeonRoomTemplate.description).
                 if (c.template != null && c.template.TryGetComponent<DungeonRoomTemplate>(out var described) && !string.IsNullOrWhiteSpace(described.description)) GUI.Label(r, new GUIContent("", c.template.name + ": " + described.description));
-                GUI.Label(new Rect(r.x + 6, r.yMax - 22, r.width - 12, 18), c.template != null ? c.template.name : "<color=#e0a85a>empty</color>", new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter, normal = { textColor = StudioSkin.Text } });
-                if (c.weight != 1) GUI.Label(new Rect(r.xMax - 40, r.y + 4, 34, 18), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.UpperRight });
+                string roomName = c.template != null ? c.template.name : "<color=#e0a85a>empty</color>";
+                if (PicturesShown)
+                {
+                    var pic = Picture(c.template, false);
+                    if (pic != null) GUI.DrawTexture(new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 30), pic, ScaleMode.ScaleToFit);
+                    if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 4, r.y + 4, 28, 28), c.template);
+                    GUI.Label(new Rect(r.x + 6, r.yMax - 22, r.width - 12, 18), roomName, new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter, normal = { textColor = StudioSkin.Text } });
+                    if (c.weight != 1) GUI.Label(new Rect(r.xMax - 40, r.y + 4, 34, 18), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.UpperRight });
+                }
+                else
+                {
+                    // Its kind, its name, how common it is (when not x1).
+                    if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 5, r.y + 5, 18, 18), c.template);
+                    float weightWidth = c.weight != 1 ? 36 : 0;
+                    var nameStyle = new GUIStyle(dimLine) { alignment = TextAnchor.MiddleLeft, normal = { textColor = StudioSkin.Text } };
+                    GUI.Label(new Rect(r.x + 28, r.y + 4, r.width - 34 - weightWidth, 20), Fit(roomName, nameStyle, r.width - 34 - weightWidth), nameStyle);
+                    if (c.weight != 1) GUI.Label(new Rect(r.xMax - 42, r.y + 4, 36, 20), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.MiddleRight });
+                }
                 var e2 = Event.current;
                 if (e2.type == EventType.MouseDown && r.Contains(e2.mousePosition))
                 {
@@ -587,17 +573,29 @@ public partial class AssetStudioWindow
         if (target == null) return;
         using var so = new SerializedObject(target);
         so.Update();
-        foreach (var n in names) { var p = so.FindProperty(n); if (p != null) EditorGUILayout.PropertyField(p, true); }
+        // Unity's label column is sized for its own small font: in the window's font a longer name ("Starting Chest
+        // Consumable", "Beam Damage Per Second") ran into its value.
+        float labels = EditorGUIUtility.labelWidth;
+        EditorGUIUtility.labelWidth = Mathf.Max(labels, FieldLabelWidth);
+        try { foreach (var n in names) { var p = so.FindProperty(n); if (p != null) EditorGUILayout.PropertyField(p, true); } }
+        finally { EditorGUIUtility.labelWidth = labels; }
         if (so.ApplyModifiedProperties()) AssetDatabase.SaveAssetIfDirty(target);
     }
+    const float FieldLabelWidth = 236;
 
     static void AllFields(UnityEngine.Object target)
     {
         using var so = new SerializedObject(target);
         so.Update();
         var it = so.GetIterator();
-        for (bool enter = true; it.NextVisible(enter); enter = false)
-            if (it.name != "m_Script") EditorGUILayout.PropertyField(it, true);
+        float labels = EditorGUIUtility.labelWidth;
+        EditorGUIUtility.labelWidth = Mathf.Max(labels, FieldLabelWidth);
+        try
+        {
+            for (bool enter = true; it.NextVisible(enter); enter = false)
+                if (it.name != "m_Script") EditorGUILayout.PropertyField(it, true);
+        }
+        finally { EditorGUIUtility.labelWidth = labels; }
         if (so.ApplyModifiedProperties()) AssetDatabase.SaveAssetIfDirty(target);
     }
 }

@@ -31,7 +31,13 @@ public partial class AssetStudioWindow
     static readonly string[] UnlockTypes = { "Class", "Place", "Room item", "Ability", "Feature", "Campaign event" };
     const int ReviveDeaths = 3;   // RunRecapUI.reviveAfterDeaths (not serialized: the code's number)
 
-    void OpenUnlockables() { studioView = StudioView.Unlockables; GUI.FocusControl(null); }
+    void OpenUnlockables()
+    {
+        studioView = StudioView.Unlockables;
+        // The right panel shows this view's pick, when nothing is shown yet.
+        if (inspected == null && selected == null && Unlockables().FirstOrDefault(u => u.type + ":" + u.name == unlockPicked) is Unlockable picked && picked.assets.Count > 0) ShowAsset(picked.assets[0]);
+        GUI.FocusControl(null);
+    }
 
     List<Unlockable> Unlockables()
     {
@@ -211,6 +217,7 @@ public partial class AssetStudioWindow
                     GUILayout.BeginHorizontal(on ? cellSelected : StudioSkin.Inset, GUILayout.Width(pageWidth));
                     var pic = GUILayoutUtility.GetRect(36, 36, GUILayout.Width(36), GUILayout.Height(36));
                     if (Event.current.type == EventType.Repaint) { GUI.DrawTexture(pic, StudioSkin.Slot); if (u.icon != null) GUI.DrawTexture(new Rect(pic.x + 3, pic.y + 3, 30, 30), u.icon, ScaleMode.ScaleToFit); }
+                    GUILayout.Space(8);
                     GUILayout.BeginVertical();
                     GUILayout.Label($"{u.name}  <color=#b8ae9c>{u.type.ToLowerInvariant()}</color>", new GUIStyle(StudioSkin.Strong) { richText = true });
                     GUILayout.Label(Cap(u.how) + ".", new GUIStyle(dim) { richText = true, wordWrap = true }, GUILayout.Width(pageWidth - 70));
