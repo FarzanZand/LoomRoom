@@ -111,34 +111,38 @@ public partial class ProgressionManager
 
     // The quest's text with the player's keys put in.
     // With one trophy carried, the trophy quest says it in the singular ("Hang your trophy on the wall.").
-    public string QuestText(Quest q)
+    // With caps, each key is marked for a drawn key cap (KeyCapText: the quest log); without, it is a plain word.
+    public string QuestText(Quest q, bool caps = false)
     {
         if (q == null) return "";
-        string text = KeysIn(q.text);
+        string text = KeysIn(q.text, caps);
         if (q.id == TrophyQuest && TrophyCount(TrophyState.Carried) == 1)
             text = text.Replace("trophies", "trophy").Replace("Trophies", "Trophy");
         return text;
     }
 
     // {attack}, {block}, {inventory}, {crouch} and {sprint} replaced by the player's own keys (quests, the lesson's lines).
-    public static string KeysIn(string text)
+    public static string KeysIn(string text, bool caps = false)
     {
         text ??= "";
         if (InputManager.HasInstance)
         {
-            text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
-            text = text.Replace("{block}", KeyName(InputManager.Instance.BindingDisplay("SecondaryAction")));
-            string inventory = KeyName(InputManager.Instance.BindingDisplay("Inventory"));
+            string Name(string action) { string n = KeyName(InputManager.Instance.BindingDisplay(action), caps); return caps ? KeyCapText.Key(n) : n; }
+            text = text.Replace("{attack}", Name("PrimaryAction"));
+            text = text.Replace("{block}", Name("SecondaryAction"));
+            string bare = KeyName(InputManager.Instance.BindingDisplay("Inventory"), caps);
             // Tab is the fixed second binding: with Inventory bound to Tab too, it is said once.
-            if (string.Equals(inventory, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", inventory);
-            text = text.Replace("{inventory}", inventory);
-            text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
-            text = text.Replace("{sprint}", KeyName(InputManager.Instance.BindingDisplay("Sprint")));
+            if (string.Equals(bare, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", "{inventory}");
+            else if (caps) text = text.Replace("{inventory} or Tab", "{inventory} or " + KeyCapText.Key("Tab"));
+            text = text.Replace("{inventory}", caps ? KeyCapText.Key(bare) : bare);
+            text = text.Replace("{crouch}", Name("Crouch"));
+            text = text.Replace("{sprint}", Name("Sprint"));
         }
         return text;
     }
 
-    static string KeyName(string binding) => binding == "LMB" ? "left mouse" : binding == "RMB" ? "right mouse" : binding;
+    // In a sentence the mouse buttons are words ("left mouse"); on a key cap they start with a capital ("Left mouse").
+    static string KeyName(string binding, bool caps = false) => binding == "LMB" ? (caps ? "Left mouse" : "left mouse") : binding == "RMB" ? (caps ? "Right mouse" : "right mouse") : binding;
 
     void Start()
     {

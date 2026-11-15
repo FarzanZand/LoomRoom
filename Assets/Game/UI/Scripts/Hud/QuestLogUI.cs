@@ -39,7 +39,7 @@ public class QuestLogUI : MonoBehaviour
 
     void OnEnable()
     {
-        if (rowTemplate != null) rowTemplate.gameObject.SetActive(false);
+        if (rowTemplate != null) { rowTemplate.gameObject.SetActive(false); KeyCapText.On(rowTemplate); }   // keys in drawn caps
         Connect();
     }
 
@@ -100,7 +100,7 @@ public class QuestLogUI : MonoBehaviour
             }
             // Done and opened again before its row faded out (the trophies hung, then another one bought): it stays.
             if (state == 1 && doneAt.Remove(q.id)) row.alpha = 1f;
-            string text = KeepLastWords(progression.QuestText(q));
+            string text = KeepLastWords(KeyCapText.Tidy(progression.QuestText(q, true)));
             row.text = state == 2 ? $"<s>{text}</s>" : text;
             row.color = state == 2 ? doneColour : openColour;
         }

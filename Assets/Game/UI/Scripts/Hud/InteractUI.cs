@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Shows the active player's interaction prompt.
+// Shows the active player's interaction prompt. Its keys stand in drawn key caps (KeyCapText).
 [DefaultExecutionOrder(11000)]
 public class InteractUI : MonoBehaviour
 {
@@ -73,6 +73,7 @@ public class InteractUI : MonoBehaviour
 
     void OnEnable()
     {
+        KeyCapText.On(promptText);   // the keys stand in drawn key caps
         ListenForKeys();
         if (PlayerManager.HasInstance)
         {
@@ -138,11 +139,11 @@ public class InteractUI : MonoBehaviour
             ? trigger.WorldItem.Item.itemName : trigger.PromptMessage;
         // A second action on its own key (the table's R for the map) goes beside the first.
         string second = trigger.Interactable is ISecondaryInteractable s && !string.IsNullOrEmpty(s.SecondaryPrompt)
-            ? "      <b>[" + (InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + "]</b>  " + s.SecondaryPrompt : "";
+            ? "      " + KeyCapText.Key(InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + " " + s.SecondaryPrompt : "";
         message += second;
         if (key == shownKey && message == shownMessage) return;
         shownKey = key; shownMessage = message;
-        promptText.text = "<b>[" + key + "]</b>  " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);
+        promptText.text = KeyCapText.Key(key) + " " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);
         if (promptRoot != null)
         {
             var size = promptText.GetPreferredValues(promptText.text, 560, 0);
