@@ -607,8 +607,8 @@ public class DungeonRoomTemplate : MonoBehaviour
                     if (cutAll.Contains(cell + d)) continue;
                     var outward = new Vector3(d.x, 0f, d.y);
                     var along = new Vector2Int(d.y, d.x);
-                    float before = d.y != 0 && !cutAll.Contains(cell - along) ? WallThickness : 0f;
-                    float after = d.y != 0 && !cutAll.Contains(cell + along) ? WallThickness : 0f;
+                    float before = !cutAll.Contains(cell - along) ? d.y != 0 ? WallThickness : -.02f : 0f;
+                    float after = !cutAll.Contains(cell + along) ? d.y != 0 ? WallThickness : -.02f : 0f;
                     float top = Floor(cell + d) || before > 0f && (Floor(cell - along) || Floor(cell + d - along)) || after > 0f && (Floor(cell + along) || Floor(cell + d + along)) ? .011f : .001f;
                     float length = c + before + after, shift = (after - before) * .5f;
                     var size = d.x != 0 ? new Vector3(WallThickness, depth - top + .001f, length) : new Vector3(length, depth - top + .001f, WallThickness);
