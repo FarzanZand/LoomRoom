@@ -100,6 +100,16 @@ public partial class IntroController : Singleton<IntroController>
     [Min(1), Tooltip("Damage of each ball.")] public float volleyDamage = 60f;
     public FireballVolley.Settings killerVolley = new() { homing = true };
 
+    [Header("Practice deaths")]
+    [Min(0), Tooltip("Times a death on the practice board before the killer comes puts the figure back on its feet where it fell (full health, the revive's few seconds of grace) instead of ending the night: a new player who froze in the rat den missed every lesson after it. 0: every death ends the night, as before.")]
+    public int practiceGetUps = 2;
+    [Tooltip("Said as the figure gets up, one per get-up in order (the last one again after that). {PrimaryAction} and {SecondaryAction} are the player's keys.")]
+    public DungeonMaster.Line[] practiceGetUpLines =
+    {
+        new() { text = "Up. It's only practice. Swing with {PrimaryAction}, raise the shield with {SecondaryAction}." },
+        new() { text = "Again? Hit them before they hit you." },
+    };
+
     [Header("Back at the table")]
     [Tooltip("After the practice death, with the lamp still on.")] public DungeonMaster.Line[] afterPractice = new DungeonMaster.Line[0];
     [Tooltip("Said first when the killer did it.")] public DungeonMaster.Line diedAtEnd;
