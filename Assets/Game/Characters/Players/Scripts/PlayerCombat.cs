@@ -125,9 +125,22 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     bool cancelling;   // a cancelled windup blending out: already harmless, the shield may rise
     [SerializeField] string attackCancelParam = "AttackCancel";
 
+    // The swing in progress is still winding up or striking: from the moment an attack plays until its own hitbox has
+    // closed (each combo hit's; a held charge counts), not the recovery after it. PlayerMotor walks slower meanwhile
+    // (CombatManager.swingSlowsPlayer). A hitbox still open from the hit before doesn't count as this swing's.
+    public bool WindingUpOrStriking => IsAttacking && !cancelling && !strikeOver;
+    bool strikeOver, strikeWasOpen, strikeSeenOpen;
+    void NewSwing() { strikeOver = false; strikeSeenOpen = false; }
+
     void TrackStrike()
     {
         if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<Hitbox>(true);
+        bool open = weaponHitbox != null && weaponHitbox.Active;
+        if (open && !strikeWasOpen) strikeSeenOpen = true;
+        else if (!open && strikeWasOpen && strikeSeenOpen) strikeOver = true;
+        strikeWasOpen = open;
+        if (!IsAttacking) NewSwing();
+        else if (weaponHitbox == null) strikeOver = HandingBack();
         if (weaponHitbox == null) { strikeClosed = IsReleasing; return; }   // no hitbox: the release counts as recovery
         if (weaponHitbox.Active) strikeOpened = true;
         else if (strikeOpened) strikeClosed = true;
@@ -228,6 +241,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     {
         progressSeen = 0f; progressFrame = -1;
         strikeOpened = strikeClosed = false;
+        NewSwing();
         queuedPresses = Mathf.Max(0, queuedPresses - 1);
         windingUp = true;
         // Cleared here, not on press: a press during a heavy release must not turn its hit light. A combo hit's own
@@ -366,6 +380,7 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         comboIndex = Time.time - comboStartedAt > tuning.comboResetTime / speed ? 0 : (comboIndex + 1) % ComboHits;
         comboStartedAt = Time.time;
         comboQueuedUntil = -1f;
+        NewSwing();
         // The combo's last hit is a heavy one (CombatManager.comboFinisherHeavy); every other hit is light.
         ComboFinisher = comboIndex == ComboHits - 1;
         HeavySwing = ComboFinisher && tuning.comboFinisherHeavy;

@@ -159,7 +159,16 @@ public class DungeonMasterSeat : MonoBehaviour, IInteractable
         var standAt = seatPosition + standOffset;
         var standHere = new Vector3(standAt.x, seatPosition.y, standAt.z);
         // Back from the stage he walks; otherwise he simply stands there.
-        if (returning) { body.position = Vector3.MoveTowards(body.position, standHere, focusSpeed * Time.deltaTime); returning = (body.position - standHere).sqrMagnitude > .01f; }
+        // Home once he stands over his place, whatever his height: his NavMeshAgent holds him on the floor's navigation mesh
+        // after a lean lowered him onto it, so he never rose the last metre and a half, stayed "returning" for good, and his
+        // body had no collider for the rest of the session (spells flew through him; the user, 2026-11-15). Set there after.
+        if (returning)
+        {
+            body.position = Vector3.MoveTowards(body.position, standHere, focusSpeed * Time.deltaTime);
+            var flat = body.position - standHere; flat.y = 0f;
+            returning = flat.sqrMagnitude > .01f;
+            if (!returning) body.position = standHere;
+        }
         else body.position = standHere;
         if (!TableManager.HasInstance) return;
         var to = TableManager.Instance.transform.position - body.position; to.y = 0;

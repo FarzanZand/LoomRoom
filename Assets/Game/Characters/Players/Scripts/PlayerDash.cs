@@ -3,9 +3,9 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres to the
-// side or back, the way the movement keys point at that moment (never forward; back when none are held), for a flat
-// stamina cost. An even glide that eases to a stop (the user's reference, 2026-11-01). It moves the player only:
+// The dash (CombatManager > Player > Dash): Sprint (Shift) pressed in a fight throws the table player a few metres the
+// way the movement keys point at that moment (forward too since 2026-11-15, the user; back when none are held), for a
+// flat stamina cost. An even glide that eases to a stop (the user's reference, 2026-11-01). It moves the player only:
 // hits still land while dashing. Feel: the view widens and eases back, leans into a sideways dash and nods up out of a
 // backward one, dips a little, all slight; the arms and held items trail behind and tip over against it, then spring back
 // (PlayerViewPresentation.Offset, Tilt); streaks can rush past (off by default); a whoosh on the push-off. Added to
@@ -92,14 +92,9 @@ public class PlayerDash : MonoBehaviour
         if (bash != null && bash.Busy) return false;
         if (player.Equipment != null && player.Equipment.IsUsingItem) return false;
 
-        // Sideways and back only, never forward: the forward part of the keys is dropped (forward and a side key dash
-        // straight to that side), forward alone does nothing, and no key at all steps back.
+        // The way the keys point, forward and the forward diagonals too (the user, 2026-11-15; it was sideways and back
+        // only); no key at all steps back.
         if (move.sqrMagnitude < .04f) move = Vector2.down;
-        else
-        {
-            move.y = Mathf.Min(0f, move.y);
-            if (move.sqrMagnitude < .04f) return false;
-        }
 
         var stats = player.Stats;
         if (stats != null && stats.HasStat(StatType.MaxStamina) && !DevGodMode.On &&
@@ -238,8 +233,10 @@ public class PlayerDash : MonoBehaviour
     // lags) and forward out of a backward one.
     Vector3 Tilted(DashTuning t) => new Vector3(-viewDirection.z * t.armsTilt * .5f, -viewDirection.x * t.armsTilt * .35f, viewDirection.x * t.armsTilt);
 
-    // Sideways the side distance, straight back the back distance, a diagonal in between by how far back it points.
-    float Distance(DashTuning t) => Mathf.Lerp(t.sideDistance, t.backDistance, Mathf.Clamp01(-viewDirection.z));
+    // Sideways the side distance, straight back the back distance, straight forward the forward distance, a diagonal in
+    // between by how far back or forward it points.
+    float Distance(DashTuning t) => viewDirection.z >= 0f ? Mathf.Lerp(t.sideDistance, t.forwardDistance, Mathf.Clamp01(viewDirection.z))
+        : Mathf.Lerp(t.sideDistance, t.backDistance, Mathf.Clamp01(-viewDirection.z));
 
     static float EaseOut(float x) { x = Mathf.Clamp01(x); return 1f - (1f - x) * (1f - x) * (1f - x); }
 
@@ -285,7 +282,7 @@ public class PlayerDash : MonoBehaviour
 [Serializable]
 public class DashTuning
 {
-    [Tooltip("Sprint (Shift) pressed dashes the table player to the side or back, the way the movement keys point (never forward; back when none are held). Off: Shift only sprints, as before.")]
+    [Tooltip("Sprint (Shift) pressed dashes the table player the way the movement keys point: forward, to a side or back (back when none are held). Off: Shift only sprints, as before.")]
     public bool enabled = true;
     [ShowIf(nameof(enabled)), Tooltip("The ability that unlocks it (Characters/Skills/Athletics/Dash, Athletics' first milestone, 15): no dash until it is unlocked for the run or mounted on the trophy wall. Empty: always there.")]
     public SkillAbility ability;
@@ -295,6 +292,8 @@ public class DashTuning
     public float sideDistance = 2.6f;
     [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash straight back covers when nothing is in the way (a diagonal is in between).")]
     public float backDistance = 1.82f;
+    [ShowIf(nameof(enabled)), Min(.5f), Tooltip("Metres a dash straight forward covers when nothing is in the way (a diagonal is in between). It stops at an enemy's personal space like any dash.")]
+    public float forwardDistance = 2.6f;
     [ShowIf(nameof(enabled)), Min(.05f), Tooltip("Seconds a dash takes.")]
     public float duration = .45f;
     [ShowIf(nameof(enabled)), Range(0f, 4f), Tooltip("How front-loaded it is: speed falls off as (1 - t)^this. 0 = even speed, higher = a harder burst and a softer stop.")]

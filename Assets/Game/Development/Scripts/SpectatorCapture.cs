@@ -10,6 +10,7 @@ using UnityEngine;
 //   owner/NNN.png   the game view
 //   side/NNN.png    a camera following the target from 90 degrees off the player's view (to its right)
 //   back/NNN.png    the same from 180 degrees (looking back at the player across the target)
+//   behind/NNN.png  from the far side of the target, looking toward the player (the back of an enemy that faces them)
 //   frames.csv      the target's and each tracked bone's position per frame (heights to measure)
 // Started from an eval in Play mode, e.g. for the Dungeon Master's arm:
 //   SpectatorCapture.Run(6f, "flick", SpectatorCapture.DungeonMasterArm(), 2.5f)
@@ -55,7 +56,7 @@ public class SpectatorCapture : MonoBehaviour
 
     IEnumerator Record()
     {
-        foreach (var sub in new[] { "owner", "side", "back" }) Directory.CreateDirectory(Path.Combine(dir, sub));
+        foreach (var sub in new[] { "owner", "side", "back", "behind" }) Directory.CreateDirectory(Path.Combine(dir, sub));
         // The camera the game is seen through (the player's rig drives it through Cinemachine).
         var eye = Camera.main;
         var cam = new GameObject("Spectator camera").AddComponent<Camera>();
@@ -90,6 +91,7 @@ public class SpectatorCapture : MonoBehaviour
                 var focus = tracked[0].position;
                 Shoot(cam, rt, read, focus, Quaternion.Euler(0f, -90f, 0f) * forward, Path.Combine(dir, "side", $"{i:000}.png"));
                 Shoot(cam, rt, read, focus, -forward, Path.Combine(dir, "back", $"{i:000}.png"));
+                Shoot(cam, rt, read, focus, forward, Path.Combine(dir, "behind", $"{i:000}.png"));
                 csv.Append(i).Append(',').Append(F(Time.time));
                 foreach (var t in tracked) csv.Append(',').Append(t != null ? $"{F(t.position.x)},{F(t.position.y)},{F(t.position.z)}" : ",,");
                 csv.AppendLine();

@@ -66,6 +66,9 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         // Establish the baseline after startup placement and NavMesh alignment.
         Velocity = hasVelocitySample && dt > 0f
             ? (transform.position - lastPosition) / dt : Vector3.zero;
+        // What this frame's steps into a swing moved it at (Step), for LegVelocity.
+        stepVelocity = dt > 0f ? stepDelta / dt : Vector3.zero;
+        stepDelta = Vector3.zero;
         lastPosition = transform.position;
         hasVelocitySample = true;
     }
@@ -288,9 +291,27 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
     public Vector3 KnockbackVelocity => knockbackVelocity;
     // What its legs walk at: its velocity without the slide a hit gives it (with the slide in, a pushed enemy's legs
     // stepped backwards at the push's speed, a moonwalk).
-    public Vector3 LegVelocity => knockbackTimer > 0f ? Velocity - knockbackVelocity : Velocity;
+    public Vector3 LegVelocity => (knockbackTimer > 0f ? Velocity - knockbackVelocity : Velocity) - stepVelocity;
     // Co-op guests: a copy of the host's enemy (its motor off) moves at this pace (CoopEnemyPuppet), for its feet.
     public void SetNetworkVelocity(Vector3 velocity) => Velocity = velocity;
+
+    // ── Stepping into a swing ─────────────────────────────────────────
+
+    // A short move made while it stands and swings (EnemyAttackRunner.StepIntoSwing: after a target that backs away).
+    // Like a knockback it slides along the navmesh and its legs don't walk it (LegVelocity leaves it out): the swing's
+    // foot lock holds, and the feet step after the body (EnemyFootPlant). Returns the metres really moved.
+    Vector3 stepDelta, stepVelocity;
+    public bool IsStepping => stepVelocity.sqrMagnitude > .0001f || stepDelta.sqrMagnitude > 1e-8f;
+    public float Step(Vector3 delta)
+    {
+        delta.y = 0f;
+        if (!NavigationReady || delta.sqrMagnitude < 1e-8f) return 0f;
+        Vector3 before = Agent.nextPosition;
+        Agent.Move(delta);
+        Vector3 moved = Agent.nextPosition - before; moved.y = 0f;
+        stepDelta += moved;
+        return moved.magnitude;
+    }
 
     // A knockback is only a push: the agent keeps its path and the brain keeps deciding (and attacking)
     // while the enemy slides, so a hit jolts it without stopping it.
@@ -314,6 +335,7 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         HasDestination = false;
         knockbackTimer = 0f;
         knockbackVelocity = Vector3.zero;
+        stepDelta = stepVelocity = Vector3.zero;
         hasLookTarget = false;
     }
 

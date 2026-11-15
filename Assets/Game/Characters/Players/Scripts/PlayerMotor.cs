@@ -274,6 +274,10 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;
         Speed *= speedMul;
+        // Swinging slows the walk (CombatManager.swingSlowsPlayer): through a swing's windup and strike, not its
+        // recovery. The dash has its own speed and is not slowed.
+        if (player != null && player.Combat != null && CombatManager.HasInstance && CombatManager.Instance.swingSlowsPlayer && player.Combat.WindingUpOrStriking)
+            Speed *= Mathf.Clamp(CombatManager.Instance.swingMoveSpeed, .1f, 1f);
 
         Transform orientation = player != null && player.Look != null ? player.Look.YawTransform : transform;
         Vector3 forward = orientation.forward; forward.y = 0f; forward.Normalize();

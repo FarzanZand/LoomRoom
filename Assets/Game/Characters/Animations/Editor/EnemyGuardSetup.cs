@@ -49,6 +49,7 @@ public static class EnemyGuardSetup
         log.Append(Import());
         SwingFromGuard(); log.Append("swing from guard; ");
         log.Append(Layers());
+        log.Append(AttackWalkLayer());
         log.Append(Component());
         log.Append(Footwork());
         AssetDatabase.SaveAssets();
@@ -203,6 +204,53 @@ public static class EnemyGuardSetup
         controller.layers = layers.ToArray();
         EditorUtility.SetDirty(controller);
         return made.Length > 0 ? made : "layers kept; ";
+    }
+
+    // "Attack walk": the guard's moves again, legs only, as the controller's last layer (so no other layer's place
+    // changes), kept in step with the Guard stance layer (a synced layer plays that layer's own state at its time). Its
+    // weight is EnemyGuard's: up while an enemy walks in on its target as it swings (CombatManager > Enemies Walk While
+    // Attacking), so the legs walk under the swing instead of standing in its lunge. From an eval by itself too.
+    const string LegsMask = Anim + "Anim masks/Legs.mask";
+    public static string AttackWalkLayer()
+    {
+        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(Controller);
+        var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(LegsMask);
+        string made = "";
+        if (mask == null) { mask = new AvatarMask(); AssetDatabase.CreateAsset(mask, LegsMask); made += "legs mask made; "; }
+        for (int i = 0; i < (int)AvatarMaskBodyPart.LastBodyPart; i++)
+        {
+            var part = (AvatarMaskBodyPart)i;
+            mask.SetHumanoidBodyPartActive(part, part == AvatarMaskBodyPart.LeftLeg || part == AvatarMaskBodyPart.RightLeg
+                || part == AvatarMaskBodyPart.LeftFootIK || part == AvatarMaskBodyPart.RightFootIK);
+        }
+        EditorUtility.SetDirty(mask);
+
+        var layers = controller.layers.ToList();
+        int stance = layers.FindIndex(l => l.name == "Guard stance");
+        if (stance < 0) return made + "no Guard stance layer; ";
+        int walk = layers.FindIndex(l => l.name == "Attack walk");
+        if (walk < 0) { layers.Add(new AnimatorControllerLayer { name = "Attack walk" }); walk = layers.Count - 1; made += "Attack walk added; "; }
+        var layer = layers[walk];
+        // A synced layer plays the other layer's states, but it keeps a state machine of its own (empty), as one made
+        // in the Animator window does: editor code that walks every layer's state machine (Synty's
+        // RandomStateBehaviourAutoRefresh) threw on a layer with none.
+        if (layer.stateMachine == null)
+        {
+            layer.stateMachine = new AnimatorStateMachine { name = "Attack walk", hideFlags = HideFlags.HideInHierarchy };
+            AssetDatabase.AddObjectToAsset(layer.stateMachine, controller);
+            made += "state machine added; ";
+        }
+        layer.avatarMask = mask;
+        layer.blendingMode = AnimatorLayerBlendingMode.Override;
+        layer.syncedLayerIndex = stance;
+        layer.syncedLayerAffectsTiming = false;
+        layer.defaultWeight = 0f;
+        layer.iKPass = false;
+        layers[walk] = layer;
+        controller.layers = layers.ToArray();
+        EditorUtility.SetDirty(controller);
+        AssetDatabase.SaveAssets();
+        return made.Length > 0 ? made : "attack walk kept; ";
     }
 
     static string Component()

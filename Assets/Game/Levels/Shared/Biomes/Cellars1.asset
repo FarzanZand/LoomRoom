@@ -357,7 +357,7 @@ MonoBehaviour:
     weight: 2
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: 91a75ab8509e0d04da0c913a10a3c155, type: 3}
-    weight: 2
+    weight: 1
     fromFloor: 1
   - enemy: {fileID: 3616844111263754080, guid: ddfb82b4c4ebfd34e8c1f883f620809e, type: 3}
     weight: 2

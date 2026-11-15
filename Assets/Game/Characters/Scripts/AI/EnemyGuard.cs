@@ -33,6 +33,9 @@ public class EnemyGuard : MonoBehaviour
     [Tooltip("How far the chest (Aim Body) and the head (Aim Head) turn back toward the target while the moves play (look-at"
         + " IK, 0-1; the clips stand side-on). Aim Clamp limits the turn (0 = free, 1 = none).")]
     [Range(0f, 1f)] public float aimBody = .8f, aimHead = 1f, aimClamp = .3f;
+    [Tooltip("Seconds the legs take to pick up, or drop, their walk under a swing (the \"Attack walk\" layer: the moves' legs laid over"
+        + " the swing while the enemy walks in on its target as it attacks, CombatManager > Enemies Walk While Attacking).")]
+    public float attackWalkSeconds = .12f;
 
     static readonly int AttackTag = AnimatorHelper.TagHash("Attack"), HurtTag = AnimatorHelper.TagHash("Hurt"),
         DeathTag = AnimatorHelper.TagHash("Death"), SleepTag = AnimatorHelper.TagHash("Sleep");
@@ -50,8 +53,8 @@ public class EnemyGuard : MonoBehaviour
 
     EnemyBrain brain;
     Animator anim;
-    int stanceLayer = -1, gestureLayer = -1;
-    float stance, lastYaw, yawRate;
+    int stanceLayer = -1, gestureLayer = -1, walkLayer = -1;
+    float stance, lastYaw, yawRate, attackWalk;
     bool hasParams, hasPace;
 
     void Awake()
@@ -61,6 +64,7 @@ public class EnemyGuard : MonoBehaviour
         if (anim == null || anim.runtimeAnimatorController == null) return;
         stanceLayer = anim.GetLayerIndex("Guard stance");
         gestureLayer = anim.GetLayerIndex("FullBodyOverride");
+        walkLayer = anim.GetLayerIndex("Attack walk");
         hasParams = Character.HasParameter(anim, "CombatX", AnimatorControllerParameterType.Float);
         hasPace = Character.HasParameter(anim, "GuardPace", AnimatorControllerParameterType.Float);
         lastYaw = transform.eulerAngles.y;
@@ -122,6 +126,14 @@ public class EnemyGuard : MonoBehaviour
             stance = Mathf.MoveTowards(stance, want, rate * Time.deltaTime);
         }
         anim.SetLayerWeight(stanceLayer, stance);
+
+        // Walking in under a swing: the moves' legs (the same blend, legs only) over the swing's own planted ones.
+        if (walkLayer >= 0)
+        {
+            bool walking = alive && swing >= 0f && brain.WalkingIntoSwing;
+            attackWalk = Mathf.MoveTowards(attackWalk, walking ? 1f : 0f, Time.deltaTime / Mathf.Max(.01f, attackWalkSeconds));
+            anim.SetLayerWeight(walkLayer, attackWalk);
+        }
     }
 
     // Slower than a clip's own speed the blend takes the whole stride in that direction and returns how much slower to play
