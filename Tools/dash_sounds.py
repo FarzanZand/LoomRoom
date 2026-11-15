@@ -11,6 +11,8 @@ Needs ffmpeg on the path. 44.1 kHz mono, 16 bit.
 import os
 import sys
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cascade_sounds import LIB, RATE, fade, load, mix, write  # noqa: E402
 
@@ -23,7 +25,12 @@ def main():
     clothes = os.path.join(LIB, "Clothes")
 
     for i, (whoosh, cloth, scuff) in enumerate([(1, 2, 1), (3, 5, 2), (4, 8, 1)]):
-        air = load(os.path.join(weapons, f"Wpn_Whoosh_0{whoosh}.wav"), 0, .55, rate=.72, lowpass=2400)
+        # The whoosh's build-up is cut so its loudest moment comes .035 s in (the user, 2026-11-15: the dash sounded a
+        # little late; it peaked .12-.14 s in).
+        air = load(os.path.join(weapons, f"Wpn_Whoosh_0{whoosh}.wav"), 0, .9, rate=.72, lowpass=2400)
+        loud = np.convolve(np.abs(air), np.ones(220) / 220, "same")
+        cut = max(0, int(np.argmax(loud)) - int(.035 * RATE))
+        air = air[cut:cut + int(.55 * RATE)]
         rustle = load(os.path.join(clothes, f"Clothes_0{cloth}.wav"), 0, .4, rate=1.05, lowpass=5000)
         push = load(os.path.join(steps, f"Fst_Gravel_JumpUp_0{scuff}.wav"), 0, .3, rate=.9, lowpass=4000)
         x = mix(.7, (fade(push, .002, .15), 0, .8), (fade(air, .015, .3), .02, 1.0),
