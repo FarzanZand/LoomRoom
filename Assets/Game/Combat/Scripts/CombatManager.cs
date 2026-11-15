@@ -392,7 +392,7 @@ public partial class CombatManager : Singleton<CombatManager>
     public float enemyLungeFollow = .25f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm"), ShowIf("@enemiesStepIntoSwing && enemiesLungeIntoSwing")]
     [Range(.2f, 3f), Tooltip("How fast a melee enemy walks the last stretch in from where it stopped to the distance it holds (metres a second). Under the player's backing speed (about 1.5) a player who backs off stays out of its reach; at 3 it runs in as it used to.")]
-    public float enemyCloseInSpeed = 1.1f;
+    public float enemyCloseInSpeed = 1.45f;
     [TabGroup("Tabs", "Enemies"), FoldoutGroup("Tabs/Enemies/Attack rhythm")]
     [Tooltip("Walk while attacking: an enemy keeps walking toward its target through the whole melee attack, slower than it chases, its legs walking under the swing, until it is at the distance it holds in a fight (never inside personal space). It walks along its own aim only, so a dash aside is not followed. Each attack can opt out (EnemyAttack > Moves In); casts and bow shots never move. On, it takes the place of the lunge above.")]
     public bool enemiesWalkWhileAttacking = false;

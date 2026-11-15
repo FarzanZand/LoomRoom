@@ -4,7 +4,8 @@ using UnityEngine;
 // them), with a flame on its body. Lighting it again starts the time over and keeps the stronger fire. A spell with a
 // burn (SpellDefinition.burn: the Fireball, half its hit over 5 seconds) sets what it hits alight (SpellProjectile). Each
 // tick lands a whole number and what rounding left over is carried to the next, so the ticks add up to the fire's whole
-// (2.1 a second: 2, 2, 2, 2, 3). The flame's BurnCoat chars the body while it burns.
+// (2.1 a second: 2, 2, 2, 2, 3). The flame's BurnCoat chars the body while it burns. Players are never set alight
+// (Ignite): a spell with a burn does only its hit to them.
 public class Burning : MonoBehaviour
 {
     Character target, source;
@@ -18,6 +19,9 @@ public class Burning : MonoBehaviour
     public static void Ignite(Character target, Character source, float perSecond, float seconds, GameObject flamePrefab)
     {
         if (target == null || !target.IsAlive || perSecond <= 0f || seconds <= 0f || EventProtection.Held(target)) return;
+        // A player never burns (the user, 2026-11-15): a Fireball or any other spell with a burn does its hit to them
+        // and nothing after it, whoever cast it. Enemies burn as before.
+        if (target is Player) return;
         var fire = target.GetComponent<Burning>();
         if (fire == null) fire = target.gameObject.AddComponent<Burning>();
         fire.Light(target, source, perSecond, seconds, flamePrefab);

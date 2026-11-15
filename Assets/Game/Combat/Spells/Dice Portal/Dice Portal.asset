@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Dice Portal
   description: A die from a portal knocks the enemy across the room.
   icon: {fileID: 21300000, guid: c4a21ee2574caf841a177bab57b84bf3, type: 3}
-  manaCost: 13
+  manaCost: 16
   power: 25
   castSeconds: 0.6
   recoverySeconds: 0.4

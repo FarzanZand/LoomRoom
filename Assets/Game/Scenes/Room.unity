@@ -367239,7 +367239,7 @@ MonoBehaviour:
   enemyHitFacingAngle: 80
   enemySwingHalfWidth: 1
   enemiesSwingInsidePlayerReach: 1
-  enemySwingInsideReach: 0.1
+  enemySwingInsideReach: 0.2
   enemyBlowBeyondStart: 0.2
   enemyBlowReach: 1.1
   enemySwingSpeed: 1
@@ -367251,7 +367251,7 @@ MonoBehaviour:
   enemiesLungeIntoSwing: 1
   enemyWaitOutsideReach: 0.1
   enemyLungeFollow: 0.25
-  enemyCloseInSpeed: 1.1
+  enemyCloseInSpeed: 1.45
   enemiesWalkWhileAttacking: 0
   enemyAttackWalkSpeed: 0.5
   enemyAttackAnimationSpeed: 1.25
@@ -367272,7 +367272,7 @@ MonoBehaviour:
   knockbackDuration: 0.22
   meleeReachMultiplier: 1.2
   meleeWidthMultiplier: 1.25
-  playerMeleeReach: 1.1
+  playerMeleeReach: 1.2
   playerMeleeReachRadius: 0.35
   criticalHitsEnabled: 1
   critChance: 0.08

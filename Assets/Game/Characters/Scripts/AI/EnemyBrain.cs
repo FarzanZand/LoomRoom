@@ -733,6 +733,14 @@ public class EnemyBrain : MonoBehaviour
 
         // Footwork: near its distance it walks, never darts: the circling and the step in or back are one movement at
         // the walk's own pace (the legs whirled when it ran sideways and burst in and out between circling).
+        // A lunging enemy that stopped its run-up beyond the player's reach walks straight in the rest of the way,
+        // at the close-in pace (it shuffled in at half a walk while it circled, and stood just out of reach meanwhile).
+        if (LungeHold && dist > preferred + .15f)
+        {
+            backStuckSince = -1f;
+            Motor.Strafe(toTarget, CloseInSpeed);
+            return;
+        }
         if (p.spacingSway > 0f && p.circleTarget && Mathf.Abs(dist - preferred) < .7f)
         {
             backStuckSince = -1f;
