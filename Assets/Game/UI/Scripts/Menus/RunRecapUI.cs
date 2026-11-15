@@ -54,6 +54,9 @@ public class RunRecapUI : MonoBehaviour
     int stripRows = 3;
     [SerializeField, Tooltip("Inside each strip: space from its left and right edges (x) and its top and bottom (y).")] Vector2 stripPadding = new(14, 10);
     [SerializeField, Min(0)] float stripGap = 4;
+    [SerializeField, Tooltip("Written in the spoils box when none were carried out (an empty box read as broken).")] string noSpoilsText = "Nothing carried out.";
+    [SerializeField, Tooltip("Written in the kills box when nothing was slain.")] string noKillsText = "Nothing slain.";
+    [SerializeField] Color emptyNoteColour = new(.55f, .51f, .45f);
 
     [Header("The ledger (built by RunRecapShowcase.Build, run from an eval)")]
     [SerializeField, Tooltip("The big picture of the most valuable spoil brought back.")] Image showcaseIcon;
@@ -226,6 +229,9 @@ public class RunRecapUI : MonoBehaviour
         for (int i = 0; i < Mathf.Min(t.kills, maxSkulls); i++) Add(killsStrip, skullTemplate, null);
         Arrange(spoilsStrip, spoilsIconTemplate);
         Arrange(killsStrip, skullTemplate);
+        // An empty box says what is missing (a death before the first spoil or kill showed two blank boxes).
+        if (icons == 0) Note(spoilsStrip, noSpoilsText);
+        if (t.kills == 0) Note(killsStrip, noKillsText);
 
         var rows = new[] { (spoilsRow, SpoilsKey), (killsRow, KillsKey), (totalRow, TotalKey), (bankRow, BankKey) };
         foreach (var (row, _) in rows) SetAlpha(row, 0f);
@@ -290,6 +296,23 @@ public class RunRecapUI : MonoBehaviour
         for (int i = strip.childCount - 1; i >= 0; i--) { var c = strip.GetChild(i); if (template == null || c != template.transform) { c.gameObject.SetActive(false); Destroy(c.gameObject); } }
         if (template != null) template.gameObject.SetActive(false);
     }
+    // A dim line across the middle of an empty strip, in the help line's font (Clear takes it away with the icons).
+    void Note(RectTransform strip, string text)
+    {
+        var source = helpLine != null ? helpLine : killsValue;
+        if (strip == null || source == null || string.IsNullOrEmpty(text)) return;
+        var note = Instantiate(source, strip);
+        note.name = "Empty note";
+        note.gameObject.SetActive(true);
+        var r = note.rectTransform;
+        r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.pivot = new Vector2(.5f, .5f);
+        r.offsetMin = r.offsetMax = Vector2.zero; r.localScale = Vector3.one; r.localRotation = Quaternion.identity;
+        note.alignment = TextAlignmentOptions.Center;
+        note.text = text;
+        note.color = emptyNoteColour;
+        note.alpha = 1f;
+    }
+
     // One more icon in its strip (laid out by Arrange).
     static void Add(RectTransform strip, Image template, Sprite sprite)
     {
