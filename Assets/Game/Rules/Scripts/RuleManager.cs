@@ -51,8 +51,9 @@ public class RuleManager : Singleton<RuleManager>
     }
 
     // Gives a rule: it is pinned from now on, after every rule given before it, and this is what he says (null for none).
-    // The caller says it, at its own pace.
-    public DungeonMaster.Line Give(HouseRule rule)
+    // The caller says it, at its own pace. notice false gives it with no "NEW RULE ADDED" (the intro's first rule:
+    // too much for a player who has only just started, the user, 2026-11-15).
+    public DungeonMaster.Line Give(HouseRule rule, bool notice = true)
     {
         if (rule == null) return null;
         if (PM != null && !Given(rule))
@@ -62,7 +63,7 @@ public class RuleManager : Singleton<RuleManager>
             PM.SetFlag(FlagPrefix + rule.id, last + 1);
             Changed?.Invoke();
             RuleGiven?.Invoke(rule);
-            NewRuleUI.Show(rule);   // a small "NEW RULE ADDED" and the rule typed out, where his lines are
+            if (notice) NewRuleUI.Show(rule);   // a small "NEW RULE ADDED" and the rule typed out, where his lines are
         }
         return rule.given != null && !rule.given.IsEmpty ? Numbered(rule.given, rule) : new DungeonMaster.Line { text = $"*Rule {Word(Number(rule))}.* {rule.text}", inPerson = true, mumble = true };
     }

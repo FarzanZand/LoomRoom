@@ -222,7 +222,7 @@ public partial class IntroController : Singleton<IntroController>
         // The house rule comes in among the lines; the view turns to the figure while the last line is still up.
         int split = Mathf.Clamp(openingRuleAfter, 0, afterLamp.Length);
         yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) < split));
-        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule) }, split < afterLamp.Length);
+        if (openingRule != null && RuleManager.HasInstance) yield return SayAll(new[] { RuleManager.Instance.Give(openingRule, false) }, split < afterLamp.Length);
         yield return SayAll(System.Array.FindAll(afterLamp, l => System.Array.IndexOf(afterLamp, l) >= split), false);
         yield return new WaitForSeconds(.4f);
         if (DungeonMaster.HasInstance) DungeonMaster.Instance.ReadingScale = 1f;
