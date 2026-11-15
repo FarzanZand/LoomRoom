@@ -17,3 +17,13 @@ MonoBehaviour:
   hoverScale: 1.035
   pressScale: 1.07
   hoverDuration: 0.1
+  openKey: inventoryOpen
+  closeKey: inventoryClose
+  hoverKey: uiHover
+  equipKey: equipItem
+  invalidKey: uiUnavailable
+  clickKey: buttonClick
+  hoverClip: {fileID: 8300000, guid: 6ea6d4d5d2d08ba41bd81652ba5cca2c, type: 3}
+  hoverVolume: 0.15
+  clickClip: {fileID: 8300000, guid: c685f61d3b4e5194c8f9e220ea05312a, type: 3}
+  clickVolume: 0.7

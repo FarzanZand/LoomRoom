@@ -2,7 +2,7 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIInteractionFeedback : MonoBehaviour,IPointerEnterHandler,IPointerExitHandler,IPointerDownHandler,IPointerUpHandler
+public class UIInteractionFeedback : MonoBehaviour,IPointerEnterHandler,IPointerExitHandler,IPointerDownHandler,IPointerUpHandler,IPointerClickHandler,ISubmitHandler
 {
     public UIFeedbackSettings settings;
     Tween tween;
@@ -16,4 +16,12 @@ public class UIInteractionFeedback : MonoBehaviour,IPointerEnterHandler,IPointer
     public void OnPointerUp(PointerEventData e){var s=settings!=null?settings:UIFeedbackSettings.Shared;Scale(hovered?(s!=null?s.hoverScale:1.035f):1);}
     public void Pulse(){var s=settings!=null?settings:UIFeedbackSettings.Shared;tween?.Kill();tween=transform.DOScale(resting*(s!=null?s.pressScale:1.07f),.07f).SetLoops(2,LoopType.Yoyo).SetUpdate(true);}
     void OnDisable(){hovered=false;tween?.Kill();transform.localScale=resting;}
+    // A pressed button clicks (mouse or Submit); item slots are left out (they play the move or equip sound).
+    public void OnPointerClick(PointerEventData e){if(e.button==PointerEventData.InputButton.Left)Clicked();}
+    public void OnSubmit(BaseEventData e)=>Clicked();
+    void Clicked()
+    {
+        if(!TryGetComponent<UnityEngine.UI.Button>(out var button)||!button.IsInteractable()||GetComponent<ItemSlotUI>()!=null)return;
+        var s=settings!=null?settings:UIFeedbackSettings.Shared;s?.Click();
+    }
 }

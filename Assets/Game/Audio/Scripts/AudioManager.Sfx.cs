@@ -115,6 +115,19 @@ public partial class AudioManager
         return PlayUI(e.clip, e.volume, e.pitch);
     }
 
+    // ── A UI sound that gives way ──────────────────────────────────────────────
+    // A button's click: played at the end of the frame, and only when nothing else has started in the UI pool since it
+    // was asked for (the button's own action, a trade, a chime, already says it was pressed).
+    int lastUIFrame = -1, softFrame = -1;
+    string softKey;
+    public void PlayUIUnlessOther(string key) { softKey = key; softFrame = Time.frameCount; }
+    void LateUpdate()
+    {
+        if (softKey == null) return;
+        var key = softKey; softKey = null;
+        if (lastUIFrame < softFrame) PlayUI(key);
+    }
+
     // Every one-shot goes through here: claim a pooled source, set it up and play it.
     // A position makes it spatial (attenuation reset to the defaults by ClaimSource); none plays it 2D.
     AudioSource Play(List<AudioSource> pool, AudioClip clip, float volume, float pitch, Vector3? position)
@@ -123,6 +136,7 @@ public partial class AudioManager
         AudioPlayLog.Heard(clip);
         // UI sounds (the DM's voice, menu clicks) always play; sound effects are limited per clip.
         if (pool == sfxPool && TooMany(pool, clip)) return null;
+        if (pool == uiPool) lastUIFrame = Time.frameCount;
         var src = ClaimSource(pool);
         if (position.HasValue) src.transform.position = position.Value;
         src.clip         = clip;
