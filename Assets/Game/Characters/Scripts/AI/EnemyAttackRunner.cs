@@ -68,6 +68,10 @@ public class EnemyAttackRunner
         return Lunges(attack) ? Mathf.Max(strike, Mathf.Min(own, tuning.playerMeleeReach + BodyFront + tuning.enemyWaitOutsideReach)) : strike;
     }
 
+    // Where this attack is struck from: a lunge's striking distance, else where it begins (EnemyBrain holds its
+    // distance by it).
+    public float StruckFrom(EnemyAttack attack) => Lunges(attack) ? StrikeRange(attack) : StartRange(attack);
+
     // Where a melee blow is struck from: just inside the player's own reach, never past the attack's own range.
     float StrikeRange(EnemyAttack attack) => Mathf.Min(attack.EffectiveMaxRange, Mathf.Max(.5f, Tuning.playerMeleeReach + BodyFront - Tuning.enemySwingInsideReach));
 

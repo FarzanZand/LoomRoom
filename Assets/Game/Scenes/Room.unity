@@ -367249,8 +367249,9 @@ MonoBehaviour:
   enemySwingStepMost: 0.25
   enemySwingStepSpeed: 3
   enemiesLungeIntoSwing: 1
-  enemyWaitOutsideReach: 0.3
-  enemyLungeFollow: 0
+  enemyWaitOutsideReach: 0.1
+  enemyLungeFollow: 0.25
+  enemyCloseInSpeed: 1.1
   enemiesWalkWhileAttacking: 0
   enemyAttackWalkSpeed: 0.5
   enemyAttackAnimationSpeed: 1.25
