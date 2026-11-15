@@ -578,3 +578,106 @@ MonoBehaviour:
     - And another.
     - They keep coming.
     inPerson: 0
+  - trigger: 1
+    room: 0
+    chance: 0.1
+    oncePerRun: 0
+    lines:
+    - Tidy.
+    - Next.
+    - You're getting faster.
+    - I'm running out of those.
+    - He was new.
+    - Keep count. I do.
+    - Messy. Good.
+    - That comes out of my budget.
+    - Don't get cocky.
+    - He had plans for the weekend.
+    inPerson: 0
+  - trigger: 2
+    room: 0
+    chance: 0.5
+    oncePerRun: 0
+    lines:
+    - Sneaky. I'll allow it.
+    - He never knew.
+    - No honour. Good.
+    - Quietly done.
+    - I didn't see that. Neither did he.
+    inPerson: 0
+  - trigger: 3
+    room: 0
+    chance: 0.7
+    oncePerRun: 0
+    lines:
+    - You're bleeding on my table.
+    - Eat something.
+    - Now would be a good time to block.
+    - I'd back off.
+    - Still alive. Barely.
+    - Don't make me roll a new one.
+    inPerson: 0
+  - trigger: 8
+    room: 0
+    chance: 0.08
+    oncePerRun: 0
+    lines:
+    - That looked like it hurt.
+    - Shield up.
+    - You walked into that.
+    - Ouch.
+    - They hit back, you know.
+    inPerson: 0
+  - trigger: 4
+    room: 0
+    chance: 0.6
+    oncePerRun: 0
+    lines:
+    - Stronger. I'll adjust.
+    - Don't let it go to your head.
+    - A level. Spend it well.
+    - Good. You'll need it.
+    - Noted on the sheet.
+    inPerson: 0
+  - trigger: 5
+    room: 0
+    chance: 0.4
+    oncePerRun: 0
+    lines:
+    - An upgrade. Put it on.
+    - That's worth wearing.
+    - Better than the old one.
+    - Lucky find.
+    - I shouldn't have put that there.
+    inPerson: 0
+  - trigger: 9
+    room: 0
+    chance: 0.04
+    oncePerRun: 0
+    lines:
+    - Yes, take everything.
+    - Help yourself.
+    - It was just lying there?
+    - You'll carry anything.
+    inPerson: 0
+  - trigger: 10
+    room: 0
+    chance: 1
+    oncePerRun: 0
+    lines:
+    - Three. Show-off.
+    - '*Three* in a row.'
+    - Slow down. I can't set them up that fast.
+    - That was quick.
+    - Leave some for later.
+    inPerson: 0
+  - trigger: 11
+    room: 0
+    chance: 1
+    oncePerRun: 0
+    lines:
+    - That one was expensive.
+    - I painted that one myself.
+    - He was meant to last.
+    - Fine. He was too strong anyway.
+    inPerson: 0

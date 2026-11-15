@@ -417,9 +417,24 @@ public class DungeonMasterRemarks : MonoBehaviour
         }
     }
 
+    // An elite's fall and three kills in quick succession have lines of their own (a level without them, and a kill
+    // that is neither, gets the Kill lines: the first trigger that says something holds the others off).
+    const float StreakSeconds = 8f;
+    readonly Queue<float> killTimes = new();
     void OnAnyDied(Character c)
     {
-        if (c != null && !(c is Player) && c.GetComponent<EnemyBrain>() != null) Trigger(DungeonDialogueTrigger.Kill);
+        if (c == null || c is Player || c.GetComponent<EnemyBrain>() == null) return;
+        // Not on a boss's stage: his crew falls with him, which made three "kills" at once, and "That was quick." came
+        // as the boss died (seen in the Crypt Lord's fight). His fight has its own lines.
+        if (c.GetComponent<Summon>() == null && BossStageEncounter.Current == null)
+        {
+            float now = Time.time;
+            killTimes.Enqueue(now);
+            while (killTimes.Count > 0 && now - killTimes.Peek() > StreakSeconds) killTimes.Dequeue();
+            if (c.GetComponent<EliteEnemy>() != null) Trigger(DungeonDialogueTrigger.EliteKill);
+            if (killTimes.Count >= 3) { killTimes.Clear(); Trigger(DungeonDialogueTrigger.KillStreak); }
+        }
+        Trigger(DungeonDialogueTrigger.Kill);
     }
 
     void OnHitLanded(DamageInfo info) { if (info.Backstab && !info.Blocked) Trigger(DungeonDialogueTrigger.Backstab); }
