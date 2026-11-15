@@ -292,7 +292,7 @@ public class EnemyAttackRunner
         swingAudioPlayed = false;
         HitAt = -1f;
         stepped = 0f;
-        stepKeep = Perception.Target != null ? Perception.HorizontalDist(brain.transform.position, Perception.Target.transform.position) : 0f;
+        stepKeep = Perception.Target != null ? Perception.HorizontalDist(brain.transform.position, CoopWorld.TruePosition(Perception.Target)) : 0f;
         if (Tuning != null) stepKeep = Mathf.Max(stepKeep, Tuning.personalSpace + .35f);
         var hitbox = brain.AttackRelay != null ? brain.AttackRelay.GetHitbox(attack.hitboxIndex) : null;
         if (hitbox != null) hitbox.SetProfile(attack.hit);
@@ -426,7 +426,8 @@ public class EnemyAttackRunner
         Vector3 aim = directionCommitted ? committedForward : brain.transform.forward; aim.y = 0f;
         if (aim.sqrMagnitude < .0001f) return;
         aim.Normalize();
-        Vector3 to = target.transform.position - brain.transform.position; to.y = 0f;
+        // Co-op: another player as they really are, not as this machine shows them a moment late (CoopWorld.TruePosition).
+        Vector3 to = CoopWorld.TruePosition(target) - brain.transform.position; to.y = 0f;
         float gap = Vector3.Dot(to, aim) - stepKeep;
         if (gap <= .01f) return;
         stepped += Motor.Step(aim * Mathf.Min(gap, left, tuning.enemySwingStepSpeed * Time.deltaTime));
@@ -610,7 +611,11 @@ public class EnemyAttackRunner
         // impact only distance and a generous arc around the committed direction count.
         Vector3 self = brain.transform.position;
         float dist = Perception.HorizontalDist(self, target.transform.position);
-        if (dist > LandRange(current) || Mathf.Abs(target.transform.position.y - self.y) > 1f) return;
+        // Co-op: a blow at another player is judged on their own machine, where they really are (CoopWorld.DodgedHere);
+        // here it only has to be near what this machine shows of them, a moment late.
+        bool remote = CoopWorld.IsRemoteStandIn(target);
+        if (remote && (dist > LandRange(current) + CoopWorld.RemoteReachSlack || Mathf.Abs(target.transform.position.y - self.y) > 2f)) return;
+        if (!remote && (dist > LandRange(current) || Mathf.Abs(target.transform.position.y - self.y) > 1f)) return;
         Vector3 toward = target.transform.position - self; toward.y = 0f;
         // The swing's own band: in front of the committed aim (within enemyHitFacingAngle) and no farther to its side than
         // enemySwingHalfWidth. A strafe moves the target well under a metre aside before the blow and is hit at any range;
@@ -618,8 +623,8 @@ public class EnemyAttackRunner
         // strafe sweeps 60-70 degrees round the enemy, or too wide farther out.)
         float arc = Tuning != null ? Mathf.Min(180f, Tuning.enemyHitFacingAngle) : 90f;
         float halfWidth = Tuning != null ? Tuning.enemySwingHalfWidth : 1f;
-        if (Vector3.Angle(committedForward, toward) > arc) return;
-        if (Vector3.Cross(committedForward.normalized, toward).magnitude > halfWidth) return;
+        if (!remote && Vector3.Angle(committedForward, toward) > arc) return;
+        if (!remote && Vector3.Cross(committedForward.normalized, toward).magnitude > halfWidth) return;
 
         Vector3 dir = toward.sqrMagnitude > 0.0001f ? toward.normalized : brain.transform.forward;
 

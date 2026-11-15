@@ -635,7 +635,9 @@ public class EnemyBrain : MonoBehaviour
         var target = Perception.Target;
         if (target == null) { SetState(EnemyState.ReturnToPost); return; }
         var p = Profile;
-        Vector3 targetPos = target.transform.position;
+        // Co-op: another player where they really are, not where this machine shows them a moment late
+        // (CoopWorld.TruePosition), so a swing begins at the same distance as against the host.
+        Vector3 targetPos = CoopWorld.TruePosition(target);
         float dist = Perception.HorizontalDist(transform.position, targetPos);
 
         if (!Perception.TargetVisible)

@@ -389,18 +389,15 @@ public static class CoopWorld
     // while they are dashing, or just after, and finds them clearly out of the swing's band here (no farther from its line
     // than CombatManager.enemySwingHalfWidth, as EnemyAttackRunner judges) missed: their dash beat it on their own screen.
     // Standing still, walking or strafing is judged as the host judged it.
-    // Backing off is judged here too (2026-11-15, enemies step into their swing): a timed blow lands out to its reach from
-    // where the enemy stood, and the host measured from where it last saw this player, a moment behind. One that finds
-    // them, where they were as it struck (half a round trip ago, the trail), farther than that reach and ReachMargin from
-    // where the enemy stood missed them: they had backed out of it, as they would alone. Measured on a Blue Hood Skeleton
-    // with the host far off: backing off alone, its second blow came at 1.87-1.89 m (reach 1.71) and now misses in two runs of three;
-    // backing off while swinging (slowed, and stepped after) its blows came at 1.62-1.85 m and still land. The margin
-    // between the two is a few centimetres, as it is alone.
-    const float DodgeAfterDash = .8f, DodgeMargin = .25f, ReachMargin = .15f;
+    // A timed melee blow (hit.reach set) is judged here in full (2026-11-15, the user: take the connection out of it), with
+    // EnemyAttackRunner.DealFallbackHit's own checks against where this player was as it struck (the trail, half a round
+    // trip back): within its reach of where the enemy stood, within a metre up or down, in front of its committed aim and
+    // no farther from that line than enemySwingHalfWidth. The host only checked it came near what it shows of them.
+    const float DodgeAfterDash = .8f, DodgeMargin = .25f;
     static bool DodgedHere(NetDamage hit, Player player)
     {
         var src = Enemy(hit.enemy);
-        if (hit.reach > 0f && (hit.flags & 64) == 0 && Vector3.Distance(Flat(PositionAgo(player.transform.position, HalfRoundTrip())), Flat(hit.from)) > hit.reach + ReachMargin) return true;
+        if (hit.reach > 0f && (hit.flags & 64) == 0) return !BlowReaches(hit, PositionAgo(player.transform.position, HalfRoundTrip()));
         if (src == null || hit.direction.sqrMagnitude < .01f || (hit.flags & 64) != 0 || src.data is not EnemyData data) return false;
         // Melee only: the attack when the host says which, else an enemy with no bow or spell (it can only have swung).
         var attack = hit.attack >= 0 && hit.attack < data.attacks.Count ? data.attacks[hit.attack] : null;
@@ -438,6 +435,42 @@ public static class CoopWorld
             $"Me {me:F1}, its copy {(src != null ? src.transform.position.ToString("F1") : "-")}, host hit point {hit.hitPoint:F1}, floor {FloorKey}.");
     }
     static Vector3 Flat(Vector3 v) => new(v.x, 0f, v.z);
+
+    // A timed melee blow, judged as EnemyAttackRunner.DealFallbackHit judges one at the host's own player.
+    static bool BlowReaches(NetDamage hit, Vector3 at)
+    {
+        var toward = Flat(at) - Flat(hit.from);
+        if (toward.magnitude > hit.reach || Mathf.Abs(at.y - hit.from.y) > 1f) return false;
+        var aim = Flat(hit.swing);
+        if (aim.sqrMagnitude < .0001f) return true;
+        var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
+        float arc = tuning != null ? Mathf.Min(180f, tuning.enemyHitFacingAngle) : 90f;
+        float halfWidth = tuning != null ? tuning.enemySwingHalfWidth : 1f;
+        if (Vector3.Angle(aim, toward) > arc) return false;
+        return Vector3.Cross(aim.normalized, toward).magnitude <= halfWidth;
+    }
+
+    // Host: a blow at another player only has to land this near what is shown of them here (their own machine decides).
+    public const float RemoteReachSlack = 1f;
+    // Host: another player's stand-in (their own machine has the real one).
+    public static bool IsRemoteStandIn(Character c) =>
+        c != null && Coop.Running && Coop.IsHost && c.TryGetComponent<CoopPlayer>(out var cp) && !cp.IsOwner;
+    // Host: where another player really is now, about: their stand-in is shown StandInLag behind (its NetworkTransform's
+    // interpolation) and half a round trip more, so it is carried on along its pace for that long (pace capped at a
+    // sprint). Anyone else is where they are. Only an enemy's step into its swing uses it.
+    // Measured 2026-11-15 (editor host, MPPM guest, the guest's own path against the host's stand-in): .135 s.
+    public static float StandInLag = .135f;
+    public static Vector3 TruePosition(Character c)
+    {
+        if (c == null) return Vector3.zero;
+        if (!IsRemoteStandIn(c) || !c.TryGetComponent<CoopPlayer>(out var cp) || cp.Avatar == null) return c.transform.position;
+        var v = Flat(cp.Avatar.Velocity);
+        if (v.magnitude > 6f) v = v.normalized * 6f;
+        float rtt = 0f;
+        var net = NetworkManager.Singleton;
+        try { if (net != null && net.NetworkConfig?.NetworkTransport != null) rtt = net.NetworkConfig.NetworkTransport.GetCurrentRtt(cp.OwnerClientId) * .001f; } catch { }
+        return c.transform.position + v * (StandInLag + Mathf.Min(.4f, rtt * .5f));
+    }
 
     // A guest's own table player over the last frames, to judge a host's blow where they were as it struck.
     static readonly Vector3[] trail = new Vector3[96];

@@ -32,6 +32,10 @@ public class CoopAvatar : MonoBehaviour
     float useEnds;
     Vector3 lastPosition;
     Vector3 velocity;
+    // How fast this stand-in moves as shown here (smoothed, for every kind of body), for where its player really is
+    // (CoopWorld.TruePosition).
+    public Vector3 Velocity => shownPace;
+    Vector3 shownPace, lastPacePosition;
     bool shownDead, shownSeated;
     bool builtGhost, builtOneBody;
     OneBodyRig rig;
@@ -167,6 +171,13 @@ public class CoopAvatar : MonoBehaviour
         {
             body.height = 1.8f; body.radius = .35f; body.center = Vector3.up * .9f;
             body.enabled = s.place == CoopPlace.Table && builtPlace == CoopPlace.Table && s.alive && Time.time >= solidAfter;
+        }
+        {
+            float pdt = Mathf.Max(Time.deltaTime, 1e-4f);
+            var step = (transform.position - lastPacePosition) / pdt;
+            lastPacePosition = transform.position;
+            if (step.magnitude > 30f * builtScale) step = Vector3.zero;
+            shownPace = Vector3.Lerp(shownPace, step, 1f - Mathf.Exp(-12f * pdt));
         }
         if (animator == null) return;
         if (builtOneBody)
