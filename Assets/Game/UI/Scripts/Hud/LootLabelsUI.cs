@@ -105,13 +105,28 @@ public class LootLabelsUI : MonoBehaviour
     {
         var rect = new Rect(at.x - size.x * .5f, at.y - size.y * .5f, size.x, size.y);
         if (rect.yMin < floor) rect.y = floor;
-        for (bool moved = true; moved;)
+        // Each move takes it strictly higher onto one of the placed labels' tops, so it needs at most one pass per placed
+        // label and one more. The edges are rounded to float before they are compared (the casts): C# may work a sum out
+        // more finely than a float holds, and the editor's Mono does, so "other.yMax + gap" compared unrounded stayed a
+        // hair above the rounded value just stored in rect.y, the label still counted as covered, and this loop never
+        // ended (2026-11-15: it froze the co-op clone's editor, a label at 18.1011543 under a top of 18.1011553). The
+        // pass cap is a second guard.
+        int passes = 0;
+        bool moved = true;
+        for (; moved && passes <= placed.Count; passes++)
         {
             moved = false;
             foreach (var other in placed)
-                if (rect.xMin < other.xMax + gap && rect.xMax > other.xMin - gap && rect.yMin < other.yMax + gap && rect.yMax > other.yMin - gap)
-                { rect.y = other.yMax + gap; moved = true; }
+            {
+                float left = (float)(other.xMin - gap), right = (float)(other.xMax + gap);
+                float bottom = (float)(other.yMin - gap), top = (float)(other.yMax + gap);
+                if (rect.xMin < right && rect.xMax > left && rect.yMin < top && rect.yMax > bottom)
+                { rect.y = top; moved = true; }
+            }
         }
+#if UNITY_EDITOR || DEBUG
+        if (moved && passes > placed.Count) Debug.LogWarning($"[LootLabels] A label still overlapped after {passes} passes (at {at.x:R},{at.y:R}).");
+#endif
         placed.Add(rect);
         return rect.center;
     }
