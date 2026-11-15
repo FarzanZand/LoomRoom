@@ -135,8 +135,11 @@ public class InteractUI : MonoBehaviour
         if (promptText == null) return;
         // The key is read once per rebind (shownKey is cleared then), the message each check.
         string key = shownKey ?? (InputManager.HasInstance ? InputManager.Instance.BindingDisplay("Interact") : "E");
-        string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
-            ? trigger.WorldItem.Item.itemName : trigger.PromptMessage;
+        // An item on the floor is named in its rarity's colour, as its loot label and beam show it (Common stays plain).
+        var floorItem = trigger.WorldItem != null ? trigger.WorldItem.Item : null;
+        string message = floorItem != null
+            ? (floorItem.rarity != ItemRarity.Common ? $"<color={floorItem.RarityTextColour}>{floorItem.itemName}</color>" : floorItem.itemName)
+            : trigger.PromptMessage;
         // A second action on its own key (the table's R for the map) goes beside the first.
         string second = trigger.Interactable is ISecondaryInteractable s && !string.IsNullOrEmpty(s.SecondaryPrompt)
             ? "      " + KeyCapText.Key(InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + " " + s.SecondaryPrompt : "";
