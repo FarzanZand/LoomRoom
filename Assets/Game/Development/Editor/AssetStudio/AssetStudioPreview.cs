@@ -205,6 +205,9 @@ public class AssetStudioPreview : IDisposable
 
     public void Draw(Rect r, EditorWindow window)
     {
+        // A window squeezed to nothing (or not laid out yet) has no room to draw in: a render texture of no width
+        // fails with errors in the console.
+        if (r.width < 8 || r.height < 8) return;
         EditorGUI.DrawRect(r, Backgrounds[background]);
         switch (mode)
         {

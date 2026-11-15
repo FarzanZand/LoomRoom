@@ -51,12 +51,47 @@ public partial class AssetStudioWindow : EditorWindow
     enum StudioView { Category, Recent, Requests, Everything, World, Dialogue, Levels, Dungeon, Substats, Biomes, Unlockables, Stats, Quests, Bosses, Balance }
     [SerializeField] StudioView view;
     // Leaving the Dialogue view writes back what was typed there.
-    StudioView studioView { get => view; set { if (value != view) CommitDialogue(true); view = value; } }
+    // Each view keeps its own pick: the right panel never shows what was picked in another view (a music track beside
+    // the Dungeon's pages), and coming back to a view shows what was picked there.
+    StudioView studioView
+    {
+        get => view;
+        set
+        {
+            if (value == view) return;
+            CommitDialogue(true);
+            viewPicks[view] = (selected?.id, inspected);
+            view = value;
+            if (viewPicks.TryGetValue(value, out var pick) && (pick.id != null || pick.inspected != null))
+            {
+                var e = pick.id != null ? Find(pick.id) : null;
+                Select(e);
+                if (e == null) inspected = pick.inspected;
+            }
+            else Select(null);
+        }
+    }
+    readonly Dictionary<StudioView, (string id, UnityEngine.Object inspected)> viewPicks = new();
     const string BuiltKey = "LoomRoom.Studio.Built.4";   // a new number when the categories change: the library is built afresh
     bool showingWorld => studioView == StudioView.World;
     bool showingDialogue => studioView == StudioView.Dialogue;
     const string InGameOnlyKey = "LoomRoom.Studio.InGameOnly";
     bool inGameOnly;
+    // Pictures of rooms, enemies and props in lists and tiles (Unity's own previews). Off by default (the user,
+    // 2026-11-15: the lists loaded slowly wherever a row had a picture of its room): Unity builds and draws each prefab
+    // to make its picture and keeps only so many, so a list of rooms stalled as it opened and again as it scrolled.
+    // Off, a row is its name and what it is, and the picture is the preview once it is clicked. Items and classes keep
+    // their icons and portraits, which are ready-made sprites.
+    const string PicturesKey = "LoomRoom.Studio.Pictures";
+    static bool showPictures;
+    // A prefab's picture for a list, a tile or a slot: only with Pictures on (null: draw the name instead).
+    public static Texture Picture(UnityEngine.Object o, bool orTypeIcon = true)
+    {
+        if (o == null || !showPictures) return null;
+        var pic = AssetPreview.GetAssetPreview(o);
+        return pic != null || !orTypeIcon ? pic : AssetPreview.GetMiniThumbnail(o);
+    }
+    public static bool PicturesShown => showPictures;
     List<(string path, AssetStudioCatalog.Entry entry)> usedBy;   // Where used, for the selected asset
     string usedByFor;
     string notice = "";
@@ -75,6 +110,8 @@ public partial class AssetStudioWindow : EditorWindow
     {
         titleContent = new GUIContent("Asset Studio");
         inGameOnly = EditorPrefs.GetBool(InGameOnlyKey, false);
+        showPictures = EditorPrefs.GetBool(PicturesKey, false);
+        if (showPictures) AssetPreview.SetPreviewTextureCacheSize(400);
         // A window saved on a retired view opens on what took its place.
         if (view == StudioView.Levels) view = StudioView.World;
         else if (view == StudioView.Recent || view == StudioView.Requests || view == StudioView.Everything) view = StudioView.Category;
@@ -503,16 +540,19 @@ public partial class AssetStudioWindow : EditorWindow
     void DrawCategories(Rect r)
     {
         GUI.Box(r, GUIContent.none);
-        GUI.Label(new Rect(r.x + 8, r.y + 6, r.width, 16), "LIBRARY", gold);
+        GUI.Label(new Rect(r.x + 10, r.y + 8, r.width - 20, 18), "LIBRARY", gold);
         // Everything in the folders, or only what the game uses (green check marks show which is which either way).
-        var toggleRect = new Rect(r.x + 8, r.yMax - 46, r.width - 16, 20);
+        StudioSkin.Divider(new Rect(r.x + 8, r.yMax - 78, r.width - 16, 1));
+        var toggleRect = new Rect(r.x + 10, r.yMax - 72, r.width - 20, 20);
         bool only = EditorGUI.ToggleLeft(toggleRect, new GUIContent("Only what's in the game", "Hide assets that only sit in the folders: nothing the build's scenes or Resources lead to uses them."), inGameOnly);
         if (only != inGameOnly) { inGameOnly = only; EditorPrefs.SetBool(InGameOnlyKey, only); Filter(); listScroll = Vector2.zero; }
-        GUI.Label(new Rect(r.x + 8, r.yMax - 24, r.width - 16, 18), "<color=#6fd46a>✔</color> = used in the game", new GUIStyle(dim) { richText = true });
-        r.height -= 50;
+        bool pictures = EditorGUI.ToggleLeft(new Rect(r.x + 10, r.yMax - 50, r.width - 20, 20), new GUIContent("Pictures in lists", "Show a picture of each room, enemy and prop in lists and tiles. Slower: Unity builds each one to draw it. Off, a row is its name and what it is; click it to see it."), showPictures);
+        if (pictures != showPictures) { showPictures = pictures; EditorPrefs.SetBool(PicturesKey, pictures); if (pictures) AssetPreview.SetPreviewTextureCacheSize(400); }
+        GUI.Label(new Rect(r.x + 10, r.yMax - 28, r.width - 20, 20), "<color=#6fd46a>✔</color> used in the game", new GUIStyle(dim) { richText = true });
+        r.height -= 82;
         const int views = 8;   // the rows above the categories
-        var view = new Rect(0, 0, r.width - 16, (categories.Count + views) * 30 + 12);
-        categoryScroll = GUI.BeginScrollView(new Rect(r.x, r.y + 26, r.width, r.height - 26), categoryScroll, view);
+        var view = new Rect(0, 0, r.width - 12 - StudioSkin.BarWidth, (categories.Count(c => !c.hidden) + views) * 30 + 12);
+        categoryScroll = GUI.BeginScrollView(new Rect(r.x + 6, r.y + 30, r.width - 12, r.height - 30), categoryScroll, view);
         // Dungeon: one dungeon the way a run goes, made, tuned and played in one place (AssetStudioWindow.Dungeon).
         if (GUI.Toggle(new Rect(4, 2, view.width - 4, 28), showingDungeon, "  Dungeon   <color=#a9a49a>the Crypt</color>", showingDungeon ? cellSelected : cell) && !showingDungeon) OpenDungeon();
         // World: every act's places, events and levels in one tree, each level's page beside it (AssetStudioWindow.World,
@@ -555,50 +595,63 @@ public partial class AssetStudioWindow : EditorWindow
         if (showingDungeon) { DrawDungeonList(r); return; }
         GUI.Box(r, GUIContent.none);
         GUI.SetNextControlName("search");
-        string s = EditorGUI.TextField(new Rect(r.x + 6, r.y + 6, r.width - 12, 22), search, EditorStyles.toolbarSearchField);
+        string s = EditorGUI.TextField(new Rect(r.x + 8, r.y + 8, r.width - 16, 22), search, EditorStyles.toolbarSearchField);
         if (s != search) { search = s; Filter(); listScroll = Vector2.zero; }
         {
-            float kindWidth = SortShown ? (r.width - 16) / 2 : r.width - 12;
-            int k = EditorGUI.Popup(new Rect(r.x + 6, r.y + 32, kindWidth, 20), kindFilter, kinds);
+            float kindWidth = SortShown ? (r.width - 20) / 2 : r.width - 16;
+            int k = EditorGUI.Popup(new Rect(r.x + 8, r.y + 34, kindWidth, 20), kindFilter, kinds);
             if (k != kindFilter) { kindFilter = k; Filter(); listScroll = Vector2.zero; }
             if (ItemsShown)
             {
-                int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), itemSort, ItemSorts);
+                int sort = EditorGUI.Popup(new Rect(r.x + 12 + kindWidth, r.y + 34, kindWidth, 20), itemSort, ItemSorts);
                 if (sort != itemSort) { itemSort = sort; Filter(); listScroll = Vector2.zero; }
             }
             else if (RoomsShown)
             {
-                int sort = EditorGUI.Popup(new Rect(r.x + 10 + kindWidth, r.y + 32, kindWidth, 20), roomSort, RoomSorts);
+                int sort = EditorGUI.Popup(new Rect(r.x + 12 + kindWidth, r.y + 34, kindWidth, 20), roomSort, RoomSorts);
                 if (sort != roomSort) { roomSort = sort; Filter(); listScroll = Vector2.zero; }
             }
             // No line about the category under the filters (the user, 2026-11-12): the list starts right under them.
         }
-        const float rowH = 44;
-        var area = new Rect(r.x, r.y + 58, r.width, r.height - 62);
-        var view = new Rect(0, 0, r.width - 16, Mathf.Max(shown.Count * rowH, area.height - 2));
+        const float rowH = RowHeight;
+        var area = new Rect(r.x + 6, r.y + 60, r.width - 12, r.height - 68);
+        bool scrolls = shown.Count * rowH > area.height;
+        var view = new Rect(0, 0, area.width - (scrolls ? StudioSkin.BarWidth + 2 : 0), Mathf.Max(shown.Count * rowH, area.height - 2));
         listScroll = GUI.BeginScrollView(area, listScroll, view);
         int first = Mathf.Max(0, (int)(listScroll.y / rowH) - 1), last = Mathf.Min(shown.Count, first + (int)(area.height / rowH) + 3);
+        // A picture column only where rows have one: items and spells (their icons), classes (portraits), or everything
+        // with Pictures on.
+        string category = categories[categoryIndex].name;
+        bool pictureColumn = showPictures || category == "Items" || category == "Classes" || category == "Spells";
+        float textX = pictureColumn ? rowH + 2 : 10;
         for (int i = first; i < last; i++)
         {
             var e = shown[i];
-            var row = new Rect(2, i * rowH, view.width - 2, rowH - 2);
+            var row = new Rect(0, i * rowH, view.width, rowH - 2);
             bool on = e == selected;
             if (on) GUI.Box(row, GUIContent.none, cellSelected);
-            var loaded = e.Load();
-            // An item shows its own bag icon; anything else Unity's preview of it.
-            // A class shows its portrait.
-            if (loaded is AdventurerClass rowClass) { if (Event.current.type == EventType.Repaint) DrawSprite(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), rowClass.portrait); }
-            else
+            else if (row.Contains(Event.current.mousePosition)) EditorGUI.DrawRect(row, new Color(1, 1, 1, .05f));
+            // Only cheap files are loaded for a row (an item, a class, a spell): a prefab is loaded when it is clicked.
+            bool data = e.path.EndsWith(".asset", StringComparison.OrdinalIgnoreCase);
+            var loaded = data || showPictures || RoomsShown ? e.Load() : null;
+            if (pictureColumn && Event.current.type == EventType.Repaint)
             {
-                Texture icon = loaded is ItemData item && item.icon != null ? item.icon.texture : AssetPreview.GetAssetPreview(loaded) ?? AssetPreview.GetMiniThumbnail(loaded);
-                if (icon != null) GUI.DrawTexture(new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8), icon, ScaleMode.ScaleToFit);
+                var slot = new Rect(row.x + 4, row.y + 3, rowH - 8, rowH - 8);
+                if (loaded is AdventurerClass rowClass) DrawSprite(slot, rowClass.portrait);
+                else
+                {
+                    Texture icon = loaded is ItemData item && item.icon != null ? item.icon.texture
+                        : loaded is SpellDefinition spell && TomeFor(spell) is ItemData tome && tome.icon != null ? tome.icon.texture : Picture(loaded);
+                    if (icon != null) GUI.DrawTexture(slot, icon, ScaleMode.ScaleToFit);
+                }
             }
-            if (e.inGame) DrawCheck(new Rect(row.x + rowH - 18, row.y + rowH - 20, 15, 15));
-            // A room's kind in the icon's top corner (right-click the row to set it).
-            if (RoomsShown && loaded is GameObject roomGo && roomGo.GetComponent<DungeonRoomTemplate>() != null) AssetStudioRoomKinds.Badge(new Rect(row.x + 2, row.y + 1, 16, 16), roomGo);
-            GUI.Label(new Rect(row.x + rowH + 2, row.y + 3, row.width - rowH, 18), e.name, EditorStyles.boldLabel);
-            string second = loaded is AdventurerClass lineClass ? ClassRowLine(lineClass, e) : e.kind + (string.IsNullOrEmpty(e.description) ? "" : " · " + e.description);
-            GUI.Label(new Rect(row.x + rowH + 2, row.y + 21, row.width - rowH, 16), (e.category != categories[categoryIndex].name ? e.category + " · " : "") + second, dimLine);
+            // A room's kind (right-click the row to set it), then the check mark, at the row's right end.
+            float right = row.xMax - 6;
+            if (e.inGame) { right -= 15; DrawCheck(new Rect(right, row.y + 4, 15, 15)); right -= 4; }
+            if (RoomsShown && loaded is GameObject roomGo && roomGo.GetComponent<DungeonRoomTemplate>() != null) { right -= 16; AssetStudioRoomKinds.Badge(new Rect(right, row.y + 3, 16, 16), roomGo); right -= 4; }
+            GUI.Label(new Rect(row.x + textX, row.y + 2, right - row.x - textX, 18), Fit(e.name, EditorStyles.boldLabel, right - row.x - textX), EditorStyles.boldLabel);
+            float lineWidth = row.width - textX - 6;
+            GUI.Label(new Rect(row.x + textX, row.y + 20, lineWidth, 18), Fit(RowLine(e, loaded, category), dimLine, lineWidth), dimLine);
             if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
             {
                 Select(e); GUI.FocusControl(null);
@@ -608,7 +661,43 @@ public partial class AssetStudioWindow : EditorWindow
         }
         if (shown.Count == 0) GUI.Label(new Rect(10, 10, view.width - 20, 40), search.Length > 0 ? "Nothing matches that search." : "Nothing in this category.", dim);
         GUI.EndScrollView();
-        if (AssetPreview.IsLoadingAssetPreviews()) Repaint();
+        if (Event.current.type == EventType.MouseMove && area.Contains(Event.current.mousePosition)) Repaint();   // the hovered row
+        if (showPictures && AssetPreview.IsLoadingAssetPreviews()) Repaint();
+    }
+
+    const float RowHeight = 42;
+
+    // A row's second line: what it is, said once (an item's description starts with its kind already).
+    string RowLine(AssetStudioCatalog.Entry e, UnityEngine.Object loaded, string category)
+    {
+        string line;
+        if (loaded is AdventurerClass lineClass) line = ClassRowLine(lineClass, e);
+        // An enemy's description is its own name: its folder says more (Crypt, Events, Sidekick).
+        else if (string.IsNullOrEmpty(e.description) || e.description == e.name) line = e.kind + " · " + Path.GetFileName(Path.GetDirectoryName(e.path));
+        else if (e.description.Split(new[] { " · " }, StringSplitOptions.None).Contains(e.kind)) line = e.description;
+        else line = e.kind + " · " + e.description;
+        return e.category != category ? e.category + " · " + line : line;
+    }
+
+    // Text cut to a width with "..." at its end (IMGUI only clips, mid-letter). Kept per text and width: rows are drawn
+    // every frame.
+    static readonly Dictionary<(string, int, int), string> fitted = new();
+    public static string Fit(string text, GUIStyle style, float width)
+    {
+        if (string.IsNullOrEmpty(text) || width <= 0) return text ?? "";
+        var key = (text, (int)width, style.GetHashCode());
+        if (fitted.TryGetValue(key, out var cut)) return cut;
+        if (fitted.Count > 6000) fitted.Clear();
+        var content = new GUIContent(text);
+        if (style.CalcSize(content).x <= width) return fitted[key] = text;
+        int lo = 0, hi = text.Length;
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) / 2;
+            content.text = text.Substring(0, mid).TrimEnd() + "...";
+            if (style.CalcSize(content).x <= width) lo = mid; else hi = mid - 1;
+        }
+        return fitted[key] = lo > 0 ? text.Substring(0, lo).TrimEnd() + "..." : "";
     }
 
     static GUIStyle checkStyle;
@@ -631,8 +720,8 @@ public partial class AssetStudioWindow : EditorWindow
         if (DrawClassPreview(r)) return;   // a class: its page (AssetStudioWindow.Classes)
         GUI.Box(r, GUIContent.none);
         if (selected == null) { GUI.Label(new Rect(r.x + 16, r.y + 16, r.width - 32, 40), "Pick something on the left.", dim); return; }
-        GUI.Label(new Rect(r.x + 14, r.y + 10, r.width - 28, 40), selected.name, titleStyle);
-        GUI.Label(new Rect(r.x + 14, r.y + 50, r.width - 28, 18), $"{selected.category} · {selected.kind}", dim);
+        GUI.Label(new Rect(r.x + 14, r.y + 10, r.width - 28, 40), Fit(selected.name, titleStyle, r.width - 28), titleStyle);
+        GUI.Label(new Rect(r.x + 14, r.y + 50, r.width - 28, 20), $"{selected.category} · {selected.kind}", dimLine);
         float controls = preview.ControlsHeight;
         // The preview on top, the page under it (AssetStudioWindow.Pages): about two fifths for a model or a clip,
         // the page the rest. Painting takes the whole column.
@@ -650,31 +739,50 @@ public partial class AssetStudioWindow : EditorWindow
     {
         GUI.Box(r, GUIContent.none);
         // The World can show an asset the library doesn't list: just its inspector.
-        if (selected == null) { if ((showingWorld || showingDungeon || showingBiomes || showingUnlockables) && inspected != null) inspectorWanted = new Rect(r.x + 4, r.y + 8, r.width - 8, r.height - 12); return; }
+        if (selected == null)
+        {
+            if ((showingWorld || showingDungeon || showingBiomes || showingUnlockables) && inspected != null)
+            {
+                GUI.Label(new Rect(r.x + 12, r.y + 10, r.width - 24, 18), "INSPECTOR", gold);
+                GUI.Label(new Rect(r.x + 12, r.y + 30, r.width - 24, 18), Fit(inspected.name + "  ·  " + ObjectNames.NicifyVariableName(inspected.GetType().Name), dimLine, r.width - 24), dimLine);
+                inspectorWanted = new Rect(r.x + 10, r.y + 54, r.width - 20, r.height - 64);
+            }
+            else GUI.Label(new Rect(r.x + 12, r.y + 10, r.width - 24, 40), "Click something to see and edit it here.", dim);
+            return;
+        }
+        r = new Rect(r.x + 4, r.y + 2, r.width - 8, r.height - 4);   // clear of the frame
         float y = r.y + 8;
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "DETAILS", gold); y += 18;
+        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), "DETAILS", gold); y += 20;
         if (!string.IsNullOrEmpty(selected.description)) { float dh = dim.CalcHeight(new GUIContent(selected.description), r.width - 16); GUI.Label(new Rect(r.x + 8, y, r.width - 16, dh), selected.description, dim); y += dh + 4; }
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), selected.id, gold); y += 18;
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), selected.inGame ? "<color=#6fd46a>✔ Used in the game</color>" : "<color=#c9a46a>Only in the folders: nothing in the game uses it</color>", new GUIStyle(dim) { richText = true }); y += 18;
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 30), selected.path, dim); y += 30;
+        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), selected.inGame ? "<color=#6fd46a>✔ Used in the game</color>" : "<color=#c9a46a>Only in the folders: nothing in the game uses it</color>", new GUIStyle(dim) { richText = true }); y += 20;
+        // Where it is, on one line (its folder under Assets/Game; the whole path is on Copy path and the tooltip).
+        string folder = Path.GetDirectoryName(selected.path).Replace((char)92, '/');
+        if (folder.StartsWith("Assets/Game/")) folder = folder.Substring("Assets/Game/".Length);
+        // (Left out when the line above already ends with it, as a prefab's does.)
+        if (string.IsNullOrEmpty(selected.description) || !selected.description.Contains(folder))
+        { GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), new GUIContent(Fit(folder, dimLine, r.width - 16), selected.path + " (" + selected.id + ")"), dimLine); y += 20; }
+        y += 2;
         float bw = (r.width - 24) / 3;
-        if (GUI.Button(new Rect(r.x + 8, y, bw, 24), "Copy ID")) { EditorGUIUtility.systemCopyBuffer = selected.id; Toast("Copied " + selected.id); }
-        if (GUI.Button(new Rect(r.x + 12 + bw, y, bw, 24), "Copy path")) { EditorGUIUtility.systemCopyBuffer = selected.path; Toast("Copied the path."); }
+        if (GUI.Button(new Rect(r.x + 8, y, bw, 24), new GUIContent("Copy ID", selected.id))) { EditorGUIUtility.systemCopyBuffer = selected.id; Toast("Copied " + selected.id); }
+        if (GUI.Button(new Rect(r.x + 12 + bw, y, bw, 24), new GUIContent("Copy path", selected.path))) { EditorGUIUtility.systemCopyBuffer = selected.path; Toast("Copied the path."); }
         if (GUI.Button(new Rect(r.x + 16 + bw * 2, y, bw, 24), "Show in Project")) { var a = selected.Load(); Selection.activeObject = a; EditorGUIUtility.PingObject(a); }
         y += 28;
         if (selected.Load() is GameObject && GUI.Button(new Rect(r.x + 8, y, r.width - 16, 24), "Open prefab")) AssetDatabase.OpenAsset(selected.Load());
         if (selected.Load() is GameObject) y += 28;
+        y += 4;
 
         y = DrawActions(r, y);
 
         // Ask Main about this asset: the request goes to the outbox with the asset's ID and a picture of the preview.
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "ASK MAIN ABOUT THIS", gold); y += 18;
-        askText = EditorGUI.TextArea(new Rect(r.x + 8, y, r.width - 16, 54), askText, new GUIStyle(EditorStyles.textArea) { wordWrap = true }); y += 58;
-        if (GUI.Button(new Rect(r.x + 8, y, r.width - 16, 26), "Send to Main")) AskMain();
-        y += 32;
+        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), "ASK MAIN ABOUT THIS", gold); y += 22;
+        float sendWidth = 130;
+        askText = EditorGUI.TextArea(new Rect(r.x + 8, y, r.width - 20 - sendWidth, 40), askText, new GUIStyle(EditorStyles.textArea) { wordWrap = true });
+        if (GUI.Button(new Rect(r.xMax - 8 - sendWidth, y, sendWidth, 40), "Send to Main")) AskMain();
+        y += 50;
 
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "INSPECTOR", gold); y += 18;
-        var area = new Rect(r.x + 4, y, r.width - 8, r.yMax - y - 4);
+        StudioSkin.Divider(new Rect(r.x + 8, y - 5, r.width - 16, 1));
+        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), "INSPECTOR", gold); y += 22;
+        var area = new Rect(r.x + 6, y, r.width - 12, r.yMax - y - 8);
         // Unity's own inspector element, laid over this spot: it draws every field exactly as the Inspector window
         // does (drawing the editor by hand here put Min and Range fields on top of each other).
         inspectorWanted = inspected != null ? area : (Rect?)null;
@@ -697,8 +805,9 @@ public partial class AssetStudioWindow : EditorWindow
             inspectorHost.style.color = StudioSkin.Text;
             var sheet = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.StyleSheet>("Assets/Game/Development/Editor/AssetStudio/Studio Inspector.uss");
             if (sheet != null) inspectorHost.styleSheets.Add(sheet);
-            // Inspectors drawn in IMGUI (Odin's, older editors) draw after the window: each is wrapped in the skin too.
-            inspectorHost.schedule.Execute(SkinImgui).Every(300);
+            // Inspectors drawn in IMGUI (Odin's, a component's own editor) keep Unity's own font and sizes: their rows,
+            // text boxes and help texts are measured for it, and in the window's larger font labels ran into their
+            // fields, text boxes cut their last line and help texts lay over each other (the user, 2026-11-15).
             rootVisualElement.Add(inspectorHost);
         }
         var want = inspectorWanted;
@@ -716,19 +825,6 @@ public partial class AssetStudioWindow : EditorWindow
         if (inspectorHost.style.top.value.value != a.y) inspectorHost.style.top = a.y;
         if (inspectorHost.style.width.value.value != a.width) inspectorHost.style.width = a.width;
         if (inspectorHost.style.height.value.value != a.height) inspectorHost.style.height = a.height;
-    }
-
-    void SkinImgui()
-    {
-        if (inspectorHost == null) return;
-        UnityEngine.UIElements.UQueryExtensions.Query<UnityEngine.UIElements.IMGUIContainer>(inspectorHost).ForEach(c =>
-        {
-            if (c.userData as string == "studio skin" || c.onGUIHandler == null) return;
-            var draw = c.onGUIHandler;
-            c.onGUIHandler = () => { using (StudioSkin.Use()) draw(); };
-            c.userData = "studio skin";
-            c.MarkDirtyRepaint();
-        });
     }
 
     // Each spell's tome (the item that casts it), read once per library refresh: the panel is drawn every frame.
@@ -775,7 +871,7 @@ public partial class AssetStudioWindow : EditorWindow
             usedBy = AssetStudioUsage.Find(selected.guid, categories); usedByFor = selected.id;
         }));
 
-        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 16), "TRY IT", gold); y += 18;
+        GUI.Label(new Rect(r.x + 8, y, r.width - 16, 18), "TRY IT", gold); y += 22;
         float w = (r.width - 20) / 2;
         for (int i = 0; i < actions.Count; i++)
         {
@@ -783,7 +879,7 @@ public partial class AssetStudioWindow : EditorWindow
             var b = new Rect(r.x + 8 + (i % 2) * (w + 4), y + (i / 2) * 28, w, 24);
             if (GUI.Button(b, new GUIContent(a.label, a.tip))) a.run();
         }
-        y += ((actions.Count + 1) / 2) * 28 + 2;
+        y += ((actions.Count + 1) / 2) * 28 + 6;
 
         if (usedBy != null && usedByFor == selected.id)
         {
@@ -840,7 +936,7 @@ public partial class AssetStudioWindow : EditorWindow
 
     void ScrollTo(int index)
     {
-        const float rowH = 44;
+        const float rowH = RowHeight;
         float y = index * rowH;
         if (y < listScroll.y) listScroll.y = y;
         else if (y + rowH > listScroll.y + position.height - 140) listScroll.y = y + rowH - (position.height - 140);

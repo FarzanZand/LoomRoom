@@ -212,7 +212,7 @@ public partial class AssetStudioWindow
             }
         }
         finally { GUILayout.EndScrollView(); GUILayout.EndArea(); }
-        if (AssetPreview.IsLoadingAssetPreviews()) Repaint();
+        if (PicturesShown && AssetPreview.IsLoadingAssetPreviews()) Repaint();
     }
 
     // A page's header: its title, a line under it, and its play buttons on the right.
@@ -253,7 +253,7 @@ public partial class AssetStudioWindow
         Section("THE RUN, FLOOR BY FLOOR");
         GUILayout.Label("Click a floor to change what is on it.", dim);
         var guardian = GuardianStage(l);
-        const float w = 176, h = 196;
+        const float w = 208, h = 226;   // room for four lines under the picture (the boss's line ran out of the card)
         GUILayout.BeginHorizontal();
         foreach (var st in l.RunStages)
         {
@@ -273,7 +273,7 @@ public partial class AssetStudioWindow
                 string lines = $"{kinds} kinds of enemy, {b.minEnemiesPerRoom}-{b.maxEnemiesPerRoom} a room\n{rooms} hand-built rooms\n" +
                     (b.merchantChance >= 1 ? "a tavern" : b.merchantChance > 0 ? $"a tavern {b.merchantChance * 100:0}% of the time" : "no tavern") +
                     (st == guardian ? $"\n<color=#e24b4a>{b.guardian.boss.name} waits at the end</color>" : "");
-                GUI.Label(new Rect(card.x + 10, pic.yMax + 4, card.width - 20, 74), lines, new GUIStyle(dim) { richText = true, wordWrap = true });
+                GUI.Label(new Rect(card.x + 10, pic.yMax + 4, card.width - 20, h - 44 - 74 - 10), lines, new GUIStyle(dim) { richText = true, wordWrap = true });
             }
             if (Event.current.type == EventType.MouseDown && card.Contains(Event.current.mousePosition)) { GoTo("floor:" + st.index, b); Event.current.Use(); }
             GUILayout.Space(6);
@@ -489,20 +489,30 @@ public partial class AssetStudioWindow
         menu.ShowAsContext();
     }
 
+    // An enemy's picture in a slot. With Pictures off (the sidebar's switch) it takes no room: the row is its name.
     void EnemyPicture(GameObject enemy, float size)
     {
+        if (!PicturesShown) { GUILayout.Space(2); return; }
         var r = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
         GUI.DrawTexture(r, StudioSkin.Slot);
-        var pic = enemy != null ? AssetPreview.GetAssetPreview(enemy) ?? AssetPreview.GetMiniThumbnail(enemy) : null;
+        var pic = Picture(enemy);
         if (pic != null) GUI.DrawTexture(new Rect(r.x + 2, r.y + 2, r.width - 4, r.height - 4), pic, ScaleMode.ScaleToFit);
     }
 
-    // A room template's picture at this size; returns its rect.
+    // A room template's picture at this size; returns its rect. With Pictures off it is a small slot to click (its
+    // kind's badge in it, drawn by the caller or here), and the room is seen in the preview once clicked.
     Rect RoomPicture(GameObject room, float w, float h)
     {
+        if (!PicturesShown)
+        {
+            var small = GUILayoutUtility.GetRect(36, 36, GUILayout.Width(36), GUILayout.Height(36));
+            GUI.DrawTexture(small, StudioSkin.Slot);
+            if (room == null) GUI.Label(small, "-", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
+            return small;
+        }
         var r = GUILayoutUtility.GetRect(w, h, GUILayout.Width(w), GUILayout.Height(h));
         GUI.DrawTexture(r, StudioSkin.Slot);
-        var pic = room != null ? AssetPreview.GetAssetPreview(room) : null;
+        var pic = Picture(room, false);
         if (pic != null) GUI.DrawTexture(new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8), pic, ScaleMode.ScaleToFit);
         else GUI.Label(r, room != null ? room.name : "none", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
         return r;
@@ -909,12 +919,17 @@ public partial class AssetStudioWindow
     void LootPage(AssetStudioWorld.Level l)
     {
         var d = l.data;
-        PageHeader("Loot", "What drops on these floors: the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
+        PageHeader("Loot", "What drops on these floors: every item's share floor by floor (edit its tier and weight there), the gear's tier by floor, each floor's loot, the chests, the boss's reward and the rules every dungeon shares.");
+
+        LootTable(l);   // AssetStudioWindow.Loot
 
         Section("GEAR BY FLOOR");
-        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", dim);
+        GUILayout.Label("Which tier gear comes in, from each floor on (1 Bronze/Leather, 2 Iron, 3 Steel, 4 Elven/Crystal, 5 Warlord, 6 Verdant, 7 Shadow, 8 Grave, 9 Blackened, 10 Gilded, 11 Dread, 12 Royal).", new GUIStyle(dim) { wordWrap = true }, GUILayout.Width(pageWidth));
+        // Only the rows this dungeon's floors reach are drawn as bars (the list under them holds every row, also those
+        // kept for floors a longer run would have).
+        int rowsBeyond = d.gearByFloor != null ? d.gearByFloor.Count(x => x != null && x.fromFloor > d.FloorCount) : 0;
         if (d.gearByFloor != null)
-            foreach (var row in d.gearByFloor.Where(x => x != null))
+            foreach (var row in d.gearByFloor.Where(x => x != null && x.fromFloor <= d.FloorCount))
             {
                 var shares = row.Shares; float sum = Mathf.Max(.01f, shares.Sum());
                 var bar = GUILayoutUtility.GetRect(10, 18, GUILayout.ExpandWidth(true));
@@ -931,6 +946,7 @@ public partial class AssetStudioWindow
                     x += w;
                 }
             }
+        if (rowsBeyond > 0) GUILayout.Label($"{rowsBeyond} more row{(rowsBeyond == 1 ? "" : "s")} for floors past this dungeon's {d.FloorCount} are kept in the list below.", dim);
         Fields(d, "gearByFloor");
 
         Section("EACH FLOOR'S LOOT");

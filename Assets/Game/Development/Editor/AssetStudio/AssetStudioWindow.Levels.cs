@@ -258,10 +258,7 @@ public partial class AssetStudioWindow
             var s = spawns[i];
             if (s == null) continue;
             GUILayout.BeginHorizontal(GUILayout.Height(36));
-            var icon = GUILayoutUtility.GetRect(32, 32, GUILayout.Width(32), GUILayout.Height(32));
-            GUI.DrawTexture(icon, StudioSkin.Slot);
-            var pic = s.enemy != null ? AssetPreview.GetAssetPreview(s.enemy) ?? AssetPreview.GetMiniThumbnail(s.enemy) : null;
-            if (pic != null) GUI.DrawTexture(new Rect(icon.x + 2, icon.y + 2, icon.width - 4, icon.height - 4), pic, ScaleMode.ScaleToFit);
+            EnemyPicture(s.enemy, 32);
             GUILayout.BeginVertical();
             if (GUILayout.Button(s.enemy != null ? s.enemy.name : "<color=#e0a85a>empty</color>", cell, GUILayout.Height(18)) && s.enemy != null) ShowAsset(s.enemy);
             var bar = GUILayoutUtility.GetRect(10, 6, GUILayout.ExpandWidth(true));
@@ -324,10 +321,7 @@ public partial class AssetStudioWindow
         if (g != null && g.enabled && g.boss != null)
         {
             GUILayout.BeginHorizontal();
-            var icon = GUILayoutUtility.GetRect(32, 32, GUILayout.Width(32), GUILayout.Height(32));
-            GUI.DrawTexture(icon, StudioSkin.Slot);
-            var pic = AssetPreview.GetAssetPreview(g.boss) ?? AssetPreview.GetMiniThumbnail(g.boss);
-            if (pic != null) GUI.DrawTexture(new Rect(icon.x + 2, icon.y + 2, 28, 28), pic, ScaleMode.ScaleToFit);
+            EnemyPicture(g.boss, 32);
             GUILayout.BeginVertical();
             if (GUILayout.Button(g.boss.name, cell, GUILayout.Height(18))) ShowAsset(g.boss);
             GUILayout.Label((g.arena != null ? "in " + g.arena.name : "in a generated room") + (g.arena != null && g.arena.GetComponentInChildren<DungeonStage>(true) != null ? ", a stage fight" : ""), dim);
@@ -363,7 +357,8 @@ public partial class AssetStudioWindow
         var order = Enumerable.Range(0, pool.Length).ToList();
         if (roomTileSort == 1) order = order.OrderBy(i => AssetStudioRoomKinds.Rank(pool[i]?.template)).ThenBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
         else if (roomTileSort == 2) order = order.OrderBy(i => pool[i]?.template != null ? pool[i].template.name : "", StringComparer.OrdinalIgnoreCase).ToList();
-        const float w = 112, h = 92;
+        // With Pictures off (the sidebar's switch) a room is a low tile with its name; on, a picture over its name.
+        float w = PicturesShown ? 112 : 168, h = PicturesShown ? 92 : 28;
         // The page's width less the run strip and the frames round it.
         float width = Mathf.Max(w, position.width - CategoryWidth - ListWidth - InspectorWidth - Pad * 5 - (reserved >= 0 ? reserved : l != null ? 300 : 60));
         int perRow = Mathf.Max(1, Mathf.FloorToInt(width / (w + 6)));
@@ -377,7 +372,7 @@ public partial class AssetStudioWindow
                 GUI.DrawTexture(r, StudioSkin.Slot);
                 if (k == pool.Length)
                 {
-                    GUI.Label(r, "+ Add a room\nor drop one here", new GUIStyle(dim) { alignment = TextAnchor.MiddleCenter });
+                    GUI.Label(r, PicturesShown ? "+ Add a room\nor drop one here" : "+ Add or drop a room", new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter });
                     var ev = Event.current;
                     if (ev.type == EventType.MouseDown && r.Contains(ev.mousePosition)) { RoomMenu(l, b, pool); ev.Use(); }
                     if (r.Contains(ev.mousePosition) && (ev.type == EventType.DragUpdated || ev.type == EventType.DragPerform) && DragAndDrop.objectReferences.Any(o => o is GameObject g && g.GetComponent<DungeonRoomTemplate>() != null))
@@ -390,13 +385,26 @@ public partial class AssetStudioWindow
                 }
                 var c = pool[order[k]];
                 if (c == null) continue;
-                var pic = c.template != null ? AssetPreview.GetAssetPreview(c.template) : null;
-                if (pic != null) GUI.DrawTexture(new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 30), pic, ScaleMode.ScaleToFit);
-                if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 4, r.y + 4, 28, 28), c.template);
                 // Hovering a room shows what it is (DungeonRoomTemplate.description).
                 if (c.template != null && c.template.TryGetComponent<DungeonRoomTemplate>(out var described) && !string.IsNullOrWhiteSpace(described.description)) GUI.Label(r, new GUIContent("", c.template.name + ": " + described.description));
-                GUI.Label(new Rect(r.x + 6, r.yMax - 22, r.width - 12, 18), c.template != null ? c.template.name : "<color=#e0a85a>empty</color>", new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter, normal = { textColor = StudioSkin.Text } });
-                if (c.weight != 1) GUI.Label(new Rect(r.xMax - 40, r.y + 4, 34, 18), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.UpperRight });
+                string roomName = c.template != null ? c.template.name : "<color=#e0a85a>empty</color>";
+                if (PicturesShown)
+                {
+                    var pic = Picture(c.template, false);
+                    if (pic != null) GUI.DrawTexture(new Rect(r.x + 6, r.y + 6, r.width - 12, r.height - 30), pic, ScaleMode.ScaleToFit);
+                    if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 4, r.y + 4, 28, 28), c.template);
+                    GUI.Label(new Rect(r.x + 6, r.yMax - 22, r.width - 12, 18), roomName, new GUIStyle(dimLine) { alignment = TextAnchor.MiddleCenter, normal = { textColor = StudioSkin.Text } });
+                    if (c.weight != 1) GUI.Label(new Rect(r.xMax - 40, r.y + 4, 34, 18), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.UpperRight });
+                }
+                else
+                {
+                    // Its kind, its name, how common it is (when not x1).
+                    if (c.template != null) AssetStudioRoomKinds.Badge(new Rect(r.x + 5, r.y + 5, 18, 18), c.template);
+                    float weightWidth = c.weight != 1 ? 36 : 0;
+                    var nameStyle = new GUIStyle(dimLine) { alignment = TextAnchor.MiddleLeft, normal = { textColor = StudioSkin.Text } };
+                    GUI.Label(new Rect(r.x + 28, r.y + 4, r.width - 34 - weightWidth, 20), Fit(roomName, nameStyle, r.width - 34 - weightWidth), nameStyle);
+                    if (c.weight != 1) GUI.Label(new Rect(r.xMax - 42, r.y + 4, 36, 20), "x" + c.weight.ToString("0.#"), new GUIStyle(dimLine) { alignment = TextAnchor.MiddleRight });
+                }
                 var e2 = Event.current;
                 if (e2.type == EventType.MouseDown && r.Contains(e2.mousePosition))
                 {
@@ -587,17 +595,29 @@ public partial class AssetStudioWindow
         if (target == null) return;
         using var so = new SerializedObject(target);
         so.Update();
-        foreach (var n in names) { var p = so.FindProperty(n); if (p != null) EditorGUILayout.PropertyField(p, true); }
+        // Unity's label column is sized for its own small font: in the window's font a longer name ("Starting Chest
+        // Consumable", "Beam Damage Per Second") ran into its value.
+        float labels = EditorGUIUtility.labelWidth;
+        EditorGUIUtility.labelWidth = Mathf.Max(labels, FieldLabelWidth);
+        try { foreach (var n in names) { var p = so.FindProperty(n); if (p != null) EditorGUILayout.PropertyField(p, true); } }
+        finally { EditorGUIUtility.labelWidth = labels; }
         if (so.ApplyModifiedProperties()) AssetDatabase.SaveAssetIfDirty(target);
     }
+    const float FieldLabelWidth = 236;
 
     static void AllFields(UnityEngine.Object target)
     {
         using var so = new SerializedObject(target);
         so.Update();
         var it = so.GetIterator();
-        for (bool enter = true; it.NextVisible(enter); enter = false)
-            if (it.name != "m_Script") EditorGUILayout.PropertyField(it, true);
+        float labels = EditorGUIUtility.labelWidth;
+        EditorGUIUtility.labelWidth = Mathf.Max(labels, FieldLabelWidth);
+        try
+        {
+            for (bool enter = true; it.NextVisible(enter); enter = false)
+                if (it.name != "m_Script") EditorGUILayout.PropertyField(it, true);
+        }
+        finally { EditorGUIUtility.labelWidth = labels; }
         if (so.ApplyModifiedProperties()) AssetDatabase.SaveAssetIfDirty(target);
     }
 }

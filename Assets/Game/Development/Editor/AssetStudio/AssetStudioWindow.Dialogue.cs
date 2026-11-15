@@ -166,9 +166,9 @@ public partial class AssetStudioWindow
     void DialogueStyles()
     {
         if (dialogueArea != null) return;
-        dialogueArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = 13, padding = new RectOffset(6, 6, 5, 5) };
+        dialogueArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = StudioSkin.Size, padding = new RectOffset(6, 6, 4, 4) };   // the window's own size: the pixel font is uneven at any other
         dialogueArea.normal.textColor = dialogueArea.focused.textColor = dialogueArea.hover.textColor = new Color(.93f, .91f, .87f);
-        dialogueHeader = new GUIStyle(EditorStyles.boldLabel) { fontSize = 13, richText = true };
+        dialogueHeader = new GUIStyle(EditorStyles.boldLabel) { fontSize = StudioSkin.Size, richText = true };
         dialogueWhen = new GUIStyle(EditorStyles.miniLabel) { wordWrap = true, richText = true, normal = { textColor = new Color(.66f, .64f, .6f) } };
         dialogueSmall = new GUIStyle(EditorStyles.miniButton) { fontSize = 11, padding = new RectOffset(2, 2, 1, 1) };
     }
@@ -349,7 +349,7 @@ public partial class AssetStudioWindow
                 {
                     // A conversation's rows say their own place (Line 3 › Answer 1) when sorted otherwise.
                     bool place = !string.IsNullOrEmpty(l.context) && (!l.Conversation || !grouped);
-                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (place ? $"  <color=#a9a49a>› {l.context}</color>" : "") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = 12, normal = { textColor = new Color(.86f, .84f, .8f) } });
+                    GUI.Label(new Rect(10, cy + 2, list.width - 40, 18), $"{l.ownerName}  <color=#a9a49a>›</color>  <b>{l.field}</b>" + (place ? $"  <color=#a9a49a>› {l.context}</color>" : "") + (grouped ? "" : $"  <color=#8a857c>({l.category})</color>"), new GUIStyle(dialogueWhen) { fontSize = StudioSkin.Size, normal = { textColor = new Color(.86f, .84f, .8f) } });
                     if (!string.IsNullOrEmpty(l.when)) GUI.Label(new Rect(10, cy + 19, textWidth + DialogueButtons, dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons)), l.when, dialogueWhen);
                 }
                 cy += 20 + (string.IsNullOrEmpty(l.when) ? 0 : dialogueWhen.CalcHeight(new GUIContent(l.when), textWidth + DialogueButtons));
