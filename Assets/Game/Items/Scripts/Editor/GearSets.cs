@@ -67,12 +67,16 @@ public static class GearSets
     };
     // Prices by tier (pieces; body armour; weapons; shields), tiers 5-12 growing by about a third a tier from tier 4's.
     // A piece's armour is 4 a tier (body armour 4 more), a shield's 10 a tier plus 10, a sword's damage 3 a tier past
-    // tier 4 and a mace's 1 more.
+    // tier 4. A mace's damage is set so that it does a sword's damage over time (the user, 2026-11-15: maces were "just
+    // worse", 1 more damage for 15% slower swings and 6% less critical chance): (sword + 2) x 1.2264 - 2, rounded,
+    // the 2 being the Warrior's own damage (base 1, Strength 1) and 1.2264 what the sword's critical chance and the
+    // mace's slower swing come to; tier 1's Bronze Mace is only 10% slower against a 5% faster sword and stays at 5.
     static readonly int[] PiecePrice = { 15, 40, 90, 225, 300, 400, 550, 750, 1000, 1350, 1850, 2500 };
     static readonly int[] BodyPrice = { 35, 90, 210, 525, 700, 950, 1300, 1750, 2350, 3150, 4350, 5900 };
     static readonly int[] WeaponPrice = { 20, 50, 120, 300, 400, 550, 750, 1000, 1350, 1850, 2500, 3350 };
     static readonly int[] ShieldPrice = { 25, 60, 150, 375, 500, 675, 900, 1250, 1700, 2300, 3100, 4200 };
     static readonly int[] SwordDamage = { 4, 6, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35 };
+    static readonly int[] MaceDamage = { 5, 8, 10, 14, 18, 21, 25, 29, 32, 36, 40, 43 };
     static readonly int[] BodyHealth = { 5, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28 };
     // Boots: how far up the shin the set's legs are kept, a share of ankle to knee (0 = none: the foot part is already
     // a tall greave, and the trousers above it only showed as rags), and which sets are built from one boot and its
@@ -515,7 +519,7 @@ public static class GearSets
         var log = new System.Text.StringBuilder();
         var items = new List<ItemData>();
         keepItemData = true;
-        try { foreach (var (tier, name, _, mace, maceName) in Weapons) BuildWeapon(tier, maceName ?? $"{name} Mace", name, $"Assets/Synty/{mace}.prefab", "Crystal Mace", 1, log, items); }
+        try { foreach (var (tier, name, _, mace, maceName) in Weapons) BuildWeapon(tier, maceName ?? $"{name} Mace", name, $"Assets/Synty/{mace}.prefab", "Crystal Mace", MaceDamage[tier - 1], log, items); }
         finally { keepItemData = false; }
         AssetDatabase.SaveAssets();
         return log.ToString();
@@ -541,8 +545,8 @@ public static class GearSets
         foreach (var (tier, name, sword, mace, maceName) in Weapons)
         {
             if (only != null && only != name) continue;
-            BuildWeapon(tier, $"{name} Sword", name, $"Assets/Synty/{sword}.prefab", "Crystal Sword", 0, log, items);
-            BuildWeapon(tier, maceName ?? $"{name} Mace", name, $"Assets/Synty/{mace}.prefab", "Crystal Mace", 1, log, items);
+            BuildWeapon(tier, $"{name} Sword", name, $"Assets/Synty/{sword}.prefab", "Crystal Sword", SwordDamage[tier - 1], log, items);
+            BuildWeapon(tier, maceName ?? $"{name} Mace", name, $"Assets/Synty/{mace}.prefab", "Crystal Mace", MaceDamage[tier - 1], log, items);
         }
         AssetDatabase.SaveAssets();
         ItemDatabaseAuthoring.SyncCatalog();
@@ -552,7 +556,7 @@ public static class GearSets
         return log.ToString();
     }
 
-    static void BuildWeapon(int tier, string piece, string tierName, string synty, string reference, int extraDamage, System.Text.StringBuilder log, List<ItemData> items)
+    static void BuildWeapon(int tier, string piece, string tierName, string synty, string reference, int damage, System.Text.StringBuilder log, List<ItemData> items)
     {
         var source = AssetDatabase.LoadAssetAtPath<GameObject>(synty);
         var model = AssetDatabase.LoadAssetAtPath<ItemData>($"{WeaponData}/{reference}.asset");
@@ -620,7 +624,7 @@ public static class GearSets
             log.Append($"New item {piece}\n");
         }
         item.itemName = piece; item.tier = tier; item.tag = $"{tierName} equipment"; item.value = WeaponPrice[tier - 1];
-        foreach (var m in item.statModifiers) if (m.stat == StatType.AttackDamage) m.value = SwordDamage[tier - 1] + extraDamage;
+        foreach (var m in item.statModifiers) if (m.stat == StatType.AttackDamage) m.value = damage;
         // The Crystal weapons' own light (+1 m light radius) came along with the copy; it is theirs alone.
         item.statModifiers = item.statModifiers.Where(m => m.stat != StatType.LightRadius).ToArray();
         item.worldPrefab = prefab; item.pickupVisualPrefab = null;
