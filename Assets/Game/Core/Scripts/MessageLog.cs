@@ -151,7 +151,8 @@ public class MessageLog : Singleton<MessageLog>
     void OnPlayerDamaged(DamageInfo info)
     {
         if (info.Blocked) { Add($"You block {The(info.Source)}'s attack.", MessageKind.Combat); return; }
-        if (info.Amount <= 0f) return;
+        // A hit that took no health (the revive's grace, god mode) gets no "hits you for" line.
+        if (info.Amount <= 0f || info.Spared) return;
         // Damage lines are for the history only; floating numbers show them on screen.
         if (info.Source != null) Add($"{TheCap(info.Source)} hits you for {Round(info.Amount)}.", MessageKind.Combat);
         else if (!string.IsNullOrWhiteSpace(info.SourceName)) Add($"{Cap(info.SourceName)} hurts you for {Round(info.Amount)}.", MessageKind.Combat);
