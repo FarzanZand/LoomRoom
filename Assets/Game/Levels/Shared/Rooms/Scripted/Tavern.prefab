@@ -321,7 +321,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomMusic
   music: {fileID: 8300000, guid: b966f991c3ff5f948a669154e52b9c6c, type: 3}
-  volume: 0.7
+  volume: 0.62
   fade: 1.5
 --- !u!114 &6540107159037687356
 MonoBehaviour:
