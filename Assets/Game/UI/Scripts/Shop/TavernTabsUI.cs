@@ -124,9 +124,27 @@ public class TavernTabsUI : MonoBehaviour
 
     int Coins => player != null && player.Wallet != null ? player.Wallet.Gold : 0;
 
+    // Today's menu. With more dishes than the Food tab has cards, a tavern serves as many as it has cards, picked by
+    // the run and the floor: the dishes are shuffled by the run's seed and each tavern takes the next ones in that
+    // order, so two taverns of one run serve different food and a tavern serves the same food all through its floor.
+    TavernDish[] Menu()
+    {
+        var all = keeper.dishes ?? new TavernDish[0];
+        int cards = dishCards.Length;
+        if (cards == 0 || all.Length <= cards) return all;
+        var run = RunManager.HasInstance ? RunManager.Instance : null;
+        var order = new System.Collections.Generic.List<TavernDish>(all);
+        var random = new System.Random(run != null ? run.Seed : 0);
+        for (int i = order.Count - 1; i > 0; i--) { int j = random.Next(i + 1); (order[i], order[j]) = (order[j], order[i]); }
+        int first = (run != null ? run.Floor / 2 : 0) * cards;
+        var menu = new TavernDish[cards];
+        for (int i = 0; i < cards; i++) menu[i] = order[(first + i) % order.Count];
+        return menu;
+    }
+
     void FillDishes()
     {
-        var dishes = keeper.dishes ?? new TavernDish[0];
+        var dishes = Menu();
         for (int i = 0; i < dishCards.Length; i++)
         {
             var c = dishCards[i];
