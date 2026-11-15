@@ -359746,7 +359746,7 @@ MonoBehaviour:
     source: 0
     clip: {fileID: 8300000, guid: 7270dd61189cd5f44a7ff507ace43954, type: 3}
     data: {fileID: 0}
-    volume: 1
+    volume: 0.5
     pitch: 1
   - key: inventoryClose
     source: 0
