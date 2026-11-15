@@ -24,7 +24,8 @@ public class Burning : MonoBehaviour
         if (target == null || !target.IsAlive || perSecond <= 0f || seconds <= 0f || EventProtection.Held(target)) return;
         // A player never burns (the user, 2026-11-15): a Fireball or any other spell with a burn does its hit to them
         // and nothing after it, whoever cast it. Enemies burn as before.
-        if (target is Player) return;
+        // Co-op: nor another player's stand-in on the host (its ticks would be sent on to them).
+        if (target is Player || target.TryGetComponent<CoopPlayer>(out _)) return;
         var fire = target.GetComponent<Burning>();
         if (fire == null) fire = target.gameObject.AddComponent<Burning>();
         fire.Light(target, source, perSecond, seconds, flamePrefab);
