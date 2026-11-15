@@ -348622,7 +348622,7 @@ MonoBehaviour:
   weaponBonusShare: 0.5
   merchantRarity: 1.3
   rarityChanceMultiplier: 0.75
-  dropChanceMultiplier: 0.375
+  dropChanceMultiplier: 0.45
   enemyDropMultiplier: 1
   goldMultiplier: 1
   tomeShare: 0.1
@@ -366999,6 +366999,7 @@ MonoBehaviour:
   swingSlowAfterStrike: 0.1
   swingSlowEaseIn: 0.12
   swingSlowEaseOut: 0.25
+  swingSlowWhenBacking: 0
   heavyStrikeScale: 2
   strikeKick: {x: 0.4, y: 0, z: 0.2}
   hitKick: {x: 0.6, y: 0, z: 0.3}
@@ -367247,6 +367248,9 @@ MonoBehaviour:
   enemiesStepIntoSwing: 1
   enemySwingStepMost: 0.25
   enemySwingStepSpeed: 3
+  enemiesLungeIntoSwing: 1
+  enemyWaitOutsideReach: 0.3
+  enemyLungeFollow: 0
   enemiesWalkWhileAttacking: 0
   enemyAttackWalkSpeed: 0.5
   enemyAttackAnimationSpeed: 1.25
