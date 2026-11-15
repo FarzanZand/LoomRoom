@@ -27,7 +27,7 @@ public class CampaignCardUI : MonoBehaviour
     public void ShowHint(bool show, string text = null)
     {
         if (hint == null) return;
-        if (text != null) hint.text = text;
+        if (text != null) { KeyCapText.On(hint); hint.text = KeyCapText.CapKeyWords(text); }   // "Esc to step back" with Esc in a key cap
         hint.gameObject.SetActive(show);
     }
 

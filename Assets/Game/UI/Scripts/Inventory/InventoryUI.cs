@@ -162,6 +162,7 @@ public class InventoryUI : MonoBehaviour
         }
         isOpen = true;
         if (panel != null) panel.SetActive(true);
+        if (panel != null) KeyCapText.CapHints(panel.transform);   // the footer's keys ("Shift-click", "I to close") in key caps
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.InventoryOpened();
         var style=feedback!=null?feedback:UIFeedbackSettings.Shared;style?.Play(style.openKey);Animate(true);
         Refresh();

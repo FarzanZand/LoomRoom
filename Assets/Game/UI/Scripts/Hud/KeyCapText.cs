@@ -41,10 +41,29 @@ public class KeyCapText : MonoBehaviour
     public static string Tidy(string s)
     {
         if (string.IsNullOrEmpty(s) || s.IndexOf("<link", System.StringComparison.Ordinal) < 0) return s;
-        foreach (char c in ".,;:!?)") s = s.Replace("</link>" + After + c, "</link>" + Tight + c);
         foreach (char c in ".,;:!?)-")   // "Shift-click" too
             s = s.Replace("</link>" + After + c, "</link>" + Tight + c).Replace("</link>" + Wide + After + c, "</link>" + Wide + Tight + c);
         return s.Replace("(" + Before + "<link", "(" + Tight + "<link").Replace("(" + Before + Wide + "<link", "(" + Tight + Wide + "<link");
+    }
+
+    // The keys a written hint names ("Esc to resume", "Shift-click", "Enter or click again", "I to close"), as whole words,
+    // each put in a key cap. "I" only as a key ("I to close"), never the word.
+    static readonly System.Text.RegularExpressions.Regex HintKeys =
+        new(@"(?<![\w<=""/])(Esc|Enter|Tab|Shift|Space)(?![\w>])|(?<![\w<=""/])I(?= to )");
+    public static string CapKeyWords(string s) =>
+        string.IsNullOrEmpty(s) || s.Contains("<link=") ? s : Tidy(HintKeys.Replace(s, m => Key(m.Value)));
+
+    // Every text under root that names a key in its hint gets caps (a menu's own help lines, written in the scene).
+    public static void CapHints(Transform root)
+    {
+        if (root == null) return;
+        foreach (var t in root.GetComponentsInChildren<TMP_Text>(true))
+        {
+            string capped = CapKeyWords(t.text);
+            if (capped == t.text) continue;
+            On(t);
+            t.text = capped;
+        }
     }
 
     // Puts caps on a text that has none yet (UI that builds its keys in code calls this once).
