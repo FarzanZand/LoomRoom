@@ -23,6 +23,42 @@ public class ItemGridUI : MonoBehaviour
 
     public void Bind(Inventory inventory) { bag = inventory; Refresh(); }
 
+    // The grids on screen, so a cell can find the item it shows (Footprint).
+    static readonly List<ItemGridUI> live = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ClearLive() => live.Clear();
+    void OnEnable() { if (!live.Contains(this)) live.Add(this); }
+
+    static readonly Vector3[] footCorners = new Vector3[4];
+    // The screen area of every cell the item in this cell takes (its tooltip stands beside all of it). False when the cell
+    // is no grid's or holds nothing.
+    public static bool Footprint(ItemSlotUI cell, out Rect area)
+    {
+        area = default;
+        foreach (var grid in live)
+        {
+            if (grid == null || grid.bag == null || !grid.bag.IsGrid || cell.Container != grid.bag) continue;
+            int anchor = cell.Anchor;
+            var stack = anchor >= 0 ? grid.bag[anchor] : null;
+            if (stack == null || stack.IsEmpty) return false;
+            var size = grid.bag.SizeOf(stack.item);
+            var at = grid.bag.CellOf(anchor);
+            float xMin = float.MaxValue, yMin = float.MaxValue, xMax = float.MinValue, yMax = float.MinValue;
+            for (int x = 0; x < size.x; x++)
+                for (int y = 0; y < size.y; y++)
+                {
+                    int index = (at.y + y) * grid.bag.GridWidth + at.x + x;
+                    if (index >= grid.cells.Count || grid.cells[index] == null) continue;
+                    ((RectTransform)grid.cells[index].transform).GetWorldCorners(footCorners);
+                    xMin = Mathf.Min(xMin, footCorners[0].x); yMin = Mathf.Min(yMin, footCorners[0].y);
+                    xMax = Mathf.Max(xMax, footCorners[2].x); yMax = Mathf.Max(yMax, footCorners[2].y);
+                }
+            if (xMin > xMax) return false;
+            area = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+            return true;
+        }
+        return false;
+    }
+
     // The grid lights up every cell of the item under the pointer itself: a cell's own button tint would darken the
     // one cell under the pointer on top of that (and keep the last clicked cell dim).
     // It also grows the item as one piece (Pop), so a cell's own grow-on-hover (UIInteractionFeedback) is switched off.
@@ -347,5 +383,5 @@ public class ItemGridUI : MonoBehaviour
         if (instant) { foreach (var g in settling) { g.amount = 1f; Apply(g); } settling.Clear(); }
     }
 
-    void OnDisable() => EndPop(true);
+    void OnDisable() { live.Remove(this); EndPop(true); }
 }

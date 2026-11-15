@@ -77,7 +77,8 @@ public class TooltipUI : Singleton<TooltipUI>
 
     // Beside a control at its height, but wholly to one side of keepClear (screen pixels): the paper doll's slots pass
     // the doll's whole area, so a slot's tooltip never covers another slot (review 2026-11-12).
-    public void ShowBeside(ItemData item, RectTransform at, Rect keepClear) => ShowAt(item, at, null, keepClear);
+    // A bag item passes its whole footprint (a sword is three cells tall), the hotbar its slot: the tooltip never covers it.
+    public void ShowBeside(ItemData item, RectTransform at, Rect keepClear, bool? thisCopyEquipped = null) => ShowAt(item, at, thisCopyEquipped, keepClear);
 
     void ShowAt(ItemData item, RectTransform at, bool? thisCopyEquipped, Rect? clear)
     {
