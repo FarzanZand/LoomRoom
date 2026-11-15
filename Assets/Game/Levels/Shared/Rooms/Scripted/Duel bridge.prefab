@@ -722,6 +722,7 @@ MonoBehaviour:
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
+  overrideEnemyCountRestrictions: 1
   roomEvent: 1
   onlyWhileLocked: {fileID: 11400000, guid: 54e98d70248c6cf468492e81ae98d0d0, type: 2}
   replaceGeneratedTorches: 0

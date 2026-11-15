@@ -21,6 +21,8 @@ public class TableDice : MonoBehaviour
     public Color flashColor = new(1f, .78f, .45f);
     public DungeonMaster.Line placedLine = new() { text = "Lucky dice. The merchants will give you better prices now.", inPerson = true };
     [Tooltip("Under the dice's tooltip, after their Trading row.")] public string infoLine = "While they lie on the table.";
+    [Min(0f), Tooltip("How far past the dice a look still finds them, on every side, in room units (about 22 to the metre): for putting them down and for their tooltip. A little past the dice and no further (the user, 2026-11-15): the candles beside them must not answer for them.")]
+    public float aimMargin = 1f;
 
     // Where along the cap they went down before they had a spot of their own (kept so old saves load; unused).
     public const string SpotFlag = "room.dice.at";
@@ -29,8 +31,8 @@ public class TableDice : MonoBehaviour
 
     void Awake()
     {
-        RoomPlaceSpot.Make(transform, dice, () => Meta != null && Meta.DiceCarried, Place, placePrompt);
-        gameObject.AddComponent<PropInfo>().Bind(Describe, dice);
+        RoomPlaceSpot.Make(transform, dice, () => Meta != null && Meta.DiceCarried, Place, placePrompt, aimMargin);
+        gameObject.AddComponent<PropInfo>().Bind(Describe, dice, aimMargin);
     }
 
     (string, string, string) Describe()

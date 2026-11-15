@@ -363,8 +363,8 @@ MonoBehaviour:
     weight: 2
     fromFloor: 1
   encounterChance: {x: 0.75, y: 0.8}
-  minEnemiesPerRoom: 2
-  maxEnemiesPerRoom: 3
+  minEnemiesPerRoom: 1
+  maxEnemiesPerRoom: 2
   maxCastersPerRoom: 1
   maxCastersPerFloor: 6
   eliteChance: 0.04

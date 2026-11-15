@@ -91,6 +91,7 @@ MonoBehaviour:
   addFurnishing: 0
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
+  overrideEnemyCountRestrictions: 1
   roomEvent: 0
   onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0

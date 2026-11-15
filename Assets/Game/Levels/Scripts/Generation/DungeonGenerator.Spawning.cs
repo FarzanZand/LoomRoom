@@ -1076,6 +1076,10 @@ public partial class DungeonGenerator
 #endif
                             placed=SpawnEnemyAt(prefab,t.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null,false,true);
                         }
+                        // A pool enemy with no clear floor at its socket stands elsewhere in the room: the room's count is
+                        // its sockets now (RoomCap), so a lost one could leave a combat room empty.
+                        else if(placed==null && prefab!=null && FindRoomFloor(room,extraRandom,out var elsewhere))
+                            placed=SpawnEnemyAt(prefab,elsewhere.position,t.rotation,profiles[room]!=null ? profiles[room].rewards : null);
                         if(placed!=null && socket.faceWall)FaceWall(placed,socket.wallGap);
                         JoinPack(room,placed);
                         break;

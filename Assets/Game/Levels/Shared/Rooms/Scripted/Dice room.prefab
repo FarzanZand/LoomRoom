@@ -192,11 +192,14 @@ MonoBehaviour:
   ceilingFrame: 0.35
   skylightRadius: 0
   wayInDoor: {fileID: 0}
+  wayThrough: 0
   replaceGeneratedProps: 0
   addFurnishing: 1
   replaceGeneratedEnemies: 1
   socketEnemiesOnly: 1
+  overrideEnemyCountRestrictions: 1
   roomEvent: 1
+  onlyWhileLocked: {fileID: 0}
   replaceGeneratedTorches: 0
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
@@ -1295,6 +1298,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiceCup
   shake: 0.03
+  lift: 0.08
+  rattleSeconds: 0.8
   outlineWidth: 0.015
 --- !u!1001 &8093642903286166864
 PrefabInstance:

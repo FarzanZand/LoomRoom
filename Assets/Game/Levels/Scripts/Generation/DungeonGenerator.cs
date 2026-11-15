@@ -250,7 +250,7 @@ public partial class DungeonGenerator : MonoBehaviour
         Biome = level.BiomeAt(floorNumber, out int floorInBiome, out int biomeFloors);
         FloorInBiome = floorInBiome; BiomeFloors = biomeFloors;
         Milestone = level.Milestone(floorNumber);
-        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); bodies.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863)));
+        actorSockets.Clear(); featureCounts.Clear(); cutCells.Clear(); propBlocked.Clear(); bodies.Clear(); MerchantRoom = -1; shopInPlainRoom = false; castersInRoom.Clear(); castersOnFloor = 0; eliteRandom = new System.Random(Scramble(unchecked(seed + 15485863))); roomCapSeed = seed;
         BeginDressing(seed);
         System.Collections.Generic.List<(Vector2Int, Vector2Int)> authoredDoors = null;
         if (level.layoutMode == DungeonLayoutMode.Authored)
@@ -660,8 +660,12 @@ public partial class DungeonGenerator : MonoBehaviour
             // Treasure and storage rooms always have a guard; rest rooms stay safe.
             bool guarded=Roles[i]==RoomRole.Treasure || Roles[i]==RoomRole.Storage;
             // The exit room (the stairs down) stays clear; a guardian is placed on its own.
-            if(Roles[i]!=RoomRole.Combat && !guarded)continue;
+            bool fights=Roles[i]==RoomRole.Combat || guarded;
+            // A hand-built room's own enemies keep to the same count as a generated room's (RoomCap): none where no
+            // fight is rolled. Rolled only where it was before, so every later random draw stays the same.
+            if(!fights){CapSocketEnemies(i,0);continue;}
             int count=guarded ? 1 : random.Next(MinEnemiesPerRoom,Mathf.Clamp(MaxEnemiesPerRoom,1,6)+1);
+            CapSocketEnemies(i,i==MerchantRoom ? 0 : count);
             // A hand-built room's own Enemy sockets count toward the roll; generated enemies make up the rest.
             count=Mathf.Max(0,count-SocketEnemies(i));
             if(TemplateOf(i) is DungeonRoomTemplate cast && cast.socketEnemiesOnly)count=0;   // a set piece: its sockets are the whole cast

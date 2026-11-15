@@ -75,10 +75,12 @@ public class DungeonRoomTemplate : MonoBehaviour
     [HideIf(nameof(replaceGeneratedProps)), Tooltip("Also furnish the room from the level's and biome's prop rules (trees, plants, rocks...) around its own pieces.")]
     public bool addFurnishing;
     // Retired: a room's Enemy sockets always count toward its roll now (generated enemies only make up the rest, so a
-    // generated room stays at DungeonGenerator.MaxGeneratedPerRoom or fewer unless its sockets hold more).
+    // room holds no more than its roll unless Override Enemy Count Restrictions is on, DungeonGenerator.RoomCap).
     [HideInInspector] public bool replaceGeneratedEnemies = true;
     [Tooltip("Only this room's own Enemy sockets: the floor never adds generated enemies to make up its roll (a set piece with an exact cast, like the Skeleton Party room).")]
     public bool socketEnemiesOnly;
+    [Tooltip("Keep every enemy this room's author put in it (Enemy sockets, spawners, enemies dragged in), whatever the floor's enemies per room. Off: the room keeps to the same count as a generated room on that floor (the biome's Min-Max Enemies Per Room for a combat room, one guard in a treasure or storage room, none in any other), its sockets only places to put them. On for the scripted event rooms (the user, 2026-11-15).")]
+    public bool overrideEnemyCountRestrictions;
     [Tooltip("Combat rooms: Rolled lets the floor roll an ambush or a sleeping pack like any room; Ambush and Sleeping Pack make it one (when the level allows it); None never.")]
     public DungeonRoomEvent roomEvent;
     [Tooltip("Dealt only while this class is still locked: once it is unlocked the room is left out of every floor (the Duel bridge: Little Undead John only until the Necromancer is unlocked, the user, 2026-11-12). Empty: always.")]
