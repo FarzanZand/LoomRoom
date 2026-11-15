@@ -366995,8 +366995,10 @@ MonoBehaviour:
   strikeLunge: 0
   strikeLungeTime: 0.12
   swingSlowsPlayer: 1
-  swingMoveSpeed: 0.6
-  swingSlowWholeSwing: 1
+  swingMoveSpeed: 0.7
+  swingSlowAfterStrike: 0.1
+  swingSlowEaseIn: 0.12
+  swingSlowEaseOut: 0.25
   heavyStrikeScale: 2
   strikeKick: {x: 0.4, y: 0, z: 0.2}
   hitKick: {x: 0.6, y: 0, z: 0.3}

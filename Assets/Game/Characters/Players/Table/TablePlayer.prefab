@@ -2185,6 +2185,11 @@ MonoBehaviour:
   crouchInterval: 0.7
   velocityThreshold: 0.1
   pitchVariance: 0.05
+  stepWithArms: 1
+  armsBobLayer: Walk Bob
+  armsStepTimes:
+  - 0.25
+  - 0.75
   effects:
   - {fileID: 11400000, guid: e52fc476a96a64347b1994b9edd30de2, type: 2}
   - {fileID: 11400000, guid: 99b10437d3809c04488069d0d24fff74, type: 2}
@@ -2202,6 +2207,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: b6ad8533484d58442b6965c71d3da2cc, type: 3}
   - {fileID: 8300000, guid: df1d04c020543db44bab5ce83a87908e, type: 3}
   - {fileID: 8300000, guid: 0b391562553b6f0468bd06c57e9e7d20, type: 3}
+  jumpStartVolume: 0.5
   jumpingTimeThreshold: 0.3
   jumpMaxThresholdTime: 1
   jumpImpulseIntensity: 1
@@ -2285,14 +2291,14 @@ MonoBehaviour:
   leftHandEquippedParam: LeftHandEquipped
   blockHitTrigger: BlockHit
   blockStrainParam: BlockStrain
+  shieldAwayParam: ShieldAway
+  shieldBackGrace: 0.05
   hurtTrigger: Hurt
   windupSpeedParam: WindupSpeed
   releaseSpeedParam: ReleaseSpeed
   heavyReleaseSpeedParam: HeavyReleaseSpeed
   heavyStrikeParam: HeavyStrike
   attackSpeedParam: AttackSpeed
-  simpleSwingsParam: SimpleSwings
-  swingSpeedParam: SwingSpeed
   comboTrigger: ComboStrike
   comboIndexParam: ComboIndex
   comboSpeedParam: ComboSpeed
@@ -2307,6 +2313,7 @@ MonoBehaviour:
   deflectSparkCount: 3
   deflectSparkDistance: 0.26
   deflectSparkScale: 1.2
+  deflectCooldown: 10
 --- !u!114 &6359001954766408055
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5090,6 +5097,8 @@ MonoBehaviour:
   nearClip: 0.1
   farClip: 5000
   viewModelFieldOfView: 70
+  conversationDrop: 1.2
+  conversationDropSeconds: 0.3
 --- !u!114 &5633827299529483868
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9515,7 +9524,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 13
-    baseValue: 8
+    baseValue: 6
     min: 0
     max: 0
   - stat: 14

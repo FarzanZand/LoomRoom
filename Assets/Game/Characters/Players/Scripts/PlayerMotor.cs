@@ -69,7 +69,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         if (swingSlowFrame == Time.frameCount) return swingSlow;
         swingSlowFrame = Time.frameCount;
         float slowed = Mathf.Clamp(tuning.swingMoveSpeed, .1f, 1f);
-        bool swinging = tuning.swingSlowWholeSwing ? player.Combat.Swinging : player.Combat.WindingUpOrStriking;
+        bool swinging = player.Combat.SwingSlows(tuning.swingSlowAfterStrike);
         float seconds = swinging ? tuning.swingSlowEaseIn : tuning.swingSlowEaseOut;
         float target = swinging ? slowed : 1f;
         swingSlow = seconds > 0f ? Mathf.MoveTowards(swingSlow, target, (1f - slowed) / seconds * Time.deltaTime) : target;
@@ -289,8 +289,8 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         if (sprintApplied) Speed = p.sprintSpeed;
         if (IsCrouching)   Speed = p.crouchSpeed;
         Speed *= speedMul;
-        // Swinging slows the walk (CombatManager.swingSlowsPlayer): through the whole swing, or with
-        // swingSlowWholeSwing off only its windup and strike. The dash has its own speed and is not slowed. The share
+        // Swinging slows the walk (CombatManager.swingSlowsPlayer): through a swing's windup and strike and for
+        // swingSlowAfterStrike after it. The dash has its own speed and is not slowed. The share
         // of the speed kept eases down as a swing starts and back up after it (swingSlowEaseIn, swingSlowEaseOut; the
         // user, 2026-11-15: it snapped), at the pace that covers the whole drop in that time.
         Speed *= SwingSlow();

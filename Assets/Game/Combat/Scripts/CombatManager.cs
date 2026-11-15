@@ -147,8 +147,8 @@ public partial class CombatManager : Singleton<CombatManager>
     [Range(.1f, 1f), Tooltip("Share of the walking speed kept while a swing plays (0.5: half speed).")]
     public float swingMoveSpeed = .5f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
-    [Tooltip("On: the slow lasts the whole swing, its recovery too, until the arm hands back to rest, so a combo pressed hit after hit is slowed throughout. Off: only through each hit's windup and strike, full speed again once its hitbox has closed (about half the time while pressing a combo). On doubles the distance between backing off and backing off while swinging, which is what an enemy's blow tells apart.")]
-    public bool swingSlowWholeSwing = true;
+    [Range(0f, 1.5f), Tooltip("Seconds the slow stays on after a hit's hitbox has closed, never past the end of the swing (the arm handing back to rest). 0: full speed as soon as each strike is over, which leaves a combo pressed hit after hit slowed only about half the time. 1 or more: the whole swing, recovery too. Longer keeps a player who backs off while swinging nearer to an enemy's blow.")]
+    public float swingSlowAfterStrike = .2f;
     [TabGroup("Tabs", "Player"), FoldoutGroup("Tabs/Player/Strike feel"), ShowIf(nameof(swingSlowsPlayer))]
     [Range(0f, .5f), Tooltip("Seconds the walk takes to ease down to Swing Move Speed as a swing starts. 0: it drops at once. Each 0.1 s lets a player backing off cover about 3 cm more before an enemy's blow, on the first swing of a retreat only.")]
     public float swingSlowEaseIn = .12f;
