@@ -1,5 +1,62 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &249631607584257381
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3708355865621841483}
+  - component: {fileID: 2492707307541059324}
+  m_Layer: 0
+  m_Name: Pit 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3708355865621841483
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249631607584257381}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -4, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5202184258933682151}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2492707307541059324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 249631607584257381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
+  kind: 0
+  cells: {x: 1, y: 5}
+  toWalls: 1
+  depth: 3.5
+  fallDamage: 0.25
+  keepPlayerOut: 1
+  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 22
+  fillLightRange: 9
+  fillLightEvery: 3
 --- !u!1 &386661110072112279
 GameObject:
   m_ObjectHideFlags: 0
@@ -62,6 +119,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5202184258933682151}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &940228717089708609
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8419924372647433280}
+  - component: {fileID: 6685069408419964990}
+  m_Layer: 0
+  m_Name: Pit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8419924372647433280
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940228717089708609}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -7, y: 0, z: -1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5202184258933682151}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6685069408419964990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940228717089708609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
+  kind: 0
+  cells: {x: 2, y: 6}
+  toWalls: 1
+  depth: 3.5
+  fallDamage: 0.25
+  keepPlayerOut: 1
+  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 22
+  fillLightRange: 9
+  fillLightEvery: 3
 --- !u!1 &1586776115401844145
 GameObject:
   m_ObjectHideFlags: 0
@@ -270,63 +384,6 @@ MonoBehaviour:
   wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
---- !u!1 &3537383193296789806
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2048510870674989167}
-  - component: {fileID: 467806936391030558}
-  m_Layer: 0
-  m_Name: Chasm
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2048510870674989167
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3537383193296789806}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5202184258933682151}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &467806936391030558
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3537383193296789806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
-  kind: 0
-  cells: {x: 3, y: 7}
-  toWalls: 1
-  depth: 3.5
-  fallDamage: 0.25
-  keepPlayerOut: 1
-  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
-  fillRepeat: 4
-  fillBelow: 0.9
-  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
-  fillLightIntensity: 22
-  fillLightRange: 9
-  fillLightEvery: 3
 --- !u!1 &5556559807014113359
 GameObject:
   m_ObjectHideFlags: 0
@@ -410,6 +467,120 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5202184258933682151}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6143241697477861483
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8842808552087762491}
+  - component: {fileID: 4578217569487551869}
+  m_Layer: 0
+  m_Name: Pit 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8842808552087762491
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6143241697477861483}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 2, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5202184258933682151}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4578217569487551869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6143241697477861483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
+  kind: 0
+  cells: {x: 1, y: 5}
+  toWalls: 1
+  depth: 3.5
+  fallDamage: 0.25
+  keepPlayerOut: 1
+  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 22
+  fillLightRange: 9
+  fillLightEvery: 3
+--- !u!1 &6615758032167588646
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9159348221565313651}
+  - component: {fileID: 4957814924244158907}
+  m_Layer: 0
+  m_Name: Pit 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9159348221565313651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6615758032167588646}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -7, y: 0, z: 6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5202184258933682151}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4957814924244158907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6615758032167588646}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
+  kind: 0
+  cells: {x: 2, y: 1}
+  toWalls: 1
+  depth: 3.5
+  fallDamage: 0.25
+  keepPlayerOut: 1
+  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 22
+  fillLightRange: 9
+  fillLightEvery: 3
 --- !u!1 &7077432717387060681
 GameObject:
   m_ObjectHideFlags: 0
@@ -442,21 +613,25 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 765348310265314748}
-  - {fileID: 2048510870674989167}
   - {fileID: 1419840521344361063}
   - {fileID: 5613114187952432860}
   - {fileID: 1491309593401500892}
   - {fileID: 3461118794888055018}
   - {fileID: 939427836489641358}
-  - {fileID: 7119959906724060757}
   - {fileID: 3378197495853732180}
+  - {fileID: 2547098262938392965}
   - {fileID: 4252198921404568336}
   - {fileID: 5962046727811443015}
   - {fileID: 446535933925218633}
   - {fileID: 3681165031548774880}
   - {fileID: 7635730681980512186}
   - {fileID: 8259938596792121634}
+  - {fileID: 9159348221565313651}
+  - {fileID: 1611053624963621038}
+  - {fileID: 3609720666407743764}
+  - {fileID: 8842808552087762491}
+  - {fileID: 8419924372647433280}
+  - {fileID: 3708355865621841483}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5474135501988968087
@@ -479,7 +654,7 @@ MonoBehaviour:
   width: 8
   height: 9
   rows:
-  - '####+###'
+  - '###++###'
   - '########'
   - '########'
   - '########'
@@ -487,7 +662,7 @@ MonoBehaviour:
   - '########'
   - '########'
   - '########'
-  - '####+###'
+  - '###++###'
   minimumCells: {x: 6, y: 6}
   style: {fileID: 0}
   heightTiles: 2
@@ -508,7 +683,7 @@ MonoBehaviour:
   enterLines: []
   enterChance: 1
   enterInPerson: 0
-  previewLevel: {fileID: 0}
+  previewLevel: {fileID: 11400000, guid: 49b13d1a6848f3c4faf843b34b10545c, type: 2}
   previewCellSize: 2
 --- !u!114 &2767185341710886548
 MonoBehaviour:
@@ -570,6 +745,63 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 0
+--- !u!1 &7314065001081216955
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3609720666407743764}
+  - component: {fileID: 5208167868780741217}
+  m_Layer: 0
+  m_Name: Pit
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3609720666407743764
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7314065001081216955}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 5, y: 0, z: -1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5202184258933682151}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5208167868780741217
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7314065001081216955}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
+  kind: 0
+  cells: {x: 2, y: 6}
+  toWalls: 1
+  depth: 3.5
+  fallDamage: 0.25
+  keepPlayerOut: 1
+  fill: {fileID: 2100000, guid: 20c5ea897085b1b419c3098a197b2f4a, type: 2}
+  fillRepeat: 4
+  fillBelow: 0.9
+  fillLightColour: {r: 1, g: 0.42, b: 0.13, a: 1}
+  fillLightIntensity: 22
+  fillLightRange: 9
+  fillLightEvery: 3
 --- !u!1 &7583166985772883938
 GameObject:
   m_ObjectHideFlags: 0
@@ -622,7 +854,7 @@ MonoBehaviour:
   wallGap: 0.75
   overrideLightColor: 0
   lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
---- !u!1 &7771905130307871810
+--- !u!1 &8726879682853207814
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -630,44 +862,44 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 765348310265314748}
-  - component: {fileID: 248039371976567078}
+  - component: {fileID: 1611053624963621038}
+  - component: {fileID: 8024453597276452138}
   m_Layer: 0
-  m_Name: Chasm
+  m_Name: Pit 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &765348310265314748
+--- !u!4 &1611053624963621038
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7771905130307871810}
+  m_GameObject: {fileID: 8726879682853207814}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -6, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 5, y: 0, z: 6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5202184258933682151}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &248039371976567078
+--- !u!114 &8024453597276452138
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7771905130307871810}
+  m_GameObject: {fileID: 8726879682853207814}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7683d53d93b640448a45666a23f4a0c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonFloorCut
   kind: 0
-  cells: {x: 3, y: 7}
+  cells: {x: 2, y: 1}
   toWalls: 1
   depth: 3.5
   fallDamage: 0.25
@@ -679,6 +911,105 @@ MonoBehaviour:
   fillLightIntensity: 22
   fillLightRange: 9
   fillLightEvery: 3
+--- !u!1001 &2493428764739479760
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5202184258933682151}
+    m_Modifications:
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -4.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.55
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      propertyPath: m_Name
+      value: Brazier (1)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8461878847601682605, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9169881516028886198}
+  m_SourcePrefab: {fileID: 100100000, guid: 21821b8a402cc394887d00028526a263, type: 3}
+--- !u!4 &2547098262938392965 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
+  m_PrefabInstance: {fileID: 2493428764739479760}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6337921175241949309 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8461878847601682605, guid: 21821b8a402cc394887d00028526a263, type: 3}
+  m_PrefabInstance: {fileID: 2493428764739479760}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9169881516028886198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6337921175241949309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &2801733176387659490
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -751,7 +1082,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.4000001
+      value: 2.65
       objectReference: {fileID: 0}
     - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_LocalPosition.y
@@ -759,7 +1090,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7.2
+      value: 5.7
       objectReference: {fileID: 0}
     - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
       propertyPath: m_LocalRotation.w
@@ -796,75 +1127,50 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8461878847601682605, guid: 21821b8a402cc394887d00028526a263, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7603841475014709975}
   m_SourcePrefab: {fileID: 100100000, guid: 21821b8a402cc394887d00028526a263, type: 3}
 --- !u!4 &3378197495853732180 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
   m_PrefabInstance: {fileID: 3396462445819420673}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &7137152008224714496
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 5202184258933682151}
-    m_Modifications:
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -3.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -7.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4693130425851065715, guid: 21821b8a402cc394887d00028526a263, type: 3}
-      propertyPath: m_Name
-      value: Brazier
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 21821b8a402cc394887d00028526a263, type: 3}
---- !u!4 &7119959906724060757 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 127064100021514581, guid: 21821b8a402cc394887d00028526a263, type: 3}
-  m_PrefabInstance: {fileID: 7137152008224714496}
+--- !u!1 &6506585886538713260 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8461878847601682605, guid: 21821b8a402cc394887d00028526a263, type: 3}
+  m_PrefabInstance: {fileID: 3396462445819420673}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7603841475014709975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6506585886538713260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalLightData
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_CustomShadowLayers: 0
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
+  m_RenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_ShadowRenderingLayersMask:
+    serializedVersion: 0
+    m_Bits: 1
+  m_Version: 4
+  m_LightLayerMask: 1
+  m_ShadowLayerMask: 1
+  m_RenderingLayers: 1
+  m_ShadowRenderingLayers: 1
 --- !u!1001 &8924232420898910414
 PrefabInstance:
   m_ObjectHideFlags: 0

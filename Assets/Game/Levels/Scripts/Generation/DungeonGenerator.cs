@@ -829,6 +829,8 @@ public partial class DungeonGenerator : MonoBehaviour
     void MakeDoors(int seed)
     {
         if(data.doorPrefab==null && doorPrefabs.Count==0)return;
+        // The leaves of the double doors already set down, by the cell each stands at.
+        var leaves=new System.Collections.Generic.Dictionary<(Vector2Int,Vector2Int),DungeonDoor>();
         foreach(var doorway in doorways) {
             var p=doorway.roomCell;
             var dir=doorway.direction;
@@ -839,10 +841,32 @@ public partial class DungeonGenerator : MonoBehaviour
             bool tavernDoor = Board && IndoorTavern(Layout.RegionIds[p.x,p.y]);
             var prefab=doorPrefabs.TryGetValue((p,dir),out var own) ? own : data.doorPrefab;
             if(prefab==null)continue;
-            var door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
-            // Cell width changes the span, not the doorway height or ceiling clearance.
-            door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
-            var gate = door.GetComponent<DungeonDoor>();
+            GameObject door; DungeonDoor gate;
+            int openSide=0;   // the side of this cell's doorway with no jamb (the other leaf of a double door)
+            if (doorPairs.TryGetValue((p,dir),out var mate) && prefab.GetComponent<DungeonDoubleDoor>()!=null)
+            {
+                // One double door for the two cells, in the middle of them; each cell then takes its own leaf.
+                var matePos=(Cell(mate)+Cell(mate+dir))*.5f;
+                if (Board) matePos.y=Cell(mate).y;
+                if (!leaves.TryGetValue((p,dir),out gate))
+                {
+                    var both=Instantiate(prefab,(pos+matePos)*.5f,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
+                    both.transform.localScale=new Vector3(data.cellSize/2f,1,1);
+                    var pair=both.GetComponent<DungeonDoubleDoor>();
+                    bool leftHere=(pair.left.transform.position-pos).sqrMagnitude<=(pair.right.transform.position-pos).sqrMagnitude;
+                    gate=leftHere ? pair.left : pair.right;
+                    leaves[(p,dir)]=gate; leaves[(mate,dir)]=leftHere ? pair.right : pair.left;
+                }
+                door=gate.gameObject;
+                openSide=Vector3.Dot(matePos-pos,new Vector3(dir.y,0f,dir.x))>0f ? 1 : -1;
+            }
+            else
+            {
+                door=Instantiate(prefab,pos,Quaternion.LookRotation(new Vector3(dir.x,0,dir.y)),transform);
+                // Cell width changes the span, not the doorway height or ceiling clearance.
+                door.transform.localScale=new Vector3(data.cellSize/2f,1,1);
+                gate = door.GetComponent<DungeonDoor>();
+            }
             if (gate != null) gate.FitCeiling(Mathf.Min(HeightAt(p.x,p.y), HeightAt(n.x,n.y)), data.architectureTileSize);
             if (gate != null && gate.lintel != null)
             {
@@ -884,7 +908,7 @@ public partial class DungeonGenerator : MonoBehaviour
                     if (tavernDoor) TavernLintelOutside(lintel, dir);
                     else if (!Board && own != null) WayInRevealOutside(lintel, dir, Layout.RegionIds[n.x,n.y], y);
                 }
-                if (!Board && own != null) WayInJambsOutside(pos, dir, Layout.RegionIds[n.x,n.y], bottom);
+                if (!Board && own != null) WayInJambsOutside(pos, dir, Layout.RegionIds[n.x,n.y], bottom, openSide);
                 if (Board && !tavernDoor) BoardDoorFrame(gate, p, n, pos.y + top);
             }
             if (Board && gate != null) boardDoors.Add((gate, p, n));

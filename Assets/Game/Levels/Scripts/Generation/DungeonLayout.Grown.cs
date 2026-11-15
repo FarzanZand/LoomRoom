@@ -97,6 +97,18 @@ public sealed partial class DungeonLayout
             try { again.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
             if (Better(again, layout, exitAt)) layout = again;
         }
+        // A way through with an end no passage could be dug from (ClosedWays: the end faced a pocket shut in by the
+        // starting room, the grid's edge and rooms with their doors elsewhere; one bridge end in ten on Dungeon1): grown
+        // again with other growth, the same every time, and the first layout with every end open, no fewer rooms and the
+        // exit as well placed is kept.
+        for (int retry = 5; layout.ClosedWays > 0 && retry <= 10; retry++)
+        {
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry };
+            try { again.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
+            if (again.ClosedWays < layout.ClosedWays && again.PlacedRequests.Length >= layout.PlacedRequests.Length && (!exitAt.HasValue || again.ExitPlacedAt || !layout.ExitPlacedAt)) layout = again;
+        }
+        if (layout.ClosedWays > 0)
+            Debug.LogWarning($"Dungeon seed {seed}: {layout.ClosedWays} end(s) of a way through have no passage.");
         if (layout.PlacedRequests.Length < requests.Count)
             Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
         if (exitAt.HasValue && !layout.ExitPlacedAt)
@@ -483,7 +495,9 @@ public sealed partial class DungeonLayout
     // one end and left at the other. Floors without such a room are laid out exactly as before.
     void OpenEveryDoor()
     {
-        for (int room = 1; room < rooms.Count - 1; room++)
+        // The entrance too when it is a way through (a test run opening in a bridge room: Asset Studio's Play this
+        // event), so the room is seen as it stands in a run, a door at each end.
+        for (int room = 0; room < rooms.Count - 1; room++)
         {
             if (placedShapes[room] == null || !placedShapes[room].everyDoor || doorAnchors[room] == null) continue;
             foreach (var anchor in new List<Vector2Int>(doorAnchors[room]))
@@ -512,8 +526,37 @@ public sealed partial class DungeonLayout
                 foreach (int other in others)
                     if (Connect(room, other, (growth.loopReach * 2 + 26) * 16, door)) break;
             }
+            // The ends still shut: a marked door with no passage in front of it nor in front of the door beside it (the
+            // other cell of a door two cells wide).
+            bool Open(Vector2Int anchor)
+            {
+                foreach (var d in Directions) { var q = anchor + d; if (Inner(q) && occupant[q.x, q.y] == CorridorCell) return true; }
+                return false;
+            }
+            var counted = new HashSet<Vector2Int>();
+            foreach (var anchor in doorAnchors[room])
+            {
+                if (counted.Contains(anchor) || Open(anchor)) continue;
+                bool besideOpen = false;
+                foreach (var d in Directions)
+                {
+                    var beside = anchor + d;
+                    if (!doorAnchors[room].Contains(beside)) continue;
+                    counted.Add(beside);
+                    if (Open(beside)) besideOpen = true;
+                }
+                if (!besideOpen) ClosedWays++;
+            }
         }
     }
+
+    // The entrance has marked doors and one way out (the level's starting room). Not an entrance that is a way through
+    // (a test run opening in a bridge room; the user, 2026-11-15: Play this event gave the bridge one door, a single
+    // one in its two-cell doorway, and none at its far end): that one gets a passage from each of its doors.
+    bool StartOneWay => doorAnchors[0] != null && !(placedShapes.Count > 0 && placedShapes[0] != null && placedShapes[0].everyDoor);
+
+    // The ends of ways through (the bridge rooms) left with no passage (OpenEveryDoor); Grow grows such a floor again.
+    public int ClosedWays { get; private set; }
 
     // Cheapest tunnel between two rooms. New cells cost 10 plus noise; running through an
     // existing corridor costs 5, so passages share tunnels instead of digging twins. only: the one door cell of room a
@@ -522,7 +565,7 @@ public sealed partial class DungeonLayout
     {
         // The entrance with marked doors (the starting room) has one way out: a second passage beside the first would
         // leave an opening its one door doesn't close.
-        if ((a == 0 || b == 0) && doorAnchors[0] != null && degree[0] > 0) return false;
+        if ((a == 0 || b == 0) && StartOneWay && degree[0] > 0) return false;
         var sources = DoorCells(a, b);
         if (only.HasValue) sources.RemoveAll(c => c != only.Value);
         var targets = new HashSet<Vector2Int>(DoorCells(b, a));
@@ -583,9 +626,67 @@ public sealed partial class DungeonLayout
                 if (Inner(q) && occupant[q.x, q.y] == EmptyCell && !Halo(q)) Dig(q, owner);
             }
         }
+        WidenFromPairedDoor(a, b, path, owner);
         Connections.Add(new Vector2Int(a, b));
         degree[a]++; degree[b]++;
         return true;
+    }
+
+    // A passage that begins or ends at a door two cells wide (two marked doors side by side on a room's wall: the bridge
+    // rooms' double doors; the user, 2026-11-15) is two cells wide all the way: every cell of it is widened to the side
+    // of the door's other cell, bends too. Next to another room it stays one cell (that room's doorway is one cell
+    // wide), and nothing is dug beside the starting room. Floors without such a door are laid out exactly as before.
+    void WidenFromPairedDoor(int a, int b, List<Vector2Int> path, int owner)
+    {
+        if (path.Count == 0) return;
+        Vector2Int Left(Vector2Int d) => new Vector2Int(-d.y, d.x);
+        Vector2Int Step(int i) => i + 1 < path.Count ? path[i + 1] - path[i] : path.Count > 1 ? path[i] - path[i - 1] : Vector2Int.zero;
+        int sign = 0;
+        // The door at the start (room a's), then the one at the end (room b's).
+        foreach (bool atStart in new[] { true, false })
+        {
+            if (sign != 0) break;
+            int room = atStart ? a : b;
+            var door = atStart ? path[0] : path[path.Count - 1];
+            if (doorAnchors[room] == null) continue;
+            foreach (var d in Directions)
+            {
+                var anchor = door + d;
+                if (!doorAnchors[room].Contains(anchor)) continue;
+                var outward = door - anchor;
+                foreach (int s in new[] { 1, -1 })
+                {
+                    var mate = anchor + Left(outward) * s;
+                    if (!doorAnchors[room].Contains(mate)) continue;
+                    // Along the path the way out of the room is its first step (or, at its end, the way back out of it).
+                    var along = path.Count > 1 ? (atStart ? Step(0) : -Step(path.Count - 1)) : outward;
+                    sign = Left(along) == Left(outward) ? s : Left(along) == -Left(outward) ? -s : s;
+                    if (!atStart) sign = -sign;   // the path runs the other way at its end
+                    var front = mate + outward;
+                    if (Inner(front) && occupant[front.x, front.y] == EmptyCell && IsDoor(front, room, atStart ? b : a)) Dig(front, owner);
+                    break;
+                }
+                if (sign != 0) break;
+            }
+        }
+        if (sign == 0) return;
+        bool start = doorAnchors[0] != null;
+        void Widen(Vector2Int q)
+        {
+            if (!Inner(q) || occupant[q.x, q.y] != EmptyCell || Halo(q)) return;
+            if (start && TouchesRoom(q, 0)) return;
+            Dig(q, owner);
+        }
+        for (int i = 0; i < path.Count; i++)
+        {
+            var into = i > 0 ? path[i] - path[i - 1] : Step(i);
+            var onward = Step(i);
+            if (into == Vector2Int.zero) into = onward;
+            if (onward == Vector2Int.zero) continue;
+            Widen(path[i] + Left(into) * sign);
+            Widen(path[i] + Left(onward) * sign);
+            if (into != onward) Widen(path[i] + Left(into) * sign + Left(onward) * sign);
+        }
     }
 
     bool TouchesRoom(Vector2Int p, int room)

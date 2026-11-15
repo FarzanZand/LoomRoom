@@ -5,7 +5,8 @@ using UnityEngine;
 // with its rope down to the floor, and a plain chest waits on a step at the back. Pull the rope and the bell tolls,
 // iron gates slam across the ways out and three waves come, one after another, out of the room's edge, the last with an
 // elite in it (eliteInLastWave); clear them and the gates sink and the chest comes back a tier
-// better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut while a ring's waves are coming
+// better (wood, iron, gold, then gold with a Legendary in it). The chest stays shut until the bell has been rung (the
+// user, 2026-11-15: opening it first turned the rope off with no word why) and while a ring's waves are coming
 // (DungeonContainer.HeldShut). It can be rung Max Rings times (once: the user, 2026-11-13, "You can only do the ring bell
 // event once"); the rope can't be pulled after that, nor once the chest is open.
 public class BellEvent : MonoBehaviour, ICoopEventRoom
@@ -38,6 +39,9 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
         new() { text = "Another." },
         new() { text = "The last of them." },
     };
+    [Tooltip("The chest's prompt before the bell has been rung.")] public string chestUnrungPrompt = "Ring the bell first";
+    [Tooltip("Said when the player tries the chest before the bell has been rung.")]
+    public DungeonMaster.Line chestUnrungLine = new() { text = "The bell first." };
     [Tooltip("The chest's prompt while a ring's waves are coming.")] public string chestShutPrompt = "Not while they're coming";
     [Tooltip("Said when the player tries the chest while the waves are coming.")]
     public DungeonMaster.Line chestShutLine = new() { text = "Finish what you rang for first." };
@@ -77,7 +81,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     {
         if (c == null) return;
         c.Opened += OnChestOpened;
-        c.HeldShut = () => busy ? chestShutPrompt : null;
+        c.HeldShut = () => busy ? chestShutPrompt : rings == 0 ? chestUnrungPrompt : null;
         c.OpenRefused += OnChestRefused;
     }
 
@@ -86,7 +90,7 @@ public class BellEvent : MonoBehaviour, ICoopEventRoom
     {
         if (Time.time < nextRefusal) return;
         nextRefusal = Time.time + 4f;
-        ScriptedEventRoom.Say(chestShutLine);
+        ScriptedEventRoom.Say(rings == 0 && !busy ? chestUnrungLine : chestShutLine);
     }
 
     void OnChestOpened(DungeonContainer c)

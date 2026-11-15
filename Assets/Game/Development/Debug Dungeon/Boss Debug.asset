@@ -17,6 +17,9 @@ MonoBehaviour:
   boardReveal: 0
   ownBoardPieces: 0
   ownLook: 0
+  plainKit: 0
+  pitWater: {fileID: 0}
+  pitWaterBelow: 0.4
   wilds:
     enabled: 0
     roofed: 0
@@ -128,6 +131,8 @@ MonoBehaviour:
   templateChance: 0.7
   roomCount: 0
   roomSizeScale: 1
+  tallRoomChance: 0
+  tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
   roomFeatures:
@@ -143,6 +148,11 @@ MonoBehaviour:
     sleepingPacks: 0
     sleepChance: 0.2
     maxSleepingPacks: 3
+    meddling: 1
+    meddleChance: 0.5
+    tooEasySeconds: 14
+    tooEasyHealth: 0.1
+    stealChance: 0.05
     pits: 1
     playerFallsInPits: 0
     pitFallDamage: 0.25
@@ -175,6 +185,10 @@ MonoBehaviour:
   encounterChance: {x: 0.4, y: 0.6}
   minEnemiesPerRoom: 1
   maxEnemiesPerRoom: 2
+  maxCastersPerRoom: 1
+  maxCastersPerFloor: 6
+  eliteChance: 0
+  eliteFloors: 3
   features: []
   loot: {fileID: 0}
   merchantChance: 0.3
@@ -251,14 +265,19 @@ MonoBehaviour:
   - biome: {fileID: 11400000, guid: f1f8c6c8eba99314baf2d36bceb0f5bb, type: 2}
     floors: 1
     boss: 1
+    extraFloors: 0
+    damageScale: 1
   floors: 1
   bossOnLastFloor: 1
   balance: {fileID: 11400000, guid: 17ddb6f6915abaf4e84e92c0ab56e9d9, type: 2}
   gearByFloor: []
   startingRoom: {fileID: 0}
+  eventRoomsPerFloor: {x: 0, y: 1}
+  tavernEvery: 1
   startingChest: 1
   startingChestConsumable: {fileID: 0}
   startingChestItems: []
+  startingChestTome: 0
   fixedSeed: 31415
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
@@ -274,9 +293,11 @@ MonoBehaviour:
   roomSpacing: {x: 1, y: 4}
   loopPercent: 15
   loopReach: 10
+  joinDeadEndPercent: 0
   corridorWander: 1.2
   wideCorridorPercent: 15
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
+  doubleDoorPrefab: {fileID: 2428514974889106930, guid: 74b348ca4f4bf224899136afbcdd2d3e, type: 3}
   hideStartWallInReveal: 0
   mapTemplate: {fileID: 0}
   authoredMap: '########################################

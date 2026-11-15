@@ -270,8 +270,7 @@ MonoBehaviour:
   m_Name: IntroDungeon
   m_EditorClassIdentifier: Assembly-CSharp::TableLevelData
   displayName: the practice dungeon
-  description: The Dungeon Master's small board for learning the game. Played once,
-    at the start of a new game.
+  description: The Dungeon Master's small board for learning the game. Played once, at the start of a new game.
   cardArt: {fileID: 21300000, guid: 6791e99f9a81f2c43a70e3e139f53725, type: 3}
   kind: 1
   stages: []
@@ -281,9 +280,11 @@ MonoBehaviour:
   gearByFloor: []
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
   eventRoomsPerFloor: {x: 0, y: 1}
+  tavernEvery: 1
   startingChest: 1
   startingChestConsumable: {fileID: 0}
   startingChestItems: []
+  startingChestTome: 0
   fixedSeed: 1211
   pocket: 0
   nextFloorMessage: You descend to floor {0}.
@@ -299,9 +300,11 @@ MonoBehaviour:
   roomSpacing: {x: 1, y: 4}
   loopPercent: 15
   loopReach: 10
+  joinDeadEndPercent: 0
   corridorWander: 1.2
   wideCorridorPercent: 15
   doorPrefab: {fileID: 7005205240093728226, guid: 7ae2a1d1f1163d043b9dddebfbe75f5e, type: 3}
+  doubleDoorPrefab: {fileID: 2428514974889106930, guid: 74b348ca4f4bf224899136afbcdd2d3e, type: 3}
   hideStartWallInReveal: 1
   mapTemplate: {fileID: 0}
   authoredMap: '##############################

@@ -3,7 +3,8 @@ using UnityEngine.AI;
 
 // A dungeon door: a leaf that swings open on its hinge or, as a gate, lifts into the ceiling.
 // Swinging, it always opens away from whoever opens it, hinged on their left: the hinge and the
-// leaf are moved to that side just before it turns.
+// leaf are moved to that side just before it turns. One leaf of a double door (DungeonDoubleDoor) keeps its hinge
+// where it is, at the doorway's outer edge, and opens with its partner.
 public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
 {
     public enum Opening { Lift = 0, Swing = 1 }
@@ -15,6 +16,11 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     public Transform leafMesh;
     [Tooltip("Swing: half the doorway's width (local units): where the hinge sits, left or right of the middle.")]
     public float halfWidth = 1f;
+    public enum Hinge { OpenersLeft = 0, Left = 1, Right = 2 }
+    [Tooltip("Swing: where the hinge is. Opener's Left: moved to the left of whoever opens it. Left or Right: fixed on that side of the doorway as seen from in front (local -x or +x), as the leaves of a double door, which are hinged at its outer edges.")]
+    public Hinge hinge = Hinge.OpenersLeft;
+    [Tooltip("Another door that opens when this one does (the other leaf of a double door).")]
+    public DungeonDoor partner;
     [Tooltip("Swing: degrees the door turns open, away from whoever opens it.")]
     public float swingDegrees = 100f;
     [Min(1), Tooltip("Swing: degrees a second.")] public float swingSpeed = 170f;
@@ -154,16 +160,21 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
         if(opening==Opening.Swing && leafMesh!=null)
         {
             bool front=!from.HasValue || Vector3.Dot(from.Value-transform.position,transform.forward)<0f;
-            // Seen from in front (behind the door's forward) their left is local -x; from behind it is +x.
-            float side=front ? -1f : 1f;
+            // Seen from in front (behind the door's forward) their left is local -x; from behind it is +x. A fixed
+            // hinge stays where it is.
+            float side=hinge==Hinge.Left ? -1f : hinge==Hinge.Right ? 1f : front ? -1f : 1f;
             leaf.localPosition=new Vector3(side*halfWidth,closedPosition.y,closedPosition.z);
             leafMesh.localPosition=new Vector3(-side*halfWidth,leafMesh.localPosition.y,leafMesh.localPosition.z);
             leafMesh.localScale=new Vector3(side==authoredSide ? leafMeshScale.x : -leafMeshScale.x,leafMeshScale.y,leafMeshScale.z);
-            // With the hinge on their left, turning the same way always takes the leaf away from them.
-            swingTarget=closedRotation*Quaternion.Euler(0,-Mathf.Abs(swingDegrees),0);
+            // With the hinge on their left, turning the same way always takes the leaf away from them; with a fixed
+            // hinge on their right it turns the other way, away from them too.
+            bool onTheirLeft=side==(front ? -1f : 1f);
+            swingTarget=closedRotation*Quaternion.Euler(0,onTheirLeft ? -Mathf.Abs(swingDegrees) : Mathf.Abs(swingDegrees),0);
             PrepareLeaf();
         }
-        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);}
+        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);
+        // The other leaf of a double door opens with it, away from the same opener.
+        if(partner!=null && !partner.open)partner.Open(from);}
     void Update(){
         if(!open)return;
         if(opening==Opening.Swing)

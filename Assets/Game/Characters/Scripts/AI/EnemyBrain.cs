@@ -331,7 +331,48 @@ public class EnemyBrain : MonoBehaviour
 
     // Never nearer than a body's width off the target's personal space, however short its reach: it holds its distance
     // without crowding or bumping into the player.
-    float PreferredDistance => Mathf.Max(Tuning != null ? Tuning.personalSpace + .35f : .9f, (CloseIn ? MeleeRange : MaxAttackRange) * Profile.preferredRangeFraction);
+    float PreferredDistance
+    {
+        get
+        {
+            float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
+            // An enemy that lunges holds the distance it always did, a share of where it strikes from (inside the
+            // player's reach; the user, 2026-11-15: held outside it, "I can't hit when I feel I should"). Only its
+            // run-up stops further out (StopDistance), and it walks the rest slowly (CloseInSpeed).
+            float range = LungeHold ? StrikeFrom : CloseIn ? MeleeRange : MaxAttackRange;
+            return Mathf.Max(least, range * Profile.preferredRangeFraction);
+        }
+    }
+
+    // The furthest a lunging enemy's melee attacks are struck from.
+    float StrikeFrom
+    {
+        get
+        {
+            float r = 0f;
+            foreach (var a in Data.attacks) if (a != null && attackRunner.Lunges(a)) r = Mathf.Max(r, attackRunner.StruckFrom(a));
+            return r > 0f ? r : MeleeRange;
+        }
+    }
+    // Where its run-up stops: a lunging enemy just inside where its attack begins, beyond the player's reach.
+    float StopDistance => LungeHold ? Mathf.Max(PreferredDistance, MaxAttackRange - .1f) : PreferredDistance;
+    // The pace of the last stretch in, from where the run-up stopped to the distance it holds: under the player's
+    // backing speed, so a player who backs off is not walked into.
+    float CloseInSpeed => Tuning != null ? Tuning.enemyCloseInSpeed : 1.1f;
+
+    // It fights by lunging (CombatManager.enemiesLungeIntoSwing): its longest attack, the one its distance is held for,
+    // is a melee attack that steps in.
+    bool LungeHold
+    {
+        get
+        {
+            if (attackRunner == null || Data == null || Data.attacks == null) return false;
+            float range = CloseIn ? MeleeRange : MaxAttackRange;
+            foreach (var a in Data.attacks)
+                if (a != null && attackRunner.Lunges(a) && StartRange(a) >= range - .001f) return true;
+            return false;
+        }
+    }
 
     // A caster that fights up close (EnemyData.closesIn) holds the distance of its melee attacks, not its spells'.
     bool CloseIn => Data != null && Data.caster && Data.closesIn && Data.attacks != null && Data.attacks.Count > 0;
@@ -690,8 +731,10 @@ public class EnemyBrain : MonoBehaviour
         if (HandleHeightGap(targetPos, dist)) return;
 
         // Approach. Look at the target once close so the run-in becomes a strafe-run.
-        Motor.SetAutoBraking(false);
-        Motor.SetStoppingDistance(PreferredDistance);
+        // An enemy that lunges brakes as it comes up to its distance: coasting on, it ended 20 cm nearer, inside the
+        // player's reach.
+        Motor.SetAutoBraking(LungeHold);
+        Motor.SetStoppingDistance(StopDistance);
         var filter = new NavMeshQueryFilter { agentTypeID = Motor.Agent.agentTypeID, areaMask = Motor.Agent.areaMask };
         if (NavMesh.SamplePosition(targetPos, out NavMeshHit navHit, 1.5f, filter))
             Motor.MoveTo(navHit.position);
@@ -723,7 +766,7 @@ public class EnemyBrain : MonoBehaviour
             float wave = Mathf.Sin((Time.time / Mathf.Max(.5f, swayPeriod) + swayPhase) * Mathf.PI * 2f);
             float sway = p.spacingSway * (wave > 0f ? wave : wave * .3f);
             float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
-            preferred = Mathf.Clamp(preferred + sway, least, Mathf.Max(least, MaxAttackRange - .1f));
+            preferred = Mathf.Clamp(preferred + sway, least, Mathf.Max(least, (LungeHold ? StrikeFrom : MaxAttackRange) - .1f));
         }
         Vector3 toTarget = targetPos - transform.position; toTarget.y = 0f;
         if (toTarget.sqrMagnitude < 0.0001f) toTarget = transform.forward;
@@ -731,6 +774,14 @@ public class EnemyBrain : MonoBehaviour
 
         // Footwork: near its distance it walks, never darts: the circling and the step in or back are one movement at
         // the walk's own pace (the legs whirled when it ran sideways and burst in and out between circling).
+        // A lunging enemy that stopped its run-up beyond the player's reach walks straight in the rest of the way,
+        // at the close-in pace (it shuffled in at half a walk while it circled, and stood just out of reach meanwhile).
+        if (LungeHold && dist > preferred + .15f)
+        {
+            backStuckSince = -1f;
+            Motor.Strafe(toTarget, CloseInSpeed);
+            return;
+        }
         if (p.spacingSway > 0f && p.circleTarget && Mathf.Abs(dist - preferred) < .7f)
         {
             backStuckSince = -1f;
@@ -741,7 +792,7 @@ public class EnemyBrain : MonoBehaviour
             }
             float pace = FootworkPace;
             Vector3 around = Vector3.Cross(Vector3.up, toTarget) * circleDir * pace;
-            Vector3 inOut = toTarget * Mathf.Clamp((dist - preferred) * 1.6f, -.6f, .6f) * pace;
+            Vector3 inOut = toTarget * Mathf.Clamp((dist - preferred) * 1.6f, -.6f, .6f) * (LungeHold && dist > preferred ? Mathf.Min(pace, CloseInSpeed) : pace);
             Vector3 step = around + inOut;
             Motor.Strafe(step.normalized, Mathf.Min(step.magnitude, pace * 1.15f));
             float went = new Vector3(Motor.Velocity.x, 0f, Motor.Velocity.z).magnitude;
@@ -756,7 +807,7 @@ public class EnemyBrain : MonoBehaviour
 
         if (dist > preferred + 0.2f)
         {
-            Motor.Strafe(toTarget, chaseSpeed * p.spacingSpeedFraction);
+            Motor.Strafe(toTarget, LungeHold ? Mathf.Min(chaseSpeed * p.spacingSpeedFraction, CloseInSpeed) : chaseSpeed * p.spacingSpeedFraction);
             return;
         }
         if (dist < preferred - 0.35f)

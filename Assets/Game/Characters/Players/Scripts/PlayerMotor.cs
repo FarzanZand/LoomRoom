@@ -64,14 +64,14 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
     int swingSlowFrame = -1;
 
     // The share of the walking speed a swing leaves, eased; moved once a frame however often it is read.
-    float SwingSlow()
+    float SwingSlow(bool backing)
     {
         var tuning = CombatManager.HasInstance ? CombatManager.Instance : null;
         if (tuning == null || !tuning.swingSlowsPlayer || player == null || player.Combat == null) return swingSlow = 1f;
         if (swingSlowFrame == Time.frameCount) return swingSlow;
         swingSlowFrame = Time.frameCount;
         float slowed = Mathf.Clamp(tuning.swingMoveSpeed, .1f, 1f);
-        bool swinging = player.Combat.SwingSlows(tuning.swingSlowAfterStrike);
+        bool swinging = player.Combat.SwingSlows(tuning.swingSlowAfterStrike) && (tuning.swingSlowWhenBacking || !backing);
         float seconds = swinging ? tuning.swingSlowEaseIn : tuning.swingSlowEaseOut;
         float target = swinging ? slowed : 1f;
         swingSlow = seconds > 0f ? Mathf.MoveTowards(swingSlow, target, (1f - slowed) / seconds * Time.deltaTime) : target;
@@ -295,7 +295,7 @@ public class PlayerMotor : MonoBehaviour, IKnockbackReceiver
         // swingSlowAfterStrike after it. The dash has its own speed and is not slowed. The share
         // of the speed kept eases down as a swing starts and back up after it (swingSlowEaseIn, swingSlowEaseOut; the
         // user, 2026-11-15: it snapped), at the pace that covers the whole drop in that time.
-        Speed *= SwingSlow();
+        Speed *= SwingSlow(moveDir.z < -.1f);
 
         Transform orientation = player != null && player.Look != null ? player.Look.YawTransform : transform;
         Vector3 forward = orientation.forward; forward.y = 0f; forward.Normalize();

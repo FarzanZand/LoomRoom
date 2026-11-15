@@ -65,7 +65,30 @@ public class EnemyAttackRunner
         float own = attack.EffectiveMaxRange;
         var tuning = Tuning;
         if (attack.IsRanged || tuning == null || !tuning.enemiesSwingInsidePlayerReach || tuning.playerMeleeReach <= 0f) return own;
-        return Mathf.Min(own, Mathf.Max(.5f, tuning.playerMeleeReach + BodyFront - tuning.enemySwingInsideReach));
+        float strike = StrikeRange(attack);
+        // The lunge: it begins from beyond the player's reach and steps in to its striking distance with the blow.
+        return Lunges(attack) ? Mathf.Max(strike, Mathf.Min(own, tuning.playerMeleeReach + BodyFront + tuning.enemyWaitOutsideReach)) : strike;
+    }
+
+    // Where this attack is struck from: a lunge's striking distance, else where it begins (EnemyBrain holds its
+    // distance by it).
+    public float StruckFrom(EnemyAttack attack) => Lunges(attack) ? StrikeRange(attack) : StartRange(attack);
+
+    // Where a melee blow is struck from: just inside the player's own reach, never past the attack's own range.
+    float StrikeRange(EnemyAttack attack) => Mathf.Min(attack.EffectiveMaxRange, Mathf.Max(.5f, Tuning.playerMeleeReach + BodyFront - Tuning.enemySwingInsideReach));
+
+    // The lunge (CombatManager.enemiesLungeIntoSwing; the user, 2026-11-15: no slowdown for backing off, "but also make
+    // sure that if they can't reach you you can't reach them, so you can't just back and attack"): a melee enemy waits
+    // beyond the player's reach, winds up there, and once its aim is locked steps in so the blow lands as it arrives at
+    // its striking distance, just inside the player's reach. It is inside that reach only once it has committed, so a
+    // player backing off cannot hit it; the one who stands, blocks or dodges hits back through its recovery. Of the
+    // hits a player landed while backing off and swinging before this, half came in the windup and half between
+    // swings, when the enemy stood at 1.1 m.
+    public bool Lunges(EnemyAttack attack)
+    {
+        var tuning = Tuning;
+        return attack != null && !attack.IsRanged && attack.movesIn && tuning != null && tuning.enemiesLungeIntoSwing && tuning.enemiesStepIntoSwing
+            && !tuning.enemiesWalkWhileAttacking && tuning.enemiesSwingInsidePlayerReach && tuning.playerMeleeReach > 0f;
     }
 
     // How far away the blow of an attack that has begun still lands.
@@ -74,7 +97,7 @@ public class EnemyAttackRunner
         if (attack == null) return 0f;
         var tuning = Tuning;
         if (attack.IsRanged || tuning == null || !tuning.enemiesSwingInsidePlayerReach || tuning.playerMeleeReach <= 0f) return attack.EffectiveMaxRange * 1.1f;
-        return (StartRange(attack) + tuning.enemyBlowBeyondStart) * tuning.enemyBlowReach;
+        return (StrikeRange(attack) + tuning.enemyBlowBeyondStart) * tuning.enemyBlowReach;
     }
 
     // How far this body reaches out toward what it faces, from its middle: its capsule's radius, or half its length
@@ -292,8 +315,13 @@ public class EnemyAttackRunner
         swingAudioPlayed = false;
         HitAt = -1f;
         stepped = 0f;
-        stepKeep = Perception.Target != null ? Perception.HorizontalDist(brain.transform.position, CoopWorld.TruePosition(Perception.Target)) : 0f;
-        if (Tuning != null) stepKeep = Mathf.Max(stepKeep, Tuning.personalSpace + .35f);
+        float began = Perception.Target != null ? Perception.HorizontalDist(brain.transform.position, CoopWorld.TruePosition(Perception.Target)) : 0f;
+        float least = Tuning != null ? Tuning.personalSpace + .35f : .9f;
+        lunging = Lunges(attack);
+        // A lunge steps in to its striking distance (and Enemy Lunge Follow further after a target that backs off); the
+        // plain step keeps the distance the swing began at.
+        stepKeep = Mathf.Max(lunging ? StrikeRange(attack) : began, least);
+        stepMost = lunging ? Mathf.Max(0f, began - stepKeep) + Tuning.enemyLungeFollow : Tuning != null ? Tuning.enemySwingStepMost : 0f;
         var hitbox = brain.AttackRelay != null ? brain.AttackRelay.GetHitbox(attack.hitboxIndex) : null;
         if (hitbox != null) hitbox.SetProfile(attack.hit);
 
@@ -414,15 +442,20 @@ public class EnemyAttackRunner
     // enemySwingStepMost a swing. Only the distance along the aim counts, so a dash aside is not followed, and it never
     // comes nearer than the swing began at (which is outside the target's personal space).
     // Each attack can opt out of both ways of moving in (EnemyAttack.movesIn); a cast or a bow shot never moves.
-    float stepKeep, stepped;
+    float stepKeep, stepped, stepMost;
+    bool lunging;
     bool BlowAhead => fallbackHitPending || HitAt < 0f || Time.time < HitAt;
     bool MovesIn => current != null && !current.IsRanged && current.movesIn;
     void StepIntoSwing(Character target)
     {
         var tuning = Tuning;
         if (tuning == null || !tuning.enemiesStepIntoSwing || tuning.enemiesWalkWhileAttacking || !MovesIn || !BlowAhead || !Perception.TargetVisible) return;
-        float left = tuning.enemySwingStepMost - stepped;
+        float left = stepMost - stepped;
         if (left <= 0f) return;
+        float speed = tuning.enemySwingStepSpeed;
+        float until = (fallbackHitPending ? fallbackHitAt : HitAt) - Time.time;
+        // A lunge comes with the blow: only once the aim is locked, paced to arrive as the blow lands.
+        if (lunging && (fallbackHitPending || HitAt > 0f) && until > CommitLead) return;
         Vector3 aim = directionCommitted ? committedForward : brain.transform.forward; aim.y = 0f;
         if (aim.sqrMagnitude < .0001f) return;
         aim.Normalize();
@@ -430,7 +463,8 @@ public class EnemyAttackRunner
         Vector3 to = CoopWorld.TruePosition(target) - brain.transform.position; to.y = 0f;
         float gap = Vector3.Dot(to, aim) - stepKeep;
         if (gap <= .01f) return;
-        stepped += Motor.Step(aim * Mathf.Min(gap, left, tuning.enemySwingStepSpeed * Time.deltaTime));
+        if (lunging && until > Time.deltaTime) speed = Mathf.Min(speed, gap / until);
+        stepped += Motor.Step(aim * Mathf.Min(gap, left, speed * Time.deltaTime));
     }
 
     // Walking while attacking (the user, 2026-11-15: "the main problem is that enemies just stand still while attacking

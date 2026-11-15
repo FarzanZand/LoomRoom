@@ -159,10 +159,27 @@ public class DungeonFloorCut : MonoBehaviour
         MessageLog.Post($"{brain.Character.TheNameCap} falls into the pit.", MessageKind.Combat);
     }
 
+    // An outline of its cells (the room template's Prefab Mode preview shows the hole itself), filled while selected.
     void OnDrawGizmos()
     {
-        Gizmos.color = kind == Kind.Pit ? new Color(.05f, .05f, .08f, .8f) : new Color(.4f, .55f, .8f, .45f);
+        Gizmos.color = kind == Kind.Pit ? new Color(.9f, .4f, .15f, .9f) : new Color(.4f, .55f, .8f, .9f);
+        float c = 2f;
+        foreach (var p in CellCentres(c)) Gizmos.DrawWireCube(p - Vector3.up * depth * .5f, new Vector3(c * .98f, depth, c * .98f));
+    }
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = kind == Kind.Pit ? new Color(.05f, .05f, .08f, .5f) : new Color(.4f, .55f, .8f, .35f);
         float c = 2f;
         foreach (var p in CellCentres(c)) Gizmos.DrawCube(p - Vector3.up * depth * .5f, new Vector3(c * .98f, depth, c * .98f));
     }
+
+#if UNITY_EDITOR
+    // A field changed: the room template's preview builds the hole again.
+    void OnValidate()
+    {
+        if (Application.isPlaying) return;
+        var template = GetComponentInParent<DungeonRoomTemplate>(true);
+        if (template != null) template.CutChanged();
+    }
+#endif
 }
