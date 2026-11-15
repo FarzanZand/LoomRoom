@@ -132,8 +132,11 @@ public class PlayerCombat : MonoBehaviour, IBlocker
     // The whole swing, its recovery too, until the arm hands back to rest (CombatManager.swingSlowWholeSwing, the user,
     // 2026-11-15: the slow that ended with the hitbox covered only about half of a combo pressed hit after hit, which
     // left a few centimetres between backing off and backing off while swinging, too little for an online game).
-    public bool Swinging => IsAttacking && !cancelling && !HandingBack();
+    // The user, later the same day: the whole swing was too long. The slow now stays on for a set time after the strike
+    // (CombatManager.swingSlowAfterStrike), never past the hand-back.
+    public bool SwingSlows(float afterStrike) => IsAttacking && !cancelling && !HandingBack() && (!strikeOver || Time.time < strikeOverAt + afterStrike);
     bool strikeOver, strikeWasOpen, strikeSeenOpen;
+    float strikeOverAt;
     void NewSwing() { strikeOver = false; strikeSeenOpen = false; }
 
     void TrackStrike()
@@ -141,10 +144,10 @@ public class PlayerCombat : MonoBehaviour, IBlocker
         if (weaponHitbox == null) weaponHitbox = GetComponentInChildren<Hitbox>(true);
         bool open = weaponHitbox != null && weaponHitbox.Active;
         if (open && !strikeWasOpen) strikeSeenOpen = true;
-        else if (!open && strikeWasOpen && strikeSeenOpen) strikeOver = true;
+        else if (!open && strikeWasOpen && strikeSeenOpen && !strikeOver) { strikeOver = true; strikeOverAt = Time.time; }
         strikeWasOpen = open;
         if (!IsAttacking) NewSwing();
-        else if (weaponHitbox == null) strikeOver = HandingBack();
+        else if (weaponHitbox == null) { bool was = strikeOver; strikeOver = HandingBack(); if (strikeOver && !was) strikeOverAt = Time.time; }
         if (weaponHitbox == null) { strikeClosed = IsReleasing; return; }   // no hitbox: the release counts as recovery
         if (weaponHitbox.Active) strikeOpened = true;
         else if (strikeOpened) strikeClosed = true;
