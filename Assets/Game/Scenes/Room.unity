@@ -231987,7 +231987,7 @@ MonoBehaviour:
     inPerson: 1
   openingRule: {fileID: 11400000, guid: 614a8b8107d3a33428d605ef0ee9c5f2, type: 2}
   openingRuleAfter: 3
-  lampSound: {fileID: 0}
+  lampSound: {fileID: 8300000, guid: 723f737054c1eec409948292efc106ed, type: 3}
   introDungeon: {fileID: 11400000, guid: c645aab0a734a674c819d23a78475cc7, type: 2}
   practiceClass: {fileID: 11400000, guid: 720138e1d8556ba48b73655c9111a72d, type: 2}
   takeIt:
@@ -232166,7 +232166,7 @@ MonoBehaviour:
     voice: {fileID: 0}
     mumble: 1
     inPerson: 1
-  lampOutSound: {fileID: 0}
+  lampOutSound: {fileID: 8300000, guid: 6315458747f352e44af5c3b848ce56ef, type: 3}
   eyesLinger: 1
   nightSeconds: 1
   firstMorning:
