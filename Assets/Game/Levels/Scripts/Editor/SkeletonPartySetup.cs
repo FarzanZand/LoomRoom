@@ -66,12 +66,13 @@ public static class SkeletonPartySetup
                 var ring = new GameObject("Dancers").transform;
                 ring.SetParent(root.transform, false);
                 // Three dancers (the user, 2026-11-16: 3, not 4), evenly round the chest as far out as the old square's
-                // corners, each facing it.
+                // corners, each facing it: one beyond the chest as seen from the way in (the pocket's side room, at +x),
+                // two either side of the walk in, as far off its line as each other.
                 for (int i = 0; i < Dancers; i++)
                 {
                     var spot = new GameObject("Dancer " + (i + 1)).transform;
                     spot.SetParent(ring, false);
-                    float angle = (90f + i * 360f / Dancers) * Mathf.Deg2Rad;
+                    float angle = (180f + i * 360f / Dancers) * Mathf.Deg2Rad;
                     var corner = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
                     spot.localPosition = corner * DancerSpread * 1.41421f;
                     spot.localRotation = Quaternion.LookRotation(-corner);
