@@ -35,8 +35,6 @@ public partial class CampaignManager
         if (player == null || !QuickPlace(out var e, out bool resume, out var savedClass)) return false;
         // A continued run is played as the class it was started with.
         if (resume && progress.selectedClass != savedClass) { progress.SelectClass(savedClass); RememberClass(); }
-        // Its line is for a new run; a continued one picks up deeper, where it wouldn't fit.
-        if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
         At = e;
         Current = e;
         MarkVisited(e);
@@ -44,6 +42,9 @@ public partial class CampaignManager
         if (Map != null && player.Look != null) StartCoroutine(QuickStep(player));
         else if (player.Look != null) player.Look.HeightOverride = null;
         if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
+        // Its line is for a new run (a continued one picks up deeper, where it wouldn't fit), asked for once the load
+        // holds its cutscene so it is said once, when the floor stands (see the map's click in CampaignManager).
+        if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
         return true;
     }
 
