@@ -793,7 +793,9 @@ public static class DungeonChunkKit
             Block(kerb, "Kerb", new Vector3(0f, 0f, side * 1.125f), new Vector3(2.5f, .2f, .25f), Wall, Trim).solid = false;
             Block(kerb, "Kerb", new Vector3(side * 1.125f, 0f, 0f), new Vector3(.25f, .2f, 2f), Wall, Trim).solid = false;
         }
-        Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(-1.12f, .2f, 1.12f), 200f); Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(1.12f, .2f, -1.12f), 20f);
+        // Candles on the floor at two of the kerb's corners (on the kerb they hung over its edge: the cluster is 60 cm
+        // across and the kerb 25, so every candle's foot was in the air 20 cm over the floor).
+        Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(-1.65f, 0f, 1.65f), 200f); Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(1.65f, 0f, -1.65f), 20f);
         Piece(c, "Rubble", c.Cell(0, 4) + new Vector3(-.2f, 0f, .2f), 120f);
         Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3.3f), .8f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(3.3f, 2), .7f, 270f); Socket(c, DungeonSocketType.Enemy, c.Cell(3.2f, 3.6f), .5f);
         Socket(c, DungeonSocketType.Breakable, c.Cell(4, 4), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(0, 0), .5f);
@@ -821,7 +823,7 @@ public static class DungeonChunkKit
         c.centre = new Vector2Int(3, 2);   // free floor east of the table (a bench stands on the middle cell): see the Well room
         c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Candlelit; c.cellars = 1f; c.crypt = .6f; c.maxPerFloor = 1;
         Prop(c, "Tavern/Long table", c.Cell(1.6f, 3), 90f, true);
-        Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(-.85f, 0f, 0f), 90f, true); Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(.85f, 0f, 0f), 90f, true);
+        Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(-.9f, 0f, 0f), 90f, true); Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(.9f, 0f, 0f), 90f, true);   // at .85 their feet stood 3 cm inside the table's
         // The spit's frame runs from 1.3 m left of its pivot to 1.8 m right of it: the fire burns under its middle.
         var spit = c.Cell(.3f, 5.7f);
         Prop(c, "Tavern/Fire pit", spit); Prop(c, "Tavern/Cooking pot", spit + new Vector3(1.55f, 0f, -.6f), 30f);
@@ -836,8 +838,12 @@ public static class DungeonChunkKit
         Prop(c, "Tavern/Mug", top + new Vector3(-.35f, 0f, .35f), 30f); Prop(c, "Tavern/Mug", top + new Vector3(.3f, 0f, -.15f), 200f); Prop(c, "Tavern/Tankard", top + new Vector3(-.3f, 0f, -.9f), 120f);
         Prop(c, "Tavern/Table candle", top + new Vector3(0f, 0f, -.25f)); Prop(c, "Tavern/Table candle", top + new Vector3(.05f, 0f, .95f));
         Hung(c, "Tavern/Hanging ham", c.Cell(1.9f, 6) + new Vector3(0f, c.Ceiling - .03f, .35f), 30f); Hung(c, "Tavern/Hanging ham", c.Cell(2.5f, 6) + new Vector3(0f, c.Ceiling - .03f, .2f), 200f);
-        Prop(c, "Tavern/Small table", c.Cell(3.3f, 1.2f), 0f, true); Prop(c, "Tavern/Stool", c.Cell(3.3f, 1.2f) + new Vector3(-.8f, 0f, .1f), 0f, true); Prop(c, "Tavern/Stool", c.Cell(3.3f, 1.2f) + new Vector3(.15f, 0f, .85f), 40f, true);
-        Prop(c, "Tavern/Mug", c.Cell(3.3f, 1.2f) + new Vector3(-.15f, .87f, .1f), 80f); Prop(c, "Tavern/Table candle", c.Cell(3.3f, 1.2f) + new Vector3(.2f, .87f, -.1f));
+        // A small table by the west wall, off every way from a door to the room's middle (the user, 2026-11-16: east of
+        // the long table it stood on a walkway in 24 of 43 builds and was taken out, leaving its mug and candle in the
+        // air; the generator now takes what stands on a piece along with it, and here the table keeps its place).
+        var byWall = c.Cell(.3f, 2f);
+        Prop(c, "Tavern/Small table", byWall, 0f, true); Prop(c, "Tavern/Stool", byWall + new Vector3(-.75f, 0f, .1f), 0f, true); Prop(c, "Tavern/Stool", byWall + new Vector3(.15f, 0f, -.85f), 40f, true);
+        Prop(c, "Tavern/Mug", byWall + new Vector3(-.15f, .87f, .1f), 80f); Prop(c, "Tavern/Table candle", byWall + new Vector3(.2f, .87f, -.1f));
         Socket(c, DungeonSocketType.Breakable, c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(4, 2.6f), .5f);
         Socket(c, DungeonSocketType.Enemy, c.Cell(3, 3.4f), .8f, 270f); Socket(c, DungeonSocketType.Enemy, c.Cell(2.2f, 5), .7f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(1.9f, 1.1f), .5f);
         Socket(c, DungeonSocketType.Chest, c.Cell(0, 1) + new Vector3(-.35f, 0f, 0f), .4f, 90f);

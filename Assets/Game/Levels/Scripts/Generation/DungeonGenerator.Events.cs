@@ -143,17 +143,36 @@ public partial class DungeonGenerator
         if (room < 0) return taken;
         var trap = chest.GetComponent<DungeonChestTrap>();
         if (trap == null) trap = chest.gameObject.AddComponent<DungeonChestTrap>();
+        Physics.SyncTransforms();   // the room's pieces and the chest were just set down
         for (int dx = -1; dx <= 1; dx++)
             for (int dz = -1; dz <= 1; dz++)
             {
                 var c = cell + new Vector2Int(dx, dz);
                 if ((dx == 0 && dz == 0) || !Layout.InRoom(room, c) || cutCells.Contains(c)) continue;
+                if (StandsOnMiddle(c, chest.transform)) continue;
                 var plate = Instantiate(data.spikeTrapPrefab, Cell(c), Quaternion.Euler(0, 90 * ((dx + dz) & 3), 0), transform);
                 var spikes = plate.GetComponent<DungeonSpikeTrap>();
                 if (spikes != null) { spikes.playerDamage = f.spikeDamage; trap.traps.Add(spikes); }
                 taken.Add(c); furnished.Add(c);
             }
         return taken;
+    }
+
+    // Something with a body stands over the middle of this cell (a dais, a bench, a barrel): no spike plate goes under
+    // it. The plates of a chest up on the Archer's perch's and the Stone idol's dais lay inside the dais, and one lay
+    // under a bench (the user's review of the new rooms, 2026-11-16). What only stands at the cell's edge (a candle rack
+    // against the wall) leaves the plate, so the cell is as dangerous as it was.
+    static readonly Collider[] plateHits = new Collider[16];
+    bool StandsOnMiddle(Vector2Int cell, Transform except)
+    {
+        int n = Physics.OverlapBoxNonAlloc(Cell(cell) + Vector3.up * .55f, new Vector3(.3f, .4f, .3f), plateHits, Quaternion.identity, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+        {
+            var hit = plateHits[i];
+            if (hit == null || hit.transform.IsChildOf(except) || hit.GetComponentInParent<Character>() != null) continue;
+            return true;
+        }
+        return false;
     }
 
     // ── Ambushes ─────────────────────────────────────────────────────

@@ -420,7 +420,7 @@ public partial class DungeonGenerator
                 gone.Add(t.gameObject);
             }
         }
-        foreach(var go in gone)DestroyImmediate(go); // navigation is baked this frame
+        foreach(var go in gone)if(go!=null)TakeOut(go,instance); // navigation is baked this frame
         foreach(var pair in moved)
         {
             var inward=centre-pair.Value;
@@ -429,6 +429,85 @@ public partial class DungeonGenerator
             pair.Key.position+=new Vector3(step.x,0,step.y)*data.cellSize;
         }
     }
+    // A piece taken out of a room takes along what stands on it (the user, 2026-11-16: a mug and a candle hung in the
+    // air where the Guards' mess's small table had been taken off a walkway, in 24 of 43 builds of that room). What
+    // stands on it: another thing of the room whose foot is above the floor, no higher than the piece's top, and over
+    // the piece. What hangs from the ceiling or on a wall, kit pieces, sockets and characters are never taken.
+    void TakeOut(GameObject piece,GameObject instance)
+    {
+        if(MeshBox(piece.transform,out var body))
+        {
+            var riders=new System.Collections.Generic.List<GameObject>();
+            var seen=new System.Collections.Generic.HashSet<Transform>();
+            foreach(var filter in instance.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var t=filter.transform;
+                if(t==instance.transform || t.IsChildOf(piece.transform))continue;
+                while(t.parent!=instance.transform && !IsGroup(t.parent))t=t.parent;
+                if(!seen.Add(t) || Kept(t) || Moves(t))continue;
+                if(t.GetComponentInChildren<PropMount>(true) is { } mount && (mount.kind!=PropMount.Kind.Standing || mount.onWall))continue;
+                if(!MeshBox(t,out var b))continue;
+                if(b.min.y<body.min.y+RiderLeastHeight || b.min.y>body.max.y+RiderMostAbove)continue;
+                if(b.center.x<body.min.x || b.center.x>body.max.x || b.center.z<body.min.z || b.center.z>body.max.z)continue;
+                riders.Add(t.gameObject);
+            }
+            foreach(var rider in riders)DestroyImmediate(rider);
+        }
+        DestroyImmediate(piece);
+    }
+    const float RiderLeastHeight=.25f, RiderMostAbove=.12f;
+
+    // The box round a thing's meshes where it stands now (from the meshes, so it holds for a piece just set down or
+    // switched off); no particles.
+    static bool MeshBox(Transform root,out Bounds box)
+    {
+        box=default; bool any=false;
+        foreach(var filter in root.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if(filter==null || filter.sharedMesh==null || filter.GetComponent<ParticleSystem>()!=null)continue;
+            if(MeshBox(filter,out var b)){if(any)box.Encapsulate(b);else{box=b;any=true;}}
+        }
+        return any;
+    }
+    static bool MeshBox(MeshFilter filter,out Bounds box)
+    {
+        box=default;
+        if(filter==null || filter.sharedMesh==null)return false;
+        var local=filter.sharedMesh.bounds; var matrix=filter.transform.localToWorldMatrix;
+        for(int i=0;i<8;i++)
+        {
+            var corner=matrix.MultiplyPoint3x4(local.center+Vector3.Scale(local.extents,new Vector3((i&1)==0 ? -1f : 1f,(i&2)==0 ? -1f : 1f,(i&4)==0 ? -1f : 1f)));
+            if(i==0)box=new Bounds(corner,Vector3.zero);else box.Encapsulate(corner);
+        }
+        return true;
+    }
+
+    // A hand-built room's own things that stand on its floor, as boxes: what the generator sets down afterwards (a
+    // crate, a fountain) keeps out of them too (KeepClear). Physics alone missed them: a candle cluster has no collider,
+    // and most props have a mesh collider that is not convex, which ComputePenetration can't measure (crates stood
+    // inside candle racks and in candle clusters). Flat things (a rug) and the room's kit blocks (boxes physics does
+    // measure) are left out. Cleared with each floor.
+    readonly System.Collections.Generic.List<Bounds> roomPieces=new();
+    void NotePieces(GameObject instance,int index)
+    {
+        float floor=Cell(Layout.RoomCenter(index)).y;
+        foreach(var filter in instance.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var t=filter.transform;
+            if(t==instance.transform || filter.GetComponent<ParticleSystem>()!=null)continue;
+            if(filter.GetComponentInParent<DungeonKitBlock>(true)!=null || filter.GetComponentInParent<Character>(true)!=null)continue;
+            // One that physics can push out of by itself needs no box.
+            var collider=filter.GetComponentInParent<Collider>(true);
+            if(collider!=null && !(collider is MeshCollider { convex: false }))continue;
+            if(!MeshBox(filter,out var b))continue;
+            if(b.size.y<.1f || b.size.x>PieceMostSize || b.size.z>PieceMostSize)continue;
+            if(b.min.y>floor+.3f || b.max.y<floor+.1f)continue;   // on a table, on a wall, hung, or under the floor
+            b.Expand(new Vector3(-2f*PieceInset,0f,-2f*PieceInset));
+            if(b.size.x>0f && b.size.z>0f)roomPieces.Add(b);
+        }
+    }
+    const float PieceMostSize=4f, PieceInset=.04f;
+
     // Enemies dragged straight into a template become Enemy sockets that keep that enemy: it counts toward the room's
     // pack like a socket, gets floor scaling and loot, joins its pack, marks a wave point in an ambush room, and is
     // switched off until the NavMesh is built (a body standing there would punch a hole in it).
@@ -561,9 +640,10 @@ public partial class DungeonGenerator
             var cell=CellOf(piece.transform.position);
             // Outside a smaller room it would sit in a wall; on a walkway it would block the route.
             if(!Layout.InRoom(index,cell) || (piece.removeIfBlocking && lanes.Contains(cell)))
-                DestroyImmediate(piece.gameObject); // navigation is baked this frame
+                TakeOut(piece.gameObject,instance); // navigation is baked this frame
         }
         ClearOpenings(instance,index);
+        NotePieces(instance,index);
         // Pits and sunken courts take their floor out first.
         BuildCuts(instance,index);
         // The floor's damage and prices on the room's own traps, shrines and pits (DungeonRoomFeatures).
@@ -672,7 +752,8 @@ public partial class DungeonGenerator
                 foreach(var d in DungeonLayout.Neighbours)taken.Add(p+d);
             }
             var available=new System.Collections.Generic.List<Vector2Int>();
-            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p))available.Add(p);
+            // Nor on the spike plates round the room's own chest (furnished: a crate stood on a Sunken tomb plate).
+            foreach(var p in Layout.RoomCells(index))if(!lanes.Contains(p) && !Layout.Reserved.Contains(p) && !taken.Contains(p) && !furnished.Contains(p))available.Add(p);
             int left=PlaceExtras(index,available,0,rewards);
             // Furnished like a generated room as well (the level's and biome's prop rules), around the room's own pieces.
             var (rules,_)=Furnishing(profiles[index]);
@@ -881,6 +962,20 @@ public partial class DungeonGenerator
                     // The larger push per axis, so two blocks on one side don't add up.
                     push.x=Mathf.Abs(need.x)>Mathf.Abs(push.x) ? need.x : push.x;
                     push.z=Mathf.Abs(need.z)>Mathf.Abs(push.z) ? need.z : push.z;
+                    cuts=true;
+                }
+            }
+            // Out of the room's own things physics can't measure (NotePieces), sideways the short way.
+            foreach(var c in own)
+            {
+                var b=c.bounds;
+                foreach(var piece in roomPieces)
+                {
+                    if(!b.Intersects(piece))continue;
+                    float x=b.center.x<piece.center.x ? piece.min.x-b.max.x : piece.max.x-b.min.x;
+                    float z=b.center.z<piece.center.z ? piece.min.z-b.max.z : piece.max.z-b.min.z;
+                    if(Mathf.Abs(x)<=Mathf.Abs(z)){x+=Mathf.Sign(x)*ClearMargin;push.x=Mathf.Abs(x)>Mathf.Abs(push.x) ? x : push.x;}
+                    else{z+=Mathf.Sign(z)*ClearMargin;push.z=Mathf.Abs(z)>Mathf.Abs(push.z) ? z : push.z;}
                     cuts=true;
                 }
             }
