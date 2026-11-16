@@ -60,6 +60,17 @@ public sealed partial class DungeonLayout
     public int Missing { get; private set; }
     int[,] cover;
 
+    // ── Long passages with nothing along them ───────────────────────
+    // The user, 2026-11-16: "entire north wall is just a long corridor with nothing above ... too much corridor too
+    // little rooms". The long ones were the extra tunnels: a second way out of a room with one doorway (JoinDeadEnds)
+    // could be dug up to 45 cells long and a loop between two rooms (AddLoops) 30, so they ran round the outside of a
+    // big room or along the grid's edge to find floor; and the stairs' room was tunnelled to a room up to ten cells
+    // further off than the nearest (PlaceAt). Longest Extra Tunnel: neither of the first two is longer than this many
+    // cells (a room that would need more keeps its one doorway: at 10, as many rooms have one doorway as before), and
+    // the stairs join a room within four cells of the nearest. 0: as long as before.
+    public static int LongestExtraTunnel = 10;
+    int ExtraTunnelCost(int asBefore) => LongestExtraTunnel > 0 ? Mathf.Min(asBefore, LongestExtraTunnel * 12) : asBefore;
+
     void Cover(int index, int by)
     {
         if (cover == null) return;
@@ -449,7 +460,7 @@ public sealed partial class DungeonLayout
         float Near(int room) => Vector2Int.Distance(roomCenters[room], centre);
         float nearest = float.MaxValue;
         foreach (int room in order) nearest = Mathf.Min(nearest, Near(room));
-        bool Close(int room) => Near(room) <= nearest + 10f;
+        bool Close(int room) => Near(room) <= nearest + (LongestExtraTunnel > 0 ? 4f : 10f);
         order.Sort((a, b) =>
         {
             if (Close(a) != Close(b)) return Close(a) ? -1 : 1;
@@ -860,7 +871,7 @@ public sealed partial class DungeonLayout
             int direct = Mathf.Abs(ca.x - cb.x) + Mathf.Abs(ca.y - cb.y);
             int walked = Distances(ca)[cb.x, cb.y] - 1;
             if (walked > 0 && walked < direct * 1.6f + 8) continue;
-            if (Connect(a, b, (reach * 2 + 12) * 16)) loops--;
+            if (Connect(a, b, ExtraTunnelCost((reach * 2 + 12) * 16))) loops--;
         }
     }
 
@@ -878,7 +889,7 @@ public sealed partial class DungeonLayout
         for (int room = first; room < exit; room++) if (Doorways(room).Count == 1) leaves.Add(room);
         for (int i = leaves.Count - 1; i > 0; i--) { int j = growRandom.Next(i + 1); (leaves[i], leaves[j]) = (leaves[j], leaves[i]); }
         int joins = Mathf.RoundToInt(leaves.Count * Mathf.Clamp(growth.joinDeadEndPercent, 0, 100) / 100f);
-        int maxCost = (Mathf.Clamp(growth.loopReach, 2, 30) * 2 + 26) * 16;
+        int maxCost = ExtraTunnelCost((Mathf.Clamp(growth.loopReach, 2, 30) * 2 + 26) * 16);
         for (int round = 0; round < 2 && joins > 0; round++)
             foreach (int leaf in leaves)
             {
