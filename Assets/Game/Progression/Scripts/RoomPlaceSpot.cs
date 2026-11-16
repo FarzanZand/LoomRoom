@@ -3,19 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Where a carried room item is put down (the user, 2026-11-14: "the player sees the dice, and other future props, get
-// placed"). While the item is carried a faint ghost of its props lies exactly where they will lie, breathing in the
-// quest blue as the quest outline does, and using that ghost puts them down; anywhere else does nothing. Made at run time
+// placed"). While the item is carried a faint ghost of its props lies exactly where they will lie, in the quest
+// outline's colour and wearing that outline (QuestGlow), breathing in step with it, so every place in the room points the
+// same way (the user, 2026-11-16); using that ghost puts them down, anywhere else does nothing. Like every room
+// outline it shows only while the room player is the one played. Made at run time
 // by the item's own script (TableDice): RoomPlaceSpot.Make(owner, props, carried, place, prompt). The props are the
 // objects shown once the item is placed, set by hand where they will lie and switched off until then; the ghost is a copy
 // of them drawn with their own textures (so its pixels are theirs) in Resources/Place ghost's pale, see-through look.
-// (The quest outline itself is not used: round small things like dice its shells stood out as big flaps.) Nothing to set
-// up by hand.
+// (The old quest outline was not used: round small things like dice its shells stood out as big flaps. The outline
+// drawn on the screen has no shells.) Nothing to set up by hand.
 public class RoomPlaceSpot : MonoBehaviour, IInteractable
 {
     Func<bool> carried;
     Action<Character> place;
     string prompt;
     GameObject ghost;
+    QuestGlow outline;
+    [Min(0f), Tooltip("How strong the ghost's outline is against the usual quest outline (1): the dice are small and lie on the lit table's edge.")]
+    public float outlineStrength = 1.6f;
     readonly List<Material> ghostMaterials = new();
     Color ghostColour = Color.white;
     bool shown;
@@ -94,7 +99,11 @@ public class RoomPlaceSpot : MonoBehaviour, IInteractable
             gameObject.AddComponent<InteractableTrigger>();
         }
         ghostMaterials.AddRange(made.Values);
-        if (template != null) ghostColour = template.GetColor("_BaseColor");
+        // The quest outline round the ghost, and the ghost in the outline's own colour (as see-through as its template).
+        outline = ghost.AddComponent<QuestGlow>();
+        outline.seeThroughToo = true; outline.strength = outlineStrength;
+        float alpha = template != null ? template.GetColor("_BaseColor").a : .5f;
+        ghostColour = new Color(outline.colour.r, outline.colour.g, outline.colour.b, alpha);
     }
 
     static Bounds? MeshBounds(Renderer r)
@@ -131,15 +140,17 @@ public class RoomPlaceSpot : MonoBehaviour, IInteractable
 
     void Update()
     {
-        bool on = carried != null && carried();
+        // Only while the room player is the one played: from inside a dungeon the table's edge shows over open walls.
+        bool on = carried != null && carried() && (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind == PlayerKind.Room);
         if (on != shown)
         {
             shown = on;
             if (ghost != null) ghost.SetActive(on);
+            if (outline != null) outline.Show(on);
         }
         if (!on) return;
-        // Breathing as the quest outline does (QuestGlow): toward white and a little less see-through, then back.
-        float k = .5f + .5f * Mathf.Sin(Time.time * 3f);
+        // Breathing in step with its outline (QuestGlow.Pulse): toward white and a little less see-through, then back.
+        float k = QuestGlow.Pulse;
         var c = Color.Lerp(ghostColour, Color.white, .45f * k);
         c.a = Mathf.Lerp(ghostColour.a, Mathf.Min(1f, ghostColour.a + .25f), k);
         foreach (var m in ghostMaterials) if (m != null) m.SetColor("_BaseColor", c);

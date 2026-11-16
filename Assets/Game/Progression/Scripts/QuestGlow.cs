@@ -17,6 +17,8 @@ public class QuestGlow : MonoBehaviour
     public float breath = .25f;
     [Min(0f), Tooltip("How strong this place's glow is against the usual (1). A small flat thing in a pool of lamp light (the character sheet) needs more to show.")]
     public float strength = 1f;
+    [Tooltip("Also go round see-through pieces. Set by the owner's script for a place that is see-through as a whole (the ghost of the dice where they will lie); left off, a see-through card among solid pieces is left out.")]
+    public bool seeThroughToo;
 
     const float FadeSeconds = .35f, BreathSeconds = 2.6f;
 
@@ -52,6 +54,10 @@ public class QuestGlow : MonoBehaviour
     void OnDisable() { QuestOutlinePass.Remove(this); level = 0f; }
     void OnDestroy() { QuestOutlinePass.Remove(this); if (material != null) Destroy(material); }
 
+    // Where the outline's breath is just now, 0 to 1: anything that should breathe in step with it reads this (the
+    // ghost of a room item where it will lie, RoomPlaceSpot).
+    public static float Pulse => .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f / BreathSeconds);
+
     // Called by the pass each frame it draws: this place's pieces, with the material that draws them into the mask in
     // its colour as bright as it is just now.
     public void Collect(List<(Renderer renderer, Material material, int parts)> draws)
@@ -66,8 +72,7 @@ public class QuestGlow : MonoBehaviour
         // Looked for again now and then: switched on while its object wasn't drawn yet (the table's build hides every
         // piece until it lands) it finds nothing at first, and a place's pieces can change (a trophy is hung).
         if (pieces.Count == 0 || Time.unscaledTime >= nextLook) { Look(); nextLook = Time.unscaledTime + .5f; }
-        float k = .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f / BreathSeconds);
-        var tint = colour * (strength * level * (1f - breath + breath * k));
+        var tint = colour * (strength * level * (1f - breath + breath * Pulse));
         tint.a = 1f;
         material.SetColor("_Tint", tint);
         foreach (var (renderer, parts) in pieces)
@@ -86,7 +91,7 @@ public class QuestGlow : MonoBehaviour
         {
             if (!r.enabled || !r.TryGetComponent<MeshFilter>(out var f) || f.sharedMesh == null) continue;
             var m = r.sharedMaterial;
-            if (m == null || m.renderQueue >= (int)UnityEngine.Rendering.RenderQueue.Transparent) continue;
+            if (m == null || !seeThroughToo && m.renderQueue >= (int)UnityEngine.Rendering.RenderQueue.Transparent) continue;
             pieces.Add((r, f.sharedMesh.subMeshCount));
         }
     }
