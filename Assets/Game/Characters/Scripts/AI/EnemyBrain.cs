@@ -347,8 +347,12 @@ public class EnemyBrain : MonoBehaviour
             return r > 0f ? r : MeleeRange;
         }
     }
-    // Where its run-up stops: a lunging enemy just inside where its attack begins, beyond the player's reach.
-    float StopDistance => LungeHold ? Mathf.Max(PreferredDistance, MaxAttackRange - .1f) : PreferredDistance;
+    // Where its run-up stops: a lunging enemy just inside where its attack begins, beyond the player's reach. For a
+    // fighter who also casts (closesIn) that attack is its melee one, as everywhere else here: taken from its longest
+    // attack, the Disco King's run-up stopped where his volley reaches, 14 m off, and he stood there until the player
+    // walked up to him (the user, 2026-11-16: "He attacks when I get in melee, but he does not chase me"; Not a witch
+    // and every other fighter who casts did the same).
+    float StopDistance => LungeHold ? Mathf.Max(PreferredDistance, (CloseIn ? MeleeRange : MaxAttackRange) - .1f) : PreferredDistance;
     // The pace of the last stretch in, from where the run-up stopped to the distance it holds: under the player's
     // backing speed, so a player who backs off is not walked into.
     float CloseInSpeed => Tuning != null ? Tuning.enemyCloseInSpeed : 1.1f;
