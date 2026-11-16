@@ -194,6 +194,10 @@ public partial class DungeonGenerator
         }
         int lo = MinEnemiesPerRoom, hi = Mathf.Clamp(MaxEnemiesPerRoom, lo, 6);
         int first = rng.Next(lo, hi + 1), second = rng.Next(Mathf.Max(1, lo - 1), Mathf.Max(1, hi - 1) + 1);
+        // Both waves the floor's Ambush Wave Enemies when it is set (the two draws above are still made, so the picks
+        // after them keep their place in the seed's stream).
+        int waveSize = RoomFeatures != null ? RoomFeatures.ambushWaveEnemies : 0;
+        if (waveSize > 0) first = second = waveSize;
         for (int i = 0; i < first; i++) { var e = ChooseEnemy(index, rng); if (e != null) ambush.waveOne.Add(e); }
         for (int i = 0; i < second; i++) { var e = ChooseEnemy(index, rng); if (e != null) ambush.waveTwo.Add(e); }
         ambush.chestAt = Cell(Layout.RoomCenter(index));
