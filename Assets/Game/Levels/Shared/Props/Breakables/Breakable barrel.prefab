@@ -68,7 +68,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DungeonDestructible
   health: 1
-  hitsToBreak: {x: 2, y: 3}
+  hitsToBreak: {x: 2, y: 2}
   displayName: 
   placement: 0
   model: {fileID: 2575221971785949149}
