@@ -946,6 +946,16 @@ public class EnemyBrain : MonoBehaviour
         if (newState == EnemyState.Patrol && waypoints != null && waypoints.Length > 0 && waypoints[waypointIndex] != null)
             Motor.MoveTo(waypoints[waypointIndex].position);
 
+        RestorePace();
+        if (previous != newState) StateChanged?.Invoke(previous, newState);
+    }
+
+    // The speed, turning and stopping its state moves with (chasing or not). Public for whoever set the motor's own for
+    // a while and hands it back (a summon keeping up with its summoner, Summon.Steer).
+    public void RestorePace()
+    {
+        var p = Profile;
+        bool isCombat = State == EnemyState.Chase || State == EnemyState.Attack;
         if (isCombat && p.useChaseSpeed)        Motor.SetSpeed(p.chaseSpeed);
         else if (!isCombat && p.useWanderSpeed) Motor.SetSpeed(p.wanderSpeed);
         else                                    Motor.ResetSpeed();
@@ -953,7 +963,6 @@ public class EnemyBrain : MonoBehaviour
         Motor.SetAngularSpeed(isCombat ? p.chaseAngularSpeed : p.passiveAngularSpeed);
         Motor.SetAutoBraking(!isCombat);
         Motor.SetStoppingDistance(isCombat ? PreferredDistance : 0.3f);
-        if (previous != newState) StateChanged?.Invoke(previous, newState);
     }
 
     void UpdateAnimator()

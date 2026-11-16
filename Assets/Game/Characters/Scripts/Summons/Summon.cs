@@ -18,6 +18,8 @@ public class SummonSettings
     public float followDistance = 3f;
     [FoldoutGroup("Summon"), Min(2f), Tooltip("Further than this from its summoner it leaves a fight and comes back.")]
     public float leash = 18f;
+    [FoldoutGroup("Summon"), Min(0f), Tooltip("Following its summoner it runs (their sprint speed) while it is this much further off than Follow Distance; nearer, it goes as fast as they do, never slower than their walk.")]
+    public float catchUpBeyond = 3f;
     [FoldoutGroup("Summon"), Tooltip("Its kills count as the summoner's (experience, kill count).")]
     public bool creditSummoner = true;
     [FoldoutGroup("Summon"), Tooltip("It drops nothing when killed.")]
@@ -53,6 +55,66 @@ public class Summon : MonoBehaviour
     SpellVisual aura;
     float until, born, side = 1f;
     bool ending, returning;
+    // Following its summoner at their pace just now (Steer set the motor's speed and the legs' rate; handed back after).
+    bool pacing;
+    int pacedFrame = -1;
+
+    // ── Keeping up ──────────────────────────────────────────────────
+    // The user, 2026-11-16: "the summon little john walks EXTREMELY SLOW. Should walk as fast as the player". On its way
+    // back to its summoner a summon moved at whatever its brain's state last set, and with nothing to fight that is an
+    // enemy's wander speed (0.7 m/s for a skeleton against the player's 3.24; it ran, at its chase speed of 4.2, only
+    // once an enemy was in range). Following, it now goes as fast as its summoner does just now, never slower than
+    // their walk, and at their sprint while it has ground to make up (Catch Up Beyond).
+    // Its legs keep the step of that speed. The locomotion blend plays the run clip unscaled above RunFrom m/s, and
+    // that clip covers Run Stride metres a second for a body of full size (measured on a planted foot: 3.1 for a Blue
+    // Hood Skeleton, 2.48 for John at 0.8), so while it follows its animator is played faster or slower by what the
+    // body really does (at most Leg Rate Most times), and put back to 1 the moment it stops following.
+    public static float RunStride = 3.1f, LegRateMost = 2.7f;
+    const float RunFrom = 2.6f;
+
+    float FollowPace(float distance)
+    {
+        float walk = brain.Profile.useChaseSpeed ? brain.Profile.chaseSpeed : brain.Motor.DefaultSpeed, sprint = walk, now = 0f;
+        if (Summoner is Player player)
+        {
+            if (player.PlayerData != null) { walk = player.PlayerData.walkSpeed; sprint = player.PlayerData.sprintSpeed; }
+            if (player.Motor != null && player.Motor.Controller != null) { var v = player.Motor.Controller.velocity; v.y = 0f; now = v.magnitude; }
+        }
+        else if (Summoner.TryGetComponent<EnemyMotor>(out var motor)) { var v = motor.Velocity; v.y = 0f; now = v.magnitude; }
+        // A little faster than they go, so the gap closes; their sprint while it is far behind.
+        float pace = Mathf.Max(walk, now * 1.08f);
+        if (distance > Settings.followDistance + Settings.catchUpBeyond) pace = Mathf.Max(pace, sprint);
+        return Mathf.Min(pace, Mathf.Max(walk, sprint) * 1.1f);
+    }
+
+    void SetPace(bool on, float distance = 0f)
+    {
+        if (on)
+        {
+            pacing = true; pacedFrame = Time.frameCount;
+            brain.Motor.SetSpeed(FollowPace(distance));
+            brain.Motor.SetAngularSpeed(brain.Profile.chaseAngularSpeed);
+            brain.Motor.SetAutoBraking(true);
+            brain.Motor.SetStoppingDistance(.1f);
+        }
+        else if (pacing)
+        {
+            pacing = false;
+            brain.RestorePace();
+            if (Body != null && Body.Animator != null) Body.Animator.speed = 1f;
+        }
+    }
+
+    // The legs' rate while it follows: the run clip played as fast as the body goes.
+    void LateUpdate()
+    {
+        if (!pacing || brain == null || Body == null || Body.Animator == null) return;
+        // Steer was not asked this frame (a swing, a pause, a recovery): the brain has it back.
+        if (pacedFrame < Time.frameCount - 1) { SetPace(false); return; }
+        var v = brain.Motor.LegVelocity; v.y = 0f;
+        float speed = v.magnitude, size = Mathf.Max(.2f, transform.lossyScale.y);
+        Body.Animator.speed = Body.Animator.isHuman && speed > RunFrom ? Mathf.Clamp(speed / (RunStride * size), .6f, LegRateMost) : 1f;
+    }
 
     // A new summon: put down on the floor's navigation near the point (under the summoner's floor), scaled to the floor,
     // already fighting for the summoner. kind: what summoned it (Max At Once counts per kind and summoner).
@@ -147,8 +209,12 @@ public class Summon : MonoBehaviour
     {
         if (Summoner == null || brain == null || brain.Motor == null) return false;
         float distance = Perception.HorizontalDist(transform.position, Summoner.transform.position);
-        bool fighting = brain.Perception != null && brain.Perception.Target != null && brain.Perception.Target.IsAlive;
-        if (fighting && distance <= Settings.leash) return false;
+        // Fighting: it has someone to fight and is after them, or sees them. An enemy it only knows of (behind its back,
+        // beyond a wall) is no reason to leave its summoner's side: it stood where it was, neither following nor fighting,
+        // for as long as that enemy lived.
+        bool fighting = brain.Perception != null && brain.Perception.Target != null && brain.Perception.Target.IsAlive
+            && (brain.IsAlerted || brain.Perception.TargetVisible);
+        if (fighting && distance <= Settings.leash) { SetPace(false); return false; }
         // Its place: beside and a little behind, each on its own side.
         var forward = Facing(Summoner);
         var right = Vector3.Cross(Vector3.up, forward);
@@ -157,9 +223,10 @@ public class Summon : MonoBehaviour
         var toMe = transform.position - Summoner.transform.position; toMe.y = 0f;
         bool inTheWay = distance < 2.5f && toMe.sqrMagnitude > .01f && Vector3.Dot(forward, toMe.normalized) > .5f;
         if (distance > Settings.followDistance || inTheWay) returning = true;
-        if (returning && Perception.HorizontalDist(transform.position, place) < .25f) returning = false;
+        if (returning && Perception.HorizontalDist(transform.position, place) < .35f) returning = false;
         if (returning)
         {
+            SetPace(true, distance);
             // Round the summoner, never through them: a straight walk from in front to the place behind passed 0.8 m
             // from the player, the bodies brushing (the user's Summon John, 2026-11-12). Abeam first, then the place.
             var abeam = Summoner.transform.position + right * 1.6f * side;
@@ -167,6 +234,7 @@ public class Summon : MonoBehaviour
             brain.Motor.MoveTo(brushes && Perception.HorizontalDist(transform.position, abeam) > .4f ? abeam : place);
             return true;
         }
+        SetPace(false);
         brain.Motor.Stop();
         return true;
     }
