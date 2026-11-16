@@ -84,7 +84,7 @@ public class ShopUI : Singleton<ShopUI>
         open = true;
         merchant = m; player = p;
         root.SetActive(true);
-        if (title != null) title.text = m.merchantName;
+        if (title != null) title.text = m.ShownName;
         if (feedback != null) feedback.text = "";
         ShowDetails(null);
         if (player.Bag != null) player.Bag.Changed += Refresh;

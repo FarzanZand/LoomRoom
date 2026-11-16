@@ -91,9 +91,11 @@ public class TavernKeeper : MonoBehaviour
             : !string.IsNullOrWhiteSpace(place.rumourTold) ? place.rumourTold
             : !string.IsNullOrWhiteSpace(place.rumour) ? place.rumour : words.rumourFallbackLine;
 
-        string who = merchant != null ? merchant.merchantName : "Tavern keeper";
+        string who = merchant != null ? merchant.ShownName : "Tavern keeper";
+        // Outside a tavern he greets as a peddler: no bar to walk up to, no stew to smell.
+        var welcomes = merchant != null && who != merchant.merchantName && words.peddlerWelcomeLines != null && words.peddlerWelcomeLines.Length > 0 ? words.peddlerWelcomeLines : words.welcomeLines;
         var model = body != null ? body.gameObject : gameObject;
-        var welcome = new PortraitLine { speaker = PortraitSpeaker.Other, name = who, model = model, text = words.welcomeLines[Random.Range(0, words.welcomeLines.Length)] };
+        var welcome = new PortraitLine { speaker = PortraitSpeaker.Other, name = who, model = model, text = welcomes[Random.Range(0, welcomes.Length)] };
         welcome.choices.Add(new PortraitChoice { label = words.shopAnswer });
         // A yellow ! after it while he has a rumour left to sell, none once they are all told (the user, 2026-11-11; the
         // map's new-place mark's yellow).

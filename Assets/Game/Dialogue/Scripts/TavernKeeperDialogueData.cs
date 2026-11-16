@@ -16,6 +16,14 @@ public class TavernKeeperDialogueData : ScriptableObject
         "Sit anywhere you like. Don't mind the smell, that's the stew. Mostly.",
     };
 
+    [TextArea(1, 3), Tooltip("The same where his room is no tavern (the Merchant shop room: the Peddler's Cellar).")]
+    public string[] peddlerWelcomeLines =
+    {
+        "A customer! Down here. You're lost or you're desperate. I sell to both.",
+        "Have a look. Everything's for sale. Some of it was even mine to begin with.",
+        "Buying or selling? Be quick about it. I don't like the neighbours.",
+    };
+
     [Header("Answers")]
     [DialogueText, Tooltip("The answer that opens the shop.")] public string shopAnswer = "Shop";
     [DialogueText, Tooltip("The answer that buys a rumour. {Price} is its price.")] public string rumourAnswer = "Rumour ({Price} gold)";

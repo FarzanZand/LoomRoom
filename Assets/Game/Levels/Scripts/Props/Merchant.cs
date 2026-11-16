@@ -95,7 +95,20 @@ public class Merchant : MonoBehaviour, IInteractable
     public IReadOnlyList<Ware> Wares { get { EnsureStock(); foreach (var w in wares) w.price=PriceOf(w.item); return wares; } }
     public string Currency => CurrencyManager.HasInstance ? CurrencyManager.Instance.currencyName : "gold";
 
-    public string Prompt => (Keeper != null ? "Talk to the " : "Trade with the ") + merchantName.ToLowerInvariant();
+    [Tooltip("What a keeper is called where his room is no tavern (the Merchant shop room: the Peddler's Cellar).")]
+    public string nameOutsideTavern = "Peddler";
+    // His name here. The same keeper stands in the taverns and in the Merchant shop room; outside a tavern "Talk to the
+    // tavern keeper" was wrong (Zelda's find in the Peddler's Cellar).
+    public string ShownName
+    {
+        get
+        {
+            if (Keeper == null || string.IsNullOrEmpty(nameOutsideTavern)) return merchantName;
+            var floor = GetComponentInParent<DungeonGenerator>();
+            return floor == null || floor.InTavern(transform.position) ? merchantName : nameOutsideTavern;
+        }
+    }
+    public string Prompt => (Keeper != null ? "Talk to the " : "Trade with the ") + ShownName.ToLowerInvariant();
     // A tavern keeper greets first and asks what you're after (TavernKeeper.Talk); the shop opens from there.
     TavernKeeper Keeper => GetComponentInParent<TavernKeeper>() ?? GetComponentInChildren<TavernKeeper>();
     public bool CanInteract(Character who) => DungeonFeatureUtility.TablePlayer(who) != null;
@@ -294,7 +307,7 @@ public class Merchant : MonoBehaviour, IInteractable
     public bool CanSell(Player player, ItemData item, out string reason)
     {
         reason = null;
-        if (!buysItems) { reason = $"The {merchantName} isn't buying."; return false; }
+        if (!buysItems) { reason = $"The {ShownName} isn't buying."; return false; }
         if (item == null) return false;
         if (item.itemType == ItemType.Spoils) { reason = "Spoils go to the tally, not the till."; return false; }
         if (item.itemType == ItemType.Key) { reason = "Not for sale."; return false; }

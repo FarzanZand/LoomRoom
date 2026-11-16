@@ -5,6 +5,15 @@ using UnityEngine;
 // on this floor (a pocket too: each floor and pocket is its own generator). Not while a boss fight holds his remarks.
 public partial class DungeonGenerator
 {
+    // Whether that spot is in a tavern (its room's template has a TavernRoom). The keeper is the tavern's keeper there
+    // and a peddler anywhere else (the Merchant shop room, a plain room): Merchant.ShownName.
+    public bool InTavern(Vector3 position)
+    {
+        if (Layout == null || templates == null) return false;
+        int room = Layout.RoomAt(CellOf(position));
+        return room >= 0 && room < templates.Length && templates[room] != null && templates[room].TryGetComponent<TavernRoom>(out _);
+    }
+
     readonly HashSet<int> greetedRooms = new();
     object greetedFloor; // the templates array, new for every floor
 
