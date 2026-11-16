@@ -58,6 +58,13 @@ public class LootLabelsUI : MonoBehaviour
         near.Sort(Nearest);
         int shown = 0;
         placed.Clear();
+        // The Dungeon Master's lines and the kill lines count as taken: loot drops at the player's feet as something
+        // dies, and its label lay right on "You killed ..." (a label goes up past them, as past another label).
+        if (DungeonMaster.FeedBox(out var feedMin, out var feedMax))
+        {
+            Vector2 a = canvas.InverseTransformPoint(feedMin), b = canvas.InverseTransformPoint(feedMax);
+            placed.Add(Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)));
+        }
         float floor = Floor();
         for (int i = 0; i < near.Count && shown < maxLabels; i++)
         {
