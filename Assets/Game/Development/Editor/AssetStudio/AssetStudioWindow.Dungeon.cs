@@ -120,7 +120,7 @@ public partial class AssetStudioWindow
         PageButton("difficulty", "Difficulty", "balance, health and damage by floor", d.balance);
         PageButton("words", "The Dungeon Master", "what he says in this dungeon", null);
         PageButton("sound", "Music and sound", "", null);
-        PageButton("look", "Look", "the room's light, the default style", d.baseBiome);
+        PageButton("look", "Look", "the room's light, rooms without a roof, the default style", d.baseBiome);
         GUILayout.EndScrollView();
         GUILayout.EndArea();
         DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), l);
@@ -442,6 +442,7 @@ public partial class AssetStudioWindow
         BiomeKind(b);
         Fields(b, "roomCount", "lightRadius");
         GUILayout.Label("Room Count and Light Radius 0: the dungeon's own (The way in; the Lighting Manager).", dim);
+        RoofLine(l, st);
 
         Section("WHAT YOU MEET HERE");
         EnemyRows(b, st.firstFloor, st.lastFloor);
@@ -630,7 +631,7 @@ public partial class AssetStudioWindow
     // every floor falls back on (the base biome's). A floor's own styles and lighting are on its page.
     void LookPage(AssetStudioWorld.Level l)
     {
-        PageHeader("Look", "What every floor shares: how the bedroom looks while this dungeon is on the table, and the room styles every floor falls back on. A floor's own styles and lighting are on its page.");
+        PageHeader("Look", "What every floor shares: how the bedroom looks while this dungeon is on the table, how many rooms stand open to it, and the room styles every floor falls back on. A floor's own styles and lighting are on its page.");
         LookTab(l);
     }
 

@@ -434,17 +434,26 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
-        // The stage's own share of roofless rooms (DungeonBiome.roofsOff), picked on their own seed stream.
+        // The stage's own share of roofless rooms (DungeonBiome.roofsOff), picked on their own seed stream. The share is
+        // of all the floor's rooms, so "1 in 10" on a floor of 20 rooms is two of them: the part of a room left over
+        // (1.6 rooms on a floor of 16) is one more room by that chance. Which rooms: every room draws a number, and the
+        // lowest among those whose roof can come off take it, so the count holds whatever the floor's mix of rooms is.
         RoofsOffRooms = new System.Collections.Generic.HashSet<int>();
         float roofsOff = StageBiome != null && !Board ? StageBiome.roofsOff : 0f;
         if (roofsOff > 0f)
         {
             var pick = new System.Random(unchecked(seed + 7411));
-            for (int i = 0; i < Layout.rooms.Count && i < openRoofs.Length; i++)
+            int rooms = Mathf.Min(Layout.rooms.Count, openRoofs.Length);
+            float wanted = Mathf.Clamp01(roofsOff) * rooms;
+            int count = Mathf.FloorToInt(wanted) + (pick.NextDouble() < wanted - Mathf.Floor(wanted) ? 1 : 0);
+            var drawn = new System.Collections.Generic.List<(double key, int room)>();
+            for (int i = 0; i < rooms; i++)
             {
-                bool takes = pick.NextDouble() < roofsOff;   // drawn for every room, so one room's roof never moves another's
-                if (takes && !openRoofs[i] && RoofCanComeOff(i)) { openRoofs[i] = true; RoofsOffRooms.Add(i); }
+                double key = pick.NextDouble();   // drawn for every room, so one room's roof never moves another's number
+                if (!openRoofs[i] && RoofCanComeOff(i)) drawn.Add((key, i));
             }
+            drawn.Sort((x, y) => x.key.CompareTo(y.key));
+            for (int i = 0; i < count && i < drawn.Count; i++) { openRoofs[drawn[i].room] = true; RoofsOffRooms.Add(drawn[i].room); }
         }
         // A room template can open its own ceiling (the starting room's way in), with its own frame.
         var frames = new float[openRoofs.Length];
@@ -1143,7 +1152,7 @@ public partial class DungeonGenerator : MonoBehaviour
     // Per region (rooms first, then passages): its ceiling has an opening. From such a room the player sees what
     // stands taller than its own roof (DungeonVisibility keeps those drawn).
     public bool[] OpenRoofRegions { get; private set; }
-    // Rooms whose roof is off by the biome's Roofs Off share (not a hand-built room's own open ceiling).
+    // Rooms whose roof is off by the biome's Rooms Without A Roof share (not a hand-built room's own open ceiling).
     public System.Collections.Generic.HashSet<int> RoofsOffRooms { get; private set; } = new System.Collections.Generic.HashSet<int>();
 
     // A roof stays on the tavern, the boss's stage (it stands open anyway), a room with an event of its own (the Dungeon

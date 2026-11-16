@@ -512,7 +512,87 @@ public partial class AssetStudioWindow
         GUILayout.Label("How the bedroom looks while this level is on the table. A walled floor's own light is its biome's (Run, Look).", dim);
         Fields(d, "roomLighting", "roomBrightness", "roomTint");
         if (d.IsBoard && d.baseBiome != null) { Section("BOARD LIGHT"); Fields(d.baseBiome, "boardLightColor", "boardLightIntensity"); }
+        RoofRows(l);
         if (d.baseBiome != null) { Section("EVERY FLOOR"); StyleTiles(d.baseBiome, true); }
+    }
+
+    // ── Rooms without a roof ──
+
+    // How many of a floor's rooms stand open to the bedroom (DungeonBiome.roofsOff), a slider per stage counted in rooms
+    // out of ten, with what that comes to on a floor. Its one home: a floor's page shows it greyed (RoofLine).
+    void RoofRows(AssetStudioWorld.Level l)
+    {
+        var d = l.data;
+        var stages = l.RunStages.Where(x => x.biome != null && !x.IsBase && !d.BoardOn(x.firstFloor)).ToList();
+        if (stages.Count == 0) return;
+        Section("ROOMS WITHOUT A ROOF");
+        GUILayout.Label("How many of a floor's rooms are built with the roof off, so the bedroom, the lamp and the Dungeon Master stand over you. Counted in rooms out of ten. Passages, the tavern, event rooms and rooms with something hung from the ceiling always keep their roof.", new GUIStyle(dim) { wordWrap = true });
+        if (stages.Count > 1)
+        {
+            float first = stages[0].biome.roofsOff;
+            bool same = stages.All(x => Mathf.Approximately(x.biome.roofsOff, first));
+            float all = RoofSlider("Every floor", same ? first : -1f, same ? "" : "the floors differ");
+            if (all >= 0f && (!same || !Mathf.Approximately(all, first))) foreach (var st in stages) SetRoofs(st.biome, all);
+            GUILayout.Space(4);
+        }
+        foreach (var st in stages)
+        {
+            int rooms = st.biome.roomCount > 0 ? st.biome.roomCount : d.roomCount;
+            float now = st.biome.roofsOff;
+            float next = RoofSlider(FloorsLabel(st) + " \u00b7 " + st.biome.name, now, RoofRooms(now, rooms));
+            if (!Mathf.Approximately(next, now)) SetRoofs(st.biome, next);
+        }
+    }
+
+    // "2 of a floor's 20 rooms", "1 or 2 of a floor's 16 rooms", "every room roofed".
+    static string RoofRooms(float share, int rooms)
+    {
+        if (share <= 0f || rooms <= 0) return DungeonBiome.RoofWords(share);
+        float n = share * rooms;
+        string count = Mathf.Approximately(n, Mathf.Round(n)) ? Mathf.RoundToInt(n).ToString() : $"{Mathf.FloorToInt(n)} or {Mathf.FloorToInt(n) + 1}";
+        return $"{count} of a floor's {rooms} rooms";
+    }
+    // "1 room in 10: 2 of a floor's 20 rooms".
+    static string RoofCount(float share, int rooms) => share <= 0f || rooms <= 0 ? DungeonBiome.RoofWords(share) : DungeonBiome.RoofWords(share) + ": " + RoofRooms(share, rooms);
+
+    // One row: a name, a slider in rooms out of ten (half steps), and the share in words. A share under 0 draws the
+    // slider at nothing (the stages differ) and gives back under 0 until it is moved.
+    float RoofSlider(string name, float share, string words)
+    {
+        GUILayout.BeginHorizontal();
+        GUILayout.Label(name, GUILayout.Width(230));
+        float shown = share < 0f ? 0f : share * 10f;
+        float moved = GUILayout.HorizontalSlider(shown, 0f, 10f, GUILayout.Width(220));
+        GUILayout.Space(10);
+        float typed = EditorGUILayout.DelayedFloatField(Mathf.Round(shown * 100f) / 100f, GUILayout.Width(56));
+        GUILayout.Label("in 10", dim, GUILayout.Width(46));
+        GUILayout.Label(words, dim);
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
+        if (!Mathf.Approximately(moved, shown)) return Mathf.Clamp01(Mathf.Round(moved * 2f) / 20f);   // the slider: half rooms
+        if (!Mathf.Approximately(typed, Mathf.Round(shown * 100f) / 100f)) return Mathf.Clamp01(typed / 10f);   // typed: any share
+        return share;
+    }
+
+    static void SetRoofs(DungeonBiome b, float share)
+    {
+        if (b == null || Mathf.Approximately(b.roofsOff, share)) return;
+        Undo.RecordObject(b, "Rooms without a roof");
+        b.roofsOff = share;
+        EditorUtility.SetDirty(b);
+        AssetDatabase.SaveAssetIfDirty(b);
+    }
+
+    // On a floor's page: the share as it is, and the way to where it is changed.
+    void RoofLine(AssetStudioWorld.Level l, AssetStudioWorld.Stage st)
+    {
+        if (st.biome == null || st.IsBase || l.data.BoardOn(st.firstFloor)) return;
+        int rooms = st.biome.roomCount > 0 ? st.biome.roomCount : l.data.roomCount;
+        GUILayout.BeginHorizontal();
+        using (new EditorGUI.DisabledScope(true)) GUILayout.Label("Rooms without a roof: " + RoofCount(st.biome.roofsOff, rooms), GUILayout.Width(420));
+        if (GUILayout.Button("Change on Look", GUILayout.Width(150))) { GoTo("look", l.data.baseBiome); GUIUtility.ExitGUI(); }
+        GUILayout.FlexibleSpace();
+        GUILayout.EndHorizontal();
     }
 
     void SoundTab(AssetStudioWorld.Level l)

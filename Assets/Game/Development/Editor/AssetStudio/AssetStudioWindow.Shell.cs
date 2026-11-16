@@ -226,6 +226,7 @@ public partial class AssetStudioWindow
         yield return ("The floor being built", "reveal cascade map burns entrance slam lamps", "Dungeon > The way in", Page("entering"));
         yield return ("Starting room and floor plan", "first room layout rooms in a row map template door", "Dungeon > The way in", Page("entering"));
         yield return ("The room's light while a level is played", "bedroom lighting tint brightness board light default style", "Dungeon > Look", Page("look"));
+        yield return ("Rooms without a roof", "roofless open rooms roofs off bedroom sky dungeon master watches share how many", "Dungeon > Look", Page("look"));
         yield return ("Music of a floor", "background music volume ambience boss fight track tavern", "Dungeon > Music and sound", Page("sound"));
         yield return ("What the Dungeon Master says in a dungeon", "lines on the way in kill backstab new floor boss fight", "Dungeon > The Dungeon Master", Page("words"));
         yield return ("Armour: how much of a hit it stops", "armor curve common legendary set stops flat rule", "Balance > Armour", Bal("Armour"));
@@ -282,7 +283,7 @@ public partial class AssetStudioWindow
             foreach (var (key, title, extra) in new[] { ("timeline", "Floor 1 to the last", "the run every floor side by side"), ("overview", "Overview", "problems floors"), ("entering", "The way in", "map build first room"),
                 ("tavern", "The tavern", "keeper food rumours hearth merchant shop"), ("boss", "The boss", "guardian fight"), ("enemies", "Who lives where", "enemies"), ("rooms", "Rooms", "room pool"),
                 ("events", "Room events", "ambush shrine trap"), ("loot", "Loot", "drops chests gear tomes"), ("difficulty", "Difficulty", "balance health damage"), ("words", "The Dungeon Master", "lines dialogue"),
-                ("sound", "Music and sound", "audio"), ("look", "Look", "light style") })
+                ("sound", "Music and sound", "audio"), ("look", "Look", "light style roof roofless open rooms") })
             { string k = key; Page(title, extra, "Dungeon · " + name, () => { OpenDungeon(); GoTo(k); }); }
             foreach (var st in l.RunStages.Where(s => s.biome != null))
             { string k = "floor:" + st.index; var b = st.biome; Page($"{FloorsLabel(st)} · {b.name}", b.displayName + " floor stage biome", "Dungeon · " + name, () => { OpenDungeon(); GoTo(k, b); }); }
