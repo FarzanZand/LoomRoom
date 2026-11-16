@@ -183,6 +183,7 @@ public partial class ProgressionManager
     void OfferQuestsForRun()
     {
         CompleteQuest(TableQuest);
+        if (LessonTaught) SetFlag(RanAfterLessonFlag);
         // Sat down before the trophies were hung (the quest not given yet): it never comes up after the run is played.
         if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0) SetFlag(QuestFlag(TableQuest), 2);
         // Until the player has opened the inventory once, every run starts by saying how (the intro's included).
