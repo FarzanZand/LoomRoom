@@ -66,6 +66,15 @@ public class DungeonMasterGaze : MonoBehaviour
     int roofSeed;
     bool roofDue;
     float roofTime, roofRunStart;
+
+    [Header("Gestures")]
+    [Tooltip("Off: he says his lines with his arms still, as before.")] public bool talksWithHands = true;
+    [Tooltip("His animator's gesture triggers (the upper-body gestures every humanoid has): played as a line of his appears during a run.")]
+    public string talkTrigger = "Talk";
+    [Tooltip("With his first answer to a stare.")] public string waveTrigger = "Wave";
+    [Tooltip("With \"Eyes on the board.\" and the lines in a fight.")] public string pointTrigger = "Point";
+    [Min(0), Tooltip("Seconds before another gesture starts.")] public float gestureGap = 2.2f;
+
     static DungeonMasterGaze current;
     const string PrefabName = "Dungeon Master gaze";
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -92,8 +101,25 @@ public class DungeonMasterGaze : MonoBehaviour
     bool fighting;
     int answers, answersSeed, lastMore = -1;
 
-    void OnEnable() { current = this; }
-    void OnDisable() { if (current == this) current = null; LetGo(); }
+    void OnEnable() { current = this; DungeonMaster.Spoke += OnSpoke; }
+    void OnDisable() { if (current == this) current = null; DungeonMaster.Spoke -= OnSpoke; LetGo(); }
+
+    // He talks with his hands. During a run every line of his plays the talking gesture as it appears, so when you
+    // can see him he is seen saying it; an answer to a stare has its own (a wave, a finger at the board).
+    Animator animator;
+    DungeonMaster.Line answerLine;
+    string answerGesture;
+    float gestureAt = -999f;
+    void OnSpoke(DungeonMaster.Line line)
+    {
+        if (!talksWithHands || line == null || !Watching() || animator == null || !animator.isActiveAndEnabled) return;
+        string trigger = line == answerLine && !string.IsNullOrEmpty(answerGesture) ? answerGesture : talkTrigger;
+        if (line == answerLine) answerLine = null;
+        else if (Time.time - gestureAt < gestureGap) return;
+        if (string.IsNullOrEmpty(trigger)) return;
+        gestureAt = Time.time;
+        AnimatorHelper.SetTrigger(animator, trigger);
+    }
 
     void Update()
     {
@@ -168,7 +194,7 @@ public class DungeonMasterGaze : MonoBehaviour
         if (hand == null)
         {
             hand = DungeonMasterReach.Hand;
-            var animator = hand != null ? hand.GetComponent<Animator>() : null;
+            animator = hand != null ? hand.GetComponent<Animator>() : null;
             head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
             body = TableManager.HasInstance && TableManager.Instance.DM != null ? TableManager.Instance.DM.transform : hand != null ? hand.transform : null;
         }
@@ -221,8 +247,9 @@ public class DungeonMasterGaze : MonoBehaviour
         lastAnswer = Time.time; stared = 0f;
         attentionUntil = Time.time + 4f;
         DungeonMaster.Line line;
-        if (fighting && fightLines.Count > 0) line = fightLines[Random.Range(0, fightLines.Count)];
-        else if (answers < firstLines.Count) line = firstLines[answers];
+        string gesture = talkTrigger;
+        if (fighting && fightLines.Count > 0) { line = fightLines[Random.Range(0, fightLines.Count)]; gesture = pointTrigger; }
+        else if (answers < firstLines.Count) { line = firstLines[answers]; gesture = answers == 0 ? waveTrigger : answers == 1 ? pointTrigger : talkTrigger; }
         else if (moreLines.Count > 0)
         {
             int i = Random.Range(0, moreLines.Count);
@@ -231,7 +258,9 @@ public class DungeonMasterGaze : MonoBehaviour
         }
         else return;
         if (!fighting) answers++;
-        if (line != null && !line.IsEmpty) DungeonMaster.Say(line);
+        if (line == null || line.IsEmpty) return;
+        answerLine = line; answerGesture = gesture;
+        DungeonMaster.Say(line);
     }
 
 #if UNITY_EDITOR || DEBUG
