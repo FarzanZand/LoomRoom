@@ -246,6 +246,7 @@ public static partial class MetaProgressionSetup
         var announcement = canvas.Find("Announcement");
         if (announcement != null) holder.SetSiblingIndex(announcement.GetSiblingIndex()); else holder.SetAsLastSibling();
         BuildSheetLesson();
+        Record();   // the record sheet's layout and art (MetaProgressionSetup.Record.cs), over what was just built
         BuildKeyItems(canvas);
         EditorSceneManager.MarkSceneDirty(holder.gameObject.scene);
         Debug.Log("Meta: character sheet built under UI/Canvas");
@@ -331,6 +332,7 @@ public static partial class MetaProgressionSetup
         }
         EditorUtility.SetDirty(ui);
         EditorSceneManager.MarkSceneDirty(ui.gameObject.scene);
+        Record();   // the remade bubbles take the record sheet's boxes and places
         return $"sheet refreshed: {skills} skill rows, {attributes} attribute rows";
     }
 
