@@ -1014,7 +1014,29 @@ public partial class DungeonGenerator : MonoBehaviour
     }
 
     // In the starting room (room 0 built from the level's Starting Room template, generated or on an authored map).
-    bool InStartingRoom(Vector3 pos) => !data.pocket && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==data.startingRoom && Layout.RoomAt(CellOf(pos))==0;
+    bool InStartingRoom(Vector3 pos) => !data.pocket && data.startingRoom!=null && Layout!=null && TemplatePrefab(0)==StartRoom && Layout.RoomAt(CellOf(pos))==0;
+
+    // ── The room a floor opens in ──
+    // Every run landed in the same room, three times over (floor 1, and the first floor of each new biome). With
+    // Starting Room Variants on the level, each landing takes the Starting Room or one of them: the run's seed picks
+    // where in the list a run begins and each floor steps on from there, so Dungeon1's landings on floors 1, 2 and 4
+    // are three different rooms out of four. From the seed and the floor alone: the same on every machine and when a
+    // floor is built again from its checkpoint. A level with no variants opens in its Starting Room as before.
+    GameObject StartRoom
+    {
+        get
+        {
+            var variants = data.startingRoomVariants;
+            if (data.startingRoom == null || variants == null || variants.Length == 0) return data.startingRoom;
+            int count = 1; foreach (var v in variants) if (v != null) count++;
+            if (count == 1) return data.startingRoom;
+            int runKey = unchecked(roomCapSeed - (FloorNumber - 1) * 104729);
+            int at = (int)(((uint)Scramble(runKey ^ 0x5bd1e995) + (uint)(FloorNumber - 1)) % (uint)count);
+            if (at == 0) return data.startingRoom;
+            foreach (var v in variants) if (v != null && --at == 0) return v;
+            return data.startingRoom;
+        }
+    }
 
     // The starting room's chest: one piece of gear, the level's potion and its other starting items, always
     // (DungeonContainer.startingKit).

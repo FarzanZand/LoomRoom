@@ -221,7 +221,7 @@ public static class DungeonChunkKit
         public Transform root;
         public DungeonRoomEvent roomEvent;
         public DungeonRoomLight mood;
-        public bool openCeiling, noTorches;
+        public bool openCeiling, noTorches, ownProps;
         public int skylightRadius;
         // The kinds of room it may become, and its weight in Cellars and in the Crypt (0: not in that biome).
         public DungeonRoomRoles rooms = DungeonRoomRoles.Combat;
@@ -264,7 +264,7 @@ public static class DungeonChunkKit
             rows[y] = new string(row);
         }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.allowRotation = true;
-        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = true;   // the pack is the hand-placed Enemy sockets
+        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = c.ownProps; t.replaceGeneratedEnemies = true;   // the pack is the hand-placed Enemy sockets
         // The plainer chunks are furnished from the biome's prop rules around their own pieces as well (a Statue hall was three
         // statues on a bare floor); the themed ones (bone niches, tombs, pews, the fountain) keep only their own dressing.
         t.addFurnishing = Furnished.Contains(c.name);
@@ -896,6 +896,85 @@ public static class DungeonChunkKit
         Socket(c, DungeonSocketType.Enemy, c.Cell(.7f, 3.4f), .8f, 135f); Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3.5f), .7f, 200f); Socket(c, DungeonSocketType.Enemy, c.Cell(.8f, .9f), .5f);
         Light(c, 0, 1, West); Light(c, 2, 0, South);
         made.Add(Save(c));
+    }
+
+    // ── Landing rooms (2026-11-16) ──────────────────────────────────
+    // Every run landed in the same Starting room, three times over. Three more rooms a run can land in, each built to
+    // the Starting room's own rules: 7 x 7, one door in the middle of the north wall with a torch either side, an open
+    // ceiling for the flight in, the middle of the floor free for the player and the ladder behind them, a gold chest of
+    // their own (the generator stocks it on the run's first floor and takes it away on later landings), no enemies and
+    // no generated props. RunLandingRooms() from an eval builds those not there yet and lists them on Dungeon1
+    // (TableLevelData.startingRoomVariants); RunLandingRooms(true) builds them again.
+    public static string RunLandingRooms() => RunLandingRooms(false);
+    // One of them built again by name, the others left as they are.
+    public static string RunLandingRoom(string name) { only = name; try { return RunLandingRooms(true); } finally { only = null; } }
+    public static string RunLandingRooms(bool replaceExisting)
+    {
+        overwrite = false;
+        BuildKit();
+        overwrite = replaceExisting;
+        chunkInfo.Clear();
+        var made = new List<GameObject>();
+        Chunk Landing(string name)
+        {
+            var room = Begin(name, 7, 7, 1, new Vector2Int(3, 6));
+            room.openCeiling = true; room.skylightRadius = 0; room.noTorches = true; room.ownProps = true; room.maxPerFloor = 1;
+            Light(room, 2, 6, North); Light(room, 4, 6, North); Light(room, 6, 2, East);
+            return room;
+        }
+
+        // A burial chamber: a sarcophagus either side, candles at their heads, bones in the corners.
+        var c = Landing("Landing crypt");
+        // Ahead of the player, either side of the way to the door (beside the landing spot they were out of view).
+        // Half a cell back from the landing spot after Ciri's look (the right tomb's near end was cut by the frame and its
+        // side stood right at a candle), the candles at their feet a little toward the way through, the chest left of the
+        // door under its torch (right of it, it stood hidden behind the right tomb).
+        Prop(c, "Furnishing/Sarcophagus", c.Cell(1f, 5.1f)); Prop(c, "Furnishing/Sarcophagus", c.Cell(5f, 5.1f));
+        Prop(c, "Furnishing/Candle cluster", c.Cell(1.9f, 4.1f), 30f); Prop(c, "Furnishing/Candle cluster", c.Cell(4.1f, 4.1f), 200f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(4.2f, 5.9f), 110f);
+        Prop(c, "Furnishing/Bone pile", c.Cell(.4f, .5f), 40f); Prop(c, "Furnishing/Skull pile", c.Cell(5.6f, .4f), 130f);
+        Prop(c, "Furnishing/Gargoyle statue", c.Cell(0, 6), 135f);
+        Prop(c, "Chests/Gold chest", c.Cell(1.8f, 6) + new Vector3(0f, 0f, .25f), 180f);
+        made.Add(Save(c));
+
+        // A storeroom. Its things stand on the door wall, inside the torches' light, so the first frame says storeroom
+        // (Ciri's look: at the edges and behind the player they stood in the dark and the landing showed wall, door and
+        // bare floor): shelves and the chest left of the door, the barrel with candles and a stack of crates right of it.
+        c = Landing("Landing storeroom");
+        Prop(c, "Groups/Shelf with pots", c.Cell(.3f, 6) + new Vector3(0f, 0f, .5f), 180f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(.9f, 5.5f), 40f);   // the shelves stood in the dark left of the torches
+        Prop(c, "Chests/Gold chest", c.Cell(1.6f, 6) + new Vector3(0f, 0f, .25f), 180f);
+        Prop(c, "Groups/Barrel with candles", c.Cell(4.7f, 6) + new Vector3(0f, 0f, .2f), 0f);
+        Prop(c, "Groups/Crates and sacks", c.Cell(5.7f, 5.6f), 200f);
+        Prop(c, "Groups/Barrels huddled", c.Cell(.5f, 4.5f), 200f);
+        Prop(c, "Furnishing/Storage shelf", c.Cell(6, 3.6f) + new Vector3(.5f, 0f, 0f), 270f);
+        // Behind the player as they land.
+        Prop(c, "Groups/Crates and sacks", c.Cell(5.5f, .8f), 60f); Prop(c, "Furnishing/Sacks", c.Cell(.4f, .5f), 110f);
+        Prop(c, "Tavern/Keg", c.Cell(0, 1.6f) + new Vector3(-.3f, 0f, 0f), 90f);
+        made.Add(Save(c));
+
+        // A small chapel: a runner from the middle to the door, candle racks either side of the door, pews along the walls.
+        c = Landing("Landing chapel");
+        Prop(c, "Furnishing/Rug", c.Cell(3, 4.4f));
+        Prop(c, "Furnishing/Candle rack", c.Cell(1.2f, 6) + new Vector3(0f, 0f, .45f), 180f); Prop(c, "Furnishing/Candle rack", c.Cell(4.8f, 6) + new Vector3(0f, 0f, .45f), 180f);
+        Prop(c, "Furnishing/Pew", c.Cell(.5f, 3.6f), 90f); Prop(c, "Furnishing/Pew", c.Cell(.5f, 1.6f), 90f);
+        Prop(c, "Furnishing/Pew", c.Cell(5.5f, 3.6f), 270f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(.3f, .3f), 60f);
+        Prop(c, "Chests/Gold chest", c.Cell(5.5f, 1.2f) + new Vector3(.2f, 0f, 0f), 270f);
+        made.Add(Save(c));
+
+        var level = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
+        if (level != null)
+        {
+            var list = new List<GameObject>(level.startingRoomVariants ?? new GameObject[0]);
+            list.RemoveAll(v => v == null);
+            foreach (var m in made) if (m != null && !list.Contains(m)) list.Add(m);
+            level.startingRoomVariants = list.ToArray();
+            EditorUtility.SetDirty(level);
+        }
+        overwrite = false;
+        AssetDatabase.SaveAssets();
+        return "landing rooms: " + string.Join(", ", made.ConvertAll(m => m != null ? m.name : "?")) + "; Dungeon1 lists " + (level != null ? level.startingRoomVariants.Length : 0);
     }
 
     // A prop that hangs from the ceiling, marked so (PropMount): the generator lifts it with a taller room's ceiling and

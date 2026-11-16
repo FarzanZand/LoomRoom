@@ -32,7 +32,7 @@ public partial class DungeonGenerator
         : RequestedTemplate(i,Roles[i],profiles[i],shopInPlainRoom ? -1 : MerchantRoom);
     // Generated layouts; also used before the rooms are placed, when i is the requested room.
     GameObject RequestedTemplate(int i,RoomRole role,DungeonRoomProfile profile,int merchantRoom=-1) =>
-        i==0 && UsesStartingRoom ? data.startingRoom
+        i==0 && UsesStartingRoom ? StartRoom
         : i==merchantRoom && i!=0 && data.shopRoom!=null ? data.shopRoom
         : role==RoomRole.Exit && Milestone!=null && Milestone.arena!=null ? Milestone.arena
         : profile!=null && profile.roomTemplate!=null ? profile.roomTemplate
@@ -74,8 +74,8 @@ public partial class DungeonGenerator
         // The room the floor opens in (a run opened in a template, the dev console's event) is on the floor too.
         if (UsesStartingRoom && data.startingRoom != null)
         {
-            used[data.startingRoom] = 1;
-            if (IsEvent(data.startingRoom)) events++;
+            used[StartRoom] = 1;
+            if (IsEvent(StartRoom)) events++;
         }
         for (int i = 0; i < roles.Length; i++)
         {
@@ -214,7 +214,7 @@ public partial class DungeonGenerator
         for (int i = 0; i < pooledTemplates.Length; i++) if (pooledTemplates[i] != null) { used.Add(pooledTemplates[i]); if (IsEvent(TemplatePrefab(i))) events++; }
         // A room profile's own template is on the floor too (an event never comes twice).
         for (int i = 0; i < profiles.Length; i++) if (profiles[i] != null && profiles[i].roomTemplate != null) used.Add(profiles[i].roomTemplate);
-        if (UsesStartingRoom && data.startingRoom != null) { used.Add(data.startingRoom); if (IsEvent(data.startingRoom)) events++; }
+        if (UsesStartingRoom && data.startingRoom != null) { used.Add(StartRoom); if (IsEvent(StartRoom)) events++; }
         if (events >= fewest) return;
         data.BiomeAt(FloorNumber, out int floorInBiome, out _);
         var features = RoomFeatures;

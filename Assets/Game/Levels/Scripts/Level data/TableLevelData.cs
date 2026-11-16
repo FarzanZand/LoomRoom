@@ -153,6 +153,8 @@ public partial class TableLevelData : ScriptableObject
     public List<LootFloorTiers> gearByFloor = new();
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Start", HorizontalLine = false), AssetsOnly, Tooltip("Room template prefab the player starts in on the first floor and on the first floor of each new biome. Give its footprint one door cell: the only way out, which the player faces from the centre. Empty uses an ordinary entrance room.")]
     public GameObject startingRoom;
+    [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), AssetsOnly, Tooltip("More rooms a run can open in. With any listed, the first floor and the first floor of each new biome open in the Starting Room or one of these, picked by the run's seed, a different one on each of a run's landings where there are enough (four for Dungeon1's three). Each follows the Starting Room's rules: one door cell, an open ceiling for the flight in, its own starting chest.")]
+    public GameObject[] startingRoomVariants;
     [TabGroup(Tabs, Run), ShowIf(D), PropertyOrder(1), Title("Scripted events", HorizontalLine = false), MinMaxSlider(0, 5, true), LabelText("Event rooms per floor"),
      Tooltip("Fewest and most scripted event rooms on each grown floor: every event the player can walk into (the duel, the bell, the wager, the sleeping giant, the dice, Not a witch, and the Portal hall, whose portal leads to the Skeleton Party). The tavern doesn't count. They come from the floor's biome pool: a floor whose pool has fewer event rooms than the fewest gets all it has (a forest's board pool has none). The room a run opens in counts.")]
     public Vector2Int eventRoomsPerFloor = new(0, 1);

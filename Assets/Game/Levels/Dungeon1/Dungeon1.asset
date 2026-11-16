@@ -158,6 +158,7 @@ MonoBehaviour:
   roomCount: 0
   roomSizeScale: 1
   tallRoomChance: 0
+  roofsOff: 0
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
@@ -482,6 +483,10 @@ MonoBehaviour:
     tier12: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  startingRoomVariants:
+  - {fileID: 8425165810438750002, guid: 9d3b4746242d9e74c91c62ba9a8d7950, type: 3}
+  - {fileID: 6181622393079431599, guid: c0bc34a3485ddf04db549f0d2694a6a7, type: 3}
+  - {fileID: 4056001041950534917, guid: 9ca2ec609e4a3c049ac78c0b08d7e879, type: 3}
   eventRoomsPerFloor: {x: 2, y: 2}
   tavernEvery: 2
   startingChest: 1
