@@ -104,6 +104,17 @@ public class QuestLogUI : MonoBehaviour
             row.text = state == 2 ? $"<s>{text}</s>" : text;
             row.color = state == 2 ? doneColour : openColour;
         }
+        Title();
+    }
+
+    // "QUEST" over one line, "QUESTS" over more (the title is the scene's "Title" text, made by QuestLogSetup).
+    TMP_Text title; bool titleLooked;
+    void Title()
+    {
+        if (!titleLooked) { titleLooked = true; foreach (var t in GetComponentsInChildren<TMP_Text>(true)) if (t.name == "Title") { title = t; break; } }
+        if (title == null) return;
+        string want = rows.Count > 1 ? "QUESTS" : "QUEST";
+        if (title.text != want) title.text = want;
     }
 
     // The last two words joined by a no-break space, so a line that wraps never leaves one word alone on its last line
