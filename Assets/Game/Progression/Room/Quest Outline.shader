@@ -7,15 +7,16 @@
 //              and a little of the colour on the object itself.
 // It took the place of a shell pushed out round each mesh, which gave a hard bright line of one width in the world
 // (thick close up, with lines inside the shape wherever one piece stood in front of another; the user, 2026-11-16:
-// "You can do an outline, just don't do it as sharp and ugly").
+// "You can do an outline, just don't do it as sharp and ugly"). Kept narrow: at 26 pixels wide it was a halo, and on
+// the character sheet a blot ("The glow is too much, just do an outline on the sheet"); at 9 it is a line with a soft edge.
 Shader "LoomRoom/Quest Outline"
 {
     Properties
     {
         [HDR] _Tint ("Colour", Color) = (.45, .8, 1, 1)
-        _Spread ("Glow width (pixels on a 1080 high screen)", Float) = 26
-        _Strength ("Glow strength at the edge", Float) = .36
-        _Falloff ("Falloff (higher: tighter round the edge)", Float) = .7
+        _Spread ("Glow width (pixels on a 1080 high screen)", Float) = 9
+        _Strength ("Glow strength at the edge", Float) = .8
+        _Falloff ("Falloff (higher: tighter round the edge)", Float) = 1.3
         _Inner ("Colour on the object itself", Range(0, .5)) = .03
     }
     SubShader

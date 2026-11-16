@@ -2,17 +2,18 @@ using UnityEngine;
 
 // The hobby table in front of the trophy wall: your character sheet lies on it among paints and miniatures, and using
 // it opens the sheet (CharacterSheetUI). Until the sheet has been opened once after the DM's first mention, and again
-// for as long as the spend-spoils quest is open (train Blocking: the run waits for it), a light on it calls the player
-// over and the sheet itself wears the quest's soft glow (QuestGlow on the sheet, not round the whole table: the user,
-// 2026-11-16). The hard light blue border that lay round the sheet is switched off: the glow took its place.
+// for as long as the spend-spoils quest is open (train Blocking: the run waits for it), the sheet wears the quest's
+// outline (QuestGlow on the sheet itself, not round the whole table), and nothing else: the lamp that pulsed over it
+// and the hard light blue border round it are switched off (the user, 2026-11-16: with the lamp the sheet was a white
+// blot, "The glow is too much, just do an outline on the sheet").
 public class CharacterSheetTable : MonoBehaviour, IInteractable
 {
-    [Tooltip("A small light over the sheet, on while the DM is waiting for the player to look at it.")] public Light hint;
+    [Tooltip("The lamp that pulsed over the sheet: switched off at the start (the outline round the sheet marks it now). The locked box copies it for its own lamp.")] public Light hint;
     [Min(0)] public float hintIntensity = 140f;
     [Tooltip("The old light blue border round the sheet (a slightly larger quad under it): switched off at the start, the quest's glow round the sheet took its place. The sheet is this quad's parent.")]
     public Renderer questOutline;
     [Min(0f), Tooltip("How strong the glow round the sheet is against the usual quest glow (1): the sheet is small, flat and lies in its lamp's light.")]
-    public float sheetGlow = 2.6f;
+    public float sheetGlow = 1.3f;
     public const string OpenedFlag = "story.sheetOpened";
 
     public string Prompt => "Character sheet";
@@ -31,6 +32,7 @@ public class CharacterSheetTable : MonoBehaviour, IInteractable
         // The glow goes round the sheet lying on the table.
         var sheet = questOutline != null ? questOutline.transform.parent : transform.Find("Character sheet");
         if (questOutline != null) questOutline.enabled = false;
+        if (hint != null) hint.enabled = false;
         glow = (sheet != null ? sheet.gameObject : gameObject).AddComponent<QuestGlow>();
         glow.strength = sheetGlow;
         hintIntensity = ReachDown(hint, transform, hintIntensity);
@@ -55,9 +57,5 @@ public class CharacterSheetTable : MonoBehaviour, IInteractable
         bool quest = meta != null && (meta.QuestState(ProgressionManager.SheetQuest) == 1 || meta.QuestState(ProgressionManager.SpendQuest) == 1);
         bool on = firstLook || quest;
         if (glow != null) glow.Show(on);
-        if (hint == null) return;
-        hint.enabled = on;
-        // Brighter and quicker while the quest holds the next run back.
-        if (on) hint.intensity = hintIntensity * (quest ? 1.4f : 1f) * (.65f + .35f * Mathf.Sin(Time.time * (quest ? 3f : 2.2f)));
     }
 }
