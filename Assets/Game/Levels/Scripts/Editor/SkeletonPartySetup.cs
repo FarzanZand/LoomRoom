@@ -24,6 +24,7 @@ public static class SkeletonPartySetup
     const string PortalArchPrefab = PortalFolder + "/Portal arch.prefab";
     const string Dancer = "Assets/Game/Characters/Enemies/Crypt/Crypt Soldier.prefab";
     const string Arch = "Assets/Game/Levels/Shared/Room pieces/Arch.prefab";
+    const int Dancers = 3;
     const float DancerSpread = 2.2f;   // each dancer this far from the middle along both axes: a square round the chest, inside the four pillars (at 4)
 
     public static string Build()
@@ -64,20 +65,23 @@ public static class SkeletonPartySetup
             {
                 var ring = new GameObject("Dancers").transform;
                 ring.SetParent(root.transform, false);
-                for (int i = 0; i < 4; i++)
+                // Three dancers (the user, 2026-11-16: 3, not 4), evenly round the chest as far out as the old square's
+                // corners, each facing it.
+                for (int i = 0; i < Dancers; i++)
                 {
                     var spot = new GameObject("Dancer " + (i + 1)).transform;
                     spot.SetParent(ring, false);
-                    var corner = new Vector3(i % 2 == 0 ? -1f : 1f, 0f, i < 2 ? 1f : -1f);
-                    spot.localPosition = corner * DancerSpread;
+                    float angle = (90f + i * 360f / Dancers) * Mathf.Deg2Rad;
+                    var corner = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    spot.localPosition = corner * DancerSpread * 1.41421f;
                     spot.localRotation = Quaternion.LookRotation(-corner);
                     var socket = spot.gameObject.AddComponent<DungeonSocket>();
                     socket.type = DungeonSocketType.Enemy;
                     socket.overridePrefab = dancer;
                 }
-                log.AppendLine("Added 4 dancers");
+                log.AppendLine("Added " + Dancers + " dancers");
             }
-            // The four dancers are the whole party: the floor adds no generated enemies to the room.
+            // The placed dancers are the whole party: the floor adds no generated enemies to the room.
             if (template != null) template.socketEnemiesOnly = true;
             if (root.transform.Find("Party chest") == null)
             {
