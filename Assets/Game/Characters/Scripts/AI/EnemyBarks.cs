@@ -219,6 +219,17 @@ public class EnemyBarks : MonoBehaviour
         Show(b, line);
     }
 
+    // A line another script wants said over an enemy now (the grudge's "You again?"), whatever the gaps; the floor's
+    // own lines then wait their usual gap after it. Only the kind that talks: false for a rat or a bat.
+    public static bool SayNow(EnemyBrain b, string line)
+    {
+        if (current == null || b == null || !current.barksOn || string.IsNullOrWhiteSpace(line)) return false;
+        if (b.Data == null || b.Data.Kind != current.kind) return false;
+        current.lastLine = line; current.lastAt = Time.time; current.spokeAt[b] = Time.time;
+        current.Show(b, line);
+        return true;
+    }
+
     // ── The line over the head ────────────────────────────────────────
 
     void Show(EnemyBrain b, string line)

@@ -232,8 +232,11 @@ public class DungeonMasterRemarks : MonoBehaviour
     {
         var m = save != null ? save.Saved.memorials : null;
         if (m == null || m.Count < 2) return null;
-        string killer = m[m.Count - 1].killer;
-        return !string.IsNullOrWhiteSpace(killer) && killer == m[m.Count - 2].killer ? killer : null;
+        string a = m[m.Count - 1].killer, b = m[m.Count - 2].killer;
+        if (string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b)) return null;
+        // The same kind with a word in front counts too (an elite's trait, the grudge's "Smug"): the plain name is said.
+        if (a == b || a.EndsWith(" " + b)) return b;
+        return b.EndsWith(" " + a) ? a : null;
     }
 
     // ── Runs ──────────────────────────────────────────────────────────
