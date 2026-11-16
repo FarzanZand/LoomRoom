@@ -291,7 +291,7 @@ public partial class IntroController : Singleton<IntroController>
         else if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(1.5f);
     }
 
-    bool firstMorningPending;
+    bool firstMorningPending, firstMorningGreeted;
     // A new game that skipped the intro starts here: the first morning's greeting is still said.
     public void BeginFirstMorning() => firstMorningPending = true;
 
@@ -300,6 +300,7 @@ public partial class IntroController : Singleton<IntroController>
     {
         if (!firstMorningPending) return null;
         firstMorningPending = false;
+        firstMorningGreeted = firstMorning != null && System.Array.Exists(firstMorning, l => l != null && !l.IsEmpty);
         return firstMorning;
     }
 

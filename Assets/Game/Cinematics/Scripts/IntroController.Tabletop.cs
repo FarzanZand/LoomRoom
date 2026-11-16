@@ -240,8 +240,9 @@ public partial class IntroController
         sheetAtTable = true;
         if (RunManager.HasInstance) { RunManager.Instance.RunStarted -= HideSheetForRun; RunManager.Instance.RunStarted += HideSheetForRun; }
         yield return GlideIntoSeat();
-        // One line while the sheet comes across.
-        yield return SheetAndDice(sheetUnknownClass, "", morningSheetLines);
+        // One line while the sheet comes across. Greeted already this morning ("Morning. The table's ready when you
+        // are."), he leaves the second "Morning" out and says the plain sheet line.
+        yield return SheetAndDice(sheetUnknownClass, "", firstMorningGreeted && sheetLines != null && sheetLines.Length > 0 ? sheetLines : morningSheetLines);
     }
 
     // The class picked from the figures goes on the sheet.
