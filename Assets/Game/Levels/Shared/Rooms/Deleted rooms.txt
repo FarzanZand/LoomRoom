@@ -1,3 +1,4 @@
 # Rooms deleted in Asset Studio (Delete room...): name, day, the pools it was in with its weight there.
 # The room builders skip these names. Take a line out to let a builder make that room again.
 Burial plot	2026-11-16	Cellars1 0.8, Cellars2 0.9, Cellars3 1
+Moonlit fountain	2026-11-16	Cellars1 1, Cellars2 1, Cellars3 0.8, Ruins1 0.8, Ruins2 0.8, Ruins3 0.8
