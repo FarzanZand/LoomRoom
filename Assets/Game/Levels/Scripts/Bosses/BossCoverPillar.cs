@@ -91,15 +91,23 @@ public class BossCoverPillar : MonoBehaviour
         pillar.Heat();
         pillar.heat = Mathf.Min(1f, pillar.heat + Time.deltaTime / pillar.heatSeconds);
         pillar.enabled = true;
-        // Its break is worked out from now on, a little each frame, so it is ready when the beam ends.
+        // Its break is worked out a little each frame so it is ready when the beam ends (as a rule already begun, as
+        // this beam began: ClearTouched).
         if (pillar.plan == null) { pillar.plan = pillar.Plan(); pillar.StartCoroutine(pillar.Prepare()); }
     }
 
-    // A new beam begins: nothing on this stage is marked yet.
+    // A new beam begins: nothing on this stage is marked yet. Every standing pillar's cut is worked out from now on, a
+    // little each frame (through the warning arc and the stream there is time to spare), so it is ready whenever the
+    // stream reaches the pillar: started at the first touch, a player who ducked behind it in the beam's last moments
+    // had the whole cut in the frame it broke (77 ms).
     public static void ClearTouched(Component stage)
     {
         if (stage == null) return;
-        foreach (var p in stage.GetComponentsInChildren<BossCoverPillar>()) p.Touched = false;
+        foreach (var p in stage.GetComponentsInChildren<BossCoverPillar>())
+        {
+            p.Touched = false;
+            if (!p.Broken && p.plan == null && p.gameObject.activeInHierarchy) { p.plan = p.Plan(); p.StartCoroutine(p.Prepare()); }
+        }
     }
 
     // Every pillar of the stage the beam touched breaks; returns how many did.
@@ -324,7 +332,7 @@ public class BossCoverPillar : MonoBehaviour
 
     // ── The cut, worked out ahead ─────────────────────────────────────
     // Cutting the model up takes a tenth of a second and more, far too long for the frame it breaks in. So it is worked
-    // out from the moment the beam first touches the pillar, a couple of milliseconds a frame (Prepare), and the break
+    // out from the moment a beam begins (or first touches the pillar), a couple of milliseconds a frame (Prepare), and the break
     // only sets the finished pieces loose. A break that comes before it is done finishes it on the spot. The pillar
     // never moves, and the cuts are drawn from where it stands, so every machine and a reload get the same pieces.
     enum Kind { Stump, Lump, Stone }
