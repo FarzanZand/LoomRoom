@@ -121,9 +121,11 @@ public class TavernHearth : MonoBehaviour, IInteractable
             else l.intensity *= embers;
         }
         // The flames scale with their transform (hierarchy scaling, 3D start sizes), so they shrink by their scale: the
-        // start size alone left the fire as big as ever.
+        // start size alone left the fire as big as ever. A flame made of several systems (the torch fire's tongues, heart
+        // and embers under one) is listed by its top one: the others shrink with it and thin out here.
         foreach (var f in flames)
-            if (f != null) { var emission = f.emission; emission.rateOverTimeMultiplier *= .4f; }
+            if (f != null)
+                foreach (var part in f.GetComponentsInChildren<ParticleSystem>()) { var emission = part.emission; emission.rateOverTimeMultiplier *= .4f; }
         StartCoroutine(ShrinkFlames());
     }
 
