@@ -56,6 +56,7 @@ public class SettingsUI : MonoBehaviour
         Hook(masterVolume, v => SetVolume(AudioManager.Channel.Master, v));
         Hook(musicVolume, v => SetVolume(AudioManager.Channel.Music, v));
         Hook(sfxVolume, v => SetVolume(AudioManager.Channel.Sfx, v));
+        foreach (var v in new[] { masterVolume, musicVolume, sfxVolume }) if (v != null) v.onValueChanged.AddListener(_ => VolumeLabels());
         Hook(sensitivity, v => { UserSettings.MouseSensitivity = v; Labels(); });
         Hook(fieldOfView, v => { UserSettings.FieldOfView = Mathf.Approximately(v, FovDefaultSlot) ? 0f : v; Labels(); });
         Hook(pixelation, v =>
@@ -199,10 +200,38 @@ public class SettingsUI : MonoBehaviour
 
     void Labels() => Labels(new Vector2Int(Screen.width, Screen.height));
 
+    // The volumes say their level ("80%") as the sensitivity and the field of view say theirs: a copy of the sensitivity's
+    // value text beside each volume slider, as far to its right as that one stands from its own slider. Made the first
+    // time the screen shows (the layout has settled by then), placed again each time.
+    TMP_Text masterValue, musicValue, sfxValue;
+    void VolumeLabels()
+    {
+        masterValue = VolumeLabel(masterVolume, masterValue);
+        musicValue = VolumeLabel(musicVolume, musicValue);
+        sfxValue = VolumeLabel(sfxVolume, sfxValue);
+    }
+
+    TMP_Text VolumeLabel(Slider slider, TMP_Text label)
+    {
+        if (slider == null || sensitivity == null || sensitivityValue == null) return label;
+        if (label == null)
+        {
+            label = Instantiate(sensitivityValue, slider.transform.parent);
+            label.name = slider.name + " value";
+            if (!label.TryGetComponent(out LayoutElement element)) element = label.gameObject.AddComponent<LayoutElement>();
+            element.ignoreLayout = true;
+        }
+        label.rectTransform.position = slider.transform.position + (sensitivityValue.transform.position - sensitivity.transform.position);
+        float share = Mathf.InverseLerp(slider.minValue, slider.maxValue, slider.value);
+        label.text = $"{share * 100f:0}%";
+        return label;
+    }
+
     // shownSize: the resolution just asked for (Screen.width only changes on the next frame).
     void Labels(Vector2Int shownSize)
     {
         if (sensitivityValue != null && sensitivity != null) sensitivityValue.text = $"{sensitivity.value:0.00}x";
+        VolumeLabels();
         if (fieldOfViewValue != null && fieldOfView != null) fieldOfViewValue.text = Mathf.Approximately(fieldOfView.value, FovDefaultSlot) ? "Default" : $"{fieldOfView.value:0} deg";
         if (pixelationValue != null && pixelation != null)
         {
