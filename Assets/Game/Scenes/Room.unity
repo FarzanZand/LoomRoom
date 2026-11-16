@@ -17887,11 +17887,6 @@ MonoBehaviour:
   startMinute: 12
   progressFlag: adventure.deepestFloor
   maxMinutes: 20
-  tick: {fileID: 0}
-  tickVolume: 0.35
-  tockPitch: 0.9
-  tickNear: 40
-  tickFar: 200
 --- !u!1 &137485872
 GameObject:
   m_ObjectHideFlags: 0
@@ -108923,7 +108918,6 @@ MonoBehaviour:
   trophyEffectScale: 20
   hangAtPlaques: 1
   spotMargin: 1.5
-  plaqueGlowWidth: 0.3
 --- !u!114 &951611838
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152531,11 +152525,6 @@ MonoBehaviour:
   startMinute: 12
   progressFlag: adventure.deepestFloor
   maxMinutes: 20
-  tick: {fileID: 0}
-  tickVolume: 0.35
-  tockPitch: 0.9
-  tickNear: 40
-  tickFar: 200
 --- !u!114 &1278652920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -232227,6 +232216,16 @@ MonoBehaviour:
     rampSeconds: 0.35
     scale: 1.3
     homing: 1
+  practiceGetUps: 2
+  practiceGetUpLines:
+  - text: Up. It's only practice. Swing with {PrimaryAction}, raise the shield with {SecondaryAction}.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  - text: Again? Hit them before they hit you.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
   afterPractice:
   - text: When a figure dies, it stays dead.
     voice: {fileID: 0}
@@ -241909,6 +241908,9 @@ MonoBehaviour:
   stripRows: 3
   stripPadding: {x: 14, y: 10}
   stripGap: 4
+  noSpoilsText: Nothing carried out.
+  noKillsText: Nothing slain.
+  emptyNoteColour: {r: 0.55, g: 0.51, b: 0.45, a: 1}
   showcaseIcon: {fileID: 167739814}
   spoilsRow:
   - {fileID: 1637445376}
@@ -357528,6 +357530,7 @@ MonoBehaviour:
   desaturateSeconds: 1.1
   deathSting: {fileID: 8300000, guid: d7b847c2faea56048a132bffb57f95f9, type: 3}
   deathStingVolume: 0.9
+  deathMusicFade: 2.5
   reviveGrace: 3
   victorySting: {fileID: 8300000, guid: 85c19deaf97648e41ad99a308d860bd0, type: 3}
   victoryStingVolume: 0.9
