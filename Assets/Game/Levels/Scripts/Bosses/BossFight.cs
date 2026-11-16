@@ -147,7 +147,7 @@ public class BossFight : ScriptableObject
     public GameObject discoBall;
 
     // ── Backup dancers ──
-    [TabGroup(Tabs, "Backup"), Tooltip("The boss's crew (an enemy prefab): dancing at the back of the stage from the moment it is set down, ignoring the fight, until the boss calls them in to fight. Empty: no backup dancers.")]
+    [TabGroup(Tabs, "Backup"), Tooltip("The boss's crew (an enemy prefab): dancing at the back of the stage from the moment it is set down, ignoring the fight, until the boss calls them in to fight. Until then nothing hurts them (hits show IMMUNE). Empty: no backup dancers.")]
     public GameObject backupDancer;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Min(1)] public int backupCount = 2;
     [TabGroup(Tabs, "Backup"), ShowIf(nameof(backupDancer)), Range(0, 1), Tooltip("The boss calls them in when its health falls to this share.")]
