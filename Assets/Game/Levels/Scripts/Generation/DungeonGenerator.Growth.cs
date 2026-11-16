@@ -43,6 +43,26 @@ public partial class DungeonGenerator
         pooledTemplates = PoolTemplates(roles, chosen, seed);
         // The shop's template, like any other, sets its room's shape.
         int merchant = ChooseMerchantRoom(roles, i => RequestedTemplate(i, roles[i], chosen[i]) != null);
+        // Fill rooms (DungeonLayout.FillRooms): more rooms asked for than the level's count, each built only where the
+        // floor would otherwise leave the table bare. Generated rooms rolled like any other (no hand-built room: the
+        // floor's pool is dealt to the level's own count, as before), on their own stream, in the growing order just
+        // before the exit; the merchant and the shop's place among the level's own rooms are as before.
+        int optional = int.MaxValue;
+        if (DungeonLayout.FillRooms > 0)
+        {
+            int fill = DungeonLayout.FillRooms;
+            var fillRandom = new System.Random(unchecked(seed + 60013));
+            var fillRoles = new RoomRole[fill]; var fillProfiles = new DungeonRoomProfile[fill];
+            for (int i = 0; i < fill; i++)
+            {
+                fillRoles[i] = fillRandom.NextDouble() < encounter ? RoomRole.Combat : (RoomRole)fillRandom.Next(2, 5);
+                var profile = ChooseProfile(fillRoles[i]);
+                fillProfiles[i] = profile != null && profile.roomTemplate == null ? profile : null;
+            }
+            optional = count - 1;
+            roles = BeforeLast(roles, fillRoles); chosen = BeforeLast(chosen, fillProfiles); pooledTemplates = BeforeLast(pooledTemplates, new GameObject[fill]);
+            count += fill;
+        }
         var shapeRandom = new System.Random(unchecked(seed + 88667));
         var shapes = new DungeonShape[count];
         for (int i = 0; i < count; i++) shapes[i] = ChooseShape(roles[i], chosen[i], shapeRandom, RequestedTemplate(i, roles[i], chosen[i], merchant));
@@ -50,17 +70,17 @@ public partial class DungeonGenerator
         if (UsesStartingRoom) shapes[0] = FacingDungeonMaster(shapes[0]);
         shapes[count - 1] = FrontDoorOnly(shapes[count - 1]);
         var entranceAt = EntranceOrigin(shapes[0]);
-        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]), entranceAt);
+        Layout = DungeonLayout.Grow(level.width, level.depth, shapes, seed, level.Growth, StageOrigin(shapes[count - 1]), entranceAt, optional);
         // The shop (the tavern) is built whole or not at all. Grown late on a full grid it can come out as a small
         // fallback room, which drops most of its interior: the floor is grown again with the shop's room moved earlier
         // in the growing order (halfway back each time, then every earlier place), and failing that later, until it
         // stands whole. Floors where it fitted are unchanged.
         var shopFootprint = merchant > 0 && data.shopRoom != null && data.shopRoom.GetComponent<DungeonRoomTemplate>() is { HasFootprint: true } shop ? shop.Footprint() : null;
         if (shopFootprint != null && !ShopWhole(Layout, merchant, shopFootprint.FloorCount))
-            foreach (int to in OtherPlaces(merchant, count))
+            foreach (int to in OtherPlaces(merchant, Mathf.Min(count, optional == int.MaxValue ? count : optional + 1)))
             {
                 var movedShapes = Moved(shapes, merchant, to);
-                var again = DungeonLayout.Grow(level.width, level.depth, movedShapes, seed, level.Growth, StageOrigin(movedShapes[count - 1]), entranceAt);
+                var again = DungeonLayout.Grow(level.width, level.depth, movedShapes, seed, level.Growth, StageOrigin(movedShapes[count - 1]), entranceAt, optional);
                 if (!ShopWhole(again, to, shopFootprint.FloorCount)) continue;
                 Layout = again; shapes = movedShapes;
                 roles = Moved(roles, merchant, to); chosen = Moved(chosen, merchant, to); pooledTemplates = Moved(pooledTemplates, merchant, to);
@@ -113,6 +133,16 @@ public partial class DungeonGenerator
         for (int to = from / 2; to >= 1; to = to == 1 ? 0 : Mathf.Max(1, to / 2)) if (tried.Add(to)) yield return to;
         for (int to = from - 1; to >= 1; to--) if (tried.Add(to)) yield return to;
         for (int to = from + 1; to < count - 1; to++) if (tried.Add(to)) yield return to;
+    }
+
+    // The items with more set in just before the last one (the exit stays last).
+    static T[] BeforeLast<T>(T[] items, T[] more)
+    {
+        var all = new T[items.Length + more.Length];
+        System.Array.Copy(items, all, items.Length - 1);
+        System.Array.Copy(more, 0, all, items.Length - 1, more.Length);
+        all[all.Length - 1] = items[items.Length - 1];
+        return all;
     }
 
     // The requests with the one at `from` moved to `to`, the ones between shifted one place toward where it was.

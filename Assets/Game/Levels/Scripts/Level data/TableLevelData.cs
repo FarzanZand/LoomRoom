@@ -222,7 +222,7 @@ public partial class TableLevelData : ScriptableObject
     public int width = 32;
     [TabGroup(Tabs, Map), ShowIf(D), Range(24, 56), DisableIf(nameof(IsAuthored))]
     public int depth = 42;
-    [TabGroup(Tabs, Map), ShowIf(nameof(IsGenerated)), Title("Rooms and tunnels", HorizontalLine = false), Range(6, 36)]
+    [TabGroup(Tabs, Map), ShowIf(nameof(IsGenerated)), Title("Rooms and tunnels", HorizontalLine = false), Range(6, 36), Tooltip("Rooms on a floor. Where these leave part of the table bare, up to 6 more generated rooms are built there (DungeonLayout.FillRooms), so a floor has this many or a few more.")]
     public int roomCount = 12;
     [TabGroup(Tabs, Map), ShowIf(nameof(IsGrown)), MinMaxSlider(3, 16, true), Tooltip("Room width and depth range in cells, before profile scaling. Painted shapes keep their own size.")]
     public Vector2Int roomSize = new Vector2Int(4, 9);
