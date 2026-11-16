@@ -27,5 +27,18 @@ public abstract class LootSource : ScriptableObject
     static void ResetStatics() { GenerationLevel = null; BiomeProgress = null; FloorGear = null; }
 
     public abstract List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source);
+
+    // A roll made as if deeper than the floor it happens on (an elite's drop, a gold chest's deeper roll) is held to
+    // this many tiers above the best the real floor gives (the user, 2026-11-16, after a Crystal Mace, tier 4, came
+    // off an elite on floor 2, where the floor gives Bronze and Iron: Steel at most there now).
+    public const int DeeperRollTiersAbove = 1;
+    // The highest tier such a roll may give on this floor; 0 = no cap (the level has no Gear by floor row for it).
+    public static int DeeperTierCap(int realFloor)
+    {
+        var row = FloorGear?.Invoke(Mathf.Max(1, realFloor));
+        return row != null ? Mathf.Min(12, row.HighestTier + DeeperRollTiersAbove) : 0;
+    }
+    // RollDrops with every tier it gives held to Tier Cap (0 = none). A hand-listed table has no tiers to hold.
+    public virtual List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source, int tierCap) => RollDrops(random, floor, source);
     public abstract int RollGold(System.Random random, int floor, DungeonLootSource source);
 }

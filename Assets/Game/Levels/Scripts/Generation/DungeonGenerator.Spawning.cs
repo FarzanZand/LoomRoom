@@ -1053,7 +1053,9 @@ public partial class DungeonGenerator
             EliteEnemy.Make(character,(EliteTrait)eliteRandom.Next(3),eliteFloors);
         var drop=lootRandom!=null ? enemy.GetComponent<DungeonLootDrop>() : null;
         // Its loot rolls at the depth it grew to: an elite drops as if the floor were deeper.
-        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber+Mathf.RoundToInt(eliteFloors);}
+        if(drop!=null){if(!drop.overrideLevelTable)drop.table=First(rewards,FloorLoot);drop.seed=lootRandom.Next();drop.floorNumber=FloorNumber+Mathf.RoundToInt(eliteFloors);
+            // ...but its tiers are held near the floor it stands on (LootSource.DeeperTierCap).
+            drop.tierCap=eliteFloors>0f ? LootSource.DeeperTierCap(FloorNumber) : 0;}
         return character;
     }
 

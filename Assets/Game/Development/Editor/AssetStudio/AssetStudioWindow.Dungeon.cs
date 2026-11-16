@@ -1066,7 +1066,7 @@ public partial class AssetStudioWindow
                 if (GUILayout.Button(t.prefab.name, cell, GUILayout.Width(180), GUILayout.Height(20))) ShowAsset(t.prefab);
                 GUILayout.Label($"{t.weight / total * 100:0}% of chests", GUILayout.Width(110));
                 var c = t.prefab.GetComponent<DungeonContainer>();
-                if (c != null) GUILayout.Label($"one piece of gear: {(c.extraRolls > 0 || c.rareRollFloors > 0 ? "the best of " + (1 + c.extraRolls + (c.rareRollFloors > 0 ? 1 : 0)) + " rolls" : "one roll")}{(c.rareRollFloors > 0 ? $", one of them {c.rareRollFloors} floors deeper" : "")}", dim);
+                if (c != null) GUILayout.Label($"one piece of gear: {(c.extraRolls > 0 || c.rareRollFloors > 0 ? "the best of " + (1 + c.extraRolls + (c.rareRollFloors > 0 ? 1 : 0)) + " rolls" : "one roll")}{(c.rareRollFloors > 0 ? $", one of them {c.rareRollFloors} floors deeper, its tier at most {LootSource.DeeperRollTiersAbove} above the floor's best" : "")}", dim);
                 GUILayout.EndHorizontal();
             }
             Fields(d.baseBiome, "chestTiers");

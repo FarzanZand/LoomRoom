@@ -9,6 +9,7 @@ public class DungeonLootDrop : MonoBehaviour
     public ItemData carriedItem;
     public int seed;
     [Min(1)] public int floorNumber=1;
+    [HideInInspector, Tooltip("The highest tier its roll gives (0 = none): set on an elite, whose roll is made deeper than its floor (LootSource.DeeperTierCap).")] public int tierCap;
     [Tooltip("Extra gold on top of the table's gold, e.g. for bosses.")] [Min(0)] public int bonusGold;
     bool dropped;
     Character character;
@@ -22,7 +23,7 @@ public class DungeonLootDrop : MonoBehaviour
         var drops = new List<LootSource.Drop>();
         if (carriedItem != null && (!InventoryManager.HasInstance || InventoryManager.Instance.CanDropLoot(carriedItem))) drops.Add(new LootSource.Drop(carriedItem,1));
         // Gold rolls after items so the item results match earlier seeds.
-        var (items, tableGold) = Roll(table, rng, floorNumber, DungeonLootSource.Enemy);
+        var (items, tableGold) = Roll(table, rng, floorNumber, DungeonLootSource.Enemy, tierCap);
         drops.AddRange(items);
         // Spoils for the tally (ProgressionManager): a chance per kill, and a boss always drops its own.
         if (ProgressionManager.HasInstance)
@@ -45,10 +46,10 @@ public class DungeonLootDrop : MonoBehaviour
         Spill(drops, gold, transform.position, transform.parent);
     }
     // A table's items, then its gold, from one stream (nothing from no table).
-    public static (List<LootSource.Drop> items, int gold) Roll(LootSource table, System.Random rng, int floor, DungeonLootSource source)
+    public static (List<LootSource.Drop> items, int gold) Roll(LootSource table, System.Random rng, int floor, DungeonLootSource source, int tierCap = 0)
     {
         if (table == null) return (new List<LootSource.Drop>(), 0);
-        var items = table.RollDrops(rng, floor, source);
+        var items = table.RollDrops(rng, floor, source, tierCap);
         return (items ?? new List<LootSource.Drop>(), table.RollGold(rng, floor, source));
     }
     public static void Spill(IReadOnlyList<LootSource.Drop> drops, int gold, Vector3 position, Transform parent, Vector3? popFrom = null)

@@ -54,7 +54,11 @@ public partial class DungeonLootProfile : LootSource
         return Mathf.RoundToInt(random.Next(min, max + 1) * InventoryManager.GoldScale);
     }
 
-    public override List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source)
+    public override List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source) => RollDrops(random, floor, source, 0);
+
+    // tierCap: the highest tier of gear, tome or recovery item this roll gives (0 = none); the draws from random are
+    // the same with or without it.
+    public override List<Drop> RollDrops(System.Random random, int floor, DungeonLootSource source, int tierCap)
     {
         var drops = new List<Drop>();
         var rule = For(source);
@@ -65,6 +69,7 @@ public partial class DungeonLootProfile : LootSource
             int lowest = row != null ? row.LowestTier : gearTiers.x, highest = row != null ? row.HighestTier : gearTiers.y;
             int tier = row != null ? row.Roll(random) : RollTier(random, floor);
             if (random.NextDouble() < (row != null ? row.upgradeChance : upgradeChance)) tier++;
+            if (tierCap > 0) { tier = Mathf.Min(tier, tierCap); highest = Mathf.Min(highest, tierCap); lowest = Mathf.Min(lowest, tierCap); }
             // A spell tome takes InventoryManager > Tome Share of the gear rolls, however many spells there are (weighted
             // one by one, twelve tomes outweighed a whole tier of gear). A tome can come up at its own tier or any above
             // it, as they have no better versions; with none left to give the roll is gear after all.
@@ -81,6 +86,7 @@ public partial class DungeonLootProfile : LootSource
         {
             var floorRow = followFloorTiers ? FloorGear?.Invoke(floor) : null;
             int top = floorRow != null ? floorRow.HighestTier : gearTiers.y;
+            if (tierCap > 0) top = Mathf.Min(top, tierCap);
             var item = Pick(random, i => i.itemType == ItemType.Consumable && i.spell == null && i.tier <= top);
             if (item != null) drops.Add(new Drop(item, 1));
         }
