@@ -52,7 +52,7 @@ public class SleepingGiantEvent : MonoBehaviour
     public DungeonMaster.Line[] enterLines =
     {
         new() { text = "Time for nimble hands. Do you feel Lucky, punk?" },
-        new() { text = "A stealthy rogue walks out rich. A bad doesn't walk out at all." },
+        new() { text = "A stealthy rogue walks out rich. A bad one doesn't walk out at all." },
         new() { text = "Shh. Light feet, heavy pockets." },
     };
     [Tooltip("Said when a step woke it.")] public DungeonMaster.Line wokeLine = new() { text = "Should have crouched." };
