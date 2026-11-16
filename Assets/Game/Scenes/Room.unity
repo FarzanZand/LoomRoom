@@ -17812,6 +17812,11 @@ MonoBehaviour:
   startMinute: 12
   progressFlag: adventure.deepestFloor
   maxMinutes: 20
+  tick: {fileID: 0}
+  tickVolume: 0.35
+  tockPitch: 0.9
+  tickNear: 40
+  tickFar: 200
 --- !u!1 &137485872
 GameObject:
   m_ObjectHideFlags: 0
@@ -152295,6 +152300,11 @@ MonoBehaviour:
   startMinute: 12
   progressFlag: adventure.deepestFloor
   maxMinutes: 20
+  tick: {fileID: 0}
+  tickVolume: 0.35
+  tockPitch: 0.9
+  tickNear: 40
+  tickFar: 200
 --- !u!114 &1278652920
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -359731,7 +359741,7 @@ MonoBehaviour:
     volume: 0.6
     pitchVariance: 0.03
   - key: standardChestOpen
-    clip: {fileID: 8300000, guid: caa5617e6eaa83044aaadbd2ef03a7e6, type: 3}
+    clip: {fileID: 8300000, guid: c91905085c8467644bec9b0aea8d173a, type: 3}
     volume: 1
     pitchVariance: 0.06
   musicLibrary:
