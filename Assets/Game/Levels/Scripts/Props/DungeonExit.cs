@@ -22,6 +22,7 @@ public class DungeonExit : MonoBehaviour, IInteractable
     {
         if (cover == null || !cover.activeSelf) return;
         cover.SetActive(false);
+        BossCoverPillar.ClearRubble(transform.position, coverHalf + 1.5f);   // a broken cover pillar's lumps lying on the cover
         var player = PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
         if (player != null && Over(player.transform.position)) player.Warp(Out(1) + Vector3.up * .1f, player.transform.rotation);
         StartCoroutine(ClearLoot());

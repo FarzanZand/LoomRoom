@@ -477,10 +477,16 @@ public partial class BossStageEncounter : MonoBehaviour
         // The boss gives way while the DM pours: it backs off and waits, so the player can face him and hold.
         System.Func<bool> giveWay = () => GiveWay(player);
         if (brain != null && fight.beamGiveWay > 0f && !fight.beamKneel) brain.MovementOverride = giveWay;
+        if (dungeon != null) BossCoverPillar.ClearTouched(dungeon.Stage);
         yield return beam.Fire(player, fight, ok => held = ok);
         if (brain != null && brain.MovementOverride == giveWay) brain.MovementOverride = null;
         if (brain != null && brain.MovementOverride == kneel) { brain.MovementOverride = null; Kneel(false); if (boss != null && boss.IsAlive) brain.Alert(); }
-        if (held == true) { Comment(fight.beamBlocked, true); if (fight.beamBlockedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume); }
+        // A cover pillar his stream ended on comes down now the beam is over (BossCoverPillar), and he mocks the hiding in
+        // place of his word on the blocking. Not when the beam ended with the player's death: the pillar is there after a revive.
+        int broke = held != null && dungeon != null && player != null && player.IsAlive
+            ? BossCoverPillar.BreakTouched(dungeon.Stage, fight.beamColor, player.transform.position) : 0;
+        if (broke > 0) Comment(BossCoverPillar.BrokenOn(dungeon.Stage) <= 1 ? fight.firstPillarBroken : fight.secondPillarBroken, true);
+        else if (held == true) { Comment(fight.beamBlocked, true); if (fight.beamBlockedSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(fight.beamBlockedSound, fight.beamVolume); }
         else if (held == false) Comment(fight.beamHit, true);
         beamRun = null;
     }

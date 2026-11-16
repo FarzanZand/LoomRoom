@@ -300,6 +300,7 @@ public partial class DungeonGenerator
         var look = face - pos; look.y = 0;
         var go = Instantiate(prefab, pos, Quaternion.LookRotation(look.sqrMagnitude > .01f ? look : Vector3.forward), transform);
         if (data.ambushSpawnPuff != null) PoolManager.SpawnOrInstantiate(data.ambushSpawnPuff, pos, Quaternion.identity, 3f);
+        BossCoverPillar.ClearRubble(pos, 1.5f);   // a broken cover pillar's loose lumps where the chest comes up
         var chest = go.GetComponent<DungeonContainer>();
         if (chest == null) return null;
         chest.loot = m.bossLoot != null ? m.bossLoot : FloorLoot;
