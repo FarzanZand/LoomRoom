@@ -7,6 +7,12 @@ using System.Collections;
 // the floor is built and shown, so it is never seen from the side the player happened to stand at.
 public partial class CampaignManager
 {
+    // When the place's own line was last said for a run's start ("The crypt. Down we go."), in unscaled seconds: the
+    // floor's biome then keeps its entry line to itself (TableLevelLoader), since both only say "you're here" and came
+    // six seconds apart on every run's first floor (Zelda's count: five lines of his in the first 26 seconds).
+    public static float PlaceLineSaidAt { get; private set; } = -999f;
+    [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetPlaceLine() => PlaceLineSaidAt = -999f;
+
     // The place E would play now, and whether that continues the saved run. False when there is none (the map not
     // seen yet, a level loading, no open level place to stand at).
     bool QuickPlace(out CampaignEncounter place, out bool resume, out AdventurerClass savedClass)
@@ -44,7 +50,7 @@ public partial class CampaignManager
         if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
         // Its line is for a new run (a continued one picks up deeper, where it wouldn't fit), asked for once the load
         // holds its cutscene so it is said once, when the floor stands (see the map's click in CampaignManager).
-        if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
+        if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) { DungeonMaster.Say(e.pickedLine); PlaceLineSaidAt = UnityEngine.Time.unscaledTime; }
         return true;
     }
 

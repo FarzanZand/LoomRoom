@@ -307,7 +307,8 @@ public class TableLevelLoader : MonoBehaviour
             if(!completed && !descending && CampaignManager.Active) FailedFromMap();
             else if(!completed) ShowSelection("That level couldn't be built");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
-            else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
+            // Not on top of the place's own line at a run's start (CampaignManager.PlaceLineSaidAt): one "you're here" is enough.
+            else if(entryLine!=null && Time.unscaledTime-CampaignManager.PlaceLineSaidAt>45f) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
             if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post(Dungeon.Merchant.GetComponentInParent<TavernKeeper>()==null && Dungeon.Merchant.GetComponent<TavernKeeper>()==null ? "A merchant has set up shop on this floor."
                 // The keeper outside a tavern (the Peddler's Cellar's shop room) is a peddler, and the floor has no tavern.

@@ -979,7 +979,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
                             // asked for once the load holds its cutscene, so the feed keeps it until the floor stands:
                             // asked for just before, its voice began, the cutscene cut it off a frame later and the feed
                             // said it again after the floor was built, so it was heard twice on every run.
-                            if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
+                            if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) { DungeonMaster.Say(e.pickedLine); PlaceLineSaidAt = Time.unscaledTime; }
                             started = true;
                         }
                     }
