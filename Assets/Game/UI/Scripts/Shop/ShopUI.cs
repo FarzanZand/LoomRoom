@@ -449,7 +449,14 @@ public class ShopUI : Singleton<ShopUI>
     void ShowDetails(ItemData item, bool ware = false)
     {
         bool any = item != null;
-        if (detailsIcon != null) { detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null; }
+        if (detailsIcon != null)
+        {
+            detailsIcon.sprite = any ? item.icon : null; detailsIcon.enabled = detailsIcon.sprite != null;
+            // With nothing hovered the icon's cell (its frame) goes too: an empty frame beside the help text read as
+            // something missing. The cell holds only the icon and its frame (Details icon cell, under the panel).
+            var cell = detailsIcon.transform.parent;
+            if (cell != null && root != null && cell != root.transform && cell.parent != null && cell.gameObject.activeSelf != any) cell.gameObject.SetActive(any);
+        }
         if (detailsName != null) detailsName.text = any ? item.itemName : "";
         if (details != null) details.text = any ? Summary(item) : help ?? WaresHelp;
         if (detailsPrice == null || merchant == null) return;
