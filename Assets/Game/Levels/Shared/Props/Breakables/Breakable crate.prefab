@@ -86,7 +86,7 @@ MonoBehaviour:
   debrisStays: 1
   dropsLoot: 1
   ambushPrefab: {fileID: 3616844111263754080, guid: 788f87c9ce3a4b34bb5de806fec53d1d, type: 3}
-  ambushChance: 0.12
+  ambushChance: 0
   noiseRadius: 6
   loot: {fileID: 0}
   seed: 0
