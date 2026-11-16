@@ -16,6 +16,8 @@ public class RunManager : Singleton<RunManager>
     public float desaturateSeconds = 1.1f;
     public AudioClip deathSting;
     [Range(0, 1)] public float deathStingVolume = .9f;
+    [Min(0), Tooltip("Real seconds the music fades out over as the player dies, so the death and the recap aren't played over the fight's music. 0 leaves the music playing. A revive brings the same track back from where it was.")]
+    public float deathMusicFade = 2.5f;
     [Min(0), Tooltip("Seconds after a revive in which hits take no health, so the fight still going on can't kill the player again at once.")]
     public float reviveGrace = 3f;
     [Header("Victory")]
@@ -254,6 +256,7 @@ public class RunManager : Singleton<RunManager>
         if (animator != null && Character.HasParameter(animator, "Dead", AnimatorControllerParameterType.Bool)) animator.SetBool("Dead", false);
         if (GameManager.HasInstance) GameManager.Instance.Pop(GameState.Dead);
         // Raised with the player up again, so listeners see them alive (the save's checkpoint, the fights on the floor).
+        if (HasInstance) Instance.MusicBackAfterRevive();
         if (run) Instance.Revived?.Invoke(counted);
         return true;
     }
@@ -268,8 +271,31 @@ public class RunManager : Singleton<RunManager>
 
     // ── Death ─────────────────────────────────────────────────────────
 
+    // The music playing when the player died, where it was and how loud it was meant to be: a revive brings it back.
+    AudioClip musicAtDeath;
+    float musicAtDeathTime, musicAtDeathVolume;
+
+    void FadeMusicForDeath()
+    {
+        musicAtDeath = null;
+        if (deathMusicFade <= 0f || !AudioManager.HasInstance || AudioManager.Instance.CurrentMusic == null) return;
+        var audio = AudioManager.Instance;
+        musicAtDeath = audio.CurrentMusic;
+        musicAtDeathTime = audio.CurrentMusicTime;
+        musicAtDeathVolume = audio.CurrentMusicVolume;
+        audio.StopMusic(deathMusicFade);
+    }
+
+    void MusicBackAfterRevive()
+    {
+        if (musicAtDeath == null || !AudioManager.HasInstance) return;
+        if (AudioManager.Instance.CurrentMusic == null) AudioManager.Instance.CrossfadeMusicAt(musicAtDeath, musicAtDeathTime, true, 1.5f, musicAtDeathVolume);
+        musicAtDeath = null;
+    }
+
     IEnumerator DeathMoment()
     {
+        FadeMusicForDeath();
         if (AudioManager.HasInstance && deathSting != null) AudioManager.Instance.PlaySFX2D(deathSting, deathStingVolume);
         float elapsed = 0f;
         while (elapsed < slowMotionSeconds)
