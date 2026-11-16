@@ -45,7 +45,7 @@ public partial class ProgressionManager
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
         new Quest { id = BoxKeyQuest, text = "Open the locked box on the coffee table." },
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
-        new Quest { id = DiceQuest, text = "Put the dice on the big table." },
+        new Quest { id = DiceQuest, text = "Put the dice by the candles on the big table's edge." },
         new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
         new Quest { id = ClassQuest, text = "Change your class at the desk by the bed." },
     };

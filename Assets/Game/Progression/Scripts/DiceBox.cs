@@ -20,7 +20,7 @@ public class DiceBox : MonoBehaviour, IInteractable
     public string lockedPrompt = "Locked box", openPrompt = "Open the box";
     public string lockedMessage = "Locked. The key must be somewhere down there.";
     public string foundMessage = "You found a set of dice in the box.";
-    public DungeonMaster.Line diceLine = new() { text = "A set of dice. Put them on the table. They bring luck at the market." };
+    public DungeonMaster.Line diceLine = new() { text = "A set of dice. Put them by the candles on the table's edge. They bring luck at the market." };
 
     [Header("Sound and effect")]
     [Tooltip("The key turning in the lock, then the lid swinging up (played at the box, the second a moment after the first).")]
