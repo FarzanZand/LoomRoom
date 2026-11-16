@@ -19,6 +19,8 @@ public partial class CampaignManager
 
     [TabGroup("Map"), Tooltip("The glow round the place to start with (home until it has been played).")]
     public Color startGlowColour = new(1f, .78f, .38f, 1f);
+    [TabGroup("Map"), Min(0f), Tooltip("How strong that outline is against the usual quest outline (1): the place is small and lies on the lit map.")]
+    public float startGlowStrength = 1.7f;
 
     readonly Dictionary<CampaignPoint, GameObject> banners = new();
     QuestGlow startGlow;
@@ -97,7 +99,7 @@ public partial class CampaignManager
         if (start != null && start.PropsShown)
         {
             if (!start.TryGetComponent(out startGlow)) startGlow = start.gameObject.AddComponent<QuestGlow>();
-            startGlow.colour = startGlowColour;
+            startGlow.colour = startGlowColour; startGlow.strength = startGlowStrength;
             startGlow.Show(true);
         }
     }

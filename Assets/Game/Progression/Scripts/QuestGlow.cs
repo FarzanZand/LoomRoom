@@ -22,7 +22,7 @@ public class QuestGlow : MonoBehaviour
 
     readonly List<(Renderer renderer, int parts)> pieces = new();
     Material material;
-    bool shown;
+    bool shown, onTable, placed;
     float level, nextLook;
 
     public void Show(bool on)
@@ -33,8 +33,19 @@ public class QuestGlow : MonoBehaviour
 
     void Update()
     {
-        level = Mathf.MoveTowards(level, shown ? 1f : 0f, Time.unscaledDeltaTime / FadeSeconds);
+        level = Mathf.MoveTowards(level, shown && Seen() ? 1f : 0f, Time.unscaledDeltaTime / FadeSeconds);
         if (!shown && level <= 0f) QuestOutlinePass.Remove(this);
+    }
+
+    // A place in the room is outlined only while the room player is the one played: from inside a dungeon the room is
+    // seen over the walls of a roofless room, and its outlines glowed up there (the user, 2026-11-16: "room outlines
+    // should only be seen while controlling roomplayer, not tableplayer"). A place on a floor (the dice cup) is the
+    // other way round.
+    bool Seen()
+    {
+        if (!placed) { onTable = GetComponentInParent<DungeonGenerator>() != null; placed = true; }
+        if (!PlayerManager.HasInstance) return true;
+        return (PlayerManager.Instance.ActiveKind == PlayerKind.Table) == onTable;
     }
 
     void OnEnable() { if (shown) QuestOutlinePass.Add(this); }

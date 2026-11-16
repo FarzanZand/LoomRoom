@@ -58,6 +58,7 @@ public class DiceBox : MonoBehaviour, IInteractable
         hintIntensity = CharacterSheetTable.ReachDown(hint, transform, hintIntensity);
         // The box stands on the coffee table: the outline goes round the table, which reads from across the room.
         glow = (transform.parent != null ? transform.parent.gameObject : gameObject).AddComponent<QuestGlow>();
+        glow.strength = 1.5f;   // a dark table in the room's darkest corner: at the usual strength its thin outline was faint from across the room
         if (Meta != null) Meta.FlagChanged += OnFlag;
         Refresh();
     }
