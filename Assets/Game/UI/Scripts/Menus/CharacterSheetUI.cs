@@ -44,6 +44,8 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     [SerializeField] TMP_Text tipTitle, tipBody;
     [Header("Look")]
     [SerializeField] Sprite bubbleFilled, bubbleOutline, bubbleDashed, portraitPlaceholder;
+    [SerializeField, Tooltip("A milestone's larger bubble (empty: the small ones' sprites).")] Sprite ringFilled, ringOutline, ringDashed;
+    [SerializeField, Tooltip("The Train oval while the pointer or the selection is on it.")] Sprite buyPlateHot;
     [SerializeField] Color ink = new(.17f, .15f, .14f), pen = new(.58f, .16f, .12f), faint = new(.47f, .45f, .42f), poor = new(.6f, .58f, .55f);
     [SerializeField, Min(.5f)] float feedbackSeconds = 3f;
     [SerializeField, Tooltip("The Train button as a plate (the record sheet's look): this one while the next level can be paid for, Buy Plate Off while it can't (too few spoils, the first lesson holds it, or nothing is left to train). Empty = the old paper tag, its label in the pen's colours.")]
@@ -516,7 +518,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             if (b == null) continue;
             b.gameObject.SetActive(i < t.levels);
             bool given = i < t.givenLevels, have = i < levels, next = i == levels;
-            b.sprite = have ? bubbleFilled : next ? bubbleDashed : bubbleOutline;
+            // A milestone's bubble is larger and has its own drawing (a small round one stretched would be a blur).
+            bool big = ringFilled != null && b.rectTransform.sizeDelta.x > 30f;
+            b.sprite = have ? (big ? ringFilled : bubbleFilled) : next ? (big ? ringDashed : bubbleDashed) : (big ? ringOutline : bubbleOutline);
             b.color = have ? (given ? ink : pen) : next ? pen : ink;
         }
         if (t.milestones != null)
@@ -558,6 +562,11 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             {
                 bool lit = price >= 0 && !locked && meta.Spoils >= price;
                 r.buy.image.sprite = lit || buyPlateOff == null ? buyPlate : buyPlateOff;
+                if (buyPlateHot != null && r.buy.transition == Selectable.Transition.SpriteSwap)
+                {
+                    var hot = lit ? buyPlateHot : null;
+                    r.buy.spriteState = new SpriteState { highlightedSprite = hot, pressedSprite = hot, selectedSprite = hot };
+                }
                 r.buyLabel.color = lit ? buyText : buyTextOff;
                 r.buyLabel.margin = new Vector4(tagHeight * .12f, 0f, tagHeight * .12f, tagHeight * .1f);
             }

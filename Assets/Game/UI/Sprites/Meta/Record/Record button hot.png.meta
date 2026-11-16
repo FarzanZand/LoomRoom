@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 065095d1b21ab2446b6f005c701208eb
+guid: e585e436a913a9149ba01a036f9eb748
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4371908295262731607
-    second: Record stamp_0
+      213: -293817297955102853
+    second: Record button hot_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +52,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 50
-  spriteBorder: {x: 4, y: 4, z: 4, w: 4}
+  spriteBorder: {x: 11, y: 11, z: 11, w: 11}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -102,13 +102,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Record stamp_0
+      name: Record button hot_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 14
-        height: 14
+        width: 30
+        height: 24
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -117,8 +117,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9a2084e919cd353c0800000000000000
-      internalID: -4371908295262731607
+      spriteID: b7f558669b62cebf0800000000000000
+      internalID: -293817297955102853
       vertices: []
       indices: 
       edges: []
