@@ -71,9 +71,23 @@ public class InteractUI : MonoBehaviour
         return true;
     }
 
+    // The prompt's box while it shows (opposite corners in world space), for HUD pieces that keep off it (the loot
+    // labels: "Pick up Leather Boots" lay on the label of the sword beside the boots).
+    static InteractUI current;
+    static readonly Vector3[] boxCorners = new Vector3[4];
+    public static bool PromptBox(out Vector3 min, out Vector3 max)
+    {
+        min = max = default;
+        if (current == null || current.promptRoot == null || !current.promptRoot.activeInHierarchy) return false;
+        ((RectTransform)current.promptRoot.transform).GetWorldCorners(boxCorners);
+        min = boxCorners[0]; max = boxCorners[2];
+        return true;
+    }
+
     void OnEnable()
     {
         KeyCapText.On(promptText);   // the keys stand in drawn key caps
+        current = this;
         ListenForKeys();
         if (PlayerManager.HasInstance)
         {

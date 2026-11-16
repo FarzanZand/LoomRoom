@@ -65,6 +65,12 @@ public class LootLabelsUI : MonoBehaviour
             Vector2 a = canvas.InverseTransformPoint(feedMin), b = canvas.InverseTransformPoint(feedMax);
             placed.Add(Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)));
         }
+        // And the "Pick up ..." prompt of the item the crosshair is on.
+        if (InteractUI.PromptBox(out var promptMin, out var promptMax))
+        {
+            Vector2 a = canvas.InverseTransformPoint(promptMin), b = canvas.InverseTransformPoint(promptMax);
+            placed.Add(Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y)));
+        }
         float floor = Floor();
         for (int i = 0; i < near.Count && shown < maxLabels; i++)
         {
