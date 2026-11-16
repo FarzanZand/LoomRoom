@@ -55,7 +55,7 @@ public class Summon : MonoBehaviour
     SpellVisual aura;
     float until, born, side = 1f;
     bool ending, returning;
-    // Following its summoner at their pace just now (Steer set the motor's speed and the legs' rate; handed back after).
+    // Following its summoner at their pace just now (Steer set the motor's speed; handed back after).
     bool pacing;
     int pacedFrame = -1;
 
@@ -65,12 +65,7 @@ public class Summon : MonoBehaviour
     // enemy's wander speed (0.7 m/s for a skeleton against the player's 3.24; it ran, at its chase speed of 4.2, only
     // once an enemy was in range). Following, it now goes as fast as its summoner does just now, never slower than
     // their walk, and at their sprint while it has ground to make up (Catch Up Beyond).
-    // Its legs keep the step of that speed. The locomotion blend plays the run clip unscaled above RunFrom m/s, and
-    // that clip covers Run Stride metres a second for a body of full size (measured on a planted foot: 3.1 for a Blue
-    // Hood Skeleton, 2.48 for John at 0.8), so while it follows its animator is played faster or slower by what the
-    // body really does (at most Leg Rate Most times), and put back to 1 the moment it stops following.
-    public static float RunStride = 3.1f, LegRateMost = 2.7f;
-    const float RunFrom = 2.6f;
+    // Its legs keep the step of whatever speed that is, as every humanoid's do (EnemyMotor, Match Stride).
 
     float FollowPace(float distance)
     {
@@ -101,19 +96,14 @@ public class Summon : MonoBehaviour
         {
             pacing = false;
             brain.RestorePace();
-            if (Body != null && Body.Animator != null) Body.Animator.speed = 1f;
         }
     }
 
-    // The legs' rate while it follows: the run clip played as fast as the body goes.
     void LateUpdate()
     {
-        if (!pacing || brain == null || Body == null || Body.Animator == null) return;
+        if (!pacing || brain == null) return;
         // Steer was not asked this frame (a swing, a pause, a recovery): the brain has it back.
-        if (pacedFrame < Time.frameCount - 1) { SetPace(false); return; }
-        var v = brain.Motor.LegVelocity; v.y = 0f;
-        float speed = v.magnitude, size = Mathf.Max(.2f, transform.lossyScale.y);
-        Body.Animator.speed = Body.Animator.isHuman && speed > RunFrom ? Mathf.Clamp(speed / (RunStride * size), .6f, LegRateMost) : 1f;
+        if (pacedFrame < Time.frameCount - 1) SetPace(false);
     }
 
     // A new summon: put down on the floor's navigation near the point (under the summoner's floor), scaled to the floor,
