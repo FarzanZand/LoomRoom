@@ -155,7 +155,7 @@ public class PlayerSpellcasting : MonoBehaviour
         SetFloat(speedParameter, spell.chargeClipSeconds / castTime);
         SetTrigger(castParameter);
         player.Stats.AddModifier(new StatModifier(StatType.MoveSpeed, spell.castMoveSpeed - 1, ModifierType.PercentMultiply, slowSource));
-        if (spell.chargeSound != null && AudioManager.HasInstance) chargeAudio = AudioManager.Instance.PlaySFX2D(spell.chargeSound, spell.chargeVolume);
+        if (spell.chargeSound != null && AudioManager.HasInstance) chargeAudio = AudioManager.Instance.PlaySFX2D(spell.chargeSound, spell.chargeVolume, spell.soundPitchVariance);
         Changed?.Invoke();
     }
 
@@ -211,7 +211,7 @@ public class PlayerSpellcasting : MonoBehaviour
     {
         // Any spell but the veil itself gives a veiled player away.
         if (spell.effect != SpellEffect.ShadowVeil) ShadowVeil.Break(player);
-        if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume);
+        if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.releaseSound, spell.releaseVolume, spell.soundPitchVariance);
         if (spell.spell == LeftHandSpell.Heal)
         {
             float before = player.Stats.CurrentHealth;
@@ -221,7 +221,7 @@ public class PlayerSpellcasting : MonoBehaviour
             if (progress != null && progress.InRun && progress.FirstMilestone(AdventureSkill.Thaumaturgy)) StartCoroutine(Mend(Power(spell) * .5f, 4));
             // Left where the player stands: parented under the player its particles never started.
             if (spell.impact != null) Instantiate(spell.impact, player.transform.position, player.transform.rotation);
-            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume, spell.soundPitchVariance);
         }
         else if (spell.effect != SpellEffect.Standard) CastEffect(spell);
         else if (spell.groundArea) CastOnGround(spell);

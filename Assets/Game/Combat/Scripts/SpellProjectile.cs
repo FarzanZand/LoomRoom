@@ -143,7 +143,7 @@ public class SpellProjectile : MonoBehaviour
                 if (SpellEffects.Strike(owner, struckCharacter, power, point, transform.position - transform.forward, SourceName)) progress?.Practise(spell.Skill, SkillAction.Cast);
                 OnHit(struckCharacter);
                 if (spell.impact != null) Instantiate(spell.impact, point, Quaternion.LookRotation(-transform.forward));
-                if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, point, spell.impactVolume * .7f);
+                if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, point, spell.impactVolume * .7f, spell.soundPitchVariance);
                 continue;
             }
             var normal = hit.distance <= 0 ? -transform.forward : hit.normal;
@@ -191,7 +191,7 @@ public class SpellProjectile : MonoBehaviour
             if (cam != null && Vector3.Distance(cam.position, at) < nearView) at = cam.position - transform.forward * nearView;
             Instantiate(spell.impact, at, Quaternion.LookRotation(normal));
         }
-        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume);
+        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume, spell.soundPitchVariance);
         Burst();
     }
 

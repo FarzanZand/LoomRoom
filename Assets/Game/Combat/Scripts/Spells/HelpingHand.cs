@@ -236,7 +236,7 @@ public class HelpingHand : MonoBehaviour
                 down.type = LightType.Spot; down.spotAngle = 50f; down.innerSpotAngle = 20f; down.range = settings.palmHeight * 2.5f;
                 down.intensity = 0f; down.color = settings.color; down.shadows = LightShadows.None;
             }
-            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+            if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume, spell.soundPitchVariance);
         }, () => caster != null ? PalmSpot() : Vector3.zero, () =>
         {
             // His hand goes: the rest of the heal at once, and the light goes with it.
@@ -367,7 +367,7 @@ public class HelpingHand : MonoBehaviour
             var pour = Instantiate(settings.pour, caster.transform.position, Quaternion.identity);
             StartCoroutine(Keep(pour, settings.burstHealSeconds + .4f));
         }
-        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume);
+        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX2D(spell.impactSound, spell.impactVolume, spell.soundPitchVariance);
         yield return Mend(power, settings.burstHealSeconds);
         done();
     }

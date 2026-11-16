@@ -94,6 +94,8 @@ public class SpellDefinition : ScriptableObject
     [Range(0, 1)] public float flightVolume = 1f;
     public AudioClip impactSound;
     [Range(0, 1)] public float impactVolume = 1f;
+    [Range(0, .5f), Tooltip("Random pitch either way on its charge, release and impact sounds, so casting the same spell again and again (a volley's balls, a Fireball after a Fireball) doesn't play the identical sound each time.")]
+    public float soundPitchVariance = .06f;
 
     public bool IsProjectile => effect == SpellEffect.Standard && spell != LeftHandSpell.Heal && !groundArea;
     // Thaumaturgy is support only (heals and buffs: Heal, Helping Hand); everything that fights, Raise Skeletons included,
