@@ -346211,7 +346211,7 @@ MonoBehaviour:
   - id: shieldBash
     text: 'Shield bash: hold {block}, press {attack}.'
   - id: dash
-    text: 'Evade: press {sprint}, holding left, right or back.'
+    text: 'Evade: press {sprint} while moving.'
   startingPlayer: 0
   skipWakeUp: 0
   startAt: 0
