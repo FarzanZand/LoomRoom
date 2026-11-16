@@ -207,7 +207,7 @@ public class ShopUI : Singleton<ShopUI>
             int index = i;
             // Bag items are drawn over their cells (DrawBag); the cells only take the clicks.
             bool inBag = i >= hotbarCells;
-            packSlots[i].Bind(item, item.IsScroll ? container.ChargesAt(slot) : container.CountAt(slot), merchant.CanSell(player, item, out _), () => Sell(index), hovered => ShowDetails(hovered, false),
+            packSlots[i].Bind(item, container.ShownAt(slot), merchant.CanSell(player, item, out _), () => Sell(index), hovered => ShowDetails(hovered, false),
                 drawItem: !(inBag && drawBag) && (!inBag || slot == i - hotbarCells));
         }
         DrawBag(drawBag);
@@ -251,10 +251,9 @@ public class ShopUI : Singleton<ShopUI>
                 }
                 var fill = view.Find("Honed fill")?.GetComponent<Image>();
                 if (fill != null) { ItemData.ShowSlotFill(fill, stack.item); fill.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f; }
-                // A scroll shows the charges it has left (when more than one), as in the bag.
-                int n = stack.item.IsScroll ? bag.ChargesAt(anchor) : stack.count;
+                // A scroll or a healing tome shows the charges it has left, as in the bag.
                 var count = view.Find("Stack")?.GetComponent<TMP_Text>();
-                if (count != null) { count.text = n > 1 ? $"x{n}" : ""; count.gameObject.SetActive(n > 1); }
+                if (count != null) { count.text = ItemData.CountLabel(stack.item, bag.ShownAt(anchor)); count.gameObject.SetActive(count.text.Length > 0); }
             }
         }
         for (int i = used; i < bagViews.Count; i++) bagViews[i].gameObject.SetActive(false);

@@ -214,6 +214,10 @@ public class InventoryManager : Singleton<InventoryManager>
         return true;
     }
 
+    [Header("Spell tomes")]
+    [Tooltip("The feed's line as a spell tome's last charge is spent and it breaks (the tomes of spells with Tome Charges: the healing spells; the sound is the spell's Tome Break Sound). {0} is the tome's name.")]
+    public string tomeBreakMessage = "Your {0} breaks.";
+
     [Header("Catalog")]
     [Tooltip("Every item the runtime may need to look up by name (dialogue GiveItem, saves).")]
     [ListDrawerSettings(ShowFoldout = true)]
@@ -226,7 +230,7 @@ public class InventoryManager : Singleton<InventoryManager>
 
     // ── Pickup ────────────────────────────────────────────────────────
 
-    // used: a scroll's charges already spent (a dropped one picked up again): put back on the stack it lands in.
+    // used: charges already spent (a scroll or a healing tome dropped and picked up again): put back on the stack it lands in.
     public bool Pickup(ItemData item, Player player, int count = 1, bool preferHotbar = false, bool playSound = true, bool announcePickup = true, int used = 0)
     {
         if (item == null || player == null) return false;
@@ -247,7 +251,7 @@ public class InventoryManager : Singleton<InventoryManager>
             AnnouncementUI.Show("Bag full", null, 0f, true, true);
             return false;
         }
-        if (used > 0 && item.IsScroll) MarkUsed(player, item, used);
+        if (used > 0 && item.HasCharges) MarkUsed(player, item, used);
 
         if (playSound) item.PlayPickupSound(useSharedPickupSound ? pickupSoundKey : null, defaultPickupAudio);
 
@@ -353,7 +357,15 @@ public class InventoryManager : Singleton<InventoryManager>
 
     public WorldItem Spawn(ItemData item, Vector3 position) => Spawn(item, position, Quaternion.identity);
 
-    // A scroll picked up again with its spent charges: they go on a fresh copy of it (copies are alike, so any fresh one).
+    // A spell tome's last charge was spent (PlayerSpellcasting): it is gone from its slot; this says so.
+    public void TomeBroke(ItemData tome)
+    {
+        if (tome == null) return;
+        if (!string.IsNullOrEmpty(tomeBreakMessage) && MessageLog.HasInstance) MessageLog.Post(string.Format(tomeBreakMessage, tome.itemName), MessageKind.Warning);
+        if (tome.spell != null && tome.spell.tomeBreakSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData2D(tome.spell.tomeBreakSound);
+    }
+
+    // A scroll or a tome picked up again with its spent charges: they go on a fresh copy of it (copies are alike, so any fresh one).
     static void MarkUsed(Player player, ItemData item, int used)
     {
         foreach (var inventory in new[] { player.Hotbar, player.Bag })
@@ -361,7 +373,7 @@ public class InventoryManager : Singleton<InventoryManager>
                 if (inventory.ItemAt(i) == item && inventory.UsedAt(i) == 0) { inventory.SetUsed(i, used); return; }
     }
 
-    // used: the dropped stack's spent scroll charges, kept on the floor item (WorldItem.Used).
+    // used: the dropped stack's spent charges (a scroll's, a healing tome's), kept on the floor item (WorldItem.Used).
     public WorldItem DropFromPlayer(ItemData item, Player player, int used = 0)
     {
         if (item == null) return null;

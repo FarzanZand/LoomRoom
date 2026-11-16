@@ -199,6 +199,13 @@ public partial class ItemData : ScriptableObject
     public bool IsWeapon     => itemType == ItemType.Weapon;
     public bool IsConsumable => itemType == ItemType.Consumable;
     public bool IsScroll => IsConsumable && scrollSpell != null;
+    // Uses the item has before it is gone, counted per slot (ItemStack.used): a scroll's own Charges, or a spell tome's
+    // when its spell sets them (SpellDefinition.tomeCharges: the healing spells). 0: it has none and is never used up.
+    public int Charges => IsScroll ? Mathf.Max(1, charges) : spell != null ? Mathf.Max(0, spell.tomeCharges) : 0;
+    public bool HasCharges => Charges > 0;
+    // What a slot writes in its corner for n, a stack's count or the charges left: nothing for a single thing, but the
+    // last charge of an item with several is written ("x1": the next cast is its last).
+    public static string CountLabel(ItemData item, int n) => item != null && n > 0 && (n > 1 || item.Charges > 1) ? $"x{n}" : "";
     bool UsesAnimation => IsConsumable && AnimationOnUse != ItemUseAnimation.Instant;
     bool ShowsInHand => canBeEquipped || UsesAnimation;
     bool PickupUsesData => pickupAudioSource == ItemAudioSource.AudioData;
@@ -273,7 +280,8 @@ public partial class ItemData : ScriptableObject
 
     // withMain false: the main number and the compare lines are left out (the tooltip shows them as bars).
     // markEquipped: say "Equipped" (null: whenever any copy of it is worn or in hand).
-    public string BuildTooltip(bool withMain = true, bool withPrice = true, bool? markEquipped = null)
+    // chargesLeft: the charges left on the copy shown (a scroll's, a healing tome's); -1 = a full one.
+    public string BuildTooltip(bool withMain = true, bool withPrice = true, bool? markEquipped = null, int chargesLeft = -1)
     {
         var blocks = new System.Collections.Generic.List<string>();
         var lines = new System.Collections.Generic.List<string>();
@@ -325,7 +333,7 @@ public partial class ItemData : ScriptableObject
             var caster = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.GetComponent<PlayerSpellcasting>() : null;
             float power = caster != null ? caster.Power(castSpell) : castSpell.power;
             float cost = caster != null ? caster.Cost(castSpell) : castSpell.manaCost;
-            lines.Add(castSpell.TooltipRows(cost, power, IsScroll ? Mathf.Max(1, charges) : 0));
+            lines.Add(castSpell.TooltipRows(cost, power, HasCharges ? chargesLeft >= 0 ? chargesLeft : Charges : 0, !IsScroll));
             Add(blocks, lines);
             if (!string.IsNullOrWhiteSpace(castSpell.description)) { lines.Add($"<color={TextColor}>{castSpell.description.Trim()}</color>"); Add(blocks, lines); }
         }

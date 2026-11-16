@@ -25,7 +25,7 @@ public class PlayerSpellcasting : MonoBehaviour
     public SpellDefinition Selected => LeftItem is ItemData item ? item.spell != null ? item.spell : item.IsScroll ? item.scrollSpell : null : null;
     ItemData LeftItem => player != null && player.Equipment != null ? player.Equipment.Get(EquipmentSlot.LeftHand) : null;
     bool ScrollInHand => LeftItem is { IsScroll: true };
-    ItemData castingScroll;   // the scroll whose spell is winding up (its charge is spent when it goes off)
+    ItemData castingItem;   // the left-hand item whose spell is winding up (a scroll's or a tome's charge is spent from it when it goes off)
     public bool Casting => casting;
     public bool Busy => casting || recovery > 0 || switching > 0;
     // 0..1 through the current wind-up, for the HUD.
@@ -150,7 +150,7 @@ public class PlayerSpellcasting : MonoBehaviour
         if (refusal != null) { Refuse(refusal); return; }
 
         casting = true; castingSpell = spell; elapsed = 0; castTime = CastTime(spell);
-        castingScroll = ScrollInHand ? LeftItem : null;
+        castingItem = LeftItem;
         SetInt(typeParameter, spell.animation);
         SetFloat(speedParameter, spell.chargeClipSeconds / castTime);
         SetTrigger(castParameter);
@@ -169,28 +169,39 @@ public class PlayerSpellcasting : MonoBehaviour
         var refusal = spell.effect != SpellEffect.Standard ? SpellEffects.Refusal(spell, player) : null;
         if (refusal != null) { SetTrigger(cancelParameter); Refuse(refusal); return; }
         // God mode casts anything for free, even a spell costing more than the whole mana bar; a scroll costs no mana.
-        var scroll = castingScroll; castingScroll = null;
-        if (!DevGodMode.On && scroll == null && !player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
+        var cast = castingItem; castingItem = null;
+        bool scroll = cast != null && cast.IsScroll;
+        if (!DevGodMode.On && !scroll && !player.Stats.TryUseMana(Cost(spell), 0f)) { SetTrigger(cancelParameter); Refuse("Not enough mana"); return; }
         SetTrigger(releaseParameter);
         Unleash(spell);
-        if (scroll != null) SpendScroll(scroll);
+        // Only a cast that went off gets here: a refused one keeps its charge.
+        if (cast != null && cast.HasCharges) SpendCharge(cast);
     }
 
-    // A readied scroll cast: one of its charges is spent; with the last it is gone and the shield is taken in hand again.
-    void SpendScroll(ItemData scroll)
+    // A readied scroll, or a tome that breaks (ItemData.Charges: the healing tomes), cast: one charge is spent from the
+    // copy in hand. With its last it is gone: a tome breaks (InventoryManager.TomeBroke: the feed's line and the sound),
+    // and the shield is taken in hand again, unless another tome of the spell is on the hotbar, which is then the one in
+    // hand (Equipment.HeldIndex) with its own charges.
+    void SpendCharge(ItemData item)
     {
         var eq = player.Equipment;
         int at = eq != null ? eq.HeldIndex(EquipmentSlot.LeftHand) : -1;
-        if (at < 0 || player.Hotbar.ItemAt(at) != scroll) at = player.Hotbar.IndexOf(scroll);
+        if (at < 0 || player.Hotbar.ItemAt(at) != item) at = player.Hotbar.IndexOf(item);
         if (at < 0) return;
-        scroll.PlayUseSound();
+        bool tome = !item.IsScroll;
+        if (!tome) item.PlayUseSound();
         bool last = player.Hotbar.ChargesAt(at) <= 1;
         player.Hotbar.UseCharge(at);
         if (!last) return;
-        if (eq.Get(EquipmentSlot.LeftHand) == scroll) eq.Unequip(EquipmentSlot.LeftHand);
+        if (tome)
+        {
+            if (InventoryManager.HasInstance) InventoryManager.Instance.TomeBroke(item);
+            if (player.Hotbar.IndexOf(item) >= 0) return;
+        }
+        if (eq.Get(EquipmentSlot.LeftHand) == item) eq.Unequip(EquipmentSlot.LeftHand);
         foreach (var inventory in new[] { player.Hotbar, player.Bag })
             for (int i = 0; i < inventory.SlotCount; i++)
-                if (inventory.ItemAt(i) is ItemData item && item.itemType == ItemType.Shield) { eq.Equip(item, false); return; }
+                if (inventory.ItemAt(i) is ItemData shield && shield.itemType == ItemType.Shield) { eq.Equip(shield, false); return; }
     }
 
     // A scroll read from the hotbar or the bag: its spell goes off at once, with no wind-up and no mana, whatever the
@@ -297,7 +308,7 @@ public class PlayerSpellcasting : MonoBehaviour
     void Cancel(bool animate)
     {
         if (!casting) return;
-        castingScroll = null;
+        castingItem = null;
         EndCharge();
         if (animate) SetTrigger(cancelParameter);
         Changed?.Invoke();

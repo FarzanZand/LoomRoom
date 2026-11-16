@@ -119,8 +119,10 @@ public class Inventory : MonoBehaviour
     public ItemData ItemAt(int index) => this[index]?.item;
     public int      CountAt(int index) => this[index]?.count ?? 0;
     public int      UsedAt(int index) => this[index]?.used ?? 0;
-    // A scroll's charges left in a slot (0 when it holds no scroll).
-    public int ChargesAt(int index) => ItemAt(index) is { IsScroll: true } scroll ? Mathf.Max(0, scroll.charges - UsedAt(index)) : 0;
+    // The charges left of the item in a slot (a scroll's, a healing tome's: ItemData.Charges); 0 when it has none.
+    public int ChargesAt(int index) => ItemAt(index) is { HasCharges: true } item ? Mathf.Max(0, item.Charges - UsedAt(index)) : 0;
+    // The number a slot shows in its corner: the charges left of an item that has them, else the stack's count.
+    public int ShownAt(int index) => ItemAt(index) is { HasCharges: true } ? ChargesAt(index) : CountAt(index);
 
     // A free slot (a free cell in a grid).
     public int FirstEmpty()
@@ -225,21 +227,21 @@ public class Inventory : MonoBehaviour
         Changed?.Invoke();
     }
 
-    // One of a scroll's charges spent; the scroll is gone with its last (the next in a stack starts full).
+    // One charge spent (a scroll's, a healing tome's); the item is gone with its last (the next in a stack starts full).
     public void UseCharge(int index)
     {
         var s = this[index];
         if (s == null) return;
-        if (++s.used >= Mathf.Max(1, s.item.charges)) { s.used = 0; Consume(index); return; }
+        if (++s.used >= Mathf.Max(1, s.item.Charges)) { s.used = 0; Consume(index); return; }
         Changed?.Invoke();
     }
 
-    // A scroll's spent charges set again (a dropped one picked back up).
+    // Spent charges set again (a scroll or a tome dropped and picked back up).
     public void SetUsed(int index, int used)
     {
         var s = this[index];
-        if (s == null || s.item == null || !s.item.IsScroll) return;
-        s.used = Mathf.Clamp(used, 0, Mathf.Max(0, s.item.charges - 1));
+        if (s == null || s.item == null || !s.item.HasCharges) return;
+        s.used = Mathf.Clamp(used, 0, Mathf.Max(0, s.item.Charges - 1));
         Changed?.Invoke();
     }
 
