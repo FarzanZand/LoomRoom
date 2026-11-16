@@ -5398,7 +5398,7 @@ MonoBehaviour:
     min: 0
     max: 0
   - stat: 0
-    baseValue: 25
+    baseValue: 28
     min: 0
     max: 0
   - stat: 2
@@ -5503,6 +5503,7 @@ MonoBehaviour:
     maxRange: 1.65
     cooldown: 1.4
     facingAngle: 45
+    movesIn: 1
     hitboxIndex: 0
     fallbackHitDelay: 0.45
     hit:

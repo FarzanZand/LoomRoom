@@ -403,7 +403,16 @@ MonoBehaviour:
   torchBrightness: 1
   enemies:
   - enemy: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
-    weight: 3
+    weight: 1.5
+    fromFloor: 1
+  - enemy: {fileID: 2060691698706546545, guid: 098f80dd0c99b7b49965ef19aa257d72, type: 3}
+    weight: 0.5
+    fromFloor: 1
+  - enemy: {fileID: 3536112721643428861, guid: 0068e0b2c4f060a44b934ef5911011a3, type: 3}
+    weight: 0.5
+    fromFloor: 1
+  - enemy: {fileID: 8311732577791090845, guid: 40e471aae6f30724c97ad9823698580e, type: 3}
+    weight: 0.5
     fromFloor: 1
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 2
