@@ -348,6 +348,7 @@ MonoBehaviour:
   roomCount: 0
   roomSizeScale: 1
   tallRoomChance: 0
+  roofsOff: 0.7
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0

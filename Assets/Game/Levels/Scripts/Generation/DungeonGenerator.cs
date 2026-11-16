@@ -434,6 +434,18 @@ public partial class DungeonGenerator : MonoBehaviour
         for (int i = 0; i < RegionStyles.Length; i++) if (RegionStyles[i] == null) RegionStyles[i] = DefaultStyle;
         var openRoofs = Layout.SelectOpenRegions(level.hideRoof ? level.hideRoofPercent : 0, 173);
         var openEdges = Layout.SelectOpenRegions(level.hideEdges ? level.hideEdgesPercent : 0, 419);
+        // The stage's own share of roofless rooms (DungeonBiome.roofsOff), picked on their own seed stream.
+        RoofsOffRooms = new System.Collections.Generic.HashSet<int>();
+        float roofsOff = StageBiome != null && !Board ? StageBiome.roofsOff : 0f;
+        if (roofsOff > 0f)
+        {
+            var pick = new System.Random(unchecked(seed + 7411));
+            for (int i = 0; i < Layout.rooms.Count && i < openRoofs.Length; i++)
+            {
+                bool takes = pick.NextDouble() < roofsOff;   // drawn for every room, so one room's roof never moves another's
+                if (takes && !openRoofs[i] && RoofCanComeOff(i)) { openRoofs[i] = true; RoofsOffRooms.Add(i); }
+            }
+        }
         // A room template can open its own ceiling (the starting room's way in), with its own frame.
         var frames = new float[openRoofs.Length];
         for (int i = 0; i < frames.Length; i++)
@@ -701,6 +713,8 @@ public partial class DungeonGenerator : MonoBehaviour
         if (!data.pocket) gameObject.AddComponent<DungeonAmbience>().Initialize(Biome);
         // Dust in the air round the table player, on every floor (a pocket is played in its floor's air).
         if (!data.pocket) gameObject.AddComponent<DungeonAir>().Initialize();
+        // The Dungeon Master's face lit over the walls of roofless rooms (it stays dark on a floor with none).
+        if (!data.pocket) gameObject.AddComponent<DungeonMasterWatch>().Initialize();
         gameObject.AddComponent<DungeonHud>().Initialize(this);
         if (Board) gameObject.AddComponent<BoardReveal>().Initialize(this);
         watch.Stop();GenerationMilliseconds=watch.Elapsed.TotalMilliseconds;
@@ -1129,6 +1143,24 @@ public partial class DungeonGenerator : MonoBehaviour
     // Per region (rooms first, then passages): its ceiling has an opening. From such a room the player sees what
     // stands taller than its own roof (DungeonVisibility keeps those drawn).
     public bool[] OpenRoofRegions { get; private set; }
+    // Rooms whose roof is off by the biome's Roofs Off share (not a hand-built room's own open ceiling).
+    public System.Collections.Generic.HashSet<int> RoofsOffRooms { get; private set; } = new System.Collections.Generic.HashSet<int>();
+
+    // A roof stays on the tavern, the boss's stage (it stands open anyway), a room with an event of its own (the Dungeon
+    // Master lifts those roofs himself), a room that already opens its own ceiling or is built dark, and one with
+    // something hung from its ceiling.
+    bool RoofCanComeOff(int room)
+    {
+        if (room == MerchantRoom || room == StageRoom) return false;
+        var t = TemplateOf(room);
+        if (t == null) return true;
+        if (t.openCeiling || t.GetComponent<ScriptedEventRoom>() != null) return false;
+        var mood = t.GetComponent<DungeonRoomMood>();
+        if (mood != null && mood.kind == DungeonRoomLight.Dark) return false;
+        foreach (var mount in t.GetComponentsInChildren<PropMount>(true)) if (mount.kind == PropMount.Kind.HangsFromCeiling) return false;
+        foreach (var block in t.GetComponentsInChildren<DungeonKitBlock>(true)) if (block.fromCeiling) return false;
+        return true;
+    }
     // The ceiling's height over a floor cell, in metres above the cell's floor.
     public float CeilingHeight(Vector2Int cell) => Layout != null && Layout.InBounds(cell) && Layout.floor[cell.x, cell.y] ? HeightAt(cell.x, cell.y) : data.architectureTileSize;
 

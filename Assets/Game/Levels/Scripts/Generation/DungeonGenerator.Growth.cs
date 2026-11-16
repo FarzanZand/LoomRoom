@@ -699,6 +699,8 @@ public partial class DungeonGenerator
             if (propRandom.NextDouble() >= rule.chance) continue;
             float expected = area * rule.perTenCells / 10f * (float)(.75 + propRandom.NextDouble() * .5);
             int count = Mathf.Clamp(Mathf.RoundToInt(expected), rule.perRoom.x, Mathf.Max(rule.perRoom.x, rule.perRoom.y));
+            // Nothing hangs in a room whose roof is off (DungeonBiome.roofsOff).
+            if (RoofsOffRooms.Contains(index) && PropMount.KindOf(rule.prefab) == PropMount.Kind.HangsFromCeiling) continue;
             for (int i = 0; i < count; i++) if (!PlaceProp(rule, index, free, open)) break;
         }
     }
