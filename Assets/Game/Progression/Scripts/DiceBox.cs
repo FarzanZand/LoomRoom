@@ -34,6 +34,9 @@ public class DiceBox : MonoBehaviour, IInteractable
     [Tooltip("How long after the box is used the dice are in hand (the lid is on its way up).")] public float diceDelay = .85f;
 
     [Header("Quest light")]
+    [Tooltip("Pulses over the box while its key is carried. Empty: a copy of the character sheet's hint light is made at start.")]
+    public Light hint;
+    [Min(0)] public float hintIntensity = 140f;
 
     Quaternion shut;
     QuestGlow glow;
@@ -50,7 +53,10 @@ public class DiceBox : MonoBehaviour, IInteractable
 
     void Start()
     {
-        // The box stands on the coffee table: the quest's light falls on the table, which reads from across the room.
+        if (hint == null) hint = CopySheetHint();
+        if (hint != null) hint.enabled = false;
+        hintIntensity = CharacterSheetTable.ReachDown(hint, transform, hintIntensity);
+        // The box stands on the coffee table: the outline goes round the table, which reads from across the room.
         glow = (transform.parent != null ? transform.parent.gameObject : gameObject).AddComponent<QuestGlow>();
         if (Meta != null) Meta.FlagChanged += OnFlag;
         Refresh();
@@ -66,11 +72,26 @@ public class DiceBox : MonoBehaviour, IInteractable
         lid.localRotation = Opened ? shut * Quaternion.Euler(openTurn) : shut;
     }
 
-    // The quest's light stands on the table while the key is carried.
+    // The sheet's hint light, set the same height above the box as it is above the sheet (a prop's light is its child).
+    Light CopySheetHint()
+    {
+        var sheet = FindAnyObjectByType<CharacterSheetTable>();
+        if (sheet == null || sheet.hint == null) return null;
+        var light = Instantiate(sheet.hint, transform);
+        light.name = "Quest light";
+        light.transform.position = transform.position + Vector3.up * Mathf.Max(0f, sheet.hint.transform.position.y - sheet.transform.position.y);
+        hintIntensity = sheet.hintIntensity;
+        return light;
+    }
+
+    // Brighter and quicker than a plain hint, like the sheet's while its quest holds the run back.
     void Update()
     {
         bool on = KeyReady && Meta.boxKey != null && !opening;
         if (glow != null) glow.Show(on);
+        if (hint == null) return;
+        if (hint.enabled != on) hint.enabled = on;
+        if (on) hint.intensity = hintIntensity * 1.4f * (.65f + .35f * Mathf.Sin(Time.time * 3f));
     }
 
     public void Interact(Character who)

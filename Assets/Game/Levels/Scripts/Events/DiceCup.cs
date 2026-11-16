@@ -2,8 +2,8 @@ using System.Collections;
 using UnityEngine;
 
 // The dice room's cup (on the gambler's table, with an InteractableTrigger on its collider): shaking it asks the Dungeon
-// Master for his roll (DiceEvent on the room's root). The cup rattles in place as it is shaken. Until it is, it stands in
-// the quest's light (QuestGlow), so the eye finds it on the table (the user, 2026-11-11).
+// Master for his roll (DiceEvent on the room's root). The cup rattles in place as it is shaken. Until it is, it glows with
+// the quest outline (QuestGlow), so the eye finds it on the table (the user, 2026-11-11).
 public class DiceCup : MonoBehaviour, IInteractable
 {
     [Tooltip("How far it jiggles from side to side while shaken, in metres.")] public float shake = .03f;

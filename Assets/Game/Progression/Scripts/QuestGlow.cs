@@ -2,129 +2,81 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Marks a place while a quest points at it (the character sheet's table, the class desk, the locked box's table, a
-// carried trophy's plaque, the dice cup, the place to start with on the map): a cone of warm light falls on it from
-// above with dust turning in it, and the place itself is lit (QuestLight, Resources/Quest light). Added and switched by
-// the place's own script; nothing to set up. It was a bright blue outline drawn round the object until 2026-11-16 (the
-// user: "the highlight effect is real ugly and sticks out too much in the room, do something more fitting. Especially
-// ugly when the table or desk is highlighted").
+// carried trophy's plaque, the dice cup, the place to start with on the map): a soft glow round its outline that
+// breathes slowly, the way games mark what to go to. Added and switched by the place's own script; nothing to set up.
+// The glow is drawn on the screen round the silhouette of the place's pieces (QuestOutlinePass, Quest Outline.shader):
+// one soft edge of the same width at any distance, with nothing drawn inside the shape. Its look (width, strength,
+// falloff) is the material Resources/Quest outline. History: until 2026-11-16 it was a hard bright line, a shell pushed
+// out round each mesh (the user: "real ugly and sticks out too much in the room ... Especially ugly when the table or
+// desk is highlighted"); a cone of light from the ceiling was tried in its place and thrown out the same day (the
+// user: "You can do an outline, just don't do it as sharp and ugly").
 public class QuestGlow : MonoBehaviour
 {
-    [Tooltip("The light's colour.")]
-    public Color colour = new(1f, .84f, .56f, 1f);
-    // Flat things hung on a wall (a trophy plaque): the light falls on them at a slant from the room's side, since a
-    // light straight down a wall would only graze them.
-    [Tooltip("Set by the owner's script for a flat piece on a wall: its forward points out of the wall.")]
-    public Transform flatOn;
-    [Min(0), Tooltip("How high over the place its light comes from, in metres. 0: from the ceiling over it. Set by the owner's script for a small place under a high ceiling (a place on the map).")]
-    public float reach;
+    public Color colour = new(.45f, .8f, 1f, 1f);
+    [Range(0f, .6f), Tooltip("How much it breathes: the share of its brightness that comes and goes.")]
+    public float breath = .25f;
+    [Min(0f), Tooltip("How strong this place's glow is against the usual (1). A small flat thing in a pool of lamp light (the character sheet) needs more to show.")]
+    public float strength = 1f;
 
-    // The room is built about 20 units to the metre; a floor on the table 1.
-    const float RoomUnit = 20f;
+    const float FadeSeconds = .35f, BreathSeconds = 2.6f;
 
-    QuestLight beam;
-    static bool warned;   // the prefab is missing: said once, not tried again
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { warned = false; }
+    readonly List<(Renderer renderer, int parts)> pieces = new();
+    Material material;
     bool shown;
-    Bounds fitted;
-    float nextFit, unit = RoomUnit;
+    float level, nextLook;
 
     public void Show(bool on)
     {
         shown = on;
-        // Built when first wanted with something to light. Switched on while its object wasn't drawn yet (the table's
-        // build hides every piece until it lands) it finds nothing, and tries again until it does (Update).
-        if (on && beam == null && !warned) Build();
-        if (beam != null) beam.Show(on && isActiveAndEnabled);
+        if (on && isActiveAndEnabled) QuestOutlinePass.Add(this);
     }
 
     void Update()
     {
-        if (!shown) return;
-        if (beam == null) { if (!warned) Build(); if (beam != null) beam.Show(true); return; }
-        // A place that moves or changes size (the map rising out of the table) keeps its light on it.
-        if (Time.unscaledTime < nextFit) return;
-        nextFit = Time.unscaledTime + .5f;
-        if (Place(out var now, out uint layers) && ((now.center - fitted.center).sqrMagnitude + (now.size - fitted.size).sqrMagnitude) > 1e-4f * unit * unit) Fit(now, layers);
+        level = Mathf.MoveTowards(level, shown ? 1f : 0f, Time.unscaledDeltaTime / FadeSeconds);
+        if (!shown && level <= 0f) QuestOutlinePass.Remove(this);
     }
 
-    void OnEnable() { if (shown && beam != null) beam.Show(true); }
-    void OnDisable() { if (beam != null) beam.Hide(); }
-    void OnDestroy() { if (beam != null) Destroy(beam.gameObject); }
+    void OnEnable() { if (shown) QuestOutlinePass.Add(this); }
+    void OnDisable() { QuestOutlinePass.Remove(this); level = 0f; }
+    void OnDestroy() { QuestOutlinePass.Remove(this); if (material != null) Destroy(material); }
 
-    void Build()
+    // Called by the pass each frame it draws: this place's pieces, with the material that draws them into the mask in
+    // its colour as bright as it is just now.
+    public void Collect(List<(Renderer renderer, Material material, int parts)> draws)
     {
-        if (!Place(out var place, out uint layers)) return;
-        var prefab = Resources.Load<QuestLight>("Quest light");
-        if (prefab == null) { if (!warned) Debug.LogWarning("[QuestGlow] Resources/Quest light prefab is missing (Tools/quest_light.eval.cs makes it)."); warned = true; return; }
-        // Its own root object, not this one's child: the place may be scaled (room props are) or squashed (the map).
-        beam = Instantiate(prefab);
-        beam.name = "Quest light (" + name + ")";
-        beam.gameObject.SetActive(false);
-        Fit(place, layers);
+        if (level <= 0f) return;
+        if (material == null)
+        {
+            var template = QuestOutlinePass.Template;
+            if (template == null) return;
+            material = new Material(template);
+        }
+        // Looked for again now and then: switched on while its object wasn't drawn yet (the table's build hides every
+        // piece until it lands) it finds nothing at first, and a place's pieces can change (a trophy is hung).
+        if (pieces.Count == 0 || Time.unscaledTime >= nextLook) { Look(); nextLook = Time.unscaledTime + .5f; }
+        float k = .5f + .5f * Mathf.Sin(Time.unscaledTime * Mathf.PI * 2f / BreathSeconds);
+        var tint = colour * (strength * level * (1f - breath + breath * k));
+        tint.a = 1f;
+        material.SetColor("_Tint", tint);
+        foreach (var (renderer, parts) in pieces)
+            if (renderer != null && renderer.enabled && renderer.gameObject.activeInHierarchy && !renderer.forceRenderingOff) draws.Add((renderer, material, parts));
     }
 
-    // What the light falls on: the pieces that make the object's shape, its renderers at least a quarter the size of the
-    // biggest (a table, not the brushes and figures on it).
-    bool Place(out Bounds place, out uint layers)
+    // The glow goes round everything the place is made of, as one shape: a table with what stands on it, the desk with
+    // its posters. (The old shells went only round its biggest pieces, since a shell round every brush and figure was
+    // a tangle of lines; a glow round the whole silhouette has no lines inside it.) Only its solid pieces: a see-through
+    // one (the map's floating question mark, an empty trophy's faint outline) is a flat card, and the glow went round
+    // the card's square.
+    void Look()
     {
-        place = default; layers = LightingManager.RoomLayer;
-        var renderers = new List<MeshRenderer>();
+        pieces.Clear();
         foreach (var r in GetComponentsInChildren<MeshRenderer>(false))
-            if (r.enabled && r.TryGetComponent<MeshFilter>(out var f) && f.sharedMesh != null) renderers.Add(r);
-        float biggest = 0f;
-        foreach (var r in renderers) biggest = Mathf.Max(biggest, Volume(r.bounds));
-        bool any = false;
-        foreach (var r in renderers)
         {
-            if (Volume(r.bounds) < biggest * .25f) continue;
-            if (!any) { place = r.bounds; any = true; } else place.Encapsulate(r.bounds);
+            if (!r.enabled || !r.TryGetComponent<MeshFilter>(out var f) || f.sharedMesh == null) continue;
+            var m = r.sharedMaterial;
+            if (m == null || m.renderQueue >= (int)UnityEngine.Rendering.RenderQueue.Transparent) continue;
+            pieces.Add((r, f.sharedMesh.subMeshCount));
         }
-        if (!any) return false;
-        // A floor on the table is lit by its own lamps and measured in metres; everything else is the room.
-        bool onTable = GetComponentInParent<DungeonGenerator>() != null;
-        unit = onTable ? 1f : RoomUnit;
-        if (onTable) layers = renderers[0].renderingLayerMask;
-        return true;
     }
-
-    void Fit(Bounds place, uint layers)
-    {
-        fitted = place;
-        Vector3 foot, source; float radius, litFrom;
-        float room = RoomOver(place);
-        if (flatOn != null)
-        {
-            // On a wall: from up and out in the room, down onto its face.
-            var e = place.extents;
-            radius = Mathf.Max(e.x, e.y, e.z) * 1.35f;
-            foot = place.center;
-            // As far out as up: steeper, the cone crossed the plaque above it on its way down.
-            float rise = Mathf.Min(room + e.y, 1.3f * unit);
-            source = foot + Vector3.up * rise + flatOn.forward * rise;
-            litFrom = (source - foot).magnitude;
-        }
-        else
-        {
-            radius = Mathf.Clamp(Mathf.Max(place.extents.x, place.extents.z) * 1.12f, .16f * unit, 1.5f * unit);
-            foot = new Vector3(place.center.x, place.min.y, place.center.z);
-            source = new Vector3(foot.x, place.max.y + room, foot.z);
-            litFrom = room;   // its top is what the lamp is set for: set for the floor, a table's top was bleached
-        }
-        beam.Fit(foot, source, radius, litFrom, unit, colour, layers);
-    }
-
-    // How far the place has clear over it, up to its ceiling: where the light comes from.
-    float RoomOver(Bounds place)
-    {
-        var from = new Vector3(place.center.x, place.max.y + .02f * unit, place.center.z);
-        float most = 3.2f * unit, least = .9f * unit;
-        if (reach > 0f) return reach * unit;
-        if (flatOn != null) from += flatOn.forward * (.3f * unit);
-        foreach (var hit in Physics.RaycastAll(from, Vector3.up, most, ~0, QueryTriggerInteraction.Ignore))
-            if (!hit.collider.transform.IsChildOf(transform)) most = Mathf.Min(most, hit.distance - .03f * unit);
-        return Mathf.Max(least, most);
-    }
-
-    static float Volume(Bounds b) => b.size.x * b.size.y * b.size.z;
 }

@@ -17,10 +17,8 @@ public partial class CampaignManager
     [TabGroup("Map"), Tooltip("Put after the table's Map prompt while a new place on the map has not been looked at there yet (rich text: a yellow question mark).")]
     public string newMark = "<color=#FFD23F>?</color>";
 
-    [TabGroup("Map"), Tooltip("The colour of the light on the place to start with (home until it has been played).")]
+    [TabGroup("Map"), Tooltip("The glow round the place to start with (home until it has been played).")]
     public Color startGlowColour = new(1f, .78f, .38f, 1f);
-    [TabGroup("Map"), Min(0f), Tooltip("How high over the place that light comes from, in metres (0: from the bedroom's ceiling, a tall column over the table).")]
-    public float startGlowReach = 1.2f;
 
     readonly Dictionary<CampaignPoint, GameObject> banners = new();
     QuestGlow startGlow;
@@ -99,7 +97,7 @@ public partial class CampaignManager
         if (start != null && start.PropsShown)
         {
             if (!start.TryGetComponent(out startGlow)) startGlow = start.gameObject.AddComponent<QuestGlow>();
-            startGlow.colour = startGlowColour; startGlow.reach = startGlowReach;
+            startGlow.colour = startGlowColour;
             startGlow.Show(true);
         }
     }
