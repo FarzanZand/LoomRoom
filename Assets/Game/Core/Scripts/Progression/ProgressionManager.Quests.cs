@@ -137,9 +137,15 @@ public partial class ProgressionManager
             text = text.Replace("{inventory}", caps ? KeyCapText.Key(bare) : bare);
             text = text.Replace("{crouch}", Name("Crouch"));
             text = text.Replace("{sprint}", Name("Sprint"));
+            // A cap already says "this is a key": brackets round keys only crowd it, so "Open your inventory (I or Tab)."
+            // reads "Open your inventory with I or Tab." and "Crouch (C) and ..." "Crouch with C and ..." (the user,
+            // 2026-11-16: the brackets fell behind the caps). Plain text keeps its brackets.
+            if (caps) text = BracketedKeys.Replace(text, "with $1");
         }
         return text;
     }
+    static readonly System.Text.RegularExpressions.Regex BracketedKeys = new(
+        @"\(\s*((?:<space=[^>]*>)*<link=""key"">[^<]*</link>(?:<space=[^>]*>)*(?:\s*or\s*(?:<space=[^>]*>)*<link=""key"">[^<]*</link>(?:<space=[^>]*>)*)*)\s*\)");
 
     // In a sentence the mouse buttons are words ("left mouse"); on a key cap they start with a capital ("Left mouse").
     static string KeyName(string binding, bool caps = false) => binding == "LMB" ? (caps ? "Left mouse" : "left mouse") : binding == "RMB" ? (caps ? "Right mouse" : "right mouse") : binding;

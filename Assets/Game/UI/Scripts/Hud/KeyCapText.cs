@@ -14,7 +14,8 @@ public class KeyCapText : MonoBehaviour
     public const string LinkId = "key";
 
     [SerializeField, Tooltip("The cap: a 9-sliced sprite; empty = UI/Resources/Key cap.")] Sprite cap;
-    [SerializeField, Tooltip("Room round the key's letters, canvas units (sideways, up and down).")] Vector2 padding = new(6f, 3f);
+    [SerializeField, Tooltip("Room between the key's letters and the cap's rim, sideways, in ems of the text's size. Key() leaves room for .14.")] float roomEm = RoomEm;
+    [SerializeField, Tooltip("Room above and below the key's letters, canvas units.")] float paddingY = 3f;
     [SerializeField, Tooltip("Tint of the cap; its alpha is multiplied by the text's.")] Color capColour = Color.white;
     [SerializeField, Min(.1f), Tooltip("The cap's 9-slice border is drawn this many times its size.")] float borderScale = 1f;
 
@@ -25,8 +26,8 @@ public class KeyCapText : MonoBehaviour
     bool dirty = true;
     Vector2 measuredSize;
 
-    // A key as a text should write it: thin spaces either side so the cap clears the words beside it, no-break spaces
-    // inside (a two-word key is never split over two lines).
+    // A key as a text should write it: room either side so the cap clears the words beside it, no-break spaces inside (a
+    // two-word key is never split over two lines).
     public static string Key(string name)
     {
         name ??= "";
@@ -34,10 +35,21 @@ public class KeyCapText : MonoBehaviour
         string wide = name.Length == 1 ? Wide : "";
         return Before + wide + "<link=\"" + LinkId + "\">" + name.Replace(' ', '\u00A0') + "</link>" + wide + After;
     }
-    const string Before = "<space=.35em>", After = "<space=.35em>", Tight = "<space=.2em>", Wide = "<space=.18em>";
+    // The room a cap takes beside its letters is its rim plus RoomEm, and the room Key() leaves either side is exactly that
+    // plus a gap: the rim in canvas units (TMP's <space> with no unit), the rest in ems, so the two agree at every text
+    // size. Before, the cap's side padding was a flat 6 units of which its rim took 4, so letters touched the rim, and on
+    // the quest log's text it reached as far as the .2 em left before a bracket or full stop and ran over it (the user,
+    // 2026-11-16: "the text and button icons look a bit cramped, the ( ) fall behind the icons").
+    // Gaps between a cap's edge and what is beside it: .2 em more to a word (which has its own space too), .15 em to
+    // punctuation (Tight), plus the .06 em bearings the glyphs have each side in PixelOperator.
+    // Wide covers a one-letter key's square cap: as tall as .56 em of letter and 3 units each side, over a letter as
+    // narrow as .06 em ("I"), up to .08 em more each side.
+    const float RoomEm = .14f;
+    const string Rim = "<space=4>";   // Key cap.png's 2 px border at 50 px a unit, on a canvas of 100 px a unit (Measure reads the real one)
+    const string Before = Rim + "<space=.34em>", After = Rim + "<space=.34em>", Tight = Rim + "<space=.29em>", Wide = "<space=.1em>";
 
     // A key right after an opening bracket, or right before a full stop, comma or closing bracket, keeps only the room
-    // its cap needs on that side ("hold Right mouse, press Left mouse.", not "Right mouse ,").
+    // its cap needs on that side and a clear gap ("hold Right mouse, press Left mouse.", not "Right mouse ,").
     public static string Tidy(string s)
     {
         if (string.IsNullOrEmpty(s) || s.IndexOf("<link", System.StringComparison.Ordinal) < 0) return s;
@@ -125,6 +137,10 @@ public class KeyCapText : MonoBehaviour
         measuring = true;
         try { text.ForceMeshUpdate(); } finally { measuring = false; }
         var info = text.textInfo;
+        // Sideways: the cap's rim as Show will draw it (its 9-slice border in this canvas's units) and RoomEm inside it.
+        float refPpu = text.canvas != null ? text.canvas.referencePixelsPerUnit : 100f;
+        float rim = cap.border.x * refPpu * borderScale / cap.pixelsPerUnit;
+        var padding = new Vector2(rim + roomEm * text.fontSize, paddingY);
         for (int l = 0; l < info.linkCount; l++)
         {
             var link = info.linkInfo[l];
