@@ -189,13 +189,17 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     // True while lines are still queued or being spoken.
     public bool Speaking => running != null;
+    // Seconds since he last had something to say (0 while a line is waiting or being said). A remark that can wait asks
+    // this first, so he doesn't talk without a breath between (the floor's bet, his word about the roof).
+    public static float QuietFor => !HasInstance ? 999f : Instance.running != null ? 0f : Time.unscaledTime - Instance.quietSince;
+    float quietSince = -999f;
     bool wasCutscene;
 
     // Drops lines not yet said (a run ended: what was meant for the dungeon is not said in the room).
     public void Silence()
     {
         queue.Clear();
-        if (running != null) { StopCoroutine(running); running = null; }
+        if (running != null) { StopCoroutine(running); running = null; quietSince = Time.unscaledTime; }
         StopVoice();
     }
 
@@ -277,6 +281,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
             }
         }
         running = null;
+        quietSince = Time.unscaledTime;
     }
 
     static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;
