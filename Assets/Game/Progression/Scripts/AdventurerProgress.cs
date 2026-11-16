@@ -159,6 +159,8 @@ public class AdventurerProgress : MonoBehaviour
     {
         if (hit.FromEffect || hit.Magic || hit.Target == null || !FactionRules.IsHostile(player.Faction, hit.Target.Faction)) return;
         if (hit.Amount <= 0 && !hit.Blocked) return;
+        // Nothing is learned from a blow that took nothing (IMMUNE): a boss's dancers were a practice dummy.
+        if (hit.Spared) return;
         Practise(AdventureSkills.ForWeapon(hit.Weapon), hit.Target.IsAlive ? SkillAction.Hit : SkillAction.Kill, hit.Target);
         if (hit.Heavy && hit.Target.IsAlive && AdventureSkills.ForWeapon(hit.Weapon) == AdventureSkill.Maces && FirstMilestone(AdventureSkill.Maces)) Crush(hit.Target);
         if (hit.Backstab) Practise(AdventureSkill.Stealth, SkillAction.Backstab, hit.Target);
