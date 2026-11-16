@@ -385,7 +385,7 @@ public class DungeonMasterHand : MonoBehaviour
     public void StopAiming() { leftGoal = 0f; if (!Busy) { lookGoal = 0f; leanGoal = 0f; } }
 
     // Only his head: watching the stage between his moves.
-    public void Watch(Vector3 target, bool on) { lookTarget = target; lookGoal = on ? .7f : 0f; }
+    public void Watch(Vector3 target, bool on, float weight = .7f) { lookTarget = target; lookGoal = on ? weight : 0f; }
 
     // ── The flick (the Flick spell) ─────────────────────────────────
 
