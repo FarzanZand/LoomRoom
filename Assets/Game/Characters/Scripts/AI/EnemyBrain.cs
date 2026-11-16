@@ -725,7 +725,10 @@ public class EnemyBrain : MonoBehaviour
 
         // A fighter who also casts (closesIn) only holds its ground in melee range: a spell that could reach from here
         // but is recharging is no reason to stand and wait. It casts on the way in whenever one is ready (PickAttack).
-        if (CloseIn ? dist <= PreferredDistance : AnyAttackCoversDistance(dist) || dist <= PreferredDistance)
+        // Its melee range starts where its run-up stops (StopDistance), as for every other fighter: from 1.1 m only, the
+        // Disco King came to a halt at 1.6 m and stood there in the guard's standing pose, a deep lunge, never stepping
+        // in or circling between his swings (the user, 2026-11-16: "the boss for some reason leans where the others don't").
+        if (CloseIn ? dist <= Mathf.Max(PreferredDistance, StopDistance) + .05f : AnyAttackCoversDistance(dist) || dist <= PreferredDistance)
         {
             if (!HandleHeightGap(targetPos, dist)) HandleSpacing(targetPos, dist);
             return;
