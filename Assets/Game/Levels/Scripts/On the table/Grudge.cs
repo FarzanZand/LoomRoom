@@ -5,9 +5,10 @@ using UnityEngine;
 // The one that got you. A death used to leave nothing behind in the dungeon: the next run's floors were new and so was
 // everyone on them. Now the floor you last died on keeps one of your killer's kind waiting. It is no stronger than the
 // others (no stat is touched): it is only pleased with itself. Its name says so on the enemy bar ("Smug Blue Hood
-// Skeleton"), it greets you when you meet ("You again?", over its head, as the skeletons talk), the Dungeon Master
-// points it out and puts a small bounty on it, and killing it pays the bounty and settles it ("Even."). Dying to it
-// again makes it the next run's grudge too; walking past it leaves it for the next run.
+// Skeleton"), the Dungeon Master points it out when you meet and puts a small bounty on it, and killing it pays the
+// bounty and settles it ("Even."). Dying to it again makes it the next run's grudge too; walking past it leaves it
+// for the next run. It says nothing itself: the enemies' own lines over their heads were taken out (the user,
+// 2026-11-16).
 // The death is read from the save's memorials (the last one: killer and floor), so it holds across sessions; a death
 // taken back by a revive leaves no memorial and no grudge. Only the rank and file: never a boss or anyone with a name
 // of their own, never an elite, never in the intro's practice run. Which death is settled is one saved flag.
@@ -18,10 +19,8 @@ public class Grudge : MonoBehaviour
     [Tooltip("Off: no grudges.")] public bool grudgeOn = true;
     [Tooltip("Goes in front of its name on the enemy bar and in the recap, should it kill you again.")] public string prefix = "Smug";
     [Min(0), Tooltip("Gold paid for killing it.")] public int bounty = 20;
-    [Min(1), Tooltip("It greets the player once it is this close with nothing in between (metres), or as soon as it comes for them.")] public float meetWithin = 9f;
-    [Min(0), Tooltip("Seconds between its greeting and the Dungeon Master pointing it out.")] public float pointDelay = 1.6f;
-    [Tooltip("Said by the enemy as you meet.")]
-    public List<string> greetings = new() { "You again?", "Back so soon?", "I remember you.", "Want another?" };
+    [Min(1), Tooltip("The player has met it once it is this close with nothing in between (metres), or as soon as it comes for them.")] public float meetWithin = 9f;
+    [Min(0), Tooltip("Seconds between meeting it and the Dungeon Master pointing it out.")] public float pointDelay = 1.6f;
     [Tooltip("The Dungeon Master, pointing it out. {killer} is its kind, {gold} the bounty.")]
     public List<string> pointLines = new()
     {
@@ -29,10 +28,6 @@ public class Grudge : MonoBehaviour
         "Your killer is still here. *{gold} gold* if you return the favour.",
         "See the smug one? It killed you last time. *{gold} gold* for it.",
     };
-    [Range(0, 1), Tooltip("Chance it says something when it lands a hit on you.")] public float hitLineChance = .5f;
-    public List<string> hitLines = new() { "Like last time.", "Same as before.", "Remember this?" };
-    [Tooltip("Said by the enemy if it kills you again.")]
-    public List<string> againLines = new() { "Twice now.", "Again." };
     [Tooltip("The Dungeon Master as it dies. {gold} is the bounty.")]
     public List<string> evenLines = new() { "Even. *{gold} gold.*", "That settles it. *{gold} gold.*", "It was getting smug. *{gold} gold.*" };
     [Tooltip("The same, when it died before you had met.")]
@@ -72,7 +67,6 @@ public class Grudge : MonoBehaviour
     {
         if (current == this) current = null;
         Character.AnyDied -= OnAnyDied;
-        if (player != null) player.Damaged -= OnPlayerDamaged;
         player = null;
     }
 
@@ -93,11 +87,7 @@ public class Grudge : MonoBehaviour
     {
         if (!GameManager.HasInstance || GameManager.Instance.State != GameState.Explore) return false;
         if (!PlayerManager.HasInstance || PlayerManager.Instance.ActiveKind != PlayerKind.Table) return false;
-        if (player == null)
-        {
-            player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
-            if (player != null) player.Damaged += OnPlayerDamaged;
-        }
+        if (player == null) player = PlayerManager.Instance.GetPlayer(PlayerKind.Table);
         return player != null && player.IsAlive;
     }
 
@@ -174,7 +164,6 @@ public class Grudge : MonoBehaviour
     void Meet()
     {
         met = true;
-        EnemyBarks.SayNow(target, Any(greetings));
         StartCoroutine(Point(targetCharacter));
     }
 
@@ -184,19 +173,12 @@ public class Grudge : MonoBehaviour
         if (who != null && who == targetCharacter && who.IsAlive) DungeonMaster.Say(Fill(Any(pointLines)));
     }
 
-    void OnPlayerDamaged(DamageInfo info)
-    {
-        if (target == null || info.Source != targetCharacter || info.Amount <= 0f || info.Blocked || info.Spared) return;
-        if (Random.value <= hitLineChance) EnemyBarks.SayNow(target, Any(hitLines));
-    }
-
     // ── The end of it ─────────────────────────────────────────────────
 
     void OnAnyDied(Character dead)
     {
         if (dead == null) return;
-        // It got you again: it says so (the next run's grudge is this death's).
-        if (dead is Player) { if (target != null && dead.LastDamage.Source == targetCharacter) EnemyBarks.SayNow(target, Any(againLines)); return; }
+        // The player's own death changes nothing here: if it got them again, the next run's grudge is this death's.
         if (dead != targetCharacter) return;
         bool wasMet = met;
         var at = dead.transform.position;

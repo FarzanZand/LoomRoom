@@ -49,23 +49,10 @@ MonoBehaviour:
   bounty: 20
   meetWithin: 9
   pointDelay: 1.6
-  greetings:
-  - You again?
-  - Back so soon?
-  - I remember you.
-  - Want another?
   pointLines:
   - That one got you last time. *{gold} gold* if you get even.
   - Your killer is still here. *{gold} gold* if you return the favour.
   - See the smug one? It killed you last time. *{gold} gold* for it.
-  hitLineChance: 0.5
-  hitLines:
-  - Like last time.
-  - Same as before.
-  - Remember this?
-  againLines:
-  - Twice now.
-  - Again.
   evenLines:
   - Even. *{gold} gold.*
   - That settles it. *{gold} gold.*
