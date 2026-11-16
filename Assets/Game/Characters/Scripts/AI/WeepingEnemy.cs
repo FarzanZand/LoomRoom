@@ -51,6 +51,8 @@ public class WeepingEnemy : MonoBehaviour
             source = gameObject.AddComponent<AudioSource>();
             source.clip = weeping; source.loop = true; source.volume = weepingVolume;
             source.spatialBlend = 1f; source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 1.5f; source.maxDistance = weepingRange;
+            // Through the SFX mixer, so the player's Master and SFX volumes (and the mixer's own settings) apply to it.
+            if (AudioManager.HasInstance) source.outputAudioMixerGroup = AudioManager.Instance.SfxGroup;
             source.Play();
         }
         character.Damaged += Hurt;
