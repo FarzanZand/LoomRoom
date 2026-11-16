@@ -124,7 +124,23 @@ void Put(GameObject prop, GameObject saved, Vector3 at, float scale)
     var root = UnityEditor.PrefabUtility.LoadPrefabContents(path);
     var blob = root.transform.Find("Flame");
     // In the basket's mouth: a flame is drawn round its middle, so lower it burned inside the basket, hidden by its bars.
-    Vector3 at = blob != null ? blob.localPosition + Vector3.up * .07f : new Vector3(-.02f, 2.4f, .33f);
+    // Where the mouth is comes from the model: the torch leans out from its bracket, so its head stands further from the
+    // wall than its foot. The old glow blob's spot (where the fire first went) was 12.5 cm short of it, and the flame
+    // burned between the wall and the basket (F9 0ae60f08, the user: "Flame is missing the torch a bit, it is too close
+    // to the wall"). The mouth: the model's top 15 cm, leaving out the bracket's plate on the wall (within 15 cm of it).
+    Vector3 at = new Vector3(-.015f, 2.4f, .455f);
+    {
+        float top = float.MinValue, zl = float.MaxValue, zh = float.MinValue, xl = float.MaxValue, xh = float.MinValue;
+        var pts = new System.Collections.Generic.List<Vector3>();
+        foreach (var mf in root.GetComponentsInChildren<MeshFilter>(false))
+        {
+            if (mf.sharedMesh == null || !mf.sharedMesh.isReadable || mf.GetComponentInParent<ParticleSystem>() != null) continue;
+            var m = root.transform.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+            foreach (var v in mf.sharedMesh.vertices) { var q = m.MultiplyPoint3x4(v); pts.Add(q); top = Mathf.Max(top, q.y); }
+        }
+        foreach (var q in pts) if (q.y >= top - .15f && q.z > .15f) { zl = Mathf.Min(zl, q.z); zh = Mathf.Max(zh, q.z); xl = Mathf.Min(xl, q.x); xh = Mathf.Max(xh, q.x); }
+        if (zh > zl) at = new Vector3((xl + xh) / 2f, top - .1f, (zl + zh) / 2f);
+    }
     if (blob != null) blob.gameObject.SetActive(false);
     Put(root, torchFire, at, 1.25f);
     UnityEditor.PrefabUtility.SaveAsPrefabAsset(root, path); UnityEditor.PrefabUtility.UnloadPrefabContents(root);
