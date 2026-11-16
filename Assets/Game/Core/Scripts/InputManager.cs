@@ -250,6 +250,10 @@ public class InputManager : Singleton<InputManager>
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        // Disabled once more before they go: something switching a map on after OnDisable (the game state unwinding as
+        // the room unloads for the main menu) left the Room map enabled, and the actions then logged "This will cause a
+        // leak and performance issues, PlayerInputActions.Room.Disable() has not been called".
+        actions?.Disable();
         actions?.Dispose();
         actions = null;
     }
