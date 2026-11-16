@@ -570,6 +570,13 @@ public partial class DungeonGenerator
                 if (PropMount.KindOf(prefab) == PropMount.Kind.FullHeight)
                     for (float up = data.architectureTileSize; up < HeightAt(cell.x, cell.y) - .5f; up += data.architectureTileSize)
                         copies.Add(Instantiate(prefab, Cell(cell) + outward * (data.cellSize * .5f) + Vector3.up * up, Quaternion.LookRotation(-outward), geometry));
+                // A hung piece made for one storey (PropMount: a banner) hangs as far under a taller room's ceiling as under
+                // a low one's: left at the floor's own storey its rod was half way up the wall and it read as standing there.
+                if (PropMount.KindOf(prefab) == PropMount.Kind.HangsFromCeiling)
+                {
+                    float extra = HeightAt(cell.x, cell.y) - data.architectureTileSize;
+                    if (extra > .1f) copies[0].transform.position += Vector3.up * extra;
+                }
                 ClearCornice(copies, cell, outward, style);
                 // One that would cut into what stands at the wall (a grate through a barrel) is left out.
                 bool cut = false;
