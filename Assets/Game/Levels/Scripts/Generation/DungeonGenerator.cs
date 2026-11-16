@@ -564,12 +564,14 @@ public partial class DungeonGenerator : MonoBehaviour
                     var cornice = ArchitectureBox("Stone cornice", corniceCenter, corniceScale, trim, geometry);
                     MiterDiagonalEnds(cornice, cell, dir, height-.6f, TrimDepth, true);
                     cornice.GetComponent<Renderer>().enabled = visible || window;
+                    NoteTrim(cell, dir, cornice);
                     if (!neighbor)
                     {
                         var (footCenter, footScale) = WallPiece(cell, dir, 0, TrimDepth, .15f, .12f);
                         var footing = ArchitectureBox("Stone footing", footCenter, footScale, trim, geometry);
                         MiterDiagonalEnds(footing, cell, dir, 0, TrimDepth, true);
                         footing.GetComponent<Renderer>().enabled = visible || window;
+                        NoteTrim(cell, dir, footing);
                     }
                 }
             }
@@ -583,6 +585,7 @@ public partial class DungeonGenerator : MonoBehaviour
         if (SliceDue) { Pause(); yield return null; Resume(); }
         for (int i=0;i<Layout.rooms.Count;i++) { DecorateRoom(i); BuildProgress = .24f + .36f * (i + 1) / Layout.rooms.Count; if (SliceDue) { Pause(); yield return null; Resume(); } }
         DecorateWalls();
+        HangPlacedWallPieces();
         BuildProgress = .62f;
         if (SliceDue) { Pause(); yield return null; Resume(); }
         PlaceTorches();

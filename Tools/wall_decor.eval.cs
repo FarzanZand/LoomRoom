@@ -53,6 +53,7 @@ GameObject Banner(string piece, string source, string colour)
     if (mount == null) mount = inst.AddComponent<PropMount>();
     mount.kind = PropMount.Kind.HangsFromCeiling;
     mount.castsNoShadow = true;
+    mount.onWall = true;   // flat on its wall: the generator opens the cornice and footing behind it
     var saved = UnityEditor.PrefabUtility.SaveAsPrefabAsset(inst, Dir + "/" + name + ".prefab");
     UnityEngine.Object.DestroyImmediate(inst);
     log.AppendLine("made " + name + " (" + tex.width + " x " + tex.height + ")");

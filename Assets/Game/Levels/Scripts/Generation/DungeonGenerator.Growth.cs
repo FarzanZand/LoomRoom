@@ -8,6 +8,14 @@ public partial class DungeonGenerator
     System.Random decorRandom, propRandom;
     readonly HashSet<Vector2Int> furnished = new();
     readonly List<(Vector2Int cell, Vector2Int dir, int region)> wallFaces = new();
+    // The cornice and footing of each wall face, so a piece hung flat on the wall can have them opened behind it.
+    readonly Dictionary<(Vector2Int cell, Vector2Int dir), List<GameObject>> trimsByFace = new();
+    readonly HashSet<Transform> hungOnWall = new();
+    void NoteTrim(Vector2Int cell, Vector2Int dir, GameObject trim)
+    {
+        if (!trimsByFace.TryGetValue((cell, dir), out var list)) trimsByFace[(cell, dir)] = list = new List<GameObject>();
+        list.Add(trim);
+    }
 
     int seed0;   // the floor's seed (furnishing groups derive their loot seeds from it)
     void BeginDressing(int seed)
@@ -15,7 +23,7 @@ public partial class DungeonGenerator
         decorRandom = new System.Random(unchecked(seed + 71993));
         propRandom = new System.Random(unchecked(seed + 104729));
         seed0 = seed;
-        furnished.Clear(); wallFaces.Clear();
+        furnished.Clear(); wallFaces.Clear(); trimsByFace.Clear(); hungOnWall.Clear();
     }
 
     // ── Layout ───────────────────────────────────────────────────────
@@ -577,7 +585,9 @@ public partial class DungeonGenerator
                     float extra = HeightAt(cell.x, cell.y) - data.architectureTileSize;
                     if (extra > .1f) copies[0].transform.position += Vector3.up * extra;
                 }
-                ClearCornice(copies, cell, outward, style);
+                // A banner lies flat on its wall, the trims opened behind it; any other piece stands clear of the cornice.
+                if (prefab.TryGetComponent<PropMount>(out var hung) && hung.onWall) HangOnWall(copies[0], cell, dir);
+                else ClearCornice(copies, cell, outward, style);
                 // One that would cut into what stands at the wall (a grate through a barrel) is left out.
                 bool cut = false;
                 foreach (var c in copies) if (CutsIntoBody(c)) { cut = true; break; }
@@ -620,6 +630,100 @@ public partial class DungeonGenerator
         float front = Vector3.Dot(Cell(cell), outward) + data.cellSize * .5f - TrimDepth - .01f;
         if (rear <= front) return;
         foreach (var go in copies) go.transform.position -= outward * (rear - front);
+    }
+
+    // A piece made to lie on its wall (PropMount.onWall: a banner, whose pivot plane is the wall's face) stays flat on it.
+    // The cornice and the footing stand 4 cm out from the wall, so they are opened behind the piece, as wide as the piece
+    // is at their height, and the piece is first lifted out of the footing where the wall has room over it (a long
+    // banner's point ends just over the footing). Stood out in front of the cornice instead, as it was, the cloth hung
+    // 10 cm off the wall and showed the gap along the wall (F9 a19b18c9).
+    void HangOnWall(GameObject piece, Vector2Int cell, Vector2Int dir)
+    {
+        hungOnWall.Add(piece.transform);
+        if (!trimsByFace.TryGetValue((cell, dir), out var trims)) return;
+        trims.RemoveAll(t => t == null);
+        if (trims.Count == 0 || !BodyOf(piece, out var body)) return;
+        float floor = Cell(cell).y, ceiling = floor + HeightAt(cell.x, cell.y);
+        float footTop = float.MinValue;
+        foreach (var trim in trims) { var b = trim.GetComponent<Renderer>().bounds; if (b.max.y < floor + .5f) footTop = Mathf.Max(footTop, b.max.y); }
+        if (footTop > float.MinValue && body.min.y < footTop + .005f)
+        {
+            float up = Mathf.Min(footTop + .005f - body.min.y, ceiling - .05f - body.max.y);
+            if (up > 0f) piece.transform.position += Vector3.up * up;
+        }
+        var along = dir.x != 0 ? Vector3.forward : Vector3.right;
+        foreach (var trim in trims.ToArray())
+        {
+            var r = trim.GetComponent<Renderer>(); var b = r.bounds;
+            if (!SpanBetween(piece, b.min.y, b.max.y, along, out float lo, out float hi)) continue;
+            lo -= .01f; hi += .01f;
+            float from = Vector3.Dot(b.min, along), to = Vector3.Dot(b.max, along);
+            if (hi <= from || lo >= to) continue;
+            trims.Remove(trim);
+            foreach (var (start, end) in new[] { (from, lo), (hi, to) })
+            {
+                if (end - start < .02f) continue;
+                var centre = trim.transform.position + along * ((start + end) * .5f - Vector3.Dot(trim.transform.position, along));
+                var size = trim.transform.localScale;
+                if (dir.x != 0) size.z = end - start; else size.x = end - start;
+                var part = ArchitectureBox(trim.name, centre, size, r.sharedMaterial, trim.transform.parent);
+                part.GetComponent<Renderer>().enabled = r.enabled;
+                trims.Add(part);
+            }
+            architecturePieces.Remove(r);
+            DestroyImmediate(trim);
+        }
+    }
+
+    // How far along the wall a piece reaches between two heights: its triangles cut to that band, so a banner's point
+    // opens a footing only as wide as the point is there. False when nothing of it is at those heights.
+    static bool SpanBetween(GameObject piece, float yLo, float yHi, Vector3 along, out float lo, out float hi)
+    {
+        float least = float.MaxValue, most = float.MinValue;
+        void Take(Vector3 p) { float d = Vector3.Dot(p, along); if (d < least) least = d; if (d > most) most = d; }
+        foreach (var f in piece.GetComponentsInChildren<MeshFilter>())
+        {
+            var mesh = f.sharedMesh;
+            if (mesh == null || !f.TryGetComponent<Renderer>(out var r) || !r.enabled) continue;
+            var rb = r.bounds;
+            if (rb.max.y < yLo || rb.min.y > yHi) continue;
+            if (!mesh.isReadable) { Take(rb.min); Take(rb.max); continue; }
+            var v = mesh.vertices; var t = mesh.triangles; var m = f.transform.localToWorldMatrix;
+            for (int i = 0; i < v.Length; i++) v[i] = m.MultiplyPoint3x4(v[i]);
+            for (int i = 0; i + 2 < t.Length; i += 3)
+                for (int e = 0; e < 3; e++)
+                {
+                    Vector3 a = v[t[i + e]], c = v[t[i + (e + 1) % 3]];
+                    if (a.y >= yLo && a.y <= yHi) Take(a);
+                    if ((a.y - yLo) * (c.y - yLo) < 0f) Take(Vector3.Lerp(a, c, (yLo - a.y) / (c.y - a.y)));
+                    if ((a.y - yHi) * (c.y - yHi) < 0f) Take(Vector3.Lerp(a, c, (yHi - a.y) / (c.y - a.y)));
+                }
+        }
+        lo = least; hi = most;
+        return most >= least;
+    }
+
+    // A piece made to lie on its wall that a room template set near one (a banner hung by hand behind an idol) is put
+    // onto that wall like the ones this pass hangs: its pivot on the wall's face, the trims opened behind it. Within
+    // 30 cm of the wall and square to it; further off, it hangs somewhere else on purpose.
+    void HangPlacedWallPieces()
+    {
+        var faces = new HashSet<(Vector2Int, Vector2Int)>();
+        foreach (var (cell, dir, _) in wallFaces) faces.Add((cell, dir));
+        foreach (var mount in GetComponentsInChildren<PropMount>(true))
+        {
+            if (!mount.onWall || hungOnWall.Contains(mount.transform)) continue;
+            var t = mount.transform; var f = t.forward;
+            var dir = Mathf.Abs(f.x) > Mathf.Abs(f.z) ? new Vector2Int(f.x > 0f ? -1 : 1, 0) : new Vector2Int(0, f.z > 0f ? -1 : 1);
+            var outward = new Vector3(dir.x, 0, dir.y);
+            if (Vector3.Dot(-f, outward) < .98f) continue;
+            var cell = CellOf(t.position - outward * .05f);
+            if (!faces.Contains((cell, dir))) continue;
+            float off = Vector3.Dot(Cell(cell), outward) + data.cellSize * .5f - Vector3.Dot(t.position, outward);
+            if (off < -.06f || off > .3f) continue;
+            t.position += outward * off;
+            HangOnWall(t.gameObject, cell, dir);
+        }
     }
 
     // Beside a doorway: decorations there would clip the door frame.

@@ -87,3 +87,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PropMount
   kind: 1
   castsNoShadow: 1
+  onWall: 1
