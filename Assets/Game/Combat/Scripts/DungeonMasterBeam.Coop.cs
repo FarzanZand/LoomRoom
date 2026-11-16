@@ -58,8 +58,12 @@ public partial class DungeonMasterBeam
         for (float t = 0; t < fight.beamSeconds && !cancelled && alive(); t += Time.deltaTime)
         {
             var origin = Palm();
-            bool held = blocking();
-            var end = MateEnd(mate, origin, held);
+            // A pillar between his palm and the teammate takes the stream here too, and glows; whether it breaks is
+            // the teammate's machine's to say (BossStageEncounter.PillarBrokeElsewhere).
+            bool covered = CoverAt(mate.transform.position + Vector3.up * 1.6f, origin, out var coverPoint, out var coverCollider);
+            if (covered) BossCoverPillar.BeamOn(coverCollider, coverPoint, colour);
+            bool held = covered || blocking();
+            var end = covered ? coverPoint : MateEnd(mate, origin, held);
             if (hand != null) hand.Aim(end);
             if (charge != null) { charge.transform.position = origin; charge.SetCharge(1f); }
             float swell = Mathf.SmoothStep(0, 1, t / .18f) * (1f + .1f * Mathf.Sin(t * 26f)) * (t < .12f ? 1.6f - 5f * t : 1f);
@@ -98,6 +102,23 @@ public partial class DungeonMasterBeam
     }
 
     // On the teammate's raised shield (in front of their chest, toward him) or their chest.
+    // Cover, from a teammate's eyes as this machine shows them.
+    bool CoverAt(Vector3 eye, Vector3 origin, out Vector3 point, out Collider cover)
+    {
+        point = default; cover = null;
+        var dir = eye - origin;
+        float length = dir.magnitude, nearest = float.MaxValue;
+        if (length < .1f) return false;
+        foreach (var hit in Physics.RaycastAll(origin, dir / length, length - .3f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (hit.distance < length * .5f || hit.distance >= nearest) continue;
+            if (hit.collider.GetComponentInParent<Character>() != null || hit.transform.IsChildOf(transform)) continue;
+            if (InvisibleWall.Is(hit.collider) || BossCoverPillar.IsRubble(hit.collider)) continue;
+            nearest = hit.distance; point = hit.point; cover = hit.collider;
+        }
+        return nearest < float.MaxValue;
+    }
+
     static Vector3 MateEnd(Character mate, Vector3 origin, bool shield)
     {
         var chest = mate.transform.position + Vector3.up * 1.25f;

@@ -7,8 +7,10 @@ using UnityEngine;
 // running along it), a white-hot core, two crackling arcs (cut from its Thunder bolts), sparks running down it, and a
 // burst of light (Spell 3) on the player's shield that sprays sparks, lights the arms and shakes the view. Widths are
 // shares of the screen, so the stream looks as thick next to the player as at his hand. Holding it off takes the shield
-// up, facing him, the whole time; any moment the player isn't blocking, it burns. On the DM (next to DungeonMasterHand,
-// which raises his palm). Textures: Tools/dm_beam_texture.py.
+// up, facing him, the whole time; any moment the player isn't blocking, it burns. Something solid between his palm and
+// the player takes the stream instead (Cover): a cover pillar on the stage, which is told so (BossCoverPillar.BeamOn) and
+// comes down when that beam ends. On the DM (next to DungeonMasterHand, which raises his palm). Textures:
+// Tools/dm_beam_texture.py.
 public partial class DungeonMasterBeam : MonoBehaviour
 {
     [Header("Art (Spells Pack)")]
@@ -235,7 +237,9 @@ public partial class DungeonMasterBeam : MonoBehaviour
         {
             var origin = Palm();
             // Something solid between his palm and the player (a pillar on the stage) takes the beam instead.
-            bool covered = Cover(target, origin, out var coverPoint);
+            bool covered = Cover(target, origin, out var coverPoint, out var coverCollider);
+            // A cover pillar the stream ends on heats up and is marked: it breaks when this beam is over (the warning arc marks nothing).
+            if (covered) BossCoverPillar.BeamOn(coverCollider, coverPoint, colour);
             bool blocking = covered || Blocking(target, origin, fight);
             // The shield shakes while it holds the beam off.
             if (target.Combat != null) target.Combat.SetShieldStrain(blocking && !covered);
@@ -363,10 +367,10 @@ public partial class DungeonMasterBeam : MonoBehaviour
     }
 
     // The first solid thing (not a character, not him) on the line from his palm to the player's eyes, on the player's
-    // half of it (the table's edge near him is not cover), if any.
-    bool Cover(Player target, Vector3 origin, out Vector3 point)
+    // half of it (the table's edge near him is not cover), if any. A broken cover pillar's stump and rubble are not cover.
+    bool Cover(Player target, Vector3 origin, out Vector3 point, out Collider cover)
     {
-        point = default;
+        point = default; cover = null;
         var eye = target.CameraRig != null && target.CameraRig.Camera != null ? target.CameraRig.Camera.transform.position : target.transform.position + Vector3.up * 1.6f;
         var dir = eye - origin;
         float length = dir.magnitude, nearest = float.MaxValue;
@@ -376,8 +380,8 @@ public partial class DungeonMasterBeam : MonoBehaviour
             if (hit.distance < length * .5f || hit.distance >= nearest) continue;
             if (hit.collider.GetComponentInParent<Character>() != null || hit.transform.IsChildOf(transform)) continue;
             // The stage's invisible edges only keep walkers in: ended on one, the beam ran end-on at the player's eye and wasn't seen.
-            if (InvisibleWall.Is(hit.collider)) continue;
-            nearest = hit.distance; point = hit.point;
+            if (InvisibleWall.Is(hit.collider) || BossCoverPillar.IsRubble(hit.collider)) continue;
+            nearest = hit.distance; point = hit.point; cover = hit.collider;
         }
         return nearest < float.MaxValue;
     }

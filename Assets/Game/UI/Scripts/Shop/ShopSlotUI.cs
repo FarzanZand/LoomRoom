@@ -16,6 +16,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     [SerializeField] Button button;
 
     ItemData item;
+    int shown;   // the number in its corner: a count, or the charges left (Inventory.ShownAt)
     Action click;
     Action<ItemData> hover;
 
@@ -23,12 +24,12 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     // drawItem false: a bag cell under an item drawn across its footprint (ShopUI.DrawBag); the cell only answers for it.
     public void Bind(ItemData data, int amount, bool available, Action onClick, Action<ItemData> onHover, bool drawItem = true)
     {
-        item = data; click = onClick; hover = onHover;
+        item = data; shown = amount; click = onClick; hover = onHover;
         bool filled = data != null;
         bool drawn = filled && drawItem;
         if (icon != null) { icon.sprite = drawn ? data.icon : null; icon.enabled = icon.sprite != null; icon.color = available ? Color.white : new Color(1, 1, 1, .4f); }
         ItemData.ShowSlotFill(rarityFill, data, drawn);
-        if (count != null) count.text = drawn && amount > 1 ? $"x{amount}" : "";
+        if (count != null) count.text = drawn ? ItemData.CountLabel(data, amount) : "";
         // The inventory's grey cell, the same filled or empty (the item's rarity floor marks it).
         if (background != null) background.color = Color.white;
         if (button != null) button.interactable = filled && available;
@@ -44,7 +45,7 @@ public class ShopSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void OnPointerExit(PointerEventData eventData) => HideTooltip();
     public void OnDeselect(BaseEventData eventData) => HideTooltip();
     // Not while anything is being dragged: it would sit over the cells the drag is aimed at.
-    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging && !(ItemDragHandler.HasInstance && ItemDragHandler.Instance.IsDragging)) TooltipUI.Instance.Show(item, at); }
+    void ShowTooltip(RectTransform at) { if (item != null && TooltipUI.HasInstance && !dragging && !(ItemDragHandler.HasInstance && ItemDragHandler.Instance.IsDragging)) TooltipUI.Instance.Show(item, at, null, item.HasCharges ? shown : -1); }
     static void HideTooltip() { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }
     public void OnPointerClick(PointerEventData eventData)
     {

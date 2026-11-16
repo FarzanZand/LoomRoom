@@ -1264,6 +1264,12 @@ public static class CoopWorld
                 if (stage != null) stage.GuestIntroDone(e.slot);
                 break;
             }
+            case CoopEventKind.BossPillarBroke:
+            {
+                var stage = CurrentStage();
+                if (stage != null) stage.PillarBrokeElsewhere(e.amount, e.id, e.position);
+                break;
+            }
             case CoopEventKind.BossBeaten:
             {
                 var stage = CurrentStage();

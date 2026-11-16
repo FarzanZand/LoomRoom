@@ -185,10 +185,9 @@ public class ItemGridUI : MonoBehaviour
             ItemData.ShowSlotFill(fill, stack.item);
             fill.rectTransform.sizeDelta = view.sizeDelta - Vector2.one * 4f;
         }
-        // A scroll shows the charges it has left instead (when it has more than one), as on the hotbar.
-        int n = stack.item.IsScroll ? bag.ChargesAt(anchor) : stack.count;
+        // A scroll or a healing tome shows the charges it has left instead, as on the hotbar.
         var count = view.Find("Stack")?.GetComponent<TMP_Text>();
-        if (count != null) { count.text = n > 1 ? $"x{n}" : ""; count.gameObject.SetActive(n > 1); }
+        if (count != null) { count.text = ItemData.CountLabel(stack.item, bag.ShownAt(anchor)); count.gameObject.SetActive(count.text.Length > 0); }
     }
 
     // Item icons are drawn on the diagonal (a sword from bottom left to top right). In a tall, narrow

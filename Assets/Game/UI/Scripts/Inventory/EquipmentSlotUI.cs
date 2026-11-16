@@ -32,7 +32,7 @@ public class EquipmentSlotUI : MonoBehaviour,IPointerClickHandler,IPointerEnterH
     }
     // The tooltip sits level with the slot but beside the whole doll, not at the mouse, so it covers no doll slot
     // (review 2026-11-12: beside its own slot, the shield's covered the helm and body slots).
-    public void OnPointerEnter(PointerEventData e){var item=player?.Equipment?.Get(slot);if(item!=null && TooltipUI.HasInstance)TooltipUI.Instance.ShowBeside(item,(RectTransform)transform,DollArea());}
+    public void OnPointerEnter(PointerEventData e){var item=player?.Equipment?.Get(slot);if(item!=null && TooltipUI.HasInstance)TooltipUI.Instance.ShowBeside(item,(RectTransform)transform,DollArea(),null,TooltipUI.HeldCharges(item));}
 
     static readonly Vector3[] corners=new Vector3[4];
     // The screen area of every doll slot shown with this one (the same player's, on the same canvas).

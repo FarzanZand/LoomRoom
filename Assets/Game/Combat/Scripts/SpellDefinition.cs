@@ -20,6 +20,10 @@ public class SpellDefinition : ScriptableObject
     [Min(0)] public float recoverySeconds = .35f;
     [Tooltip("Movement speed while winding up, as a multiplier.")]
     [Range(.2f, 1)] public float castMoveSpeed = .6f;
+    [Min(0), Tooltip("Casts a tome of this spell has before it breaks and is gone; the charges left show on its slot and its tooltip, and each tome has its own. 0 = it never breaks. The healing spells have 3 (the user, 2026-11-16: heals could be cast again and again).")]
+    public int tomeCharges;
+    [ShowIf("@tomeCharges > 0"), Tooltip("Played as the tome breaks with its last charge.")]
+    public AudioData tomeBreakSound;
 
     [Title("Projectile"), ShowIf(nameof(IsProjectile))]
     public SpellProjectile projectile;
@@ -114,8 +118,9 @@ public class SpellDefinition : ScriptableObject
     // Veils and summons have no damage or healing of their own.
     public bool HasPower => power > 0f && effect != SpellEffect.ShadowVeil && effect != SpellEffect.RaiseTheFallen && effect != SpellEffect.Summon;
 
-    // The rows: cost is the mana it takes (a scroll passes its charges instead), power its damage or healing.
-    public string TooltipRows(float cost, float power, int scrollCharges = 0)
+    // The rows: cost is the mana it takes (mana false: a scroll, which takes none), power its damage or healing,
+    // charges what a scroll or a tome that breaks (Tome Charges) has left (0: no row).
+    public string TooltipRows(float cost, float power, int charges = 0, bool mana = true)
     {
         var rows = new System.Collections.Generic.List<string>();
         void Row(string label, string value, string colour = ItemData.TextColor) =>
@@ -126,8 +131,8 @@ public class SpellDefinition : ScriptableObject
         if (HasPower) Row(Heals ? "Healing" : "Damage", $"<size=125%>{Whole(power)}</size>", Heals ? ItemData.GoodColor : ItemData.TextColor);
         // The burn after the hit: its damage in all (the share Burn of the hit) and how long it takes.
         if (HasPower && !Heals && IsProjectile && burn > 0f) Row("Burn", $"{Mathf.Max(1, Whole(power * burn))} over {Seconds(burnSeconds)}");
-        if (scrollCharges > 0) Row("Charges", scrollCharges.ToString());
-        else Row("Mana", $"{Whole(cost)}", ManaColor);
+        if (mana) Row("Mana", $"{Whole(cost)}", ManaColor);
+        if (charges > 0) Row("Charges", charges.ToString());
         switch (effect)
         {
             case SpellEffect.ShadowVeil: Row("Duration", Seconds(veil.seconds)); break;

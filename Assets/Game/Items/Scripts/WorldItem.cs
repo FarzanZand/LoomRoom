@@ -21,7 +21,7 @@ public class WorldItem : MonoBehaviour, IInteractable
 
     public ItemData Item  => itemData;
     public int      Count => count;
-    // A dropped scroll's charges already spent (ItemStack.used): it is picked up with them, never refilled.
+    // A dropped scroll's or healing tome's charges already spent (ItemStack.used): it is picked up with them, never refilled.
     public int      Used  { get; set; }
 
     public string Prompt => itemData != null ? $"Pick up {itemData.itemName}" : "Pick up";

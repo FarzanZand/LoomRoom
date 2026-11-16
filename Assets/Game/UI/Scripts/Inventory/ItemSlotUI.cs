@@ -126,9 +126,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     public void Refresh()
     {
         var item  = Item;
-        int count = Container != null && Anchor >= 0 ? Container.CountAt(Anchor) : 0;
-        // A scroll shows the charges it has left instead (when it has more than one).
-        if (Container != null && Anchor >= 0 && Container.ItemAt(Anchor) is { IsScroll: true }) count = Container.ChargesAt(Anchor);
+        // A scroll or a healing tome shows the charges it has left in place of a count (Inventory.ShownAt).
+        int count = Container != null && Anchor >= 0 ? Container.ShownAt(Anchor) : 0;
         if (GridCell) count = 0;
 
         if (iconImage != null)
@@ -148,8 +147,8 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
         if (rarityFill != null) ItemData.ShowSlotFill(rarityFill, item, false);
         if (stackLabel != null)
         {
-            stackLabel.text = count > 1 ? $"x{count}" : "";
-            stackLabel.gameObject.SetActive(count > 1);
+            stackLabel.text = ItemData.CountLabel(item, count);
+            stackLabel.gameObject.SetActive(stackLabel.text.Length > 0);
         }
         if (equippedHighlight != null)
         {
@@ -185,7 +184,9 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     // ── Pointer ───────────────────────────────────────────────────────
 
     // The tooltip stands beside the whole item, level with the cell under the pointer, never at the mouse over the rest of it.
-    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.ShowBeside(Item, (RectTransform)transform, ItemArea(), ThisCopyEquipped); }
+    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.ShowBeside(Item, (RectTransform)transform, ItemArea(), ThisCopyEquipped, ChargesLeft); }
+    // The charges this very copy has left, for its tooltip (-1: it has none).
+    int ChargesLeft => Item != null && Item.HasCharges && Container != null && Anchor >= 0 ? Container.ChargesAt(Anchor) : -1;
 
     static readonly Vector3[] areaCorners = new Vector3[4];
     // The screen area of the item in this cell: all the cells it takes in a bag grid, else this slot.
@@ -206,7 +207,7 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
     {
         if (e is PointerEventData) return;
         selected = true; Refresh();
-        if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, (RectTransform)transform, ThisCopyEquipped);
+        if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, (RectTransform)transform, ThisCopyEquipped, ChargesLeft);
     }
     public void OnDeselect(BaseEventData e)
     {

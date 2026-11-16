@@ -229,6 +229,35 @@ public partial class BossStageEncounter
         else if (e != null && e.spell != null) StartCoroutine(Volley(e, mate, mine != null));
     }
 
+    // ── Cover pillars ─────────────────────────────────────────────────
+    // A pillar breaks on the machine of the player the beam poured at (the one that knows whether its stream ended on
+    // it: Beam, BossCoverPillar.BreakTouched), and that machine tells the rest, which break the same pillar (its cut
+    // depends only on where it stands) and hear the same word from him. Pillars are counted in the stage's own order,
+    // the same everywhere (the floor is the same).
+    readonly HashSet<int> pillarsSent = new();
+
+    void CoopPillarsBroke(Vector3 keepFrom, int line)
+    {
+        if (!Coop.Running || dungeon == null || dungeon.Stage == null) return;
+        var pillars = dungeon.Stage.GetComponentsInChildren<BossCoverPillar>(true);
+        for (int i = 0; i < pillars.Length; i++)
+            if (pillars[i].Broken && pillarsSent.Add(i)) CoopWorld.Send(new CoopEvent { kind = CoopEventKind.BossPillarBroke, amount = i, id = line, position = keepFrom });
+    }
+
+    public void PillarBrokeElsewhere(int index, int line, Vector3 keepFrom)
+    {
+        if (dungeon == null || dungeon.Stage == null) return;
+        var pillars = dungeon.Stage.GetComponentsInChildren<BossCoverPillar>(true);
+        if (index < 0 || index >= pillars.Length) return;
+        pillarsSent.Add(index);
+        var pillar = pillars[index];
+        if (pillar.Broken) return;
+        pillar.Break(fight != null ? fight.beamColor : Color.white, keepFrom);
+        if (!started || finished || fight == null) return;
+        var lines = BossCoverPillar.BrokenOn(dungeon.Stage) <= 1 ? fight.firstPillarBroken : fight.secondPillarBroken;
+        if (lines != null && line >= 0 && line < lines.Count) Say(lines[line], true);
+    }
+
     // The beam at a teammate: on the same beat, the boss giving way to them (on the host), no damage here.
     IEnumerator WatchBeam(Character mate, int slot)
     {
@@ -241,6 +270,7 @@ public partial class BossStageEncounter
         System.Func<bool> giveWay = () => GiveWay(mate);
         bool steer = Coop.IsHost && brain != null && fight.beamGiveWay > 0f;
         if (steer) brain.MovementOverride = giveWay;
+        if (dungeon != null) BossCoverPillar.ClearTouched(dungeon.Stage);
         yield return beam.FireAt(mate, () => coop != null && coop.Current.blocking, () => mate != null && mate.IsAlive && (coop == null || coop.Current.alive), fight);
         if (steer && brain != null && brain.MovementOverride == giveWay) brain.MovementOverride = null;
         beamRun = null;

@@ -80,7 +80,7 @@ public class DungeonStaticGeometry : MonoBehaviour
         || filter.GetComponentInParent<DungeonAmbush>(true)!=null || filter.GetComponentInParent<DungeonSpikeTrap>(true)!=null
         || filter.GetComponentInParent<DungeonFloorCut>(true)!=null || filter.GetComponentInParent<PortalArch>(true)!=null
         || filter.GetComponentInParent<Merchant>(true)!=null || filter.GetComponentInParent<IInteractable>(true)!=null
-        || filter.GetComponentInParent<IDamageable>(true)!=null
+        || filter.GetComponentInParent<IDamageable>(true)!=null || filter.GetComponentInParent<BossCoverPillar>(true)!=null
         || filter.GetComponentInParent<WorldItem>(true)!=null || filter.GetComponentInParent<DungeonGoldCache>(true)!=null;
 
     // The build's chunks under root merged again into squares of chunkSize (same material, shadow mode and rendering

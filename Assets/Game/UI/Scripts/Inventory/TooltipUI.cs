@@ -73,14 +73,25 @@ public class TooltipUI : Singleton<TooltipUI>
     // at: the control a pad or the arrow keys picked (a bag cell): the tooltip sits beside it instead of at the mouse.
     // thisCopyEquipped: whether this very copy is the one worn or in hand (null: any copy of it is, as the doll's slots show);
     // a spare copy in the bag or a merchant's ware of the same item is not.
-    public void Show(ItemData item, RectTransform at, bool? thisCopyEquipped = null) => ShowAt(item, at, thisCopyEquipped, null);
+    // chargesLeft: the charges this copy has left (a scroll's, a healing tome's), for its Charges row; -1 = a full one.
+    public void Show(ItemData item, RectTransform at, bool? thisCopyEquipped = null, int chargesLeft = -1) => ShowAt(item, at, thisCopyEquipped, null, chargesLeft);
 
     // Beside a control at its height, but wholly to one side of keepClear (screen pixels): the paper doll's slots pass
     // the doll's whole area, so a slot's tooltip never covers another slot (review 2026-11-12).
     // A bag item passes its whole footprint (a sword is three cells tall), the hotbar its slot: the tooltip never covers it.
-    public void ShowBeside(ItemData item, RectTransform at, Rect keepClear, bool? thisCopyEquipped = null) => ShowAt(item, at, thisCopyEquipped, keepClear);
+    public void ShowBeside(ItemData item, RectTransform at, Rect keepClear, bool? thisCopyEquipped = null, int chargesLeft = -1) => ShowAt(item, at, thisCopyEquipped, keepClear, chargesLeft);
 
-    void ShowAt(ItemData item, RectTransform at, bool? thisCopyEquipped, Rect? clear)
+    // The charges left on the copy of an item in hand (a readied healing tome's), for a tooltip; -1 when it has none.
+    public static int HeldCharges(ItemData item)
+    {
+        var player = PlayerManager.HasInstance ? PlayerManager.Instance.Active : null;
+        if (item == null || !item.HasCharges || player == null || player.Equipment == null || player.Hotbar == null) return -1;
+        foreach (var slot in new[] { EquipmentSlot.LeftHand, EquipmentSlot.RightHand })
+            if (player.Equipment.Get(slot) == item) { int at = player.Equipment.HeldIndex(slot); return at >= 0 ? player.Hotbar.ChargesAt(at) : -1; }
+        return -1;
+    }
+
+    void ShowAt(ItemData item, RectTransform at, bool? thisCopyEquipped, Rect? clear, int chargesLeft = -1)
     {
         if (panel == null || item == null) return;
         bool bars = mainBar.root != null && item.TryMainStat(out _, out _, out _);
@@ -89,7 +100,7 @@ public class TooltipUI : Singleton<TooltipUI>
         var gear = PlayerManager.HasInstance ? PlayerManager.Instance.Active?.Equipment : null;
         bool worn = thisCopyEquipped ?? (gear != null && gear.IsEquipped(item));
         // With a footer, "Equipped" is said there once, not in the lines as well.
-        ShowLines(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null, footer == null && worn));
+        ShowLines(Title(item), Kind(item), item.BuildTooltip(!bars, footer == null, footer == null && worn, chargesLeft));
         ShowHeader(item);
         ShowFooter(footer, footerNote, footerPrice, item, worn ? "Equipped" : "");
         if (compareBars != null) compareBars.SetActive(bars);
@@ -199,7 +210,7 @@ public class TooltipUI : Singleton<TooltipUI>
         // The panel's own tab says EQUIPPED; without one the type line does.
         if (compareTypeText != null) compareTypeText.text = (compareIcon != null ? "" : "EQUIPPED  ·  ") + Kind(equipped);
         // Its tab already says EQUIPPED.
-        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null, false);
+        if (compareDescriptionText != null) compareDescriptionText.text = equipped.BuildTooltip(true, compareFooter == null, false, HeldCharges(equipped));
         if (compareIcon != null) { compareIcon.sprite = equipped.icon; compareIcon.enabled = equipped.icon != null; compareIcon.preserveAspect = true; }
         if (compareIconSlot != null) compareIconSlot.gameObject.SetActive(equipped.icon != null);
         if (compareRarityLine != null) compareRarityLine.color = equipped.HasSlotFill ? Color.Lerp(equipped.RarityColour, Color.white, equipped.HasRarityColour ? .25f : .1f) : lineDefault;

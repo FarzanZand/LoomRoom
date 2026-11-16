@@ -189,6 +189,10 @@ public class BossFight : ScriptableObject
     public List<DungeonMaster.Line> beamBlocked = new() { new() { text = "Good. You held it." }, new() { text = "Well blocked." }, new() { text = "That's how it's done." } };
     [TabGroup(Tabs, "Comments"), Tooltip("Always said after a beam that got through: tell them to block.")]
     public List<DungeonMaster.Line> beamHit = new() { new() { text = "You were meant to block that." }, new() { text = "Shield up when I do that." }, new() { text = "Block it next time." } };
+    [TabGroup(Tabs, "Comments"), Tooltip("Said as the first cover pillar on the stage comes down: his beam poured onto it while the player hid behind it, and it breaks as that beam ends (BossCoverPillar). Said in place of the lines above.")]
+    public List<DungeonMaster.Line> firstPillarBroken = new() { new() { text = "That pillar did more than you did." }, new() { text = "I'd rather have kept the pillar." } };
+    [TabGroup(Tabs, "Comments"), Tooltip("Said as the second cover pillar comes down (and any after it): nothing is left to hide behind.")]
+    public List<DungeonMaster.Line> secondPillarBroken = new() { new() { text = "Those came as a pair. So do my regrets." }, new() { text = "That's both. Using a shield was free, you know." } };
     [TabGroup(Tabs, "Comments"), Tooltip("Said as he starts a fireball volley.")]
     public List<DungeonMaster.Line> volleyWarned = new() { new() { text = "Catch." }, new() { text = "Mind the fire." } };
     [TabGroup(Tabs, "Comments")] public List<DungeonMaster.Line> bossHalf = new() { new() { text = "Half of him left." } };

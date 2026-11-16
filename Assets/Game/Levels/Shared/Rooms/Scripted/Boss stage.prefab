@@ -16747,13 +16747,57 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9193016123836691243}
   m_SourcePrefab: {fileID: 100100000, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
 --- !u!4 &6266790508571003552 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1237680049489273427, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
   m_PrefabInstance: {fileID: 5176047406790174963}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &8709486537093372693 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+  m_PrefabInstance: {fileID: 5176047406790174963}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &9193016123836691243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8709486537093372693}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b2a7fef69dfc6445872a26064223ab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossCoverPillar
+  torch: {fileID: 4603311282604212990}
+  heatSeconds: 2.2
+  glow: 1.9
+  hotLight: 5
+  coolSeconds: 2.5
+  stumpHeight: 0.95
+  lumpSize: 0.75
+  stoneLumps: 4
+  stoneSize: 0.32
+  burst: 1.8
+  crumbleSeconds: 0.16
+  keepWithin: 3
+  brokenFace: {r: 0.5, g: 0.47, b: 0.45, a: 1}
+  smoulderSeconds: 10
+  smoulder: 1
+  dust: {fileID: 966438428902812450, guid: 42ce2813779a71549aaffe6d22f03064, type: 3}
+  breakSound: {fileID: 8300000, guid: 572e727401af7694b86b014fce8727f3, type: 3}
+  breakVolume: 1
+  rubbleSound: {fileID: 8300000, guid: 7b3df19198c8fe249a9e4e454c3c4444, type: 3}
+  rubbleVolume: 0.8
+  rubbleSoundDelay: 0.35
+  shake: 1.1
+  flash: 14
+  flashSeconds: 0.35
 --- !u!1001 &6147464529912854637
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17362,8 +17406,52 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8665470959078891184}
   m_SourcePrefab: {fileID: 100100000, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+--- !u!1 &4691205963445396512 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4542808680658121702, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}
+  m_PrefabInstance: {fileID: 9084269088069081030}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8665470959078891184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4691205963445396512}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b2a7fef69dfc6445872a26064223ab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossCoverPillar
+  torch: {fileID: 905081586953541519}
+  heatSeconds: 2.2
+  glow: 1.9
+  hotLight: 5
+  coolSeconds: 2.5
+  stumpHeight: 0.95
+  lumpSize: 0.75
+  stoneLumps: 4
+  stoneSize: 0.32
+  burst: 1.8
+  crumbleSeconds: 0.16
+  keepWithin: 3
+  brokenFace: {r: 0.5, g: 0.47, b: 0.45, a: 1}
+  smoulderSeconds: 10
+  smoulder: 1
+  dust: {fileID: 966438428902812450, guid: 42ce2813779a71549aaffe6d22f03064, type: 3}
+  breakSound: {fileID: 8300000, guid: 572e727401af7694b86b014fce8727f3, type: 3}
+  breakVolume: 1
+  rubbleSound: {fileID: 8300000, guid: 7b3df19198c8fe249a9e4e454c3c4444, type: 3}
+  rubbleVolume: 0.8
+  rubbleSoundDelay: 0.35
+  shake: 1.1
+  flash: 14
+  flashSeconds: 0.35
 --- !u!4 &8015512232937797013 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1237680049489273427, guid: 8dd93ac7ab84d42469060b87560cdc8b, type: 3}

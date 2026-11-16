@@ -21,6 +21,8 @@ MonoBehaviour:
   castSeconds: 1
   recoverySeconds: 0.4
   castMoveSpeed: 0.6
+  tomeCharges: 3
+  tomeBreakSound: {fileID: 11400000, guid: d4ccc135fca1ce543a390ec6fe195f1d, type: 2}
   projectile: {fileID: 0}
   radius: 1.5
   speed: 14
@@ -33,6 +35,9 @@ MonoBehaviour:
   chill: 0
   chillSeconds: 3
   chillEffect: {fileID: 0}
+  burn: 0
+  burnSeconds: 3
+  burnEffect: {fileID: 0}
   groundFire: {fileID: 0}
   groundFireSeconds: 3
   groundFireRadius: 1.6
@@ -98,6 +103,7 @@ MonoBehaviour:
       end: 0
       followDistance: 3
       leash: 18
+      catchUpBeyond: 3
       creditSummoner: 1
       noLoot: 1
       aura: {fileID: 0}
@@ -235,6 +241,7 @@ MonoBehaviour:
       end: 0
       followDistance: 3
       leash: 18
+      catchUpBeyond: 3
       creditSummoner: 1
       noLoot: 1
       aura: {fileID: 0}
@@ -260,3 +267,4 @@ MonoBehaviour:
   flightVolume: 1
   impactSound: {fileID: 0}
   impactVolume: 1
+  soundPitchVariance: 0.06
