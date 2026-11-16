@@ -226,6 +226,7 @@ public class RunRecapUI : MonoBehaviour
                 for (int i = 0; i < count && icons < maxSpoilIcons; i++, icons++) Add(spoilsStrip, spoilsIconTemplate, item.icon);
             }
         if (showcaseIcon != null) { showcaseIcon.sprite = best; showcaseIcon.preserveAspect = true; showcaseIcon.enabled = best != null; }
+        FitShowcase(best != null);
         for (int i = 0; i < Mathf.Min(t.kills, maxSkulls); i++) Add(killsStrip, skullTemplate, null);
         Arrange(spoilsStrip, spoilsIconTemplate);
         Arrange(killsStrip, skullTemplate);
@@ -296,6 +297,21 @@ public class RunRecapUI : MonoBehaviour
         for (int i = strip.childCount - 1; i >= 0; i--) { var c = strip.GetChild(i); if (template == null || c != template.transform) { c.gameObject.SetActive(false); Destroy(c.gameObject); } }
         if (template != null) template.gameObject.SetActive(false);
     }
+    // Nothing carried out: no empty showcase box beside the strip; the strip (with its note) takes the whole row. With spoils
+    // the box and the strip stand where they were built (RunRecapShowcase: both centre-anchored).
+    Vector2? stripHome, stripHomeSize;
+    void FitShowcase(bool shown)
+    {
+        var box = showcaseIcon != null ? showcaseIcon.transform.parent as RectTransform : null;
+        if (box == null || spoilsStrip == null || box == spoilsStrip) return;
+        stripHome ??= spoilsStrip.anchoredPosition; stripHomeSize ??= spoilsStrip.sizeDelta;
+        box.gameObject.SetActive(shown);
+        if (shown) { spoilsStrip.anchoredPosition = stripHome.Value; spoilsStrip.sizeDelta = stripHomeSize.Value; return; }
+        float left = box.anchoredPosition.x - box.sizeDelta.x * box.pivot.x, right = stripHome.Value.x + stripHomeSize.Value.x * (1f - spoilsStrip.pivot.x);
+        spoilsStrip.sizeDelta = new Vector2(right - left, stripHomeSize.Value.y);
+        spoilsStrip.anchoredPosition = new Vector2(left + (right - left) * spoilsStrip.pivot.x, stripHome.Value.y);
+    }
+
     // A dim line across the middle of an empty strip, in the help line's font (Clear takes it away with the icons).
     void Note(RectTransform strip, string text)
     {
