@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Quest outline
-  m_Shader: {fileID: 4800000, guid: 7595dca1a2e6d744892720efec337b40, type: 3}
+  m_Name: Quest motes
+  m_Shader: {fileID: 4800000, guid: c3febca4978babb41a7548696c2e82d9, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,8 +25,11 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Width: 0.6
+    - _Far: 11
+    - _Near: 1
+    - _NearFull: 2.6
+    - _Strength: 1.1
     m_Colors:
-    - _Color: {r: 0.45, g: 0.8, b: 1, a: 1}
+    - _BaseColor: {r: 1, g: 0.93, b: 0.82, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

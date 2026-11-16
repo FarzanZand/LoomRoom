@@ -36,12 +36,10 @@ public class TrophyWall : MonoBehaviour, IInteractable
     [Tooltip("A short burst on each new trophy (Items/Effects/Chest burst), scaled up to the room.")] public GameObject trophyEffect;
     [Min(.1f), Tooltip("The burst is made for the dungeon (1 unit to the metre); the room is ~22 units to the metre.")] public float trophyEffectScale = 20f;
 
-    [Tooltip("Each carried trophy is hung at its own plaque, which glows in the quest outline until it is (the user, 2026-11-11). Off: using the wall anywhere hangs them all at once.")]
+    [Tooltip("Each carried trophy is hung at its own plaque, which stands in the quest's light until it is (the user, 2026-11-11). Off: using the wall anywhere hangs them all at once.")]
     public bool hangAtPlaques = true;
     [Min(0), Tooltip("How far the plaque's use box reaches out past its front and round its edges, in room units (about 22 to the metre).")]
     public float spotMargin = 1.5f;
-    [Min(0), Tooltip("Width of a carried trophy's plaque outline (a flat ring just in front of it), in room units. The plaques stand .5 above their name plates: at the quest outline's usual .7 it ran over the plate (the user, 2026-11-11).")]
-    public float plaqueGlowWidth = .3f;
 
     // One trophy or several (the user, 2026-11-11: it said "trophies" with one carried).
     public string Prompt => Carried == 1 ? "Hang the trophy" : "Hang the trophies";
@@ -147,8 +145,7 @@ public class TrophyWall : MonoBehaviour, IInteractable
             box.center = bounds.center; box.size = bounds.size;
             spot.AddComponent<InteractableTrigger>();
             mount.glow = plaque.gameObject.AddComponent<QuestGlow>();
-            mount.glow.width = plaqueGlowWidth;
-            mount.glow.flatOn = plaque;   // a flat ring in front of the plaque: the shell round it hid its lower half from below
+            mount.glow.flatOn = plaque;   // on the wall: its light falls on it at a slant from the room's side
         }
     }
 
