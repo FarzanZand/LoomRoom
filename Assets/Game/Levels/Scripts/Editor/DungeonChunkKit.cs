@@ -38,6 +38,7 @@ public static class DungeonChunkKit
         BuildKit();
         var chunks = BuildChunks();
         var log = new System.Text.StringBuilder($"kit {kit.Count} pieces, chunks: ");
+        chunks.RemoveAll(c => c == null);   // rooms deleted in Asset Studio (Retired)
         foreach (var c in chunks) log.Append(c.name).Append(", ");
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars1.asset", chunks, c => c.cellars);
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars3.asset", chunks, c => c.crypt);
@@ -243,9 +244,31 @@ public static class DungeonChunkKit
         return c;
     }
 
+    // ── Rooms deleted in Asset Studio ───────────────────────────────
+    // Delete room... (AssetStudioWindow.DeleteRoom) writes the room's name here, with the pools it was in. A builder
+    // that would make a room of that name again leaves it out (Save returns null, and no pool gets an entry), so a
+    // deleted room stays deleted when the kit is run again. Take the room's line out of the file to have it built again.
+    public const string RetiredPath = ChunkFolder + "/Deleted rooms.txt";
+
+    public static bool Retired(string name)
+    {
+        if (!System.IO.File.Exists(RetiredPath)) return false;
+        foreach (var line in System.IO.File.ReadAllLines(RetiredPath))
+            if (!line.StartsWith("#") && line.Split('\t')[0].Trim() == name) return true;
+        return false;
+    }
+
+    public static void Retire(string name, string wasIn)
+    {
+        if (Retired(name)) return;
+        if (!System.IO.File.Exists(RetiredPath))
+            System.IO.File.WriteAllText(RetiredPath, "# Rooms deleted in Asset Studio (Delete room...): name, day, the pools it was in with its weight there.\n# The room builders skip these names. Take a line out to let a builder make that room again.\n");
+        System.IO.File.AppendAllText(RetiredPath, $"{name}\t{System.DateTime.Now:yyyy-MM-dd}\t{wasIn}\n");
+        AssetDatabase.ImportAsset(RetiredPath);
+    }
+
     static GameObject Save(Chunk c)
     {
-        chunkInfo.Add(c);
         // Where the chunk already is (Rooms, or a subfolder such as Rooms/Scripted), else Rooms.
         string path = $"{ChunkFolder}/{c.name}.prefab";
         foreach (var g in AssetDatabase.FindAssets($"t:Prefab \"{c.name}\"", new[] { ChunkFolder }))
@@ -254,6 +277,9 @@ public static class DungeonChunkKit
             if (System.IO.Path.GetFileNameWithoutExtension(p) == c.name) { path = p; break; }
         }
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        // Deleted in Asset Studio: not made again.
+        if (existing == null && Retired(c.name)) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return null; }
+        chunkInfo.Add(c);
         if (existing != null && (!overwrite || only != null && c.name != only)) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();
         var rows = new string[c.h];
@@ -649,6 +675,7 @@ public static class DungeonChunkKit
         chunkInfo.Clear();
         var made = new List<GameObject>();
         SmallRooms(made);
+        made.RemoveAll(m => m == null);   // rooms deleted in Asset Studio (Retired)
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars1.asset", made, c => c.cellars);
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars2.asset", made, c => (c.cellars + c.crypt) * .5f);
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars3.asset", made, c => c.crypt);

@@ -443,7 +443,9 @@ public partial class AssetStudioWindow : EditorWindow
         menu.AddItem(new GUIContent("Copy ID"), false, () => { EditorGUIUtility.systemCopyBuffer = AssetStudioCatalog.IdFor(guid); Toast("Copied " + AssetStudioCatalog.IdFor(guid)); });
         menu.AddSeparator("");
         string blocked = DeleteBlocked(path);
-        if (blocked == null) menu.AddItem(new GUIContent("Delete..."), false, () => DeleteAsset(path));
+        // A room goes out of every pool first (DeleteRoom); anything else is just deleted.
+        if (blocked == null && IsRoom(path)) menu.AddItem(new GUIContent("Delete room..."), false, () => DeleteRoom(path));
+        else if (blocked == null) menu.AddItem(new GUIContent("Delete..."), false, () => DeleteAsset(path));
         else menu.AddDisabledItem(new GUIContent("Delete (" + blocked + ")"));   // no slash in the reason: it would make a submenu
         menu.ShowAsContext();
     }
@@ -821,7 +823,17 @@ public partial class AssetStudioWindow : EditorWindow
         if (GUI.Button(new Rect(r.x + 12 + bw, y, bw, 24), new GUIContent("Copy path", selected.path))) { EditorGUIUtility.systemCopyBuffer = selected.path; Toast("Copied the path."); }
         if (GUI.Button(new Rect(r.x + 16 + bw * 2, y, bw, 24), "Show in Project")) { var a = selected.Load(); Selection.activeObject = a; EditorGUIUtility.PingObject(a); }
         y += 28;
-        if (selected.Load() is GameObject && GUI.Button(new Rect(r.x + 8, y, r.width - 16, 24), "Open prefab")) AssetDatabase.OpenAsset(selected.Load());
+        // A room has Delete room... beside it: out of every pool, then out of the project (AssetStudioWindow.DeleteRoom).
+        bool deletable = selected.Load() is GameObject && IsRoom(selected.path);
+        float openWidth = deletable ? (r.width - 20) * .6f : r.width - 16;
+        if (selected.Load() is GameObject && GUI.Button(new Rect(r.x + 8, y, openWidth, 24), "Open prefab")) AssetDatabase.OpenAsset(selected.Load());
+        if (deletable)
+        {
+            string blockedWhy = DeleteBlocked(selected.path);
+            using (new EditorGUI.DisabledScope(blockedWhy != null))
+                if (GUI.Button(new Rect(r.x + 12 + openWidth, y, r.width - 20 - openWidth, 24), new GUIContent("Delete room...", blockedWhy != null ? "Can't be deleted here: " + blockedWhy + "." : "Takes the room out of every room pool, then moves it to the recycle bin. Asks first.")))
+                { DeleteRoom(selected.path); GUIUtility.ExitGUI(); }
+        }
         if (selected.Load() is GameObject) y += 28;
         y += 4;
 
