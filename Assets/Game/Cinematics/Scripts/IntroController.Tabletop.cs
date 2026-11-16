@@ -184,7 +184,11 @@ public partial class IntroController
             var pool = lastTriple && tripleRoll.Length > 0 ? tripleRoll : total <= 8 ? lowRoll : total >= 15 ? highRoll : midRoll;
             if (pool.Length > 0)
             {
-                var line = pool[Random.Range(0, pool.Length)];
+                // Never the remark he just made (two low rolls in a row got "We'll say you're modest." twice).
+                int pick = Random.Range(0, pool.Length);
+                if (pool.Length > 1 && pool[pick] == lastRollLine) pick = (pick + 1 + Random.Range(0, pool.Length - 1)) % pool.Length;
+                var line = pool[pick];
+                lastRollLine = line;
                 // He comments, but the next throw doesn't wait for him to finish: his line stays up while the player rolls on.
                 if (line != null && !line.IsEmpty) yield return SayAll(new[] { line.With(line.text.Replace("{n}", total.ToString())) }, false);
             }

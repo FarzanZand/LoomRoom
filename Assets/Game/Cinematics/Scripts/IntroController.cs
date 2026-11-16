@@ -292,6 +292,7 @@ public partial class IntroController : Singleton<IntroController>
     }
 
     bool firstMorningPending, firstMorningGreeted;
+    DungeonMaster.Line lastRollLine;
     // A new game that skipped the intro starts here: the first morning's greeting is still said.
     public void BeginFirstMorning() => firstMorningPending = true;
 
