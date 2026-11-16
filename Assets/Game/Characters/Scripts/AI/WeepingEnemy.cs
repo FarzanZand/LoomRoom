@@ -113,7 +113,9 @@ public class WeepingEnemy : MonoBehaviour
         Kneel(false);
         if (source != null) source.Stop();
         if (wakeScream != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(wakeScream, transform.position);
-        if (wakeLine != null && !wakeLine.IsEmpty) DungeonMaster.Say(wakeLine);
+        // It cuts in: whatever he was saying or about to say is dropped. Struck in the first second of walking in, her
+        // room's walk-in line ("Quiet now. Whatever you do, don't touch her.") was still waiting and came after the blow (Zelda's find).
+        if (wakeLine != null && !wakeLine.IsEmpty) DungeonMaster.CutIn(wakeLine);
         var at = info.Source != null ? info.Source.transform.position : transform.position;
         brain.Provoke(at);
         // The fight opens with its volley (the first volley spell in its data).
