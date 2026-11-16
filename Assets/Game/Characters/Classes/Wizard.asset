@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
   id: mage
   displayName: Wizard
-  description: Starts with Fireball and Dice Portal tomes and lots of mana. Low health.
+  description: Fireball and Dice Portal Tomes and lots of mana. Low health.
   portrait: {fileID: 21300000, guid: e6ee88d68ebc4d64eaa831abd8ab994f, type: 3}
   sheetPortrait: {fileID: 21300000, guid: 9c6ad9da4d2c92b488ef94a9a0511a33, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 559ae5ff8e8faf3409ff9d47178a7452, type: 3}

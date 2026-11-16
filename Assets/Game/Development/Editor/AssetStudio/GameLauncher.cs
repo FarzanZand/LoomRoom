@@ -197,6 +197,7 @@ public static class GameLauncher
         var copy = Object.Instantiate(level);
         copy.name = level.name;
         copy.startingRoom = template;
+        copy.startingRoomVariants = null;   // this room and no other
         copy.fixedSeed = 0;
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;
         if (stage > 0 && copy.stages != null) copy.stages = copy.stages.Skip(stage).ToArray();

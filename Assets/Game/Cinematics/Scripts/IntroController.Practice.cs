@@ -21,7 +21,7 @@ public partial class IntroController
         // On the board the lamp lights only the room around it; the board has its own light (its colour is the level's).
         if (lamp != null) FirstPersonLighting.SetLayers(lamp, LightingManager.RoomLayer);
         if (sheet != null) sheet.Hide();
-        walked = guarded = 0f; hits = kills = pickups = 0; finale = false; fromStairs = false;
+        walked = guarded = 0f; hits = kills = pickups = 0; finale = false; fromStairs = false; getUps = 0;
         stillFor = 0f; saidIdle = saidHurt = endedByFinale = false;
         Listen();
         while (loader.Busy) yield return null;
@@ -329,10 +329,28 @@ public partial class IntroController
     public bool TakeOverDeath()
     {
         if (!running || !PracticeRunning) return false;
+        // Before the killer, a death is a lesson, not the end: the figure gets up where it fell and the lessons go on.
+        if (!finale && getUps < practiceGetUps && table != null) { getUps++; StartCoroutine(GetUp(getUps)); return true; }
         StopAllCoroutines(); PopDialogue();   // a stopped scene gives its Dialogue back (the next one takes it again)
         Unlisten();
         StartCoroutine(AfterPracticeDeath());
         return true;
+    }
+
+    int getUps;
+    IEnumerator GetUp(int count)
+    {
+        // A blink of black between lying on the floor and standing again, so it reads as being put back on the board.
+        if (ScreenManager.HasInstance) ScreenManager.Instance.FadeToBlack(.3f);
+        yield return GameManager.WaitCutscene(.45f);
+        if (!running || !PracticeRunning || table == null || table.IsAlive) { if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.3f); yield break; }
+        RunManager.RevivePlayer(table, out _, out _);
+        if (ScreenManager.HasInstance) ScreenManager.Instance.FadeFromBlack(.6f, .15f);
+        var lines = practiceGetUpLines;
+        var line = lines != null && lines.Length > 0 ? lines[Mathf.Clamp(count - 1, 0, lines.Length - 1)] : null;
+        // {Attack} and {Block} are read as the attack and block keys too (the scene keeps the first wording of the line).
+        string text = line != null && line.text != null ? line.text.Replace("{Attack}", "{PrimaryAction}").Replace("{Block}", "{SecondaryAction}") : null;
+        if (line != null && !line.IsEmpty) DungeonMaster.Say(text != null && text.Contains("{") ? line.With(Hint(text)) : line);
     }
 
     IEnumerator AfterPracticeDeath()

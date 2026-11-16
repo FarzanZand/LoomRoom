@@ -9,7 +9,6 @@ public class DiceCup : MonoBehaviour, IInteractable
     [Tooltip("How far it jiggles from side to side while shaken, in metres.")] public float shake = .03f;
     [Tooltip("How high it is lifted off the table while shaken, in metres.")] public float lift = .08f;
     [Tooltip("How long the shake lasts, in seconds.")] public float rattleSeconds = .8f;
-    [Min(0), Tooltip("Width of its outline while it waits to be shaken, in metres (.012 was too thin to see, .03 too heavy: the user, 2026-11-12).")] public float outlineWidth = .015f;
     DiceEvent dice;
     QuestGlow glow;
     Vector3 rest;
@@ -20,7 +19,6 @@ public class DiceCup : MonoBehaviour, IInteractable
     void Start()
     {
         glow = gameObject.AddComponent<QuestGlow>();
-        glow.width = outlineWidth;
     }
 
     void Update() { if (glow != null) glow.Show(dice != null && dice.CanRoll); }

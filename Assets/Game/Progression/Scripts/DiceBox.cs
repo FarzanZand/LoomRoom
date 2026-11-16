@@ -20,7 +20,7 @@ public class DiceBox : MonoBehaviour, IInteractable
     public string lockedPrompt = "Locked box", openPrompt = "Open the box";
     public string lockedMessage = "Locked. The key must be somewhere down there.";
     public string foundMessage = "You found a set of dice in the box.";
-    public DungeonMaster.Line diceLine = new() { text = "A set of dice. Put them on the table. They bring luck at the market." };
+    public DungeonMaster.Line diceLine = new() { text = "A set of dice. Put them by the candles on the table's edge. They bring luck at the market." };
 
     [Header("Sound and effect")]
     [Tooltip("The key turning in the lock, then the lid swinging up (played at the box, the second a moment after the first).")]
@@ -58,6 +58,7 @@ public class DiceBox : MonoBehaviour, IInteractable
         hintIntensity = CharacterSheetTable.ReachDown(hint, transform, hintIntensity);
         // The box stands on the coffee table: the outline goes round the table, which reads from across the room.
         glow = (transform.parent != null ? transform.parent.gameObject : gameObject).AddComponent<QuestGlow>();
+        glow.strength = 1.5f;   // a dark table in the room's darkest corner: at the usual strength its thin outline was faint from across the room
         if (Meta != null) Meta.FlagChanged += OnFlag;
         Refresh();
     }

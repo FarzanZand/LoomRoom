@@ -106,6 +106,7 @@ public class ClassPosterWall : MonoBehaviour, IInteractable
     {
         if (ProgressionManager.HasInstance) ProgressionManager.Instance.FlagChanged += OnFlag;
         glow = gameObject.AddComponent<QuestGlow>();
+        glow.strength = 1.3f;   // read from the far side of the room
         Refresh();
     }
 

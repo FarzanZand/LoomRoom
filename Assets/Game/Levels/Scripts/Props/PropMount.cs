@@ -2,7 +2,8 @@ using UnityEngine;
 
 // How a furnishing or wall decor piece sits in a room taller than the one tile it was made for, read by the generator:
 // a hanging piece (a chandelier, chains, a beam) is lifted with the ceiling, a full-height piece (a pilaster, a long
-// banner) is stacked up the wall to it. A piece flat against its wall casts no shadow.
+// banner) is stacked up the wall to it. A piece flat against its wall casts no shadow, and one made to lie on its wall
+// (a banner) is kept on it: the wall's trims are opened behind it (DungeonGenerator.HangOnWall).
 public class PropMount : MonoBehaviour
 {
     public enum Kind { Standing = 0, HangsFromCeiling = 1, FullHeight = 2 }
@@ -11,6 +12,8 @@ public class PropMount : MonoBehaviour
     public Kind kind;
     [Tooltip("Flat against its wall (a banner, a crest, chains): it casts no shadow, which would only be a few texels on the wall behind it.")]
     public bool castsNoShadow;
+    [Tooltip("Made to lie on its wall (a banner: its pivot is the wall's face, its cloth on it). The generator keeps it flat on the wall and opens the cornice and footing behind it; one a room template sets within 30 cm of a wall is put onto that wall.")]
+    public bool onWall;
 
     public static Kind KindOf(GameObject prefab) => prefab != null && prefab.TryGetComponent<PropMount>(out var mount) ? mount.kind : Kind.Standing;
 }

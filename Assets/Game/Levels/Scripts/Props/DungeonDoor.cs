@@ -48,6 +48,8 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
     [Min(.1f)] public float openingSpeed=4f;
     [Min(1)] public float health=25;
     public AudioClip openAudio;
+    [Range(0,1), Tooltip("Volume of the opening sound. Doors open dozens of times a floor: they sit a little under the blows of a fight.")] public float openVolume=.7f;
+    [Range(0,.5f), Tooltip("Random pitch either way each time it opens, so the floor's doors don't all sound the same.")] public float openPitchVariance=.07f;
     [Min(0), Tooltip("How far the sound of it opening carries (a sleeper hears a share of it).")] public float openNoise=7f;
     Vector3 closedPosition;
     bool open;
@@ -172,7 +174,7 @@ public class DungeonDoor : MonoBehaviour, IInteractable, IDamageable
             swingTarget=closedRotation*Quaternion.Euler(0,onTheirLeft ? -Mathf.Abs(swingDegrees) : Mathf.Abs(swingDegrees),0);
             PrepareLeaf();
         }
-        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position);
+        open=true;Opened?.Invoke(this);NoiseEvents.Report(transform.position,openNoise);if(openAudio!=null && AudioManager.HasInstance)AudioManager.Instance.PlaySFX(openAudio,transform.position,openVolume,openPitchVariance);
         // The other leaf of a double door opens with it, away from the same opener.
         if(partner!=null && !partner.open)partner.Open(from);}
     void Update(){

@@ -84,7 +84,7 @@ public partial class BossStageEncounter
 
     // As the boss is set down its crew is already there: dancing in a row at the back of the stage (toward the
     // Dungeon Master, behind where it stands), facing the way the player comes in, a little out of step. They ignore the
-    // fight until it calls them in (or a blow breaks one's dance, and that one fights).
+    // fight until it calls them in, and until then nothing hurts or moves them (Untouchable).
     void SpawnBackup()
     {
         if (fight == null || fight.backupDancer == null || boss == null) return;
@@ -105,6 +105,7 @@ public partial class BossStageEncounter
             // In a trance from the start: given a frame later, its first look could already set it chasing a player in
             // sight, and a trance doesn't stop a chase (the user, 2026-11-12: they walked to the player and never swung).
             if (brain != null) brain.Entranced = true;
+            Untouchable(brain, true);
             if (brain != null) StartCoroutine(StartDancer(brain, i));
         }
     }
@@ -211,7 +212,8 @@ public partial class BossStageEncounter
             playable.SetTime(fight.backupDance.length * (index * .29f % 1f));
         }
         backup.Add((brain, graph));
-        character.Damaged += _ => BreakUp(brain);
+        // A blow that got through (it has been called in) ends what is left of its dance; one that didn't changes nothing.
+        character.Damaged += info => { if (!info.Spared) BreakUp(brain); };
         // A little light of its own from above, in one of the show's colours, so the crew is seen dancing in the dark at
         // the back of the stage; it goes out when the dancer stops.
         var glow = new GameObject("Dancer light").AddComponent<Light>();
@@ -227,8 +229,20 @@ public partial class BossStageEncounter
 
     bool partyOver;
 
+    // A dancer still dancing can't be hurt or moved (the user, 2026-11-16: "I should not be able to kill the background
+    // dancers until they aggro me": they die to one blow, so a spell from across the stage cleared them before the boss
+    // had called them). Hits on it show IMMUNE, as on the boss while the beam is on (CharacterStats.SparedUntil), and it
+    // stands like a boss (EnemyMotor.Steadfast: no knockback, no flight from a die). Off again the moment it is called in.
+    static void Untouchable(EnemyBrain brain, bool on)
+    {
+        if (brain == null) return;
+        if (brain.TryGetComponent<Character>(out var character) && character.Stats != null) character.Stats.SparedUntil = on ? float.MaxValue : 0f;
+        if (brain.TryGetComponent<EnemyMotor>(out var motor)) motor.Steadfast = on;
+    }
+
     void BreakUp(EnemyBrain brain)
     {
+        Untouchable(brain, false);
         if (brain != null && dancerLights.TryGetValue(brain, out var glow)) { if (glow != null) Destroy(glow.gameObject); dancerLights.Remove(brain); }
         if (partyOver) return;
         for (int i = 0; i < backup.Count; i++)
@@ -267,6 +281,7 @@ public partial class BossStageEncounter
         foreach (var (b, graph) in backup.ToArray())
         {
             if (graph.IsValid()) graph.Destroy();
+            Untouchable(b, false);
             // Co-op guests: the host's crew falls and its deaths come here.
             if (b != null && b.Character != null && b.Character.Stats != null && b.Character.IsAlive && !Coop.IsGuest)
                 b.Character.Stats.TakeDamage(new DamageInfo { Amount = b.Character.Stats.CurrentHealth + 1f, Quiet = true, SourceName = "the end of the party", HitPoint = b.transform.position + Vector3.up, Direction = b.transform.forward });

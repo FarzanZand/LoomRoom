@@ -289,10 +289,61 @@ MonoBehaviour:
     rooms: 2
     fromFloor: 1
     maxPerFloor: 1
+  - template: {fileID: 7116912502107004032, guid: 91711cbc261954e4eba16f29e0258d05, type: 3}
+    weight: 1.1
+    rooms: 18
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 8808498387825063012, guid: 35e7ef5321a7b0443a23b97b57ebd854, type: 3}
+    weight: 0.8
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 6680099049181620590, guid: 7fb148978be01cb4381d6da8283f17ca, type: 3}
+    weight: 0.7
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 6930425551146207739, guid: 8a2930d172be9c846be5ba9cfd44edc6, type: 3}
+    weight: 0.9
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 2
+  - template: {fileID: 5751565427023435751, guid: 78fbb7867d13b464c9b8a84cf5eb5b82, type: 3}
+    weight: 0.8
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 5251791646946888463, guid: 2f8daae53f79aba42b7e5f39ab1b93d0, type: 3}
+    weight: 1
+    rooms: 10
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 1391341481133645936, guid: c463dc319dd65e04fb218e37899c30b4, type: 3}
+    weight: 1
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 744802302023042576, guid: 0407c6c80e355204d8d5a91dff4d92a7, type: 3}
+    weight: 1.1
+    rooms: 18
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 3357663262498597329, guid: 5722f4662bea5b74ab2e3f6fac90537f, type: 3}
+    weight: 0.7
+    rooms: 6
+    fromFloor: 1
+    maxPerFloor: 1
+  - template: {fileID: 2286586610152636271, guid: ff31b3860e8c7364aa0b6abf99c6e72d, type: 3}
+    weight: 1
+    rooms: 2
+    fromFloor: 1
+    maxPerFloor: 1
   templateChance: 1
   roomCount: 0
   roomSizeScale: 1
   tallRoomChance: 0
+  roofsOff: 0.1
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
@@ -348,7 +399,16 @@ MonoBehaviour:
   torchBrightness: 1
   enemies:
   - enemy: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
-    weight: 3
+    weight: 1.5
+    fromFloor: 1
+  - enemy: {fileID: 2060691698706546545, guid: 098f80dd0c99b7b49965ef19aa257d72, type: 3}
+    weight: 0.5
+    fromFloor: 1
+  - enemy: {fileID: 3536112721643428861, guid: 0068e0b2c4f060a44b934ef5911011a3, type: 3}
+    weight: 0.5
+    fromFloor: 1
+  - enemy: {fileID: 8311732577791090845, guid: 40e471aae6f30724c97ad9823698580e, type: 3}
+    weight: 0.5
     fromFloor: 1
   - enemy: {fileID: 6526550647871116108, guid: 134a5ffc9e277a44e88bd6b208f17b32, type: 3}
     weight: 2

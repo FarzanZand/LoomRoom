@@ -354,8 +354,12 @@ public class EnemyBrain : MonoBehaviour
             return r > 0f ? r : MeleeRange;
         }
     }
-    // Where its run-up stops: a lunging enemy just inside where its attack begins, beyond the player's reach.
-    float StopDistance => LungeHold ? Mathf.Max(PreferredDistance, MaxAttackRange - .1f) : PreferredDistance;
+    // Where its run-up stops: a lunging enemy just inside where its attack begins, beyond the player's reach. For a
+    // fighter who also casts (closesIn) that attack is its melee one, as everywhere else here: taken from its longest
+    // attack, the Disco King's run-up stopped where his volley reaches, 14 m off, and he stood there until the player
+    // walked up to him (the user, 2026-11-16: "He attacks when I get in melee, but he does not chase me"; Not a witch
+    // and every other fighter who casts did the same).
+    float StopDistance => LungeHold ? Mathf.Max(PreferredDistance, (CloseIn ? MeleeRange : MaxAttackRange) - .1f) : PreferredDistance;
     // The pace of the last stretch in, from where the run-up stopped to the distance it holds: under the player's
     // backing speed, so a player who backs off is not walked into.
     float CloseInSpeed => Tuning != null ? Tuning.enemyCloseInSpeed : 1.1f;
@@ -983,6 +987,16 @@ public class EnemyBrain : MonoBehaviour
         if (newState == EnemyState.Patrol && waypoints != null && waypoints.Length > 0 && waypoints[waypointIndex] != null)
             Motor.MoveTo(waypoints[waypointIndex].position);
 
+        RestorePace();
+        if (previous != newState) StateChanged?.Invoke(previous, newState);
+    }
+
+    // The speed, turning and stopping its state moves with (chasing or not). Public for whoever set the motor's own for
+    // a while and hands it back (a summon keeping up with its summoner, Summon.Steer).
+    public void RestorePace()
+    {
+        var p = Profile;
+        bool isCombat = State == EnemyState.Chase || State == EnemyState.Attack;
         if (isCombat && p.useChaseSpeed)        Motor.SetSpeed(p.chaseSpeed);
         else if (!isCombat && p.useWanderSpeed) Motor.SetSpeed(p.wanderSpeed);
         else                                    Motor.ResetSpeed();
@@ -990,7 +1004,6 @@ public class EnemyBrain : MonoBehaviour
         Motor.SetAngularSpeed(isCombat ? p.chaseAngularSpeed : p.passiveAngularSpeed);
         Motor.SetAutoBraking(!isCombat);
         Motor.SetStoppingDistance(isCombat ? PreferredDistance : 0.3f);
-        if (previous != newState) StateChanged?.Invoke(previous, newState);
     }
 
     void UpdateAnimator()

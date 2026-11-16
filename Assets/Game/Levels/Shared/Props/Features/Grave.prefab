@@ -78,7 +78,7 @@ MonoBehaviour:
   loot: {fileID: 0}
   mound: {fileID: 8226815657154211491}
   digClip: {fileID: 8300000, guid: f306f489c1c38fd42b478e5895df6a6c, type: 3}
-  digVolume: 0.9
+  digVolume: 0.45
   dirtEffect: {fileID: 7742265850632592593, guid: 2878e923afe61984b95532101d7ab02e, type: 3}
   noiseRadius: 8
   seed: 0

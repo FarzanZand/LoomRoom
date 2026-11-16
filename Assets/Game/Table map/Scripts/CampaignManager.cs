@@ -976,8 +976,6 @@ public partial class CampaignManager : Singleton<CampaignManager>
                                 yield return Ask($"Start a new run in {e.displayName}? Your saved run ({savedDetail}) in {savedPlace.displayName} will be lost.", r => yes = r);
                                 if (!yes) continue;
                             }
-                            // Its line is for a new run; a continued one picks up deeper, where it wouldn't fit.
-                            if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) DungeonMaster.Say(e.pickedLine);
                             if (card != null) { card.Hide(); card.ShowHint(false); }
                             Unhover();
                             // The run starts on the click: the figure is set down there (no walk), and the map sinks
@@ -998,6 +996,11 @@ public partial class CampaignManager : Singleton<CampaignManager>
                                 if (!ok) { cancelled = true; break; }
                             }
                             else if (resume) loader.ResumeAdventure(); else loader.Load(e.level);
+                            // Its line is for a new run (a continued one picks up deeper, where it wouldn't fit). It is
+                            // asked for once the load holds its cutscene, so the feed keeps it until the floor stands:
+                            // asked for just before, its voice began, the cutscene cut it off a frame later and the feed
+                            // said it again after the floor was built, so it was heard twice on every run.
+                            if (!resume && e.pickedLine != null && !e.pickedLine.IsEmpty) { DungeonMaster.Say(e.pickedLine); PlaceLineSaidAt = Time.unscaledTime; }
                             started = true;
                         }
                     }

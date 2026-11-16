@@ -107,6 +107,7 @@ public class PauseMenuUI : MonoBehaviour
     {
         if (open || root == null || !GameManager.HasInstance || !CanPauseIn(GameManager.Instance.State)) return;
         open = true;
+        KeyCapText.CapHints(root.transform);   // "Esc to resume" with Esc in a key cap
         OverCutscene = GameManager.Instance.State == GameState.Cutscene;
         GameManager.Instance.Push(GameState.Paused);
         resumeTimeScale = Time.timeScale;

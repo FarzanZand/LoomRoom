@@ -129,6 +129,49 @@ public static class TavernDress
 
     const string DF = "PolygonDarkFantasy", FK = "PolygonFantasyKingdom", TN = "PolygonTown";
 
+    // The hearth's fire, as the bedroom's hearth has it (F9 1cba8f24, the user: "Update the fireplace with the one you
+    // have in the room with the new fire, looks better"): three of the dungeon's torch fires (tall tongues round a bright
+    // heart, embers) side by side on the logs, the middle one taller, large enough that they overlap into one fire
+    // filling the firebox; the logs at full size; the fire's light out in front of the hearth (close over the logs it
+    // bleached them white). Each fire is listed on the TavernHearth by its top system, so it still burns low after a
+    // rest. Also run on its own by Tools/tavern_fire.eval.cs.
+    public static string HearthFire(Transform hearth, GameObject torchFire)
+    {
+        var th = hearth.GetComponent<TavernHearth>();
+        if (th == null || torchFire == null) return "no hearth or no torch fire";
+        foreach (var c in hearth.Cast<Transform>().ToArray())
+            if (c.GetComponent<Light>() == null && (c.GetComponent<ParticleSystem>() != null || c.name.StartsWith("Fire "))) Object.DestroyImmediate(c.gameObject);
+        var logs = hearth.Find("Hearth logs");
+        if (logs != null) logs.localScale = Vector3.one;
+        float[] across = { -.25f, 0f, .25f }, size = { 2.04f, 2.55f, 2.04f };
+        var flames = new List<ParticleSystem>();
+        for (int i = 0; i < across.Length; i++)
+        {
+            var fire = (GameObject)PrefabUtility.InstantiatePrefab(torchFire, hearth);
+            fire.name = "Fire " + (i + 1);
+            fire.transform.localPosition = new Vector3(across[i], .41f, .45f);
+            fire.transform.localRotation = Quaternion.identity;
+            fire.transform.localScale = Vector3.one * size[i];
+            var top = fire.GetComponentInChildren<ParticleSystem>(true);
+            if (top != null) flames.Add(top);
+            // At this size the torch's embers flew up through the stone over the arch and its pale heart smeared in
+            // front of the logs: the embers die inside the firebox, the heart is a deeper yellow and thinner.
+            foreach (var part in fire.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var main = part.main; var emission = part.emission;
+                if (part.name == "Embers") main.startLifetimeMultiplier *= .35f;
+                else if (part.name == "Heart") { main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, .66f, .2f, 1f), new Color(1f, .78f, .32f, 1f)); emission.rateOverTimeMultiplier *= .5f; }
+            }
+        }
+        var hso = new SerializedObject(th); var list = hso.FindProperty("flames");
+        list.arraySize = flames.Count;
+        for (int i = 0; i < flames.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = flames[i];
+        hso.ApplyModifiedPropertiesWithoutUndo();
+        var light = hearth.GetComponentInChildren<Light>(true);
+        if (light != null) light.transform.localPosition = new Vector3(0, 1f, 1.35f);
+        return "hearth fire: " + flames.Count + " fires listed";
+    }
+
     public static string Dress()
     {
         var log = new List<string>();
@@ -242,20 +285,9 @@ public static class TavernDress
             hearth.localPosition = new Vector3(-6.95f, 0, -.3f); hearth.localRotation = Quaternion.Euler(0, 90, 0);
             Put(fireplace, hearth, 0, 0, 0, 0, piece: false);
             Put(logs, hearth, 0, .2f, .4f, 0, piece: false, collide: false);
-            // The fire on the logs: the hearth's flames spread across them, five, listed on the hearth.
+            // The fire on the logs: the dungeon's own fire, three side by side, listed on the hearth (HearthFire).
+            HearthFire(hearth, AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Levels/Shared/Props/Effects/Torch fire.prefab"));
             var th = hearth.GetComponent<TavernHearth>();
-            var flames = hearth.GetComponentsInChildren<ParticleSystem>(true).Where(f => f.transform.parent == hearth).ToList();
-            while (flames.Count < 5 && flames.Count > 0) { var extra = Object.Instantiate(flames[0].gameObject, hearth); extra.name = flames[0].name; flames.Add(extra.GetComponent<ParticleSystem>()); }
-            var spots = new[] { (0f, .42f, 4.6f), (-.24f, .4f, 3.8f), (.24f, .38f, 3.8f), (-.1f, .3f, 3.2f), (.12f, .48f, 3f) };
-            for (int i = 0; i < flames.Count && i < spots.Length; i++)
-            {
-                flames[i].transform.localPosition = new Vector3(spots[i].Item1, .38f, spots[i].Item2);
-                flames[i].transform.localScale = Vector3.one * spots[i].Item3;
-                var main = flames[i].main; main.scalingMode = ParticleSystemScalingMode.Hierarchy;   // the scale sizes the flames, not only where they start
-            }
-            var hso = new SerializedObject(th); var list = hso.FindProperty("flames");
-            if (list != null) { list.arraySize = flames.Count; for (int i = 0; i < flames.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = flames[i]; hso.ApplyModifiedPropertiesWithoutUndo(); }
-            var fire = hearth.GetComponentInChildren<Light>(true); if (fire != null) fire.transform.localPosition = new Vector3(0, .7f, .9f);
             var interaction = hearth.Find("Interaction"); if (interaction != null) interaction.localPosition = new Vector3(0, 0, 1.2f);
             var h = Group("Hearth side");
             Put(rug, h, -5.3f, .005f, -.3f, 90, blocking: false, collide: false);

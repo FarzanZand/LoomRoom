@@ -541,6 +541,7 @@ public class DevConsole : MonoBehaviour
         var copy = Instantiate(level);
         copy.name = level.name;
         copy.startingRoom = template;
+        copy.startingRoomVariants = null;   // this room and no other
         copy.fixedSeed = 0;
         // An event room opens the run as itself: no starting chest in the middle of the event.
         if (template.GetComponent<ScriptedEventRoom>() != null) copy.startingChest = false;

@@ -229,6 +229,8 @@ public static class EventRoomsSetup
         string path = $"{RoomDir}/{name}.prefab";
         var made = AssetDatabase.LoadAssetAtPath<GameObject>(path);
         if (made != null && !overwrite) return made;
+        // Deleted in Asset Studio (Delete room...): not made again.
+        if (made == null && DungeonChunkKit.Retired(name)) return null;
         var root = new GameObject(name);
         var t = root.AddComponent<DungeonRoomTemplate>();
         t.kind = DungeonRoomKind.Scripted;

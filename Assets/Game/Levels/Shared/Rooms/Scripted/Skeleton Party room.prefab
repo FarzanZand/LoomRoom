@@ -25,8 +25,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1174884618904646570}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.38268346, z: 0, w: 0.92387956}
-  m_LocalPosition: {x: -2.2, y: 0, z: -2.2}
+  m_LocalRotation: {x: 0, y: 0.9659258, z: -0, w: -0.25881907}
+  m_LocalPosition: {x: 1.5556312, y: 0, z: 2.6944318}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -129,8 +129,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4613236131251349743}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.92387956, z: 0, w: 0.38268346}
-  m_LocalPosition: {x: -2.2, y: 0, z: 2.2}
+  m_LocalRotation: {x: 0, y: 0.7071067, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -3.111262, y: 0, z: -0.00000027199516}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -411,8 +411,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7086400089661664614}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.92387956, z: -0, w: -0.38268346}
-  m_LocalPosition: {x: 2.2, y: 0, z: 2.2}
+  m_LocalRotation: {x: 0, y: -0.258819, z: -0, w: 0.9659259}
+  m_LocalPosition: {x: 1.5556307, y: 0, z: -2.694432}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -483,58 +483,6 @@ Transform:
   - {fileID: 5811810439790643696}
   m_Father: {fileID: 6130411148241043603}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7960197558594796056
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2912229929389397953}
-  - component: {fileID: 4736761741696028704}
-  m_Layer: 0
-  m_Name: Dancer 4
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2912229929389397953
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7960197558594796056}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.38268346, z: -0, w: 0.92387956}
-  m_LocalPosition: {x: 2.2, y: 0, z: -2.2}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 394978706156355094}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4736761741696028704
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7960197558594796056}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: deb8ddc169c9d5547ac284579603bb05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DungeonSocket
-  type: 0
-  chance: 1
-  overridePrefab: {fileID: 7746103060206643040, guid: f1195d95b27518e44a6196beaf31e8f4, type: 3}
-  archer: 0
-  faceWall: 0
-  wallGap: 0.75
-  overrideLightColor: 0
-  lightColor: {r: 1, g: 0.6, b: 0.3, a: 1}
 --- !u!1 &7969575359792673765
 GameObject:
   m_ObjectHideFlags: 0
@@ -567,7 +515,6 @@ Transform:
   - {fileID: 1757560597511924569}
   - {fileID: 3918006624433059941}
   - {fileID: 5279221762150864958}
-  - {fileID: 2912229929389397953}
   m_Father: {fileID: 6130411148241043603}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &868913978210694694

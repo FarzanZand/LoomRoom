@@ -51,6 +51,8 @@ public class WeepingEnemy : MonoBehaviour
             source = gameObject.AddComponent<AudioSource>();
             source.clip = weeping; source.loop = true; source.volume = weepingVolume;
             source.spatialBlend = 1f; source.rolloffMode = AudioRolloffMode.Linear; source.minDistance = 1.5f; source.maxDistance = weepingRange;
+            // Through the SFX mixer, so the player's Master and SFX volumes (and the mixer's own settings) apply to it.
+            if (AudioManager.HasInstance) source.outputAudioMixerGroup = AudioManager.Instance.SfxGroup;
             source.Play();
         }
         character.Damaged += Hurt;
@@ -111,7 +113,9 @@ public class WeepingEnemy : MonoBehaviour
         Kneel(false);
         if (source != null) source.Stop();
         if (wakeScream != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFXData(wakeScream, transform.position);
-        if (wakeLine != null && !wakeLine.IsEmpty) DungeonMaster.Say(wakeLine);
+        // It cuts in: whatever he was saying or about to say is dropped. Struck in the first second of walking in, her
+        // room's walk-in line ("Quiet now. Whatever you do, don't touch her.") was still waiting and came after the blow (Zelda's find).
+        if (wakeLine != null && !wakeLine.IsEmpty) DungeonMaster.CutIn(wakeLine);
         var at = info.Source != null ? info.Source.transform.position : transform.position;
         brain.Provoke(at);
         // The fight opens with its volley (the first volley spell in its data).

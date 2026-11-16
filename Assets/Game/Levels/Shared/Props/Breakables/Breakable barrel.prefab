@@ -73,7 +73,7 @@ MonoBehaviour:
   placement: 0
   model: {fileID: 2575221971785949149}
   breakClip: {fileID: 8300000, guid: b4654e8136dc95b4c839d87c76ba3e34, type: 3}
-  breakVolume: 0.9
+  breakVolume: 0.42
   hitSound: {fileID: 11400000, guid: 281260761cae95a4ba1d9141800b09b2, type: 2}
   hitClip: {fileID: 0}
   hitStopScale: 0.7

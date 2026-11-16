@@ -64,6 +64,20 @@ public class DungeonMaster : Singleton<DungeonMaster>
         return true;
     }
     public static float TikTokWidth => HasInstance ? Instance.tiktokWidth : 560f;
+    // The box round the lines showing just now (opposite corners in world space), for HUD pieces that keep off them
+    // (the loot labels); false while nothing reads there.
+    public static bool FeedBox(out Vector3 min, out Vector3 max)
+    {
+        min = max = default;
+        if (!HasInstance || Instance.label == null || !Instance.label.isActiveAndEnabled || Instance.lines.Count == 0) return false;
+        var l = Instance.label;
+        if (string.IsNullOrEmpty(l.text)) return false;
+        var b = l.textBounds;
+        if (b.size.x <= 0f || b.size.y <= 0f) return false;
+        var r = l.rectTransform;
+        min = r.TransformPoint(b.min); max = r.TransformPoint(b.max);
+        return true;
+    }
     [SerializeField, Tooltip("With the bag open the lines keep to the gap between the character panel and the bag (1920 x 1080 canvas): their width there and how far left of the middle the gap's middle is.")]
     Vector2 bagOpenWidthAndShift = new(440f, -79f);
 
@@ -189,13 +203,17 @@ public class DungeonMaster : Singleton<DungeonMaster>
 
     // True while lines are still queued or being spoken.
     public bool Speaking => running != null;
+    // Seconds since he last had something to say (0 while a line is waiting or being said). A remark that can wait asks
+    // this first, so he doesn't talk without a breath between (the floor's bet, his word about the roof).
+    public static float QuietFor => !HasInstance ? 999f : Instance.running != null ? 0f : Time.unscaledTime - Instance.quietSince;
+    float quietSince = -999f;
     bool wasCutscene;
 
     // Drops lines not yet said (a run ended: what was meant for the dungeon is not said in the room).
     public void Silence()
     {
         queue.Clear();
-        if (running != null) { StopCoroutine(running); running = null; }
+        if (running != null) { StopCoroutine(running); running = null; quietSince = Time.unscaledTime; }
         StopVoice();
     }
 
@@ -277,6 +295,7 @@ public class DungeonMaster : Singleton<DungeonMaster>
             }
         }
         running = null;
+        quietSince = Time.unscaledTime;
     }
 
     static bool Skippable => GameManager.HasInstance && GameManager.Instance.State == GameState.Dialogue;

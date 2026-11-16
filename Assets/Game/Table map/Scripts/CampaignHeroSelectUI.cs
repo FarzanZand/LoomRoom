@@ -44,6 +44,7 @@ public class CampaignHeroSelectUI : MonoBehaviour
     // Returns the class taken, or null when cancelled (the class is then put back as it was).
     public IEnumerator Choose(AdventurerProgress who, IReadOnlyList<AdventurerClass> classes, Action<AdventurerClass> done)
     {
+        KeyCapText.CapHints(transform);   // its help line's keys (Enter, Esc) in key caps
         progress = who;
         var before = progress != null ? progress.selectedClass : null;
         classBefore = before;

@@ -40,7 +40,7 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
     public bool keepsAllGear;
     [Tooltip("The starting room's chest: exactly one piece of gear rolled from its loot plus its guaranteed items (a potion), no spoils (set by the generator).")]
     public bool startingKit;
-    [Min(0), Tooltip("Floors deeper a bonus roll comes from (a gold chest: one item as if from 3 floors down). 0 = none.")]
+    [Min(0), Tooltip("Floors deeper a bonus roll comes from (a gold chest: one item as if from 3 floors down, its tier at most one above the floor's best). 0 = none.")]
     public int rareRollFloors;
     bool opened;
     float health = 10;
@@ -141,8 +141,10 @@ public class DungeonContainer : MonoBehaviour, IDamageable, IInteractable
             for(int i=0;i<extraRolls;i++) drops.AddRange(loot.RollDrops(rng,floorNumber,source));
             if(rareRollFloors>0)
             {
-                var rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source);
-                for(int i=0;rare.Count==0 && i<4;i++) rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source);
+                // Its tiers are held to one above the floor's best (LootSource.DeeperTierCap).
+                int cap=LootSource.DeeperTierCap(floorNumber);
+                var rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source,cap);
+                for(int i=0;rare.Count==0 && i<4;i++) rare=loot.RollDrops(rng,floorNumber+rareRollFloors,source,cap);
                 if(rare.Count>0){ rare.Sort((a,b)=>(b.item!=null?b.item.tier:0).CompareTo(a.item!=null?a.item.tier:0)); drops.Add(rare[0]); }
             }
         }

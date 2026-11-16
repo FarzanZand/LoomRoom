@@ -38,14 +38,14 @@ public partial class ProgressionManager
         new Quest { id = SheetQuest, text = "Look at the character sheet on the hobby table." },
         new Quest { id = ShieldBashQuest, text = "Shield bash: hold {block}, press {attack}." },
         new Quest { id = DeflectQuest, text = "Block an arrow or spell to send it back." },
-        new Quest { id = DashQuest, text = "Evade: press {sprint}, holding left, right or back." },
+        new Quest { id = DashQuest, text = "Evade: press {sprint} while moving." },
         new Quest { id = InventoryQuest, text = "Open your inventory ({inventory} or Tab)." },   // Tab is the fixed second binding
         new Quest { id = SpendQuest, text = "Train Athletics on the character sheet." },
         new Quest { id = TableQuest, text = "Sit down at the table." },
         new Quest { id = TrophyQuest, text = "Hang your trophies on the wall." },
         new Quest { id = BoxKeyQuest, text = "Open the locked box on the coffee table." },
         new Quest { id = PosterQuest, text = "Put up the new poster on the wall by the bed." },
-        new Quest { id = DiceQuest, text = "Put the dice on the big table." },
+        new Quest { id = DiceQuest, text = "Put the dice by the candles on the big table's edge." },
         new Quest { id = RumourQuest, text = "Buy a rumour from the tavern keeper." },
         new Quest { id = ClassQuest, text = "Change your class at the desk by the bed." },
     };
@@ -111,34 +111,44 @@ public partial class ProgressionManager
 
     // The quest's text with the player's keys put in.
     // With one trophy carried, the trophy quest says it in the singular ("Hang your trophy on the wall.").
-    public string QuestText(Quest q)
+    // With caps, each key is marked for a drawn key cap (KeyCapText: the quest log); without, it is a plain word.
+    public string QuestText(Quest q, bool caps = false)
     {
         if (q == null) return "";
-        string text = KeysIn(q.text);
+        string text = KeysIn(q.text, caps);
         if (q.id == TrophyQuest && TrophyCount(TrophyState.Carried) == 1)
             text = text.Replace("trophies", "trophy").Replace("Trophies", "Trophy");
         return text;
     }
 
     // {attack}, {block}, {inventory}, {crouch} and {sprint} replaced by the player's own keys (quests, the lesson's lines).
-    public static string KeysIn(string text)
+    public static string KeysIn(string text, bool caps = false)
     {
         text ??= "";
         if (InputManager.HasInstance)
         {
-            text = text.Replace("{attack}", KeyName(InputManager.Instance.BindingDisplay("PrimaryAction")));
-            text = text.Replace("{block}", KeyName(InputManager.Instance.BindingDisplay("SecondaryAction")));
-            string inventory = KeyName(InputManager.Instance.BindingDisplay("Inventory"));
+            string Name(string action) { string n = KeyName(InputManager.Instance.BindingDisplay(action), caps); return caps ? KeyCapText.Key(n) : n; }
+            text = text.Replace("{attack}", Name("PrimaryAction"));
+            text = text.Replace("{block}", Name("SecondaryAction"));
+            string bare = KeyName(InputManager.Instance.BindingDisplay("Inventory"), caps);
             // Tab is the fixed second binding: with Inventory bound to Tab too, it is said once.
-            if (string.Equals(inventory, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", inventory);
-            text = text.Replace("{inventory}", inventory);
-            text = text.Replace("{crouch}", KeyName(InputManager.Instance.BindingDisplay("Crouch")));
-            text = text.Replace("{sprint}", KeyName(InputManager.Instance.BindingDisplay("Sprint")));
+            if (string.Equals(bare, "Tab", StringComparison.OrdinalIgnoreCase)) text = text.Replace("{inventory} or Tab", "{inventory}");
+            else if (caps) text = text.Replace("{inventory} or Tab", "{inventory} or " + KeyCapText.Key("Tab"));
+            text = text.Replace("{inventory}", caps ? KeyCapText.Key(bare) : bare);
+            text = text.Replace("{crouch}", Name("Crouch"));
+            text = text.Replace("{sprint}", Name("Sprint"));
+            // A cap already says "this is a key": brackets round keys only crowd it, so "Open your inventory (I or Tab)."
+            // reads "Open your inventory with I or Tab." and "Crouch (C) and ..." "Crouch with C and ..." (the user,
+            // 2026-11-16: the brackets fell behind the caps). Plain text keeps its brackets.
+            if (caps) text = BracketedKeys.Replace(text, "with $1");
         }
         return text;
     }
+    static readonly System.Text.RegularExpressions.Regex BracketedKeys = new(
+        @"\(\s*((?:<space=[^>]*>)*<link=""key"">[^<]*</link>(?:<space=[^>]*>)*(?:\s*or\s*(?:<space=[^>]*>)*<link=""key"">[^<]*</link>(?:<space=[^>]*>)*)*)\s*\)");
 
-    static string KeyName(string binding) => binding == "LMB" ? "left mouse" : binding == "RMB" ? "right mouse" : binding;
+    // In a sentence the mouse buttons are words ("left mouse"); on a key cap they start with a capital ("Left mouse").
+    static string KeyName(string binding, bool caps = false) => binding == "LMB" ? (caps ? "Left mouse" : "left mouse") : binding == "RMB" ? (caps ? "Right mouse" : "right mouse") : binding;
 
     void Start()
     {
@@ -179,6 +189,7 @@ public partial class ProgressionManager
     void OfferQuestsForRun()
     {
         CompleteQuest(TableQuest);
+        if (LessonTaught) SetFlag(RanAfterLessonFlag);
         // Sat down before the trophies were hung (the quest not given yet): it never comes up after the run is played.
         if (QuestState(SpendQuest) == 2 && QuestState(TableQuest) == 0) SetFlag(QuestFlag(TableQuest), 2);
         // Until the player has opened the inventory once, every run starts by saying how (the intro's included).

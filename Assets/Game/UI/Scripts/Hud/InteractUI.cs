@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Shows the active player's interaction prompt.
+// Shows the active player's interaction prompt. Its keys stand in drawn key caps (KeyCapText).
 [DefaultExecutionOrder(11000)]
 public class InteractUI : MonoBehaviour
 {
@@ -71,8 +71,23 @@ public class InteractUI : MonoBehaviour
         return true;
     }
 
+    // The prompt's box while it shows (opposite corners in world space), for HUD pieces that keep off it (the loot
+    // labels: "Pick up Leather Boots" lay on the label of the sword beside the boots).
+    static InteractUI current;
+    static readonly Vector3[] boxCorners = new Vector3[4];
+    public static bool PromptBox(out Vector3 min, out Vector3 max)
+    {
+        min = max = default;
+        if (current == null || current.promptRoot == null || !current.promptRoot.activeInHierarchy) return false;
+        ((RectTransform)current.promptRoot.transform).GetWorldCorners(boxCorners);
+        min = boxCorners[0]; max = boxCorners[2];
+        return true;
+    }
+
     void OnEnable()
     {
+        KeyCapText.On(promptText);   // the keys stand in drawn key caps
+        current = this;
         ListenForKeys();
         if (PlayerManager.HasInstance)
         {
@@ -134,15 +149,18 @@ public class InteractUI : MonoBehaviour
         if (promptText == null) return;
         // The key is read once per rebind (shownKey is cleared then), the message each check.
         string key = shownKey ?? (InputManager.HasInstance ? InputManager.Instance.BindingDisplay("Interact") : "E");
-        string message = trigger.WorldItem != null && trigger.WorldItem.Item != null
-            ? trigger.WorldItem.Item.itemName : trigger.PromptMessage;
+        // An item on the floor is named in its rarity's colour, as its loot label and beam show it (Common stays plain).
+        var floorItem = trigger.WorldItem != null ? trigger.WorldItem.Item : null;
+        string message = floorItem != null
+            ? (floorItem.rarity != ItemRarity.Common ? $"<color={floorItem.RarityTextColour}>{floorItem.itemName}</color>" : floorItem.itemName)
+            : trigger.PromptMessage;
         // A second action on its own key (the table's R for the map) goes beside the first.
         string second = trigger.Interactable is ISecondaryInteractable s && !string.IsNullOrEmpty(s.SecondaryPrompt)
-            ? "      <b>[" + (InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + "]</b>  " + s.SecondaryPrompt : "";
+            ? "      " + KeyCapText.Key(InputManager.HasInstance ? InputManager.Instance.BindingDisplay(s.SecondaryAction) : "R") + " " + s.SecondaryPrompt : "";
         message += second;
         if (key == shownKey && message == shownMessage) return;
         shownKey = key; shownMessage = message;
-        promptText.text = "<b>[" + key + "]</b>  " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);
+        promptText.text = KeyCapText.Key(key) + " " + (trigger.WorldItem != null && trigger.WorldItem.Item != null ? "Pick up " + message : message);
         if (promptRoot != null)
         {
             var size = promptText.GetPreferredValues(promptText.text, 560, 0);

@@ -38,6 +38,7 @@ public static class DungeonChunkKit
         BuildKit();
         var chunks = BuildChunks();
         var log = new System.Text.StringBuilder($"kit {kit.Count} pieces, chunks: ");
+        chunks.RemoveAll(c => c == null);   // rooms deleted in Asset Studio (Retired)
         foreach (var c in chunks) log.Append(c.name).Append(", ");
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars1.asset", chunks, c => c.cellars);
         Pool("Assets/Game/Levels/Shared/Biomes/Cellars3.asset", chunks, c => c.crypt);
@@ -221,7 +222,7 @@ public static class DungeonChunkKit
         public Transform root;
         public DungeonRoomEvent roomEvent;
         public DungeonRoomLight mood;
-        public bool openCeiling, noTorches;
+        public bool openCeiling, noTorches, ownProps;
         public int skylightRadius;
         // The kinds of room it may become, and its weight in Cellars and in the Crypt (0: not in that biome).
         public DungeonRoomRoles rooms = DungeonRoomRoles.Combat;
@@ -243,9 +244,31 @@ public static class DungeonChunkKit
         return c;
     }
 
+    // ── Rooms deleted in Asset Studio ───────────────────────────────
+    // Delete room... (AssetStudioWindow.DeleteRoom) writes the room's name here, with the pools it was in. A builder
+    // that would make a room of that name again leaves it out (Save returns null, and no pool gets an entry), so a
+    // deleted room stays deleted when the kit is run again. Take the room's line out of the file to have it built again.
+    public const string RetiredPath = ChunkFolder + "/Deleted rooms.txt";
+
+    public static bool Retired(string name)
+    {
+        if (!System.IO.File.Exists(RetiredPath)) return false;
+        foreach (var line in System.IO.File.ReadAllLines(RetiredPath))
+            if (!line.StartsWith("#") && line.Split('\t')[0].Trim() == name) return true;
+        return false;
+    }
+
+    public static void Retire(string name, string wasIn)
+    {
+        if (Retired(name)) return;
+        if (!System.IO.File.Exists(RetiredPath))
+            System.IO.File.WriteAllText(RetiredPath, "# Rooms deleted in Asset Studio (Delete room...): name, day, the pools it was in with its weight there.\n# The room builders skip these names. Take a line out to let a builder make that room again.\n");
+        System.IO.File.AppendAllText(RetiredPath, $"{name}\t{System.DateTime.Now:yyyy-MM-dd}\t{wasIn}\n");
+        AssetDatabase.ImportAsset(RetiredPath);
+    }
+
     static GameObject Save(Chunk c)
     {
-        chunkInfo.Add(c);
         // Where the chunk already is (Rooms, or a subfolder such as Rooms/Scripted), else Rooms.
         string path = $"{ChunkFolder}/{c.name}.prefab";
         foreach (var g in AssetDatabase.FindAssets($"t:Prefab \"{c.name}\"", new[] { ChunkFolder }))
@@ -254,7 +277,10 @@ public static class DungeonChunkKit
             if (System.IO.Path.GetFileNameWithoutExtension(p) == c.name) { path = p; break; }
         }
         var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-        if (existing != null && !overwrite) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
+        // Deleted in Asset Studio: not made again.
+        if (existing == null && Retired(c.name)) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return null; }
+        chunkInfo.Add(c);
+        if (existing != null && (!overwrite || only != null && c.name != only)) { UnityEngine.Object.DestroyImmediate(c.root.gameObject); return existing; }
         var t = c.root.gameObject.AddComponent<DungeonRoomTemplate>();
         var rows = new string[c.h];
         for (int y = 0; y < c.h; y++)
@@ -264,7 +290,7 @@ public static class DungeonChunkKit
             rows[y] = new string(row);
         }
         t.paintFootprint = true; t.width = c.w; t.height = c.h; t.rows = rows; t.allowRotation = true;
-        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = false; t.replaceGeneratedEnemies = true;   // the pack is the hand-placed Enemy sockets
+        t.heightTiles = c.heightTiles; t.replaceGeneratedProps = c.ownProps; t.replaceGeneratedEnemies = true;   // the pack is the hand-placed Enemy sockets
         // The plainer chunks are furnished from the biome's prop rules around their own pieces as well (a Statue hall was three
         // statues on a bare floor); the themed ones (bone niches, tombs, pews, the fountain) keep only their own dressing.
         t.addFurnishing = Furnished.Contains(c.name);
@@ -627,7 +653,388 @@ public static class DungeonChunkKit
         Light(c, 6, 3, East); Light(c, 3, 6, North);
         made.Add(Save(c));
 
+        SmallRooms(made);
         return made;
+    }
+
+    // ── Five more small rooms (2026-11-16) ──────────────────────────
+    // Only Rat nest, Cell block and Collapsed stair fitted almost anywhere, so they were on three floors in four; with a
+    // floor now dealing part of the pool (DungeonGenerator.FloorTurn) a floor had one hand-built room fewer. These are
+    // 5 x 5 to 5 x 7, so they fit where the halls don't. RunSmallRooms() from an eval builds only these (those not there
+    // yet) and adds them to the Cellars, Catacombs and Crypt pools; RunSmallRooms(true) builds them again.
+    public static string RunSmallRooms() => RunSmallRooms(false);
+    // One of them built again by name, the others left as they are (a rebuild writes a prefab's every id anew, so
+    // building all of them again to change one touched every file).
+    public static string RunSmallRoom(string name) { only = name; try { return RunSmallRooms(true); } finally { only = null; } }
+    static string only;
+    public static string RunSmallRooms(bool replaceExisting)
+    {
+        overwrite = false;
+        BuildKit();   // the kit pieces as they are (nothing is rebuilt)
+        overwrite = replaceExisting;
+        chunkInfo.Clear();
+        var made = new List<GameObject>();
+        SmallRooms(made);
+        made.RemoveAll(m => m == null);   // rooms deleted in Asset Studio (Retired)
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars1.asset", made, c => c.cellars);
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars2.asset", made, c => (c.cellars + c.crypt) * .5f);
+        Pool("Assets/Game/Levels/Shared/Biomes/Cellars3.asset", made, c => c.crypt);
+        overwrite = false;
+        AssetDatabase.SaveAssets();
+        var log = new System.Text.StringBuilder("small rooms: ");
+        foreach (var m in made) log.Append(m.name).Append(", ");
+        return log.ToString();
+    }
+
+    static void SmallRooms(List<GameObject> made)
+    {
+        var brazier = PropPrefab("Furnishing/Brazier");
+        const DungeonRoomRoles Combat = DungeonRoomRoles.Combat, Treasure = DungeonRoomRoles.Treasure, Quiet = DungeonRoomRoles.Rest, Storage = DungeonRoomRoles.Storage;
+
+        // 22. A wine cellar: casks stacked along two walls, a shelf of pots, sacks by the door.
+        var c = Begin("Wine cellar", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(0, 2));
+        c.rooms = Combat | Storage; c.cellars = 1.1f; c.crypt = .5f;
+        Prop(c, "Groups/Barrels huddled", c.Cell(3.6f, 3.9f), 200f, true); Prop(c, "Groups/Barrels huddled", c.Cell(3.7f, .3f), 40f, true);
+        Prop(c, "Groups/Barrel with candles", c.Cell(0f, 3.9f), 0f, true);
+        Prop(c, "Groups/Shelf with pots", c.Cell(2, 4) + new Vector3(0f, 0f, .5f), 180f, true);
+        // A cask lying on its stand in the corner by the doors, bottles at its foot (Ciri's review: nothing said wine).
+        Prop(c, "Tavern/Keg", c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), 45f, true);
+        Prop(c, "Tavern/Bottle A", c.Cell(0, 0) + new Vector3(.62f, 0f, -.68f), 20f); Prop(c, "Tavern/Bottle C", c.Cell(0, 0) + new Vector3(.8f, 0f, -.5f), 140f);
+        Prop(c, "Tavern/Bottle B", c.Cell(0, 0) + new Vector3(-.72f, 0f, .62f), 80f); Prop(c, "Tavern/Tankard", c.Cell(0, 0) + new Vector3(.5f, 0f, -.42f), 250f);
+        // Casks in rows along the east and north walls and by the west door (breakables: they get the floor's loot).
+        foreach (var (x, y, yaw) in new[] { (4.05f, 1.3f, 20f), (4.05f, 2.1f, 140f), (4f, 2.9f, 75f), (1f, 4.1f, 200f), (-.05f, 3.1f, 310f), (.9f, -.05f, 95f) })
+            Prop(c, "Breakables/Breakable barrel", c.Cell(x, y), yaw, true);
+        Prop(c, "Breakables/Breakable crate", c.Cell(.1f, .9f), 12f, true);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(3, 2), .7f);
+        Light(c, 4, 3, East);
+        made.Add(Save(c));
+
+        // 23. A scriptorium: bookcases along the back wall, a reading table, candles. Quiet or guarded.
+        c = Begin("Scriptorium", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(4, 2));
+        c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Candlelit; c.cellars = .8f; c.crypt = 1f;
+        // A bookcase either side of the candle rack (Ciri's review: with only one the wall was lopsided); the shelf to
+        // search stands on the east wall.
+        // (the bookcase's model stands .4 to .9 m behind its pivot: at .45 it stood mostly inside the wall)
+        Prop(c, "Furnishing/Broken bookcase", c.Cell(1, 4) + new Vector3(0f, 0f, .07f), 180f, true);
+        Prop(c, "Furnishing/Broken bookcase", c.Cell(3, 4) + new Vector3(0f, 0f, .07f), 180f, true);
+        Socket(c, DungeonSocketType.Feature, c.Cell(4, 3.3f) + new Vector3(.45f, 0f, 0f), 1f, 270f, PropPrefab("Features/Bookshelf"));
+        Prop(c, "Furnishing/Storage shelf", c.Cell(0, 3) + new Vector3(-.5f, 0f, 0f), 90f, true);
+        Prop(c, "Furnishing/Rug", c.Cell(2, 2));
+        Prop(c, "Furnishing/Candle rack", c.Cell(2, 4) + new Vector3(0f, 0f, .45f), 180f);
+        // A desk to read at beside the runner, a chair drawn up to it, a candle on it (the dungeon's long dining table
+        // filled half the room: Zelda's finding, Ciri's swap).
+        var desk = c.Cell(.85f, 1.5f);
+        Prop(c, "Tavern/Small table", desk, 0f, true);
+        Prop(c, "Tavern/Chair", desk + new Vector3(0f, 0f, -.8f), 0f, true);
+        Prop(c, "Tavern/Table candle", desk + new Vector3(.22f, .87f, .12f)); Prop(c, "Tavern/Jug A", desk + new Vector3(-.25f, .87f, .15f));
+        Prop(c, "Furnishing/Candle cluster", c.Cell(0, 0) + new Vector3(-.4f, 0f, -.4f)); Prop(c, "Furnishing/Candle cluster", c.Cell(4, 4) + new Vector3(.4f, 0f, .4f), 130f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(3, 3), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(3, 1.2f), .6f);
+        Light(c, 0, 1, West);
+        made.Add(Save(c));
+
+        // 24. A sunken tomb: steps down into a court with one sarcophagus, candles at its head, a chest behind it.
+        c = Begin("Sunken tomb", 5, 7, 1, new Vector2Int(2, 0));
+        c.rooms = Combat | Treasure; c.mood = DungeonRoomLight.Candlelit; c.cellars = .7f; c.crypt = 1.1f; c.maxPerFloor = 1;
+        const float tomb = .9f;
+        Cut(c, DungeonFloorCut.Kind.Sunken, 1, 2, 3, 5, tomb);
+        StepsDown(c, 2, 2, North, tomb);
+        Prop(c, "Furnishing/Sarcophagus", c.Cell(2, 4.3f) + Vector3.down * tomb);
+        foreach (var x in new[] { 1f, 3f }) Prop(c, "Furnishing/Candle cluster", c.Cell(x, 5) + Vector3.down * tomb + new Vector3(x < 2 ? -.45f : .45f, 0f, .45f), 60f * x);
+        Prop(c, "Furnishing/Bone pile", c.Cell(3, 3) + Vector3.down * tomb + new Vector3(.3f, 0f, 0f), 40f);
+        Socket(c, DungeonSocketType.Chest, c.Cell(2, 6) + new Vector3(0f, 0f, .2f), .7f, 180f);
+        // Two stone watchers in the far corners, facing the way in.
+        Prop(c, "Furnishing/Gargoyle statue", c.Cell(0, 6), 135f, true); Prop(c, "Furnishing/Gargoyle statue", c.Cell(4, 6), 225f, true);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(0, 6) + new Vector3(.6f, 0f, -.55f), 40f);   // at a watcher's foot: they were black from the doorway
+        Socket(c, DungeonSocketType.Enemy, c.Cell(0, 4), .8f, 90f); Socket(c, DungeonSocketType.Enemy, c.Cell(4, 3), .7f, 270f);
+        Light(c, 0, 6, West); Light(c, 4, 1, East);
+        made.Add(Save(c));
+
+        // 25. A crossing: four ways in, four pillars round the middle, braziers in two corners.
+        c = Begin("Crossing", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(2, 4), new Vector2Int(0, 2), new Vector2Int(4, 2));
+        c.rooms = Combat; c.cellars = .9f; c.crypt = .9f;
+        // Three pillars stand and one has fallen, its rubble at its foot (Ciri's review: four whole pillars filled the room).
+        foreach (var (x, y) in new[] { (1, 1), (1, 3), (3, 3) }) Piece(c, "Pillar", c.Cell(x, y));
+        Piece(c, "Broken pillar", c.Cell(3, 1), 40f);
+        Socket(c, DungeonSocketType.Feature, c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), 1f, 45f, brazier); Socket(c, DungeonSocketType.Feature, c.Cell(4, 4) + new Vector3(.3f, 0f, .3f), 1f, 225f, brazier);
+        Piece(c, "Rubble", c.Cell(3, 1) + new Vector3(.85f, 0f, -.7f), 30f); Piece(c, "Rubble", c.Cell(4, 0) + new Vector3(.3f, 0f, -.3f), 170f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(3, 2), .7f);
+        made.Add(Save(c));
+
+        // 26. A burial plot open to the night: three graves under the moon, bones, a cobweb of roots. Quiet or guarded.
+        c = Begin("Burial plot", 5, 5, 2, new Vector2Int(2, 0), new Vector2Int(0, 2));
+        c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Moonlit; c.openCeiling = true; c.skylightRadius = 1; c.cellars = .8f; c.crypt = 1f; c.maxPerFloor = 1;
+        var grave = PropPrefab("Features/Grave");
+        Socket(c, DungeonSocketType.Feature, c.Cell(1, 3.2f), 1f, 8f, grave); Socket(c, DungeonSocketType.Feature, c.Cell(3, 3.2f), 1f, -6f, grave); Socket(c, DungeonSocketType.Feature, c.Cell(3.3f, 1.1f), 1f, 84f, grave);
+        Prop(c, "Effects/Moonlight", c.Cell(2, 2));
+        Prop(c, "Furnishing/Bone pile", c.Cell(1, 1) + new Vector3(-.3f, 0f, -.2f), 70f, true);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(4, 4) + new Vector3(.4f, 0f, .4f), 20f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3), .7f); Socket(c, DungeonSocketType.Enemy, c.Cell(3, 2), .6f);
+        Light(c, 0, 4, West);
+        made.Add(Save(c));
+
+        // 27. A well room: a shaft in the middle of the floor, a chain down it, bones of what was thrown in. A blow near
+        // the edge throws an enemy down it.
+        c = Begin("Well room", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(0, 2));
+        // The room's centre mark stands south of the shaft, not on it: the centre is where a run that opens in this room
+        // (Asset Studio's Play from this room) sets the player down, and where the generator looks for the room's floor.
+        c.centre = new Vector2Int(2, 1);
+        c.rooms = Combat; c.cellars = 1f; c.crypt = .8f; c.maxPerFloor = 1;
+        Cut(c, DungeonFloorCut.Kind.Pit, 2, 2, 2, 2, 4f);
+        Chain(c, 2f, 2f);
+        Prop(c, "Furnishing/Bone pile", c.Cell(3, 3) + new Vector3(.35f, 0f, .35f), 35f, true);
+        Prop(c, "Furnishing/Skull pile", c.Cell(.7f, 3.5f), 110f, true);   // at its own size: scaled down its pixels were finer than the room's
+        Prop(c, "Furnishing/Candle cluster", c.Cell(4, 0) + new Vector3(.4f, 0f, -.4f), 70f);
+        // A low kerb round the shaft, one course of stone (Ciri: without it the well read as a pit until you saw the
+        // chain). No collider: what is knocked toward the shaft goes over it as before. North and south run the full
+        // width, east and west stand between them, so no two faces share a plane.
+        var kerb = new GameObject("Well kerb").transform; kerb.SetParent(c.root, false); kerb.localPosition = c.Cell(2, 2);
+        foreach (float side in new[] { -1f, 1f })
+        {
+            Block(kerb, "Kerb", new Vector3(0f, 0f, side * 1.125f), new Vector3(2.5f, .2f, .25f), Wall, Trim).solid = false;
+            Block(kerb, "Kerb", new Vector3(side * 1.125f, 0f, 0f), new Vector3(.25f, .2f, 2f), Wall, Trim).solid = false;
+        }
+        // Candles on the floor at two of the kerb's corners (on the kerb they hung over its edge: the cluster is 60 cm
+        // across and the kerb 25, so every candle's foot was in the air 20 cm over the floor).
+        Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(-1.65f, 0f, 1.65f), 200f); Prop(c, "Furnishing/Candle cluster", c.Cell(2, 2) + new Vector3(1.65f, 0f, -1.65f), 20f);
+        Piece(c, "Rubble", c.Cell(0, 4) + new Vector3(-.2f, 0f, .2f), 120f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3.3f), .8f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(3.3f, 2), .7f, 270f); Socket(c, DungeonSocketType.Enemy, c.Cell(3.2f, 3.6f), .5f);
+        Socket(c, DungeonSocketType.Breakable, c.Cell(4, 4), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(0, 0), .5f);
+        Light(c, 4, 2, East); Light(c, 2, 4, North);
+        made.Add(Save(c));
+
+        // 28. An archer's perch: a dais at the far wall with an archer on it, crates and barrels on the floor to get
+        // behind on the way up to it.
+        c = Begin("Archer's perch", 5, 7, 1, new Vector2Int(2, 0));
+        c.rooms = Combat | Treasure; c.cellars = .8f; c.crypt = 1f; c.maxPerFloor = 1;
+        WallPiece(c, "Platform", 2, 6, South);
+        Archer(c, c.Cell(2, 6) + new Vector3(-1.35f, .75f, -.2f), .9f);
+        Socket(c, DungeonSocketType.Chest, c.Cell(2, 6) + new Vector3(0f, .75f, .25f), .6f, 180f);   // up on the dais: the reason to get past the archer
+        Socket(c, DungeonSocketType.Feature, c.Cell(2, 6) + new Vector3(1.45f, .75f, .1f), 1f, 180f, brazier);
+        Prop(c, "Groups/Crates and sacks", c.Cell(.6f, 3.1f), 20f, true);
+        Prop(c, "Groups/Barrels huddled", c.Cell(3.5f, 2.2f), 250f, true);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(.1f, 4.1f), 60f);   // by the crates (Ciri: the floor under the dais was nearly black)
+        Socket(c, DungeonSocketType.Breakable, c.Cell(3.6f, 4.3f), .7f); Socket(c, DungeonSocketType.Breakable, c.Cell(.4f, 1.2f), .5f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(2, 4), .8f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(1, 4.6f), .5f, 180f);
+        Light(c, 0, 5, West); Light(c, 4, 5, East);
+        made.Add(Save(c));
+
+        // 29. The guards' mess: a long table with benches, a pot over the fire, kegs against the wall.
+        c = Begin("Guards' mess", 5, 7, 1, new Vector2Int(2, 0), new Vector2Int(4, 5));
+        c.centre = new Vector2Int(3, 2);   // free floor east of the table (a bench stands on the middle cell): see the Well room
+        c.rooms = Combat | Quiet; c.mood = DungeonRoomLight.Candlelit; c.cellars = 1f; c.crypt = .6f; c.maxPerFloor = 1;
+        Prop(c, "Tavern/Long table", c.Cell(1.6f, 3), 90f, true);
+        Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(-.9f, 0f, 0f), 90f, true); Prop(c, "Tavern/Bench", c.Cell(1.6f, 3) + new Vector3(.9f, 0f, 0f), 90f, true);   // at .85 their feet stood 3 cm inside the table's
+        // The spit's frame runs from 1.3 m left of its pivot to 1.8 m right of it: the fire burns under its middle.
+        var spit = c.Cell(.3f, 5.7f);
+        Prop(c, "Tavern/Fire pit", spit); Prop(c, "Tavern/Cooking pot", spit + new Vector3(1.55f, 0f, -.6f), 30f);
+        Prop(c, "Tavern/Hearth logs", spit + new Vector3(.25f, 0f, .05f));
+        CookingFire(c, spit + new Vector3(.25f, .12f, .05f));
+        Prop(c, "Tavern/Keg", c.Cell(3.2f, 6) + new Vector3(0f, 0f, .45f), 180f, true); Prop(c, "Tavern/Keg", c.Cell(4, 6) + new Vector3(.1f, 0f, .45f), 180f, true);
+        Prop(c, "Furnishing/Sacks", c.Cell(4, 0) + new Vector3(.4f, 0f, -.4f), 200f, true);
+        // The table laid for a meal (its top is .78 m up; it runs north to south).
+        var top = c.Cell(1.6f, 3) + Vector3.up * .78f;
+        Prop(c, "Tavern/Stew bowl", top + new Vector3(0f, 0f, .15f)); Prop(c, "Tavern/Loaf", top + new Vector3(.1f, 0f, -.55f), 40f); Prop(c, "Tavern/Jug A", top + new Vector3(-.15f, 0f, .75f));
+        Prop(c, "Tavern/Plate", top + new Vector3(-.4f, 0f, -.2f)); Prop(c, "Tavern/Plate", top + new Vector3(.4f, 0f, .5f), 70f); Prop(c, "Tavern/Plate", top + new Vector3(.4f, 0f, -.85f), 20f);
+        Prop(c, "Tavern/Mug", top + new Vector3(-.35f, 0f, .35f), 30f); Prop(c, "Tavern/Mug", top + new Vector3(.3f, 0f, -.15f), 200f); Prop(c, "Tavern/Tankard", top + new Vector3(-.3f, 0f, -.9f), 120f);
+        Prop(c, "Tavern/Table candle", top + new Vector3(0f, 0f, -.25f)); Prop(c, "Tavern/Table candle", top + new Vector3(.05f, 0f, .95f));
+        Hung(c, "Tavern/Hanging ham", c.Cell(1.9f, 6) + new Vector3(0f, c.Ceiling - .03f, .35f), 30f); Hung(c, "Tavern/Hanging ham", c.Cell(2.5f, 6) + new Vector3(0f, c.Ceiling - .03f, .2f), 200f);
+        // A small table by the west wall, off every way from a door to the room's middle (the user, 2026-11-16: east of
+        // the long table it stood on a walkway in 24 of 43 builds and was taken out, leaving its mug and candle in the
+        // air; the generator now takes what stands on a piece along with it, and here the table keeps its place).
+        var byWall = c.Cell(.3f, 2f);
+        Prop(c, "Tavern/Small table", byWall, 0f, true); Prop(c, "Tavern/Stool", byWall + new Vector3(-.75f, 0f, .1f), 0f, true); Prop(c, "Tavern/Stool", byWall + new Vector3(.15f, 0f, -.85f), 40f, true);
+        Prop(c, "Tavern/Mug", byWall + new Vector3(-.15f, .87f, .1f), 80f); Prop(c, "Tavern/Table candle", byWall + new Vector3(.2f, .87f, -.1f));
+        Socket(c, DungeonSocketType.Breakable, c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(4, 2.6f), .5f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(3, 3.4f), .8f, 270f); Socket(c, DungeonSocketType.Enemy, c.Cell(2.2f, 5), .7f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(1.9f, 1.1f), .5f);
+        Socket(c, DungeonSocketType.Chest, c.Cell(0, 1) + new Vector3(-.35f, 0f, 0f), .4f, 90f);
+        Light(c, 0, 3, West); Light(c, 4, 2, East);
+        made.Add(Save(c));
+
+        // 30. A larder: hams hanging in rows along two walls, a shelf of cheese and bread, sacks and crates.
+        c = Begin("Larder", 5, 5, 1, new Vector2Int(2, 0), new Vector2Int(4, 2));
+        c.centre = new Vector2Int(2, 1);   // free floor south of the table (see the Well room)
+        c.rooms = Combat | Storage; c.cellars = 1.1f; c.crypt = .5f; c.maxPerFloor = 1;
+        // The room's middle (Ciri's look: from the door the hams along the walls were small pale bags at torch height and
+        // the middle was bare floor): a table laid with food under a row of hams, sacks and crates drawn up to it. Nobody
+        // walks through a table, so these three may hang over the middle.
+        var board = c.Cell(2, 2.5f); var boardTop = board + Vector3.up * .78f;
+        Prop(c, "Tavern/Long table", board, 0f);
+        foreach (var (x, yaw) in new[] { (-.8f, 40f), (0f, 250f), (.8f, 130f) }) Hung(c, "Tavern/Hanging ham", board + new Vector3(x, c.Ceiling - .03f, 0f), yaw);
+        Prop(c, "Tavern/Loaf", boardTop + new Vector3(-.75f, 0f, .1f), 30f); Prop(c, "Tavern/Cheese", boardTop + new Vector3(-.2f, .06f, -.2f)); Prop(c, "Tavern/Stew bowl", boardTop + new Vector3(.35f, 0f, .15f));
+        Prop(c, "Tavern/Plate", boardTop + new Vector3(.9f, 0f, -.15f), 20f); Prop(c, "Tavern/Jug A", boardTop + new Vector3(1.05f, 0f, .3f)); Prop(c, "Tavern/Table candle", boardTop + new Vector3(.05f, 0f, .35f));
+        Prop(c, "Groups/Crates and sacks", c.Cell(.7f, 1.6f), 60f, true);
+        Prop(c, "Furnishing/Sacks", c.Cell(3.5f, 3.3f), 200f, true);
+        // The hams hang close to the walls (their feet are at head height: never over the middle of the floor).
+        foreach (var (x, yaw) in new[] { (.5f, 20f), (1.3f, 200f), (2.1f, 70f), (2.9f, 310f), (3.7f, 140f) })
+            Hung(c, "Tavern/Hanging ham", c.Cell(x, 4) + new Vector3(0f, c.Ceiling - .03f, .6f), yaw);
+        foreach (var (y, yaw) in new[] { (1.1f, 100f), (1.9f, 280f), (2.7f, 10f) })
+            Hung(c, "Tavern/Hanging ham", c.Cell(0, y) + new Vector3(-.6f, c.Ceiling - .03f, 0f), yaw);
+        // A shelf on the east wall north of the door, cheese, a loaf and a jug on it.
+        var shelf = c.Cell(4, 3.4f) + new Vector3(.97f, 1.25f, 0f);
+        Prop(c, "Tavern/Wall shelf", shelf, 270f);
+        Prop(c, "Tavern/Cheese", shelf + new Vector3(-.22f, .06f, -.5f)); Prop(c, "Tavern/Loaf", shelf + new Vector3(-.22f, 0f, 0f), 80f); Prop(c, "Tavern/Jug A", shelf + new Vector3(-.2f, 0f, .5f));
+        // A barrel to cut on, with a loaf and a bowl.
+        var block = c.Cell(1.3f, 3.9f);
+        Prop(c, "Tavern/Barrel table", block, 0f, true);
+        Prop(c, "Tavern/Loaf", block + new Vector3(-.12f, .48f, .1f), 30f); Prop(c, "Tavern/Stew bowl", block + new Vector3(.18f, .48f, -.12f));
+        Prop(c, "Furnishing/Sacks", c.Cell(4, 0) + new Vector3(.35f, 0f, -.35f), 30f, true);
+        Socket(c, DungeonSocketType.Breakable, c.Cell(2.3f, 3.7f), .7f); Socket(c, DungeonSocketType.Breakable, c.Cell(.3f, .4f), .6f);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(3.5f, 1.3f), .8f); Socket(c, DungeonSocketType.Enemy, c.Cell(.8f, 3.4f), .7f);
+        Light(c, 4, 1, East); Light(c, 0, 4, West);
+        made.Add(Save(c));
+
+        // 31. A stone idol: a beast of stone on a dais at the far wall, candle racks either side of it, pews facing it
+        // along a runner, sometimes a chest at its feet.
+        c = Begin("Stone idol", 5, 7, 1, new Vector2Int(2, 0));
+        c.rooms = Combat | Treasure; c.mood = DungeonRoomLight.Candlelit; c.cellars = .7f; c.crypt = 1.1f; c.maxPerFloor = 1;
+        WallPiece(c, "Platform", 2, 6, South);
+        // Ciri's look: the idol was the darkest thing in view, a black lump between two bright racks. Candles alone don't
+        // light it (the floor's light pass folds shadowless lights close together into one, and that one stays on a rack),
+        // so it stands on a plinth, clear of the racks, with one cluster of candles at its feet in the middle (over 3 m
+        // from either rack, so its light stays its own and shines up the idol's front) and a brazier at each front corner
+        // of the dais: firelight on it from both sides.
+        var plinth = new GameObject("Idol plinth").transform; plinth.SetParent(c.root, false); plinth.localPosition = c.Cell(2, 6) + new Vector3(0f, .75f, .1f);
+        Block(plinth, "Plinth", Vector3.zero, new Vector3(1.2f, .5f, 1.3f), Wall, Trim);
+        Prop(c, "Furnishing/Gargoyle statue", c.Cell(2, 6) + new Vector3(0f, 1.25f, .3f), 180f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(2, 6) + new Vector3(0f, 1.25f, -.32f), 30f);
+        // A red banner on the wall behind it (Ciri: lit stone in front of a lit stone wall did not stand out; red picks up the
+        // runner). Placed as the wall decor pass places one: floor length, its rod's back 1 cm in front of the cornice
+        // (wall face 1 m from the cell's middle, less the trim's 4 cm, the 1 cm and half the rod, 5.8 cm). Its foot is
+        // inside the dais, 6 cm in from the dais's back face; the dais is a body, so the pass hangs no banner of its own
+        // on this stretch of wall. It is marked as hanging from the ceiling, so the room keeps its roof.
+        Prop(c, "Wall decor/Wall banner red", c.Cell(2, 6) + new Vector3(0f, 0f, .892f), 180f);
+        Socket(c, DungeonSocketType.Feature, c.Cell(2, 6) + new Vector3(-1.55f, .75f, -.95f), 1f, 0f, brazier); Socket(c, DungeonSocketType.Feature, c.Cell(2, 6) + new Vector3(1.55f, .75f, -.95f), 1f, 0f, brazier);
+        Socket(c, DungeonSocketType.Chest, c.Cell(2, 6) + new Vector3(0f, .75f, -.98f), .65f, 180f);
+        Prop(c, "Furnishing/Candle rack", c.Cell(.35f, 6) + new Vector3(0f, 0f, .45f), 180f); Prop(c, "Furnishing/Candle rack", c.Cell(3.65f, 6) + new Vector3(0f, 0f, .45f), 180f);
+        Prop(c, "Furnishing/Rug", c.Cell(2, 2.4f));
+        foreach (float y in new[] { 2.2f, 3.3f }) { Prop(c, "Furnishing/Pew", c.Cell(.8f, y), 0f, true); Prop(c, "Furnishing/Pew", c.Cell(3.2f, y), 0f, true); }
+        Prop(c, "Furnishing/Skull pile", c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), 50f, true);
+        Socket(c, DungeonSocketType.Enemy, c.Cell(1.2f, 4.6f), .8f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(2.8f, 4.6f), .7f, 180f); Socket(c, DungeonSocketType.Enemy, c.Cell(2, 1.3f), .4f);
+        Light(c, 0, 1, West); Light(c, 4, 1, East);
+        made.Add(Save(c));
+
+        // 32. A crooked hall: the first room that is not a rectangle. It turns a corner (the north-east block is solid
+        // wall), a way in at each end, so what waits in the far arm is not seen from the door.
+        c = Begin("Crooked hall", 5, 5, 1, new Vector2Int(4, 1), new Vector2Int(1, 4));
+        c.rooms = Combat; c.cellars = 1f; c.crypt = .9f; c.maxPerFloor = 1;
+        foreach (var (x, y) in new[] { (3, 3), (4, 3), (3, 4), (4, 4) }) c.solid.Add(new Vector2Int(x, y));
+        Socket(c, DungeonSocketType.Feature, c.Cell(0, 0) + new Vector3(-.3f, 0f, -.3f), 1f, 45f, brazier);
+        Piece(c, "Broken pillar", c.Cell(2.2f, .2f), 25f); Piece(c, "Rubble", c.Cell(2.2f, .2f) + new Vector3(.8f, 0f, .35f), 110f);
+        Prop(c, "Groups/Barrels huddled", c.Cell(0, 2.4f) + new Vector3(-.2f, 0f, 0f), 80f, true);
+        Prop(c, "Furnishing/Bone pile", c.Cell(2, 2) + new Vector3(.45f, 0f, .45f), 15f, true);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(2, 4) + new Vector3(.45f, 0f, .45f), 120f);
+        Chain(c, 1.2f, 1.4f, .3f); Chain(c, .7f, 3.3f, .26f);   // short: they end above head height
+        Socket(c, DungeonSocketType.Breakable, c.Cell(0, 4) + new Vector3(-.3f, 0f, .3f), .6f); Socket(c, DungeonSocketType.Breakable, c.Cell(4, 0) + new Vector3(.3f, 0f, -.3f), .6f);
+        // Round the corner from the east door: in the north arm.
+        Socket(c, DungeonSocketType.Enemy, c.Cell(.7f, 3.4f), .8f, 135f); Socket(c, DungeonSocketType.Enemy, c.Cell(2, 3.5f), .7f, 200f); Socket(c, DungeonSocketType.Enemy, c.Cell(.8f, .9f), .5f);
+        Light(c, 0, 1, West); Light(c, 2, 0, South);
+        made.Add(Save(c));
+    }
+
+    // ── Landing rooms (2026-11-16) ──────────────────────────────────
+    // Every run landed in the same Starting room, three times over. Three more rooms a run can land in, each built to
+    // the Starting room's own rules: 7 x 7, one door in the middle of the north wall with a torch either side, an open
+    // ceiling for the flight in, the middle of the floor free for the player and the ladder behind them, a gold chest of
+    // their own (the generator stocks it on the run's first floor and takes it away on later landings), no enemies and
+    // no generated props. RunLandingRooms() from an eval builds those not there yet and lists them on Dungeon1
+    // (TableLevelData.startingRoomVariants); RunLandingRooms(true) builds them again.
+    public static string RunLandingRooms() => RunLandingRooms(false);
+    // One of them built again by name, the others left as they are.
+    public static string RunLandingRoom(string name) { only = name; try { return RunLandingRooms(true); } finally { only = null; } }
+    public static string RunLandingRooms(bool replaceExisting)
+    {
+        overwrite = false;
+        BuildKit();
+        overwrite = replaceExisting;
+        chunkInfo.Clear();
+        var made = new List<GameObject>();
+        Chunk Landing(string name)
+        {
+            var room = Begin(name, 7, 7, 1, new Vector2Int(3, 6));
+            room.openCeiling = true; room.skylightRadius = 0; room.noTorches = true; room.ownProps = true; room.maxPerFloor = 1;
+            Light(room, 2, 6, North); Light(room, 4, 6, North); Light(room, 6, 2, East);
+            return room;
+        }
+
+        // A burial chamber: a sarcophagus either side, candles at their heads, bones in the corners.
+        var c = Landing("Landing crypt");
+        // Ahead of the player, either side of the way to the door (beside the landing spot they were out of view).
+        // Half a cell back from the landing spot after Ciri's look (the right tomb's near end was cut by the frame and its
+        // side stood right at a candle), the candles at their feet a little toward the way through, the chest left of the
+        // door under its torch (right of it, it stood hidden behind the right tomb).
+        Prop(c, "Furnishing/Sarcophagus", c.Cell(1f, 5.1f)); Prop(c, "Furnishing/Sarcophagus", c.Cell(5f, 5.1f));
+        Prop(c, "Furnishing/Candle cluster", c.Cell(1.9f, 4.1f), 30f); Prop(c, "Furnishing/Candle cluster", c.Cell(4.1f, 4.1f), 200f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(4.2f, 5.9f), 110f);
+        Prop(c, "Furnishing/Bone pile", c.Cell(.4f, .5f), 40f); Prop(c, "Furnishing/Skull pile", c.Cell(5.6f, .4f), 130f);
+        Prop(c, "Furnishing/Gargoyle statue", c.Cell(0, 6), 135f);
+        Prop(c, "Chests/Gold chest", c.Cell(1.8f, 6) + new Vector3(0f, 0f, .25f), 180f);
+        made.Add(Save(c));
+
+        // A storeroom. Its things stand on the door wall, inside the torches' light, so the first frame says storeroom
+        // (Ciri's look: at the edges and behind the player they stood in the dark and the landing showed wall, door and
+        // bare floor): shelves and the chest left of the door, the barrel with candles and a stack of crates right of it.
+        c = Landing("Landing storeroom");
+        Prop(c, "Groups/Shelf with pots", c.Cell(.3f, 6) + new Vector3(0f, 0f, .5f), 180f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(.9f, 5.5f), 40f);   // the shelves stood in the dark left of the torches
+        Prop(c, "Chests/Gold chest", c.Cell(1.6f, 6) + new Vector3(0f, 0f, .25f), 180f);
+        Prop(c, "Groups/Barrel with candles", c.Cell(4.7f, 6) + new Vector3(0f, 0f, .2f), 0f);
+        Prop(c, "Groups/Crates and sacks", c.Cell(5.7f, 5.6f), 200f);
+        Prop(c, "Groups/Barrels huddled", c.Cell(.5f, 4.5f), 200f);
+        Prop(c, "Furnishing/Storage shelf", c.Cell(6, 3.6f) + new Vector3(.5f, 0f, 0f), 270f);
+        // Behind the player as they land.
+        Prop(c, "Groups/Crates and sacks", c.Cell(5.5f, .8f), 60f); Prop(c, "Furnishing/Sacks", c.Cell(.4f, .5f), 110f);
+        Prop(c, "Tavern/Keg", c.Cell(0, 1.6f) + new Vector3(-.3f, 0f, 0f), 90f);
+        made.Add(Save(c));
+
+        // A small chapel: a runner from the middle to the door, candle racks either side of the door, pews along the walls.
+        c = Landing("Landing chapel");
+        Prop(c, "Furnishing/Rug", c.Cell(3, 4.4f));
+        Prop(c, "Furnishing/Candle rack", c.Cell(1.2f, 6) + new Vector3(0f, 0f, .45f), 180f); Prop(c, "Furnishing/Candle rack", c.Cell(4.8f, 6) + new Vector3(0f, 0f, .45f), 180f);
+        Prop(c, "Furnishing/Pew", c.Cell(.5f, 3.6f), 90f); Prop(c, "Furnishing/Pew", c.Cell(.5f, 1.6f), 90f);
+        Prop(c, "Furnishing/Pew", c.Cell(5.5f, 3.6f), 270f);
+        Prop(c, "Furnishing/Candle cluster", c.Cell(.3f, .3f), 60f);
+        Prop(c, "Chests/Gold chest", c.Cell(5.5f, 1.2f) + new Vector3(.2f, 0f, 0f), 270f);
+        made.Add(Save(c));
+
+        var level = AssetDatabase.LoadAssetAtPath<TableLevelData>("Assets/Game/Levels/Dungeon1/Dungeon1.asset");
+        if (level != null)
+        {
+            var list = new List<GameObject>(level.startingRoomVariants ?? new GameObject[0]);
+            list.RemoveAll(v => v == null);
+            foreach (var m in made) if (m != null && !list.Contains(m)) list.Add(m);
+            level.startingRoomVariants = list.ToArray();
+            EditorUtility.SetDirty(level);
+        }
+        overwrite = false;
+        AssetDatabase.SaveAssets();
+        return "landing rooms: " + string.Join(", ", made.ConvertAll(m => m != null ? m.name : "?")) + "; Dungeon1 lists " + (level != null ? level.startingRoomVariants.Length : 0);
+    }
+
+    // A prop that hangs from the ceiling, marked so (PropMount): the generator lifts it with a taller room's ceiling and
+    // a room keeps its roof for it.
+    static Transform Hung(Chunk c, string path, Vector3 pos, float yaw = 0f)
+    {
+        var t = Prop(c, path, pos, yaw);
+        if (t != null && t.GetComponent<PropMount>() == null) t.gameObject.AddComponent<PropMount>().kind = PropMount.Kind.HangsFromCeiling;
+        return t;
+    }
+
+    // A fire burning on the floor (the brazier's own flames, Props/Effects/Prop fire) with the brazier's light as its
+    // child, so the fire lights what stands round it and flickers as a brazier does.
+    static void CookingFire(Chunk c, Vector3 pos)
+    {
+        var fire = Prop(c, "Effects/Prop fire", pos);
+        var brazier = PropPrefab("Furnishing/Brazier");
+        var from = brazier != null ? brazier.GetComponentInChildren<Light>(true) : null;
+        if (fire == null || from == null) return;
+        var holder = new GameObject("Fire light"); holder.transform.SetParent(fire, false);
+        holder.transform.localPosition = Vector3.up * .35f;
+        foreach (var part in from.GetComponents<Component>())
+        {
+            if (part is Transform) continue;
+            UnityEditorInternal.ComponentUtility.CopyComponent(part);
+            UnityEditorInternal.ComponentUtility.PasteComponentAsNew(holder);
+        }
     }
 
     // A blank hand-built room: a painted 7 x 7 footprint with its centre and one door, opened in Prefab Mode. Paint the

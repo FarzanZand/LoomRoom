@@ -91,6 +91,18 @@ public class DungeonBiome : ScriptableObject
     public float roomSizeScale = 1f;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(0f, 1f), Tooltip("Share of the big generated rooms (Tall Room Least Cells or more, no hand-built room, not the entrance or the merchant's) built two tiles high, as halls. Furnishing named \"Hanging ...\" (chandeliers, beams, chains) is raised with the ceiling, and wall decor named \"Full height ...\" (pilasters, banners) is stacked up to it.")]
     public float tallRoomChance;
+    [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Range(0f, 1f), LabelText("Rooms Without A Roof"), SuffixLabel("$RoofsOffWords"), Tooltip("Share of each floor's rooms built with the roof off (0.1 = 1 room in 10: two rooms on a floor of twenty): a frame of ceiling is left along the walls and the rest stands open to the bedroom, so the lamp, the room and the Dungeon Master stand over the player (the dungeon is a miniature on his table). Never a passage, the tavern, a room with an event or a roof of its own, or one with something hanging from its ceiling. 0: every room roofed. Also on Asset Studio > Dungeon > Look.")]
+    public float roofsOff;
+    // The share in words: "1 room in 10", "7 rooms in 10", "every room roofed".
+    public string RoofsOffWords => RoofWords(roofsOff);
+    public static string RoofWords(float share)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        if (share <= 0f) return "every room roofed";
+        if (share >= 1f) return "every room";
+        if (share <= .5f) return "1 room in " + (1f / share).ToString("0.#", inv);
+        return (share * 10f).ToString("0.#", inv) + " rooms in 10";
+    }
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), ShowIf("@tallRoomChance > 0"), Min(4), Tooltip("Floor cells (2 m) a generated room needs to be built tall.")]
     public int tallRoomLeastCells = 20;
     [TabGroup(RoomsTab), HideIf(nameof(isLevelBase)), Tooltip("No doors between rooms on this biome's floors (the starting room's door too): a forest has none.")]

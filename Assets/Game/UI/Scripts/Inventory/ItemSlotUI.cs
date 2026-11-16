@@ -184,7 +184,17 @@ public class ItemSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandl
 
     // ── Pointer ───────────────────────────────────────────────────────
 
-    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.Show(Item, null, ThisCopyEquipped); }
+    // The tooltip stands beside the whole item, level with the cell under the pointer, never at the mouse over the rest of it.
+    public void OnPointerEnter(PointerEventData e) { if (Item != null && TooltipUI.HasInstance) TooltipUI.Instance.ShowBeside(Item, (RectTransform)transform, ItemArea(), ThisCopyEquipped); }
+
+    static readonly Vector3[] areaCorners = new Vector3[4];
+    // The screen area of the item in this cell: all the cells it takes in a bag grid, else this slot.
+    Rect ItemArea()
+    {
+        if (ItemGridUI.Footprint(this, out var area)) return area;
+        ((RectTransform)transform).GetWorldCorners(areaCorners);
+        return Rect.MinMaxRect(areaCorners[0].x, areaCorners[0].y, areaCorners[2].x, areaCorners[2].y);
+    }
     // Only the hotbar copy in hand is equipped here (worn items leave the bag, so a copy in it is a spare).
     bool ThisCopyEquipped => Owner != null && HeldSlot(Owner.Equipment, Container, Anchor).HasValue;
     public void OnPointerExit(PointerEventData e)  { if (TooltipUI.HasInstance) TooltipUI.Instance.Hide(); }

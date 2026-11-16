@@ -70,7 +70,7 @@ public class GroundAreaSpell : MonoBehaviour
         bool struck = SpellProjectile.Blast(owner, centre, spell.areaRadius, power, BlastMask);
         if (struck) progress?.Practise(spell.Skill, SkillAction.Cast);
         if (spell.impact != null) Instantiate(spell.impact, transform.position, Quaternion.identity);
-        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume);
+        if (spell.impactSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.impactSound, centre, spell.impactVolume, spell.soundPitchVariance);
         Destroy(gameObject);
     }
 }

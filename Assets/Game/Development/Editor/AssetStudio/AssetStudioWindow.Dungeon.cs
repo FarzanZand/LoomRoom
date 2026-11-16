@@ -120,7 +120,7 @@ public partial class AssetStudioWindow
         PageButton("difficulty", "Difficulty", "balance, health and damage by floor", d.balance);
         PageButton("words", "The Dungeon Master", "what he says in this dungeon", null);
         PageButton("sound", "Music and sound", "", null);
-        PageButton("look", "Look", "the room's light, the default style", d.baseBiome);
+        PageButton("look", "Look", "the room's light, rooms without a roof, the default style", d.baseBiome);
         GUILayout.EndScrollView();
         GUILayout.EndArea();
         DrawPlayPanel(new Rect(r.x, r.yMax - playHeight, r.width, playHeight), l);
@@ -442,6 +442,7 @@ public partial class AssetStudioWindow
         BiomeKind(b);
         Fields(b, "roomCount", "lightRadius");
         GUILayout.Label("Room Count and Light Radius 0: the dungeon's own (The way in; the Lighting Manager).", dim);
+        RoofLine(l, st);
 
         Section("WHAT YOU MEET HERE");
         EnemyRows(b, st.firstFloor, st.lastFloor);
@@ -630,7 +631,7 @@ public partial class AssetStudioWindow
     // every floor falls back on (the base biome's). A floor's own styles and lighting are on its page.
     void LookPage(AssetStudioWorld.Level l)
     {
-        PageHeader("Look", "What every floor shares: how the bedroom looks while this dungeon is on the table, and the room styles every floor falls back on. A floor's own styles and lighting are on its page.");
+        PageHeader("Look", "What every floor shares: how the bedroom looks while this dungeon is on the table, how many rooms stand open to it, and the room styles every floor falls back on. A floor's own styles and lighting are on its page.");
         LookTab(l);
     }
 
@@ -1065,7 +1066,7 @@ public partial class AssetStudioWindow
                 if (GUILayout.Button(t.prefab.name, cell, GUILayout.Width(180), GUILayout.Height(20))) ShowAsset(t.prefab);
                 GUILayout.Label($"{t.weight / total * 100:0}% of chests", GUILayout.Width(110));
                 var c = t.prefab.GetComponent<DungeonContainer>();
-                if (c != null) GUILayout.Label($"one piece of gear: {(c.extraRolls > 0 || c.rareRollFloors > 0 ? "the best of " + (1 + c.extraRolls + (c.rareRollFloors > 0 ? 1 : 0)) + " rolls" : "one roll")}{(c.rareRollFloors > 0 ? $", one of them {c.rareRollFloors} floors deeper" : "")}", dim);
+                if (c != null) GUILayout.Label($"one piece of gear: {(c.extraRolls > 0 || c.rareRollFloors > 0 ? "the best of " + (1 + c.extraRolls + (c.rareRollFloors > 0 ? 1 : 0)) + " rolls" : "one roll")}{(c.rareRollFloors > 0 ? $", one of them {c.rareRollFloors} floors deeper, its tier at most {LootSource.DeeperRollTiersAbove} above the floor's best" : "")}", dim);
                 GUILayout.EndHorizontal();
             }
             Fields(d.baseBiome, "chestTiers");

@@ -39,7 +39,7 @@ public class QuestLogUI : MonoBehaviour
 
     void OnEnable()
     {
-        if (rowTemplate != null) rowTemplate.gameObject.SetActive(false);
+        if (rowTemplate != null) { rowTemplate.gameObject.SetActive(false); KeyCapText.On(rowTemplate); }   // keys in drawn caps
         Connect();
     }
 
@@ -100,10 +100,21 @@ public class QuestLogUI : MonoBehaviour
             }
             // Done and opened again before its row faded out (the trophies hung, then another one bought): it stays.
             if (state == 1 && doneAt.Remove(q.id)) row.alpha = 1f;
-            string text = KeepLastWords(progression.QuestText(q));
+            string text = KeepLastWords(KeyCapText.Tidy(progression.QuestText(q, true)));
             row.text = state == 2 ? $"<s>{text}</s>" : text;
             row.color = state == 2 ? doneColour : openColour;
         }
+        Title();
+    }
+
+    // "QUEST" over one line, "QUESTS" over more (the title is the scene's "Title" text, made by QuestLogSetup).
+    TMP_Text title; bool titleLooked;
+    void Title()
+    {
+        if (!titleLooked) { titleLooked = true; foreach (var t in GetComponentsInChildren<TMP_Text>(true)) if (t.name == "Title") { title = t; break; } }
+        if (title == null) return;
+        string want = rows.Count > 1 ? "QUESTS" : "QUEST";
+        if (title.text != want) title.text = want;
     }
 
     // The last two words joined by a no-break space, so a line that wraps never leaves one word alone on its last line
@@ -116,9 +127,16 @@ public class QuestLogUI : MonoBehaviour
         return text.Substring(0, last) + ' ' + text.Substring(last + 1);
     }
 
+    // Several quests given or done in one moment (a run's start) play their sound once: the copies would stack.
+    static string lastSound;
+    static float lastSoundAt = -1f;
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetSound() { lastSound = null; lastSoundAt = -1f; }
     static void Sound(string key)
     {
-        if (!string.IsNullOrEmpty(key) && AudioManager.HasInstance && AudioManager.Instance.HasUI(key)) AudioManager.Instance.PlayUI(key);
+        if (string.IsNullOrEmpty(key) || !AudioManager.HasInstance || !AudioManager.Instance.HasUI(key)) return;
+        if (key == lastSound && Time.unscaledTime - lastSoundAt < .15f) return;
+        lastSound = key; lastSoundAt = Time.unscaledTime;
+        AudioManager.Instance.PlayUI(key);
     }
 
     // The table player is the one being played: in a dungeon (dungeon-only quests show).

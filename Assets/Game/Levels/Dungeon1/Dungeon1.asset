@@ -158,6 +158,7 @@ MonoBehaviour:
   roomCount: 0
   roomSizeScale: 1
   tallRoomChance: 0
+  roofsOff: 0
   tallRoomLeastCells: 20
   noDoors: 0
   overrideDungeonSettings: 0
@@ -482,6 +483,10 @@ MonoBehaviour:
     tier12: 0
     upgradeChance: 0
   startingRoom: {fileID: 7647481684650771359, guid: 6830ddd5673dc3b4ea1d22ca48ea6bdc, type: 3}
+  startingRoomVariants:
+  - {fileID: 8425165810438750002, guid: 9d3b4746242d9e74c91c62ba9a8d7950, type: 3}
+  - {fileID: 6181622393079431599, guid: c0bc34a3485ddf04db549f0d2694a6a7, type: 3}
+  - {fileID: 4056001041950534917, guid: 9ca2ec609e4a3c049ac78c0b08d7e879, type: 3}
   eventRoomsPerFloor: {x: 2, y: 2}
   tavernEvery: 2
   startingChest: 1
@@ -577,4 +582,107 @@ MonoBehaviour:
     - Another one.
     - And another.
     - They keep coming.
+    inPerson: 0
+  - trigger: 1
+    room: 0
+    chance: 0.1
+    oncePerRun: 0
+    lines:
+    - Tidy.
+    - Next.
+    - You're getting faster.
+    - I'm running out of those.
+    - He was new.
+    - Keep count. I do.
+    - Messy. Good.
+    - That comes out of my budget.
+    - Don't get cocky.
+    - He had plans for the weekend.
+    inPerson: 0
+  - trigger: 2
+    room: 0
+    chance: 0.5
+    oncePerRun: 0
+    lines:
+    - Sneaky. I'll allow it.
+    - He never knew.
+    - No honour. Good.
+    - Quietly done.
+    - I didn't see that. Neither did he.
+    inPerson: 0
+  - trigger: 3
+    room: 0
+    chance: 0.7
+    oncePerRun: 0
+    lines:
+    - You're bleeding on my table.
+    - Eat something.
+    - Now would be a good time to block.
+    - I'd back off.
+    - Still alive. Barely.
+    - Don't make me roll a new one.
+    inPerson: 0
+  - trigger: 8
+    room: 0
+    chance: 0.08
+    oncePerRun: 0
+    lines:
+    - That looked like it hurt.
+    - Shield up.
+    - You walked into that.
+    - Ouch.
+    - They hit back, you know.
+    inPerson: 0
+  - trigger: 4
+    room: 0
+    chance: 0.6
+    oncePerRun: 0
+    lines:
+    - Stronger. I'll adjust.
+    - Don't let it go to your head.
+    - A level. Spend it well.
+    - Good. You'll need it.
+    - Noted on the sheet.
+    inPerson: 0
+  - trigger: 5
+    room: 0
+    chance: 0.4
+    oncePerRun: 0
+    lines:
+    - An upgrade. Put it on.
+    - That's worth wearing.
+    - Better than the old one.
+    - Lucky find.
+    - I shouldn't have put that there.
+    inPerson: 0
+  - trigger: 9
+    room: 0
+    chance: 0.04
+    oncePerRun: 0
+    lines:
+    - Yes, take everything.
+    - Help yourself.
+    - It was just lying there?
+    - You'll carry anything.
+    inPerson: 0
+  - trigger: 10
+    room: 0
+    chance: 1
+    oncePerRun: 0
+    lines:
+    - Three. Show-off.
+    - '*Three* in a row.'
+    - Slow down. I can't set them up that fast.
+    - That was quick.
+    - Leave some for later.
+    inPerson: 0
+  - trigger: 11
+    room: 0
+    chance: 1
+    oncePerRun: 0
+    lines:
+    - That one was expensive.
+    - I painted that one myself.
+    - He was meant to last.
+    - Fine. He was too strong anyway.
     inPerson: 0

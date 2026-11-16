@@ -22,6 +22,9 @@ public class Burning : MonoBehaviour
     public static void Ignite(Character target, Character source, float perSecond, float seconds, GameObject flamePrefab)
     {
         if (target == null || !target.IsAlive || perSecond <= 0f || seconds <= 0f || EventProtection.Held(target)) return;
+        // Nor anyone a hit can't hurt just now (CharacterStats.SparedUntil: a boss's dancers still dancing, the boss while
+        // the beam is on): it would stand in flames with IMMUNE over it at every tick.
+        if (target.Stats != null && Time.time < target.Stats.SparedUntil) return;
         // A player never burns (the user, 2026-11-15): a Fireball or any other spell with a burn does its hit to them
         // and nothing after it, whoever cast it. Enemies burn as before.
         // Co-op: nor another player's stand-in on the host (its ticks would be sent on to them).

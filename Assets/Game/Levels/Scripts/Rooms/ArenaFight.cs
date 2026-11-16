@@ -19,6 +19,8 @@ public class ArenaFight : MonoBehaviour
     readonly HashSet<EnemyBrain> strengthened = new();
     [Tooltip("What its fighter says as the player first walks into the room (Dialogue/Conversations: its intro lines, in the dialogue box at its placement; the Dungeon Master's lines among them go to his feed). The fighters stand still while it is said, then come for the player. Empty: nothing.")]
     public BossDialogueData talk;
+    [Min(0f), Tooltip("The say begins once the player is this near the room's middle, in metres along the room's sides (a square): 6.7 is a step onto the Arena's 7 x 7 cells of sand (the user, 2026-11-16: on the sand, not at the door). The fighters stand where they are until then. 0: as the player walks into the room.")]
+    public float talkWithin = 6.7f;
     bool talked, talkPushed;
 
     DungeonGenerator dungeon;
@@ -62,10 +64,10 @@ public class ArenaFight : MonoBehaviour
             Gather(false);
             Strengthen();
             Protect();
-            // Co-op: the host's word decides who hears it (the first of the party in), the guests follow (CoopTalk).
+            // Co-op: the host's word decides who hears it (the first of the party at the sand), the guests follow (CoopTalk).
             if (!talked && talk != null && !Coop.IsGuest)
             {
-                var hearer = Coop.Running ? PartyMemberInRoom() : PlayerInRoom() ? TablePlayer : null;
+                var hearer = Coop.Running ? PartyMemberAtTalk() : PlayerAtTalk() ? TablePlayer : null;
                 if (hearer != null) { talked = true; StartCoroutine(Talk(hearer)); }
             }
             if (fighters.Count > 0 && fighters.TrueForAll(Down)) yield return Won();
@@ -74,11 +76,20 @@ public class ArenaFight : MonoBehaviour
     }
 
     static Player TablePlayer => PlayerManager.HasInstance ? PlayerManager.Instance.GetPlayer(PlayerKind.Table) : null;
-    bool PlayerInRoom() { var p = TablePlayer; return p != null && p.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(p.transform.position)) == room; }
-    Character PartyMemberInRoom()
+    Character PartyMemberAtTalk()
     {
-        foreach (var c in CoopWorld.Party()) if (c != null && c.IsAlive && dungeon.Layout.RoomAt(dungeon.CellOf(c.transform.position)) == room) return c;
+        foreach (var c in CoopWorld.Party()) if (c != null && c.IsAlive && AtTalk(c.transform.position)) return c;
         return null;
+    }
+
+    // In the room and within Talk Within of its middle along both of its sides (the sand's square).
+    bool PlayerAtTalk() { var p = TablePlayer; return p != null && p.IsAlive && AtTalk(p.transform.position); }
+    bool AtTalk(Vector3 at)
+    {
+        if (dungeon.Layout.RoomAt(dungeon.CellOf(at)) != room) return false;
+        if (talkWithin <= 0f) return true;
+        var d = at - dungeon.RoomCentre(room);
+        return Mathf.Max(Mathf.Abs(d.x), Mathf.Abs(d.z)) <= talkWithin;
     }
 
     // The fighter's say as the player walks in: the fighters held still (entranced) under it, then let go at the player.
@@ -163,7 +174,19 @@ public class ArenaFight : MonoBehaviour
     void Protect()
     {
         if (talk == null || talked) return;
-        foreach (var b in fighters) if (b != null && !Down(b) && b.TryGetComponent<Character>(out var c)) EventProtection.Hold(c, this);
+        foreach (var b in fighters)
+        {
+            if (b == null || Down(b) || !b.TryGetComponent<Character>(out var c)) continue;
+            EventProtection.Hold(c, this);
+            // And it waits where it stands: the say now begins on the sand, and a fighter that saw the player in the
+            // way in would have walked out to meet them first.
+            if (!b.Entranced)
+            {
+                b.Entranced = true;
+                if (b.Perception != null) b.Perception.NoCloseAwareness = true;
+                if (b.State != EnemyState.Idle) b.SetState(EnemyState.Idle);
+            }
+        }
     }
     void ReleaseAll() { foreach (var b in fighters) if (b != null && b.TryGetComponent<Character>(out var c)) EventProtection.Release(c); }
     void OnDestroy() => ReleaseAll();

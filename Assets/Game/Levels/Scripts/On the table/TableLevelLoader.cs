@@ -329,9 +329,12 @@ public class TableLevelLoader : MonoBehaviour
             if(!completed && !descending && CampaignManager.Active) FailedFromMap();
             else if(!completed) ShowSelection("That level couldn't be built");
             // The biome's Dungeon Master line, a moment after the player is actually standing in it.
-            else if(entryLine!=null) DungeonMaster.Say(entryLine,null,entryLineDelay);
+            // Not on top of the place's own line at a run's start (CampaignManager.PlaceLineSaidAt): one "you're here" is enough.
+            else if(entryLine!=null && Time.unscaledTime-CampaignManager.PlaceLineSaidAt>45f) DungeonMaster.Say(entryLine,null,entryLineDelay);
             entryLine=null;
-            if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post(Dungeon.Merchant.GetComponentInParent<TavernKeeper>()!=null || Dungeon.Merchant.GetComponent<TavernKeeper>()!=null ? "There's a tavern on this floor." : "A merchant has set up shop on this floor.", MessageKind.Info);
+            if(completed && Dungeon!=null && Dungeon.Merchant!=null) MessageLog.Post(Dungeon.Merchant.GetComponentInParent<TavernKeeper>()==null && Dungeon.Merchant.GetComponent<TavernKeeper>()==null ? "A merchant has set up shop on this floor."
+                // The keeper outside a tavern (the Peddler's Cellar's shop room) is a peddler, and the floor has no tavern.
+                : Dungeon.InTavern(Dungeon.Merchant.transform.position) ? "There's a tavern on this floor." : $"A {Dungeon.Merchant.ShownName.ToLowerInvariant()} has set up shop on this floor.", MessageKind.Info);
         }
     }
     // Waits, black, for the new floor's first frames to pass: two at least, then until one is quick again (under

@@ -130,6 +130,7 @@ MonoBehaviour:
   musicFade: 1.5
   seed: 0
   floorNumber: 1
+  priceTier: 2
 --- !u!114 &5393833673201492057
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -146,6 +147,8 @@ MonoBehaviour:
   dishes:
   - {fileID: 11400000, guid: 65cb2593085790a4da8e020ec74318fe, type: 2}
   - {fileID: 11400000, guid: e974a15ff091e4b49b711b717671c607, type: 2}
+  - {fileID: 11400000, guid: d474c262dc46ceb48a7d3b21f507b3f1, type: 2}
+  - {fileID: 11400000, guid: 6b144e0fe03c5e04cb0a9a30fe45c0e2, type: 2}
   rumourPrice: 20
   ateMessage: You eat the {Dish}.
   markFont: {fileID: 11400000, guid: 1059071829aebad468d2482393fe7bac, type: 2}

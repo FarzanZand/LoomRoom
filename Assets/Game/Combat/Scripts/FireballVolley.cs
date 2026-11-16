@@ -79,7 +79,7 @@ public class FireballVolley : MonoBehaviour
             ball.Launch(owner, spell, damage, null);
             balls.Add(ball);
             StartCoroutine(Drift(ball, from, to, s.riseSeconds, target));
-            if (spell.chargeSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.chargeSound, from, spell.chargeVolume * .7f);
+            if (spell.chargeSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.chargeSound, from, spell.chargeVolume * .7f, spell.soundPitchVariance);
             if (i < s.count - 1) yield return Wait(s.spawnInterval, target);
         }
         yield return Wait(s.riseSeconds + s.holdSeconds, target);
@@ -91,7 +91,7 @@ public class FireballVolley : MonoBehaviour
             if (target != null && target.IsAlive) ball.transform.rotation = Quaternion.LookRotation(Aim(target) - ball.transform.position);
             if (s.homing || spell.homing) { ball.HomingTarget = target; ball.HomingTurn = spell.homingTurn; }
             ball.Held = false;
-            if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, ball.transform.position, spell.releaseVolume);
+            if (spell.releaseSound != null && AudioManager.HasInstance) AudioManager.Instance.PlaySFX(spell.releaseSound, ball.transform.position, spell.releaseVolume, spell.soundPitchVariance);
             if (i < balls.Count - 1) yield return Wait(s.launchInterval, null);
         }
         done?.Invoke();

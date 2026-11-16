@@ -121,8 +121,11 @@ public partial class DungeonGenerator
                     if (cells.Contains(c + d) || cutCells.Contains(c + d)) continue;
                     var outward = new Vector3(d.x, 0f, d.y);
                     var along = new Vector2Int(d.y, d.x);
-                    float before = d.y != 0 && !cutCells.Contains(c - along) ? WallThickness : 0f;
-                    float after = d.y != 0 && !cutCells.Contains(c + along) ? WallThickness : 0f;
+                    // A side facing x stops 2 cm short of the hole's corner, where the side facing z stands that far inside
+                    // the hole: their tops lay in one plane there and overlapped by that strip (a flicker at the lip of a
+                    // pit against a wall, found by the stress test on 1 Dungeon1 floor in 60).
+                    float before = !cutCells.Contains(c - along) ? d.y != 0 ? WallThickness : -.02f : 0f;
+                    float after = !cutCells.Contains(c + along) ? d.y != 0 ? WallThickness : -.02f : 0f;
                     // Under a floor tile (beside it, or at a corner it runs on under) 1 cm down; level with the floor only under a wall.
                     float top = Open(c + d) || before > 0f && (Open(c - along) || Open(c + d - along)) || after > 0f && (Open(c + along) || Open(c + d + along)) ? .011f : .001f;
                     float length = size + before + after, shift = (after - before) * .5f;

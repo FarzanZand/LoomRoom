@@ -37,6 +37,59 @@ public sealed partial class DungeonLayout
     readonly List<List<Vector2Int>> doorFronts = new();   // per room; empty for all but a way through
     readonly HashSet<Vector2Int> frontCells = new();
 
+    // ── Filling the table ───────────────────────────────────────────
+    // The user, 2026-11-16: "Why is so much of the map empty?" Rooms were set down at the first spot that fitted, one
+    // or two cells off a room picked at random, so the twenty of them packed into a clump wherever the growth happened
+    // to go and left the rest of the grid bare rock (a tenth of the grid on an average Dungeon1 floor, up to a third,
+    // lay more than four cells from any floor).
+    // Spread Rooms: each room looks at up to Spread Choices spots that fit and takes the one that brings the most bare
+    // grid within reach of a room (cover: the cells with no room within Cover Reach), and may stand up to Spread Gap
+    // cells further off the room it grows from; of those spots it takes the best with a short passage to that room
+    // (Short Passage cells past the gap between them), and the long way round a room to its door only when none has
+    // one. Off: the first spot that fits, as before (for comparing layouts).
+    public static bool SpreadRooms = true;
+    public static int CoverReach = 3, SpreadChoices = 24, SpreadGap = 2, SpreadAttempts = 200, ShortPassage = 4;
+    // Fill rooms: twenty rooms do not cover the grid on every floor (a boss floor's stage takes a seventh of the room
+    // floor by itself, and a floor of small rooms leaves a third of the table bare however they are spread). The
+    // generator asks for Fill Rooms more rooms than the level's count (the requests from optionalFrom on, before the
+    // exit); each is built only where it brings at least Fill Least bare cells within reach of a room, and is otherwise
+    // left out, so a floor that already covers the table gets none. 0 Fill Rooms: none, as before.
+    public static int FillRooms = 6, FillLeast = 50, FillReach = 8;
+    int optionalFrom = int.MaxValue;
+    // Rooms that had to be built (all but the fill rooms) and were not.
+    public int Missing { get; private set; }
+    int[,] cover;
+
+    // ── Long passages with nothing along them ───────────────────────
+    // The user, 2026-11-16: "entire north wall is just a long corridor with nothing above ... too much corridor too
+    // little rooms". The long ones were the extra tunnels: a second way out of a room with one doorway (JoinDeadEnds)
+    // could be dug up to 45 cells long and a loop between two rooms (AddLoops) 30, so they ran round the outside of a
+    // big room or along the grid's edge to find floor; and the stairs' room was tunnelled to a room up to ten cells
+    // further off than the nearest (PlaceAt). Longest Extra Tunnel: neither of the first two is longer than this many
+    // cells (a room that would need more keeps its one doorway: at 10, as many rooms have one doorway as before), and
+    // the stairs join a room within four cells of the nearest. 0: as long as before.
+    public static int LongestExtraTunnel = 10;
+    int ExtraTunnelCost(int asBefore) => LongestExtraTunnel > 0 ? Mathf.Min(asBefore, LongestExtraTunnel * 12) : asBefore;
+
+    void Cover(int index, int by)
+    {
+        if (cover == null) return;
+        int width = floor.GetLength(0), depth = floor.GetLength(1);
+        var r = rooms[index];
+        for (int x = Mathf.Max(0, r.xMin - CoverReach); x < Mathf.Min(width, r.xMax + CoverReach); x++)
+            for (int y = Mathf.Max(0, r.yMin - CoverReach); y < Mathf.Min(depth, r.yMax + CoverReach); y++) cover[x, y] += by;
+    }
+
+    // The bare cells a room here would bring within reach of a room.
+    int Bare(DungeonShape s, Vector2Int origin)
+    {
+        int width = floor.GetLength(0), depth = floor.GetLength(1), n = 0;
+        for (int x = Mathf.Max(1, origin.x - CoverReach); x < Mathf.Min(width - 1, origin.x + s.width + CoverReach); x++)
+            for (int y = Mathf.Max(1, origin.y - CoverReach); y < Mathf.Min(depth - 1, origin.y + s.height + CoverReach); y++)
+                if (cover[x, y] == 0) n++;
+        return n;
+    }
+
     static IEnumerable<Vector2Int> FrontOf(DungeonShape s, Vector2Int origin)
     {
         for (int x = 0; x < s.width; x++) for (int y = 0; y < s.height; y++)
@@ -57,14 +110,14 @@ public sealed partial class DungeonLayout
     // while the other rooms grow, then the exit is placed there and tunnelled to the nearest room it can reach.
     // entranceAt: where the entrance room should stand, best first (the edge in front of the player at the table, then a
     // little further in): the first spot from which every room fits is kept; failing all of them it grows from the middle.
-    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings, Vector2Int? exitAt = null, IList<Vector2Int> entranceAt = null)
+    public static DungeonLayout Grow(int width, int depth, IList<DungeonShape> requests, int seed, DungeonGrowthSettings settings, Vector2Int? exitAt = null, IList<Vector2Int> entranceAt = null, int optional = int.MaxValue)
     {
         if (requests == null || requests.Count < 2) throw new ArgumentException("Dungeon requires at least two rooms.");
         DungeonLayout layout = null;
         if (entranceAt != null)
             foreach (var spot in entranceAt)
             {
-                var tried = new DungeonLayout(width, depth, seed) { entranceAt = spot };
+                var tried = new DungeonLayout(width, depth, seed) { entranceAt = spot, optionalFrom = optional };
                 try { tried.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
                 if (!tried.EntrancePlacedAt) continue;
                 if (Better(tried, layout, exitAt)) layout = tried;
@@ -72,7 +125,7 @@ public sealed partial class DungeonLayout
             }
         if (layout == null || !Complete(layout, requests, exitAt))
         {
-            var middle = new DungeonLayout(width, depth, seed);
+            var middle = new DungeonLayout(width, depth, seed) { optionalFrom = optional };
             if (layout == null) middle.GrowRooms(requests, settings, exitAt, false);
             else
             {
@@ -84,16 +137,16 @@ public sealed partial class DungeonLayout
         // until a plain room with free walls stands. Otherwise the starting room's one door can lead into a one-door
         // chunk and leave nothing to grow from (a floor of just the start and the exit). The layout with more rooms is
         // kept; floors that placed every room are untouched.
-        if (layout.PlacedRequests.Length < requests.Count)
+        if (layout.Missing > 0)
         {
-            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt };
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, optionalFrom = optional };
             try { again.GrowRooms(requests, settings, exitAt, true); } catch (InvalidOperationException) when (again.entranceAt.HasValue) { again = null; }
             if (again != null && Better(again, layout, exitAt)) layout = again;
         }
         // Rooms still lost, with the stairs' far spot in their way: other spots and other growth, the same every time.
-        for (int retry = 1; !exitAt.HasValue && retry <= 4 && layout.PlacedRequests.Length < requests.Count; retry++)
+        for (int retry = 1; !exitAt.HasValue && retry <= 4 && layout.Missing > 0; retry++)
         {
-            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry };
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry, optionalFrom = optional };
             try { again.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
             if (Better(again, layout, exitAt)) layout = again;
         }
@@ -103,14 +156,14 @@ public sealed partial class DungeonLayout
         // exit as well placed is kept.
         for (int retry = 5; layout.ClosedWays > 0 && retry <= 10; retry++)
         {
-            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry };
+            var again = new DungeonLayout(width, depth, seed) { entranceAt = layout.entranceAt, growRetry = retry, optionalFrom = optional };
             try { again.GrowRooms(requests, settings, exitAt, false); } catch (InvalidOperationException) { continue; }
-            if (again.ClosedWays < layout.ClosedWays && again.PlacedRequests.Length >= layout.PlacedRequests.Length && (!exitAt.HasValue || again.ExitPlacedAt || !layout.ExitPlacedAt)) layout = again;
+            if (again.ClosedWays < layout.ClosedWays && again.Missing <= layout.Missing && (!exitAt.HasValue || again.ExitPlacedAt || !layout.ExitPlacedAt)) layout = again;
         }
         if (layout.ClosedWays > 0)
             Debug.LogWarning($"Dungeon seed {seed}: {layout.ClosedWays} end(s) of a way through have no passage.");
-        if (layout.PlacedRequests.Length < requests.Count)
-            Debug.LogWarning($"Dungeon seed {seed}: {requests.Count - layout.PlacedRequests.Length} of {requests.Count} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
+        if (layout.Missing > 0)
+            Debug.LogWarning($"Dungeon seed {seed}: {layout.Missing} of {Mathf.Min(requests.Count, optional == int.MaxValue ? requests.Count : optional + 1)} rooms did not fit the {width}x{depth} grid. Reduce room count or size, or enlarge the grid.");
         if (exitAt.HasValue && !layout.ExitPlacedAt)
             Debug.LogWarning($"Dungeon seed {seed}: the exit could not be reached at {exitAt.Value} from any entrance spot; it is grown off the furthest room instead.");
         return layout;
@@ -123,11 +176,12 @@ public sealed partial class DungeonLayout
     {
         if (best == null) return true;
         if (exitAt.HasValue && tried.ExitPlacedAt != best.ExitPlacedAt) return tried.ExitPlacedAt;
+        if (tried.Missing != best.Missing) return tried.Missing < best.Missing;
         return tried.PlacedRequests.Length > best.PlacedRequests.Length;
     }
 
     static bool Complete(DungeonLayout layout, IList<DungeonShape> requests, Vector2Int? exitAt) =>
-        layout.PlacedRequests.Length == requests.Count && (!exitAt.HasValue || layout.ExitPlacedAt);
+        layout.Missing == 0 && (!exitAt.HasValue || layout.ExitPlacedAt);
 
     // How far the stairs are from the way in, in cells: the walk there, the straight line, and the walk to the furthest
     // other room and the widest straight line to one (the stress test's Stairs report).
@@ -158,6 +212,7 @@ public sealed partial class DungeonLayout
         growRandom = new System.Random(unchecked(seed * 31 + 977 + growRetry * 7919));
         occupant = new int[width, depth];
         noise = new int[width, depth];
+        cover = new int[width, depth];
         int wander = Mathf.RoundToInt(Mathf.Clamp(settings.wander, 0, 4) * 10);
         for (int x = 0; x < width; x++) for (int y = 0; y < depth; y++) { occupant[x, y] = EmptyCell; noise[x, y] = growRandom.Next(wander + 1); }
 
@@ -171,7 +226,7 @@ public sealed partial class DungeonLayout
         var exitSpot = exitAt;
         if (!exitSpot.HasValue && FarSpot(exitShape) is { } far && Reserve(exitShape, far, true)) { exitSpot = far; reserved = true; }
         for (int r = 1; r < last; r++)
-            if (TryGrow(requests[r], null)) placed.Add(r);
+            if (r >= optionalFrom ? TryFill(requests[r]) : TryGrow(requests[r], null)) placed.Add(r);
         if (reserved)
         {
             Reserve(exitShape, exitSpot.Value, false);
@@ -197,6 +252,8 @@ public sealed partial class DungeonLayout
         placed.Add(last);
         PlacedRequests = placed.ToArray();
         Shapes = placedShapes.ToArray();
+        Missing = optionalFrom <= last ? optionalFrom + 1 : last + 1;
+        foreach (int r in placed) if (r < optionalFrom || r == last) Missing--;
 
         AddLoops();
         OpenEveryDoor();
@@ -235,31 +292,104 @@ public sealed partial class DungeonLayout
         {
             if (plainFirst && s.HasDoorMarks && !doorAnchors.Exists(a => a == null)) continue;
             int attempts = anchorOrder != null ? anchorOrder.Count * 20 : 90;
+            // Spread Rooms: the spots that fit are gathered and the one that fills the most bare grid is tried first.
+            bool spread = SpreadRooms && anchorOrder == null;
+            if (spread) attempts = Mathf.Max(attempts, SpreadAttempts);
+            var choices = spread ? new List<(int anchor, int gap, Vector2Int origin, int bare, int order)>() : null;
             for (int attempt = 0; attempt < attempts; attempt++)
             {
                 int anchor = anchorOrder != null ? anchorOrder[attempt / 20] : PickAnchor();
-                int gap = growRandom.Next(growth.spacing.x, growth.spacing.y + 1);
-                var a = rooms[anchor];
-                Vector2Int origin;
-                // Off a room whose ways out are marked (a hand-built room, the starting room), on the side its doors are
-                // on, so the passage runs straight out of the door instead of round the room to it.
-                int side = DoorSide(anchor);
-                switch (side >= 0 ? side : growRandom.Next(4))
-                {
-                    case 0: origin = new Vector2Int(a.xMax + gap, growRandom.Next(a.yMin - s.height + 1, a.yMax)); break;
-                    case 1: origin = new Vector2Int(a.xMin - gap - s.width, growRandom.Next(a.yMin - s.height + 1, a.yMax)); break;
-                    case 2: origin = new Vector2Int(growRandom.Next(a.xMin - s.width + 1, a.xMax), a.yMax + gap); break;
-                    default: origin = new Vector2Int(growRandom.Next(a.xMin - s.width + 1, a.xMax), a.yMin - gap - s.height); break;
-                }
+                int gap = growRandom.Next(growth.spacing.x, growth.spacing.y + 1 + (spread ? Mathf.Max(0, SpreadGap) : 0));
+                var origin = SpotOff(anchor, s, gap);
                 if (!Fits(s, origin)) continue;
-                int index = Place(s, origin);
-                // Out of the starting room the passage stays short (it opens the floor): a room only reached the long
-                // way round is tried elsewhere.
-                int reach = anchor == 0 && doorAnchors[0] != null ? (gap + 3) * 12 : (gap * 2 + 14) * 16;
-                if (Connect(anchor, index, reach)) return true;
-                Unplace(index);
+                if (spread)
+                {
+                    choices.Add((anchor, gap, origin, Bare(s, origin), choices.Count));
+                    if (choices.Count >= SpreadChoices) break;
+                    continue;
+                }
+                if (PlaceAndConnect(s, origin, anchor, gap)) return true;
             }
+            if (!spread) continue;
+            choices.Sort((a, b) => a.bare != b.bare ? b.bare.CompareTo(a.bare) : a.order.CompareTo(b.order));
+            // A short passage first (the two rooms' doors face each other, or nearly): the spots are gone through for
+            // one, best first, and only when none has one is the long way round a room to its door taken.
+            foreach (bool shortOnly in new[] { true, false })
+                foreach (var c in choices)
+                    if (PlaceAndConnect(s, c.origin, c.anchor, c.gap, shortOnly)) return true;
         }
+        return false;
+    }
+
+    // A spot for a room that many cells off the room it grows from, on a side picked at random.
+    Vector2Int SpotOff(int anchor, DungeonShape s, int gap)
+    {
+        var a = rooms[anchor];
+        // Off a room whose ways out are marked (a hand-built room, the starting room), on the side its doors are
+        // on, so the passage runs straight out of the door instead of round the room to it.
+        int side = DoorSide(anchor);
+        switch (side >= 0 ? side : growRandom.Next(4))
+        {
+            case 0: return new Vector2Int(a.xMax + gap, growRandom.Next(a.yMin - s.height + 1, a.yMax));
+            case 1: return new Vector2Int(a.xMin - gap - s.width, growRandom.Next(a.yMin - s.height + 1, a.yMax));
+            case 2: return new Vector2Int(growRandom.Next(a.xMin - s.width + 1, a.xMax), a.yMax + gap);
+            default: return new Vector2Int(growRandom.Next(a.xMin - s.width + 1, a.xMax), a.yMin - gap - s.height);
+        }
+    }
+
+    // A fill room: built only where bare grid is left (at least Fill Least cells of it brought within reach of a room),
+    // at the spot on the whole grid that fills the most, and joined by a short passage to one of the rooms nearest it.
+    // Not grown off a room like the others: the rooms round a bare stretch are often hand-built ones with their doors
+    // on other sides, which nothing can grow from on that side. Never the 3 x 3 closet a crowded grid falls back to.
+    bool TryFill(DungeonShape shape)
+    {
+        if (FillLeast <= 0) return false;
+        int width = floor.GetLength(0), depth = floor.GetLength(1), shapes = 0, left = 0;
+        // Too little bare grid left for any spot to count: nothing to look for.
+        for (int x = 1; x < width - 1; x++) for (int y = 1; y < depth - 1; y++) if (cover[x, y] == 0) left++;
+        if (left < FillLeast) return false;
+        foreach (var s in Fallbacks(shape))
+        {
+            if (shapes++ > 0 && s.width <= 3 && s.height <= 3) break;
+            var choices = new List<(Vector2Int origin, int bare, int order)>();
+            for (int x = 1; x < width - s.width; x++)
+                for (int y = 1; y < depth - s.height; y++)
+                {
+                    var origin = new Vector2Int(x, y);
+                    int bare = Bare(s, origin);
+                    if (bare >= FillLeast && Fits(s, origin)) choices.Add((origin, bare, choices.Count));
+                }
+            choices.Sort((a, b) => a.bare != b.bare ? b.bare.CompareTo(a.bare) : a.order.CompareTo(b.order));
+            // A short passage first, over the best spots; only when none has one, a longer way round to a door.
+            foreach (bool shortOnly in new[] { true, false })
+                for (int i = 0; i < choices.Count && i < (shortOnly ? 40 : 12); i++)
+                {
+                    int index = Place(s, choices[i].origin);
+                    var near = new List<int>();
+                    for (int other = 0; other < index; other++) if (Gap(rooms[other], rooms[index]) <= FillReach) near.Add(other);
+                    near.Sort((a, b) => Gap(rooms[a], rooms[index]) != Gap(rooms[b], rooms[index]) ? Gap(rooms[a], rooms[index]).CompareTo(Gap(rooms[b], rooms[index])) : a.CompareTo(b));
+                    bool joined = false;
+                    for (int n = 0; n < near.Count && n < 5 && !joined; n++)
+                    {
+                        int gap = Gap(rooms[near[n]], rooms[index]);
+                        joined = Connect(near[n], index, shortOnly ? (gap + ShortPassage) * 12 : (gap * 2 + 14) * 16);
+                    }
+                    if (joined) return true;
+                    Unplace(index);
+                }
+        }
+        return false;
+    }
+
+    bool PlaceAndConnect(DungeonShape s, Vector2Int origin, int anchor, int gap, bool shortOnly = false)
+    {
+        int index = Place(s, origin);
+        // Out of the starting room the passage stays short (it opens the floor): a room only reached the long
+        // way round is tried elsewhere.
+        int reach = anchor == 0 && doorAnchors[0] != null ? (gap + 3) * 12 : (gap * 2 + 14) * 16;
+        if (shortOnly) reach = Mathf.Min(reach, (gap + ShortPassage) * 12);
+        if (Connect(anchor, index, reach)) return true;
+        Unplace(index);
         return false;
     }
 
@@ -330,7 +460,7 @@ public sealed partial class DungeonLayout
         float Near(int room) => Vector2Int.Distance(roomCenters[room], centre);
         float nearest = float.MaxValue;
         foreach (int room in order) nearest = Mathf.Min(nearest, Near(room));
-        bool Close(int room) => Near(room) <= nearest + 10f;
+        bool Close(int room) => Near(room) <= nearest + (LongestExtraTunnel > 0 ? 4f : 10f);
         order.Sort((a, b) =>
         {
             if (Close(a) != Close(b)) return Close(a) ? -1 : 1;
@@ -407,6 +537,7 @@ public sealed partial class DungeonLayout
         var front = new List<Vector2Int>();
         if (s.everyDoor) foreach (var p in FrontOf(s, origin)) { front.Add(p); frontCells.Add(p); }
         doorFronts.Add(front);
+        Cover(index, 1);
         return index;
     }
 
@@ -426,6 +557,7 @@ public sealed partial class DungeonLayout
 
     void Unplace(int index)
     {
+        Cover(index, -1);
         var r = rooms[index];
         foreach (var p in r.allPositionsWithin)
             if (occupant[p.x, p.y] == index) { occupant[p.x, p.y] = EmptyCell; floor[p.x, p.y] = false; }
@@ -617,13 +749,27 @@ public sealed partial class DungeonLayout
         if (path.Count >= 4 && growRandom.NextDouble() * 100 < growth.widePercent)
         {
             int side = growRandom.Next(2) == 0 ? 1 : -1;
+            // The cells beside the path that can be dug, then only those with another beside them: one alone (a single
+            // straight cell between two bends, or one with rock kept clear either side) was a one-cell nook in the
+            // passage's wall, a dead end 2 m deep (1.5 a floor on Dungeon1).
+            var beside = new Vector2Int?[path.Count];
             for (int i = 1; i < path.Count - 1; i++)
             {
                 var along = path[i + 1] - path[i - 1];
                 if (along.x != 0 && along.y != 0) continue;   // a bend
                 var perpendicular = new Vector2Int(-Math.Sign(along.y), Math.Sign(along.x)) * side;
                 var q = path[i] + perpendicular;
-                if (Inner(q) && occupant[q.x, q.y] == EmptyCell && !Halo(q)) Dig(q, owner);
+                if (Inner(q) && occupant[q.x, q.y] == EmptyCell && !Halo(q)) beside[i] = q;
+            }
+            // Open beside it once dug: the path's cell, floor already there, or another cell to be dug.
+            var toDig = new HashSet<Vector2Int>();
+            foreach (var q in beside) if (q.HasValue) toDig.Add(q.Value);
+            foreach (var q in beside)
+            {
+                if (!q.HasValue) continue;
+                int open = 0;
+                foreach (var d in Directions) { var n = q.Value + d; if (toDig.Contains(n) || InBounds(n) && occupant[n.x, n.y] != EmptyCell) open++; }
+                if (open >= 2) Dig(q.Value, owner);
             }
         }
         WidenFromPairedDoor(a, b, path, owner);
@@ -725,7 +871,7 @@ public sealed partial class DungeonLayout
             int direct = Mathf.Abs(ca.x - cb.x) + Mathf.Abs(ca.y - cb.y);
             int walked = Distances(ca)[cb.x, cb.y] - 1;
             if (walked > 0 && walked < direct * 1.6f + 8) continue;
-            if (Connect(a, b, (reach * 2 + 12) * 16)) loops--;
+            if (Connect(a, b, ExtraTunnelCost((reach * 2 + 12) * 16))) loops--;
         }
     }
 
@@ -743,7 +889,7 @@ public sealed partial class DungeonLayout
         for (int room = first; room < exit; room++) if (Doorways(room).Count == 1) leaves.Add(room);
         for (int i = leaves.Count - 1; i > 0; i--) { int j = growRandom.Next(i + 1); (leaves[i], leaves[j]) = (leaves[j], leaves[i]); }
         int joins = Mathf.RoundToInt(leaves.Count * Mathf.Clamp(growth.joinDeadEndPercent, 0, 100) / 100f);
-        int maxCost = (Mathf.Clamp(growth.loopReach, 2, 30) * 2 + 26) * 16;
+        int maxCost = ExtraTunnelCost((Mathf.Clamp(growth.loopReach, 2, 30) * 2 + 26) * 16);
         for (int round = 0; round < 2 && joins > 0; round++)
             foreach (int leaf in leaves)
             {

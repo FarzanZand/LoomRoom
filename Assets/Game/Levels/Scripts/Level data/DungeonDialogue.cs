@@ -7,6 +7,8 @@ public enum DungeonDialogueTrigger
 {
     RunStart = 0, Kill = 1, Backstab = 2, CloseCall = 3, LevelUp = 4, BetterGear = 5,
     NewDeepestFloor = 6, EnterRoom = 7, Hurt = 8, PickUp = 9,
+    KillStreak = 10,   // three enemies down within a few seconds
+    EliteKill = 11,    // an elite falls
 }
 
 // One thing the Dungeon Master may say on a level: when, how likely, and the lines to pick from.

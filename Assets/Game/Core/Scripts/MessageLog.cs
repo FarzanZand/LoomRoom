@@ -142,6 +142,9 @@ public class MessageLog : Singleton<MessageLog>
     void OnPlayerHitLanded(DamageInfo info)
     {
         if (info.Target == null || info.Target is Player) return;
+        // A blow that took nothing (IMMUNE over the target: a boss's dancer still dancing, the boss while the beam is on)
+        // gets no line (Zelda, 2026-11-16: "You hit the Blue Hood Skeleton for 28." at every blow on a dancer at 28/28).
+        if (info.Spared) return;
         if (info.Blocked) { Add($"{TheCap(info.Target)} blocks your attack.", MessageKind.Combat); return; }
         if (info.Amount <= 0f) { Add($"Your attack glances off {The(info.Target)}.", MessageKind.Combat); return; }
         string verb = info.Backstab ? "You backstab" : info.Critical ? "Critical hit! You strike" : info.Heavy ? "You smash" : "You hit";
@@ -151,7 +154,8 @@ public class MessageLog : Singleton<MessageLog>
     void OnPlayerDamaged(DamageInfo info)
     {
         if (info.Blocked) { Add($"You block {The(info.Source)}'s attack.", MessageKind.Combat); return; }
-        if (info.Amount <= 0f) return;
+        // A hit that took no health (the revive's grace, god mode) gets no "hits you for" line.
+        if (info.Amount <= 0f || info.Spared) return;
         // Damage lines are for the history only; floating numbers show them on screen.
         if (info.Source != null) Add($"{TheCap(info.Source)} hits you for {Round(info.Amount)}.", MessageKind.Combat);
         else if (!string.IsNullOrWhiteSpace(info.SourceName)) Add($"{Cap(info.SourceName)} hurts you for {Round(info.Amount)}.", MessageKind.Combat);

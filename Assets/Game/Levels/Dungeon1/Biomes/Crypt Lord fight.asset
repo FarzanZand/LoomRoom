@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Crypt Lord fight
   m_EditorClassIdentifier: Assembly-CSharp::BossFight
   music: {fileID: 8300000, guid: cc7e5712c4b45bd4eb5e07bbc6a4f6a7, type: 3}
-  musicVolume: 0.8
+  musicVolume: 0.45
   bpm: 92.05
   firstBeat: 0.41
   musicFade: 1.2

@@ -82,9 +82,14 @@ public static class SpellEffects
         if (owner != null && !FactionRules.IsHostile(owner.Faction, target.Faction)) { ProvokableNpc.TryProvoke(target, owner); return false; }
         var dir = at - from; dir.y = 0f;
         target.Stats.TakeDamage(new DamageInfo { Amount = power, Source = owner, SourceName = sourceName, Magic = true, HitPoint = at, Direction = dir.sqrMagnitude > .0001f ? dir.normalized : Vector3.forward });
-        // A hit the Dungeon Master stopped (EventProtection) hurt nothing: no skill practice for it.
-        return !EventProtection.Held(target);
+        // A hit the Dungeon Master stopped (EventProtection) hurt nothing: no skill practice for it. Nor one on a target
+        // nothing can hurt just now (IMMUNE, CharacterStats.SparedUntil).
+        return !Untouched(target);
     }
+
+    // A hit on it just now took nothing: the Dungeon Master holds it out of reach (EventProtection) or nothing can hurt
+    // it for the moment (IMMUNE, CharacterStats.SparedUntil: a boss's dancer still dancing, the boss while the beam is on).
+    public static bool Untouched(Character target) => EventProtection.Held(target) || target != null && target.Stats != null && Time.time < target.Stats.SparedUntil;
 
     // A character's middle, where bolts and beams meet it.
     public static Vector3 Chest(Character c)

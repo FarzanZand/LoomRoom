@@ -198,6 +198,74 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         if (waypoints[index] != null) MoveTo(waypoints[index].position);
     }
 
+    // ── Legs that match the body's speed ────────────────────────────
+    // The locomotion blend (HumanoidController, Directional locomotion) has its walk clip at 0.9 m/s and its run clip at
+    // 2.6 and was fed the body's speed in metres a second, whatever the body's size. But the clips cover ground by the
+    // length of the legs that play them: for a Blue Hood Skeleton (leg 0.806 m, hip to knee to ankle) the blend covers
+    // 0.76 m/s at 0.7, 1.8 at 0.9 and 4.3 from 2.6 up (measured with the foot pinning off, on the foot's speed under the
+    // body while it is down). So a body walking at 1.5 m/s cycled its legs for 2.7, a big one (an elite, Little Undead
+    // John, the Crypt Lord) ran its legs a third too fast at its chase speed, and a small one too slow; EnemyFootPlant
+    // pins a foot that is down, so it showed as short quick steps or dragged ones, never as a slide.
+    // Match Stride: the blend is fed the speed at which its clips cover what this body really moves, for this body's own
+    // legs (a longer leg takes the same ground at a slower gait), and only past what the run clip covers is the blend
+    // played faster (LocoRate, the locomotion state's speed, at most Leg Rate Most; a slow walk plays the walk clip a
+    // little slower, see BlendFor). The speed it moves at, its attacks
+    // and the guard's own footwork are not touched. Off: fed in metres a second, as before.
+    public static bool MatchStride = true;
+    public static float LegRateMost = 2f;
+    // (A test may switch it off for a comparison; a new Play starts with it on.)
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStride() { MatchStride = true; LegRateMost = 2f; }
+    const float ReferenceLeg = .806f;
+    // (the blend's forward parameter, what its clips cover there for the reference leg, m/s)
+    static readonly (float fed, float covers)[] Stride = { (0f, 0f), (.3f, .16f), (.5f, .33f), (.7f, .76f), (.9f, 1.8f), (1.6f, 2.68f), (2.6f, 4.3f) };
+    Animator legsOf; float legsAtScale, legLength;
+
+    // Hip to knee to ankle, in the world (so with the body's scale); 0 for a rig without those bones.
+    float LegLength(Animator anim)
+    {
+        float scale = anim.transform.lossyScale.y;
+        if (legsOf == anim && Mathf.Approximately(scale, legsAtScale)) return legLength;
+        legsOf = anim; legsAtScale = scale; legLength = 0f;
+        if (!anim.isHuman) return 0f;
+        var hip = anim.GetBoneTransform(HumanBodyBones.LeftUpperLeg); var knee = anim.GetBoneTransform(HumanBodyBones.LeftLowerLeg); var ankle = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+        if (hip != null && knee != null && ankle != null) legLength = Vector3.Distance(hip.position, knee.position) + Vector3.Distance(knee.position, ankle.position);
+        return legLength;
+    }
+
+    // What to feed the blend so that its clips cover `covers` m/s (for the reference leg), and the rate to play it at.
+    // Past what the run clip covers it is played faster. Just under what the walk clip covers it is the walk clip played
+    // a little slower (down to Slow Walk of its rate), not the walk blended with the idle pose: there a tenth more or
+    // less fed changes what the legs cover by a third, and rigs differ by that much (the Synty bodies and the demon's
+    // came out a quarter slow at a walk). Slower still, the walk is blended toward the idle pose as the tree does.
+    const float SlowWalk = .7f;
+    static float BlendFor(float covers, out float rate)
+    {
+        rate = 1f;
+        const int walk = 4;   // Stride[walk]: the walk clip alone
+        var top = Stride[Stride.Length - 1];
+        if (covers >= top.covers) { rate = Mathf.Min(covers / top.covers, LegRateMost); return top.fed; }
+        if (covers >= Stride[walk].covers)
+        {
+            for (int i = walk + 1; i < Stride.Length; i++)
+                if (covers <= Stride[i].covers)
+                    return Mathf.Lerp(Stride[i - 1].fed, Stride[i].fed, Mathf.InverseLerp(Stride[i - 1].covers, Stride[i].covers, covers));
+            return top.fed;
+        }
+        float slowWalk = Stride[walk].covers * SlowWalk;
+        if (covers >= slowWalk) { rate = covers / Stride[walk].covers; return Stride[walk].fed; }
+        if (covers > Stride[walk - 1].covers)
+        {
+            float t = Mathf.InverseLerp(Stride[walk - 1].covers, slowWalk, covers);
+            rate = Mathf.Lerp(1f, SlowWalk, t);
+            return Mathf.Lerp(Stride[walk - 1].fed, Stride[walk].fed, t);
+        }
+        for (int i = 1; i < walk; i++)
+            if (covers <= Stride[i].covers)
+                return Mathf.Lerp(Stride[i - 1].fed, Stride[i].fed, Mathf.InverseLerp(Stride[i - 1].covers, Stride[i].covers, covers));
+        return Stride[walk - 1].fed;
+    }
+
     // Locomotion parameters for the humanoid body. Not locomoting forces an idle speed.
     public void UpdateLocomotionAnimator(Animator anim, bool locomoting, float damping)
     {
@@ -206,13 +274,21 @@ public class EnemyMotor : MonoBehaviour, IKnockbackReceiver
         float speed = v.magnitude;
         if (locomoting) anim.SetFloat("Speed", speed, damping, Time.deltaTime);
         else            anim.SetFloat("Speed", 0f);
-        // Local-space velocity for directional locomotion (strafing and backing off while facing a target).
+        // Local-space velocity for directional locomotion (strafing and backing off while facing a target), in the
+        // blend's own terms for this body's legs (Match Stride).
+        float feed = 1f, rate = 1f;
+        if (MatchStride && locomoting && speed > .05f)
+        {
+            float leg = LegLength(anim);
+            if (leg > .05f) feed = BlendFor(speed * ReferenceLeg / leg, out rate) / speed;
+        }
         if (Character.HasParameter(anim, "MoveX", AnimatorControllerParameterType.Float))
         {
-            Vector3 local = locomoting ? transform.InverseTransformDirection(v) : Vector3.zero;
+            Vector3 local = locomoting ? transform.InverseTransformDirection(v) * feed : Vector3.zero;
             anim.SetFloat("MoveX", local.x, damping, Time.deltaTime);
             anim.SetFloat("MoveZ", local.z, damping, Time.deltaTime);
         }
+        if (Character.HasParameter(anim, "LocoRate", AnimatorControllerParameterType.Float)) anim.SetFloat("LocoRate", rate, damping, Time.deltaTime);
         anim.SetFloat("MotionSpeed", locomoting && speed > 0.1f ? 1f : 0f, damping, Time.deltaTime);
         anim.SetBool("Grounded", IsGrounded);
         anim.SetBool("FreeFall", !IsGrounded && Velocity.y < -1f);

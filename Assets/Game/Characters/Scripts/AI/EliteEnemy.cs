@@ -4,7 +4,8 @@ using UnityEngine;
 public enum EliteTrait { Tough = 0, Brutal = 1, Swift = 2 }
 
 // An elite: now and then a generated enemy comes out as one (DungeonBiome.eliteChance, rolled in DungeonGenerator.SetUpEnemy).
-// It grows as if it were DungeonBiome.eliteFloors deeper (stats and the loot it drops), and has one trait on top: Tough
+// It grows as if it were DungeonBiome.eliteFloors deeper (stats and the loot it drops, the loot's tier at most one
+// above the floor's best, LootSource.DeeperTierCap), and has one trait on top: Tough
 // (more health), Brutal (harder hits) or Swift (faster swings). Its name says so ("Brutal Crypt Soldier"), it stands 20%
 // bigger with a soft glow in the trait's colour round its body (the user's pick of four looks, 2026-10-31; a thin hard
 // outline before), and it is worth twice the experience (RunManager).

@@ -349,7 +349,8 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
         float exact = actual;
         actual = Mathf.Floor(actual + .5f);
         if (info.FromEffect && exact > 0f && actual < 1f) actual = 1f;
-        if (DiesInOneHit && actual > 0f) actual = Mathf.Max(actual, CurrentHealth);
+        // (Not a hit that takes nothing: it stays what it was, and is shown as IMMUNE.)
+        if (DiesInOneHit && actual > 0f && !spared) actual = Mathf.Max(actual, CurrentHealth);
         // The cheats' 999 damage attacks: every hit the table player lands on someone else does 999.
         if (DevCheats.MightyBlows && info.Source is Player && Character is not Player) actual = Mathf.Max(actual, DevCheats.MightyDamage);
         info.Amount   = actual;

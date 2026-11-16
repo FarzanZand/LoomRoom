@@ -44,8 +44,17 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     [SerializeField] TMP_Text tipTitle, tipBody;
     [Header("Look")]
     [SerializeField] Sprite bubbleFilled, bubbleOutline, bubbleDashed, portraitPlaceholder;
+    [SerializeField, Tooltip("A milestone's larger bubble (empty: the small ones' sprites).")] Sprite ringFilled, ringOutline, ringDashed;
+    [SerializeField, Tooltip("The Train oval while the pointer or the selection is on it.")] Sprite buyPlateHot;
     [SerializeField] Color ink = new(.17f, .15f, .14f), pen = new(.58f, .16f, .12f), faint = new(.47f, .45f, .42f), poor = new(.6f, .58f, .55f);
     [SerializeField, Min(.5f)] float feedbackSeconds = 3f;
+    [SerializeField, Tooltip("The Train button as a plate (the record sheet's look): this one while the next level can be paid for, Buy Plate Off while it can't (too few spoils, the first lesson holds it, or nothing is left to train). Empty = the old paper tag, its label in the pen's colours.")]
+    Sprite buyPlate;
+    [SerializeField] Sprite buyPlateOff;
+    [SerializeField, Tooltip("The Train label on the lit plate, and on the unlit one.")] Color buyText = new(.98f, .94f, .85f), buyTextOff = new(.47f, .44f, .41f);
+    [SerializeField, Tooltip("A frame drawn round the selected button while the keys or a pad drive the sheet (a plate's own tint hardly shows which one is selected). Moving the mouse hides it.")]
+    Image selectionMark;
+    [SerializeField, Min(0)] Vector2 selectionPadding = new(20, 20);
     [Header("Quest")]
     [SerializeField, Tooltip("While the spend-spoils quest is open: its line on the paper (the HUD's quest note hides in menus).")]
     TMP_Text questNote;
@@ -115,9 +124,13 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
     void SelectStart()
     {
         Selectable pick = questRow != null && questRow.buy != null && questRow.buy.IsInteractable() ? questRow.buy : null;
-        if (pick == null)
+        // The skills first (the top of the sheet), then the attributes along its foot.
+        for (int pass = 0; pass < 2 && pick == null; pass++)
             foreach (var r in rows)
-                if (r.buy != null && r.buy.gameObject.activeInHierarchy && r.buy.IsInteractable()) { pick = r.buy; break; }
+            {
+                bool skill = Track(r)?.kind == MetaTrackKind.Skill;
+                if (skill == (pass == 0) && r.buy != null && r.buy.gameObject.activeInHierarchy && r.buy.IsInteractable()) { pick = r.buy; break; }
+            }
         if (pick == null) pick = closeButton;
         if (pick != null) pick.Select();
     }
@@ -191,6 +204,7 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
         // A mouse click on nothing clears the selection: a pad's or an arrow key's next press selects again.
         if (open && InputManager.MenuInputStarted && InputManager.NothingSelected) SelectStart();
         if (open && feedback != null && feedback.text.Length > 0 && Time.unscaledTime > feedbackUntil) feedback.text = "";
+        MarkSelection();
         // The quest's ring breathes so the eye finds it.
         if (open && questRing != null && questRing.gameObject.activeSelf)
         {
@@ -205,6 +219,30 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             if (lessonTip != null && lessonTip.gameObject.activeSelf) lessonTip.anchoredPosition = lessonTipAt - lessonTipAway * (lessonBob * (1f - k));
             if (lessonHighlight != null) { var c = lessonHighlightColour; c.a *= Mathf.Lerp(.72f, 1f, k); lessonHighlight.color = c; }
         }
+    }
+
+    // With the keys or a pad the selected button wears a frame; moving the mouse takes it off (a click selects the
+    // button it lands on, which is not the same as steering by keys).
+    bool keysDrive;
+    void MarkSelection()
+    {
+        if (selectionMark == null) return;
+        if (!open) { if (selectionMark.gameObject.activeSelf) selectionMark.gameObject.SetActive(false); return; }
+        var mouse = UnityEngine.InputSystem.Mouse.current;
+        if (InputManager.MenuInputStarted) keysDrive = true;
+        else if (mouse != null && mouse.delta.ReadValue().sqrMagnitude > 0f) keysDrive = false;
+        var events = EventSystem.current;
+        var selected = events != null ? events.currentSelectedGameObject : null;
+        bool show = keysDrive && selected != null && root != null && selected.transform.IsChildOf(root.transform) && selected.GetComponent<Button>() != null;
+        if (selectionMark.gameObject.activeSelf != show) selectionMark.gameObject.SetActive(show);
+        if (!show) return;
+        var target = (RectTransform)selected.transform; var mark = selectionMark.rectTransform;
+        mark.position = target.TransformPoint(target.rect.center);
+        // Less room round a low button (an attribute's plate has the level boxes right above it, the score beside it
+        // and its gains under it): at most a quarter of its height each way.
+        float room = Mathf.Min(1f, target.rect.height * .25f / Mathf.Max(1f, selectionPadding.y * .5f));
+        mark.sizeDelta = target.rect.size + selectionPadding * room;
+        mark.localScale = Vector3.one * Mathf.Lerp(1f, 1.02f, .5f + .5f * Mathf.Sin(Time.unscaledTime * 5f));
     }
 
     void ShowFeedback(string text) { if (feedback == null) return; feedback.text = text; feedbackUntil = Time.unscaledTime + feedbackSeconds; }
@@ -480,7 +518,9 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             if (b == null) continue;
             b.gameObject.SetActive(i < t.levels);
             bool given = i < t.givenLevels, have = i < levels, next = i == levels;
-            b.sprite = have ? bubbleFilled : next ? bubbleDashed : bubbleOutline;
+            // A milestone's bubble is larger and has its own drawing (a small round one stretched would be a blur).
+            bool big = ringFilled != null && b.rectTransform.sizeDelta.x > 30f;
+            b.sprite = have ? (big ? ringFilled : bubbleFilled) : next ? (big ? ringDashed : bubbleDashed) : (big ? ringOutline : bubbleOutline);
             b.color = have ? (given ? ink : pen) : next ? pen : ink;
         }
         if (t.milestones != null)
@@ -517,6 +557,19 @@ public class CharacterSheetUI : Singleton<CharacterSheetUI>
             if (locked) { r.buyLabel.fontSizeMax = r.buyLabelSize * .8f; r.buyLabel.fontSizeMin = r.buyLabelSize * .4f; r.buyLabel.lineSpacing = -20f; }
             else { r.buyLabel.fontSizeMax = r.buyLabelSize; r.buyLabel.fontSizeMin = r.buyLabelSize * .5f; r.buyLabel.lineSpacing = r.buyLabelSpacing; }
             r.buyLabel.color = price < 0 || locked ? faint : meta.Spoils < price ? poor : pen;
+            // A plate has no string hole to keep clear of, and says by its own look whether it can be pressed.
+            if (buyPlate != null && r.buy != null && r.buy.image != null)
+            {
+                bool lit = price >= 0 && !locked && meta.Spoils >= price;
+                r.buy.image.sprite = lit || buyPlateOff == null ? buyPlate : buyPlateOff;
+                if (buyPlateHot != null && r.buy.transition == Selectable.Transition.SpriteSwap)
+                {
+                    var hot = lit ? buyPlateHot : null;
+                    r.buy.spriteState = new SpriteState { highlightedSprite = hot, pressedSprite = hot, selectedSprite = hot };
+                }
+                r.buyLabel.color = lit ? buyText : buyTextOff;
+                r.buyLabel.margin = new Vector4(tagHeight * .12f, 0f, tagHeight * .12f, tagHeight * .1f);
+            }
         }
         if (r.buyIcon != null) r.buyIcon.enabled = price >= 0 && !locked;
     }

@@ -7,6 +7,8 @@ using UnityEngine;
 public partial class ProgressionManager
 {
     public const string ClassQuest = "changeClass";
+    // Set when a run starts once the lesson is learned (OfferQuestsForRun): the Change class quest waits for it.
+    public const string RanAfterLessonFlag = "story.ranAfterLesson";
 
     [FoldoutGroup("Quests"), PropertyOrder(50), LabelText("Says, giving the Change class quest"), Tooltip("Said as the Change class quest is given, back in the room.")]
     public DungeonMaster.Line classQuestLine = new() { text = "Bored of that hero? Pick another at the desk by the bed.", inPerson = true };
@@ -17,6 +19,9 @@ public partial class ProgressionManager
         // Only once the lesson is learned (not merely while it holds runs, which starts after the first run): given before
         // it, the quest sat on top of the lesson and pulled a new player to the desk instead of the sheet (review 2026-11-12).
         if (!HasFlag(CampaignManager.SeenFlag) || !LessonTaught || !RoomPlayerFree) return;
+        // And not straight after it: putting the sheet down hands over the trophy and says "You can evade now", and the
+        // class quest on top made three new things at once. It waits until a run has been played with the new skill.
+        if (!HasFlag(RanAfterLessonFlag)) return;
         if (!CampaignManager.HasInstance || !CampaignManager.Instance.CanChooseHeroInRoom) return;
         if (!GiveQuest(ClassQuest)) return;
         if (classQuestLine != null && !classQuestLine.IsEmpty) DungeonMaster.Say(classQuestLine);
