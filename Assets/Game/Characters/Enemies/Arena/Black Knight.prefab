@@ -86,7 +86,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LimbLoss
   limb: 13
-  hitsToLose: 6
+  hitsToLose: 9
   words: {fileID: 11400000, guid: ad8f8e2e3411d7d46bfd8ff34754c2d1, type: 2}
   lineDelay: 0.5
   stunSeconds: 1.1
@@ -108,7 +108,7 @@ MonoBehaviour:
   sprayOut: 0.02
   sprayDown: 0.05
   dropSize: 0.6
-  headHits: 12
+  headHits: 18
   neckGushes: 1
   neckSeconds: 14
   neckDrops: 2600

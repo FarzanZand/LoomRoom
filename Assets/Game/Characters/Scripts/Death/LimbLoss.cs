@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// A limb that comes off (the Black Knight in the Arena: his left arm, on the third blow the player lands). The skinned
+// A limb that comes off (the Black Knight in the Arena: his left arm, on the 9th blow the player lands or the blow that leaves him at 70% health, whichever comes first). The skinned
 // mesh is baked in the pose on screen and the triangles that follow the limb's bones become one physics piece thrown
 // off to its side; on the body those bones are shrunk to nothing at the joint, so the limb is gone from the mesh and a
 // stump is left. Whatever the limb held (a shield in the hand) falls with it. Blood spurts from the stump and he says
@@ -14,15 +14,18 @@ using UnityEngine.Rendering;
 // of a minute, and when his head comes off the neck gushes straight up. His head is his helmet (the body has no head
 // under it): it is knocked off on a counted blow of its own (Head Hits; the user, the same day: "arm should fall of
 // after 6 hits, head should fall off after 12", after a blow to the head took it off on the first hit by HelmetPop's
-// chance, which is 0 on him now) and he fights on without it. All of it stops the moment he dies (the user: "he
+// chance, which is 0 on him now; since 2026-11-18 the arm comes off on the 9th blow or at 70% health, the head on the
+// 18th or at 30%, whichever comes first) and he fights on without it. All of it stops the moment he dies (the user: "he
 // doesn't need to keep bleeding after you killed him"): the drops in the air fall, and no more come.
 [RequireComponent(typeof(Character)), DefaultExecutionOrder(9000)]
 public class LimbLoss : MonoBehaviour
 {
     [Tooltip("The limb that comes off, from this bone down (its children with it).")]
     public HumanBodyBones limb = HumanBodyBones.LeftUpperArm;
-    [Min(1), Tooltip("Blows the player lands (doing damage, not blocked) before it comes off.")]
-    public int hitsToLose = 3;
+    [Min(1), Tooltip("Blows the player lands (doing damage, not blocked) before it comes off, unless his health comes down to Lose At Health first.")]
+    public int hitsToLose = 9;
+    [Range(0f, 1f), Tooltip("It also comes off on the blow that leaves him at or under this share of his health, whichever comes first with Hits To Lose. 0: by count only.")]
+    public float loseAtHealth = .7f;
     [Tooltip("His words (Dialogue/Conversations): its Limb Lost Line is said as the limb comes off, as a bark (the fight goes on), where its placement says (in the dialogue box with his portrait, Standard or a corner; Simple: a subtitle), under its name. Empty: nothing is said.")]
     public BossDialogueData words;
     [Min(0), Tooltip("Seconds after the cut before the line, so the arm is seen to fall first.")]
@@ -57,8 +60,10 @@ public class LimbLoss : MonoBehaviour
     public float dropSize = .6f;
 
     [Header("Head")]
-    [Min(0), Tooltip("Blows the player lands before his head comes off (his helmet, knocked off through HelmetPop, whatever part of him the blow lands on). 0: never by count.")]
-    public int headHits = 12;
+    [Min(0), Tooltip("Blows the player lands before his head comes off (his helmet, knocked off through HelmetPop, whatever part of him the blow lands on), unless his health comes down to Head At Health first. 0: never by count.")]
+    public int headHits = 18;
+    [Range(0f, 1f), Tooltip("His head also comes off on the blow that leaves him at or under this share of his health, whichever comes first with Head Hits. 0: by count only.")]
+    public float headAtHealth = .3f;
     [Tooltip("When his head comes off while he lives (a helmet on the head bone that is his whole head, knocked off on its counted blow), the neck gushes straight up and the head trails blood.")]
     public bool neckGushes = true;
     [Min(0), Tooltip("Seconds the neck gushes when the head is knocked off while he still fights.")] public float neckSeconds = 14f;
@@ -86,6 +91,7 @@ public class LimbLoss : MonoBehaviour
     Transform headBone, headPiece;   // the head bone and the helmet hung on it
     Vector3 holePoint, holeAxis;     // the neck hole in the helmet's own space
     bool headOff;
+    bool headKnocked;   // its blow has come and the helmet was knocked off
 
     void Awake() => character = GetComponent<Character>();
     void OnEnable() { character.Damaged += OnDamaged; character.Died += OnDied; }
@@ -107,9 +113,21 @@ public class LimbLoss : MonoBehaviour
     {
         if (info.Source is not Player || info.Blocked || info.Amount <= 0f || !character.IsAlive) return;
         hits++;
-        if (!lost && hits >= hitsToLose) StartCoroutine(Cut(info));
-        if (headHits > 0 && hits == headHits && !headOff && TryGetComponent<HelmetPop>(out var helmet) && helmet.Pop(info) && stunSeconds > 0f && TryGetComponent<EnemyBrain>(out var brain))
-            brain.Stun(stunSeconds);
+        float health = HealthShare();
+        if (!lost && (hits >= hitsToLose || health <= loseAtHealth)) StartCoroutine(Cut(info));
+        bool headDue = (headHits > 0 && hits >= headHits) || health <= headAtHealth;
+        if (headDue && !headKnocked && !headOff && TryGetComponent<HelmetPop>(out var helmet) && helmet.Pop(info))
+        {
+            headKnocked = true;
+            if (stunSeconds > 0f && TryGetComponent<EnemyBrain>(out var brain)) brain.Stun(stunSeconds);
+        }
+    }
+
+    // The share of his health left after the blow (TakeDamage lowers it before Damaged is raised). 1 with no stats.
+    float HealthShare()
+    {
+        var stats = character.Stats;
+        return stats != null && stats.MaxHealth > 0f ? stats.CurrentHealth / stats.MaxHealth : 1f;
     }
 
     // Kept shrunk after the animation and every bone tweak of the frame.
