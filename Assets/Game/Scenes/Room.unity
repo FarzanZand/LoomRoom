@@ -326187,7 +326187,7 @@ MonoBehaviour:
   pixelationStrength: 2
   softShadowsInRoom: 0
   softShadowsInDungeon: 0
-  cameraFilter: 0
+  cameraFilter: 5
   filterLooks:
   - {fileID: 11400000, guid: d45636b708e9fc44a8d198f418904f6a, type: 2}
   - {fileID: 11400000, guid: ed8e7cd98215e104c8509419bb2773a7, type: 2}
@@ -349183,6 +349183,7 @@ MonoBehaviour:
   dropHeight: 0.5
   preventDuplicateTomes: 1
   preventDuplicateEquipment: 0
+  tomeBreakMessage: Your {0} breaks.
   itemCatalog:
   - {fileID: 11400000, guid: 7edd7accc8c3dec46a7db977105134df, type: 2}
   - {fileID: 11400000, guid: 59c91fef0f8a4584aaef985c6849bc46, type: 2}
