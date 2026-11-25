@@ -1131,7 +1131,7 @@ public partial class CampaignManager : Singleton<CampaignManager>
     {
         var p = point.transform.localPosition;
         var toward = -p; toward.y = 0; toward = toward.sqrMagnitude > .01f ? toward.normalized : Vector3.right;
-        var spot = p + toward * (point.radius + 1.2f);
+        var spot = p + toward * (point.radius + point.figureBeyond);
         return Map.OnGround(spot, .05f);
     }
 

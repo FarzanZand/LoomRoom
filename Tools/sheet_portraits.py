@@ -18,6 +18,7 @@ CROPS = {
     "Wizard": ("WomanMage", 760, 760, 1000),
     "Arcanist": ("HalfOrcAssassin", 780, 600, 960),
     "Rogue": ("WomanDuellist", 700, 520, 900),
+    "Pianist": ("HalfElfAxeman", 540, 640, 880),
 }
 # class: the share of the drawing left as bare paper (a painting with a flat mid-tone background, the Rogue's dusk, drew as
 # a grey card with no paper showing; its lightest share is lifted to the paper). Classes not listed keep their tones.

@@ -23,6 +23,7 @@ public struct DamageInfo
     public bool      FromEffect;      // created by an item effect; never counts as a landed hit
     public bool      Critical;        // rolled by the hitbox; bigger number, longer hit stop
     public bool      Backstab;        // struck an unaware or turned-away enemy
+    public bool      Crescendo;       // the Pianist's every 8th landed hit (CrescendoPassive): double damage, "CRESCENDO!"
     public bool      Quiet;           // no damage number (a summon falling apart when its time is up)
     public bool      Spared;          // set by TakeDamage: the target took no health from it (invulnerable, revive grace)
 

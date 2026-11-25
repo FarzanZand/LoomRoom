@@ -13,17 +13,23 @@ var room = UnityEngine.GameObject.Find("World/Apartment/Main Bedroom");
 var furn = room.transform.Find("Furnishings");
 
 // the old map board and its maps
+bool mapsRemoved = false;
 var desk = furn.Find("Mood/Room/Writing desk");
 if (desk != null)
   for (int i = desk.childCount - 1; i >= 0; i--)
   {
     var c = desk.GetChild(i);
-    if (c.name == "Map board" || c.name == "Pinned map") { sb.Append($"removed {c.name}\n"); UnityEngine.Object.DestroyImmediate(c.gameObject); }
+    if (c.name == "Map board" || c.name == "Pinned map") { sb.Append($"removed {c.name}\n"); UnityEngine.Object.DestroyImmediate(c.gameObject); mapsRemoved = true; }
   }
 
 UnityEngine.Texture2D Tex(string path)
 {
   var ti = (UnityEditor.TextureImporter)UnityEditor.AssetImporter.GetAtPath(path);
+  // already as it should be: left alone (saving the importer again rewrites its .meta for nothing)
+  if (ti.textureType == UnityEditor.TextureImporterType.Default && ti.filterMode == UnityEngine.FilterMode.Point && !ti.mipmapEnabled
+      && ti.npotScale == UnityEditor.TextureImporterNPOTScale.None && ti.textureCompression == UnityEditor.TextureImporterCompression.Uncompressed
+      && ti.wrapMode == UnityEngine.TextureWrapMode.Clamp && ti.sRGBTexture)
+    return UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Texture2D>(path);
   ti.textureType = UnityEditor.TextureImporterType.Default; ti.filterMode = UnityEngine.FilterMode.Point; ti.mipmapEnabled = false;
   ti.npotScale = UnityEditor.TextureImporterNPOTScale.None; ti.textureCompression = UnityEditor.TextureImporterCompression.Uncompressed;
   ti.wrapMode = UnityEngine.TextureWrapMode.Clamp; ti.sRGBTexture = true; ti.SaveAndReimport();
@@ -81,7 +87,9 @@ var tapeMesh = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Mesh>($"{D}
 // The wall is a prefab (World/Art/Class posters/Class poster wall) edited by hand: made once, then later runs only add a
 // poster for a class that has none (painted from its portrait when its picture is missing) and leave the rest alone.
 const string PrefabPath = D + "/Class poster wall.prefab";
-var oldScene = furn.Find("Class posters"); if (oldScene != null) UnityEngine.Object.DestroyImmediate(oldScene.gameObject);
+// The scene is saved only when this changed it (someone else's unsaved work in Room.unity is not written out by a poster).
+bool sceneChanged = false;
+var oldScene = furn.Find("Class posters"); if (oldScene != null) { UnityEngine.Object.DestroyImmediate(oldScene.gameObject); sceneChanged = true; }
 bool fresh = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(PrefabPath) == null;
 UnityEngine.GameObject root;
 if (fresh)
@@ -134,13 +142,15 @@ var placed = new System.Collections.Generic.Dictionary<string, (float x, float y
 };
 // a class's own poster size (an index into sizes) and how far its painting is cooled to sit with the others (class_poster.py)
 var sizeOf = new System.Collections.Generic.Dictionary<string, int> { ["Rogue"] = 1 };
+// (the Pianist's poster is painted by hand first, with its row of keys: class_poster.py ... HalfElfAxeman.jpg ... 90 124 "PIANIST" 37 0 1 1.5 1.35 0.42,0.3,1.45)
 var coolOf = new System.Collections.Generic.Dictionary<string, float> { ["Rogue"] = 1f };
 float right = 0; foreach (var e in wall.posters) if (e.poster != null) right = UnityEngine.Mathf.Max(right, e.poster.transform.localPosition.x);
 for (int ci = 0; ci < classes.Count; ci++)
 {
   var cls = classes[ci];
   bool has = false; foreach (var e in wall.posters) if (e.adventurerClass == cls && e.poster != null) has = true;
-  if (has) { Tex($"{D}/{cls.name} poster.png"); sb.Append($"{cls.name}: kept\n"); continue; }
+  // (a class renamed since its poster was painted keeps the old picture's file name: the Necromancer's is the Arcanist's)
+  if (has) { if (System.IO.File.Exists($"{D}/{cls.name} poster.png")) Tex($"{D}/{cls.name} poster.png"); sb.Append($"{cls.name}: kept\n"); continue; }
   var name = string.IsNullOrEmpty(cls.displayName) ? cls.name : cls.displayName;
   var png = $"{D}/{cls.name} poster.png";
   if (!System.IO.File.Exists(png))
@@ -180,6 +190,7 @@ if (fresh)
 {
   root.transform.SetParent(furn, true);
   UnityEditor.PrefabUtility.SaveAsPrefabAssetAndConnect(root, PrefabPath, UnityEditor.InteractionMode.AutomatedAction);
+  sceneChanged = true;
 }
 else
 {
@@ -189,9 +200,13 @@ else
   {
     var inst = (UnityEngine.GameObject)UnityEditor.PrefabUtility.InstantiatePrefab(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.GameObject>(PrefabPath), scene);
     inst.transform.SetParent(furn, true);
+    sceneChanged = true;
   }
 }
 UnityEditor.AssetDatabase.SaveAssets();
-UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
-UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+if (sceneChanged || mapsRemoved)
+{
+  UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+  UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+}
 System.IO.File.WriteAllText("Temp/Posters/build.txt", sb.ToString()); return "ok";

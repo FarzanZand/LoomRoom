@@ -18,6 +18,7 @@ CROPS = {
     "Wizard": ("WomanMage", 760, 640, 620),
     "Arcanist": ("HalfOrcAssassin", 800, 480, 600),
     "Rogue": ("WomanDuellist", 660, 410, 580),
+    "Pianist": ("HalfElfAxeman", 560, 580, 600),
 }
 SIZE = 288
 

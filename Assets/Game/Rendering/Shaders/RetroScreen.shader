@@ -40,6 +40,7 @@ Shader "Hidden/LoomRoom/Retro Screen"
             float4 _RetroPalette0, _RetroPalette1, _RetroPalette2, _RetroPalette3; // sRGB, dark to light
             float4 _RetroScreenFx;    // curvature, scanlines, mask, scanline count
             float4 _RetroTape;        // colour bleed (grid pixels), wobble, vignette, grain
+            float _RetroMonoMix;      // 0..1: the black and white picture (Mono's) mixed over a colour one (a class's noir coming or going)
 
             static const float Bayer4[16] = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
             static const float Bayer8[64] = {
@@ -58,6 +59,22 @@ Shader "Hidden/LoomRoom/Retro Screen"
             }
 
             float Hash(float2 p) { return frac(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453); }
+
+            // How much of a pixel's own colour Mono keeps (sRGB, times Keep Red): deep, true reds (blood, the hurt flash)
+            // whole; bright, saturated warm light (flames, glows) a little; dull warm colours (rust, a brown ladder) none.
+            static const float FlameKept = 0.35;
+            float KeptColour(float3 s)
+            {
+                // True reds: a red that leans to orange (green well over blue) is not one. warm: 0 for a true red, about .2 for rust.
+                float warm = max(s.g - s.b, 0.0) / max(s.r, 0.001);
+                float red = saturate((s.r - 2.0 * max(s.g, s.b) - 0.05) * 6.0) * saturate(1.0 - warm * 4.5);
+                // Warm light: red the top channel, very bright (top over about .85) and saturated (over about .45): a flame or
+                // a lantern's glass, not torch-lit wood (as saturated, but darker), rust or skin, which stay grey.
+                float top = max(s.r, max(s.g, s.b)), low = min(s.r, min(s.g, s.b));
+                float sat = top > 1e-3 ? (top - low) / top : 0.0;
+                float glow = step(max(s.g, s.b), s.r) * saturate((top - 0.85) / 0.1) * saturate((sat - 0.45) / 0.25) * FlameKept;
+                return max(red, glow) * _RetroGrade.w;
+            }
 
             // v in shade units to a whole shade. With a band below 1 only the middle of each step is dithered and the
             // rest is a solid fill of the nearer shade; band 1 is the plain ordered dither.
@@ -151,6 +168,23 @@ Shader "Hidden/LoomRoom/Retro Screen"
                 int mode = (int)round(_RetroColourMode);
                 float band = _RetroShade.x > 0 ? _RetroShade.x : 1.0;
                 float blackLift = _RetroShade.y;
+
+                // The black and white picture, for a Mono look blended with a colour one (ScreenManager.Blended): the same
+                // steps as Mono below, mixed over the colour result before the screen overlays.
+                float monoMix = _RetroMonoMix;
+                float3 grey = s;
+                if (monoMix > 0.001)
+                {
+                    float g = lumC;
+                    if (_RetroLift > 0) g = pow(g, _RetroLift);
+                    g = saturate((g - 0.5) * (1.0 + _RetroGrade.y) + 0.5);
+                    g = g * (1.0 - blackLift) + blackLift;
+                    if (levels >= 2) { float st = levels - 1; g = saturate(StepShade(g * st, threshold, band) / st); }
+                    float3 tone = lerp(_RetroMonoDark.rgb, _RetroMonoLight.rgb, g);
+                    float red = KeptColour(s);   // as the Mono branch below
+                    grey = lerp(tone, s, red);
+                }
+
                 if (mode >= 2)
                 {
                     if (_RetroLift > 0) lumC = pow(lumC, _RetroLift);
@@ -172,7 +206,7 @@ Shader "Hidden/LoomRoom/Retro Screen"
                     float g = lumC;
                     if (levels >= 2) { float st = levels - 1; g = saturate(StepShade(g * st, threshold, band) / st); }
                     float3 tone = lerp(_RetroMonoDark.rgb, _RetroMonoLight.rgb, g);
-                    float red = saturate((s.r - 2.0 * max(s.g, s.b) - 0.05) * 6.0) * _RetroGrade.w;   // deep reds only (blood), not skin
+                    float red = KeptColour(s);
                     s = lerp(tone, s, red);
                 }
                 else if (mode == 3)
@@ -209,6 +243,8 @@ Shader "Hidden/LoomRoom/Retro Screen"
                         s *= edge > 0.5 ? 1.0 - glow * 0.7 : 1.0 + glow * 0.12;
                     }
                 }
+
+                if (monoMix > 0.001) s = lerp(s, grey, monoMix);
 
                 // Screen overlays
                 float scan = _RetroScreenFx.y;

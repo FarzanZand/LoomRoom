@@ -12,6 +12,8 @@ public class CampaignPoint : MonoBehaviour
     public CampaignEncounter encounter;
     [Min(.5f), Tooltip("Radius of the base its props stand on (local units). The roads end at its edge.")]
     public float radius = 3f;
+    [Min(0f), Tooltip("How far beyond the radius the class figure stands (local units). More for a place whose props reach past its radius, so the figure stands clear of them.")]
+    public float figureBeyond = 1.2f;
     [Tooltip("A rough mound of earth on a stone plinth under the props.")]
     public bool showBase = true;
     [Tooltip("A soft light over the place (optional).")]

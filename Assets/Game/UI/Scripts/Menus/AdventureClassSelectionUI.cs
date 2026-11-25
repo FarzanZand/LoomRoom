@@ -18,6 +18,10 @@ public class AdventureClassSelectionUI : MonoBehaviour
     public Image[] skillIcons;
     public TMP_Text[] skillLabels;
     public Image[] kitIcons;
+    [Tooltip("Optional: the class's passive (AdventurerClass.passive), hidden for a class without one. The root is switched on and off; the icon, name and line are filled.")]
+    public GameObject passiveRoot;
+    public Image passiveIcon;
+    public TMP_Text passiveName, passiveLine;
     public Button previous, next;
     // One figure only (the intro's practice figure): no arrows, pips or hidden-class hint.
     public bool Single { get; set; }
@@ -91,6 +95,57 @@ public class AdventureClassSelectionUI : MonoBehaviour
         return line.ToString();
     }
 
+    // ── Kit slots ──
+    // A sword or mace (a long item, 1 x 3 in the bag) stood upright in a square slot was a thin line (Zelda, 2026-11-25):
+    // it gets a slot two wide and lies flat in it, tip to the right. The rest keep their square slot.
+    struct KitLook { public bool saved; public float minWidth, preferredWidth, width; public Vector2 anchorMin, anchorMax, offsetMin, offsetMax; }
+    KitLook[] kitLooks;
+
+    static bool Long(ItemData item) { var size = item.GridSize; return size.y >= size.x * 2; }
+
+    void FitKitIcon(int i, bool lying)
+    {
+        // Only in Play: a refresh outside it (a tool filling the table's floating card) left an icon turned and resized
+        // in the scene, and the next Play would have read that as the slot's own look.
+        if (!Application.isPlaying) return;
+        kitLooks ??= new KitLook[kitIcons.Length];
+        var icon = kitIcons[i].rectTransform;
+        var slot = (RectTransform)icon.parent;
+        slot.TryGetComponent<LayoutElement>(out var layout);
+        ref var look = ref kitLooks[i];
+        if (!look.saved)
+        {
+            look.saved = true;
+            look.minWidth = layout != null ? layout.minWidth : -1f;
+            look.preferredWidth = layout != null ? layout.preferredWidth : -1f;
+            look.width = slot.sizeDelta.x;
+            look.anchorMin = icon.anchorMin; look.anchorMax = icon.anchorMax; look.offsetMin = icon.offsetMin; look.offsetMax = icon.offsetMax;
+        }
+        // The square slot's side (its height) and the icon's inset in it.
+        float side = slot.rect.height > 0f ? slot.rect.height : look.width;
+        float inset = Mathf.Max(0f, look.offsetMin.x);
+        float spacing = slot.parent != null && slot.parent.TryGetComponent<HorizontalLayoutGroup>(out var row) ? row.spacing : 0f;
+        float wide = lying ? side * 2f + spacing : side;
+        if (layout != null)
+        {
+            layout.minWidth = lying ? wide : look.minWidth;
+            layout.preferredWidth = lying ? wide : look.preferredWidth;
+        }
+        else slot.sizeDelta = new Vector2(lying ? wide : look.width, slot.sizeDelta.y);
+        if (lying)
+        {
+            icon.anchorMin = icon.anchorMax = new Vector2(.5f, .5f);
+            icon.sizeDelta = new Vector2(side - inset * 2f, wide - inset * 2f);   // turned a quarter: its height runs along the slot
+            icon.anchoredPosition = Vector2.zero;
+            icon.localEulerAngles = new Vector3(0f, 0f, -90f);
+        }
+        else
+        {
+            icon.anchorMin = look.anchorMin; icon.anchorMax = look.anchorMax; icon.offsetMin = look.offsetMin; icon.offsetMax = look.offsetMax;
+            icon.localEulerAngles = Vector3.zero;
+        }
+    }
+
     public void Refresh()
     {
         // Enabled before the table player existed (a panel that is always on, only faded): find it now.
@@ -108,7 +163,19 @@ public class AdventureClassSelectionUI : MonoBehaviour
         resources.text = $"<color=#{Hex(healthColor)}>HP</color> {hp:0}    <color=#{Hex(manaColor)}>MP</color> {mp:0}    <color=#{Hex(staminaColor)}>SP</color> {sp:0}";
         if (attributes != null) attributes.text = AttributeLine(c);
 
-
+        // The passive row shows only for a class with one. The hero select's panel keeps its top fixed and grows
+        // downward (CampaignSetup), so without the row only its foot and buttons move up: no jump, no empty band.
+        if (passiveRoot != null)
+        {
+            var passive = c.passive;
+            passiveRoot.SetActive(passive != null);
+            if (passive != null)
+            {
+                if (passiveIcon != null) { passiveIcon.sprite = passive.icon; passiveIcon.enabled = passive.icon != null; }
+                if (passiveName != null) passiveName.text = passive.displayName;
+                if (passiveLine != null) passiveLine.text = passive.description;
+            }
+        }
 
         var best = AdventureSkills.All.Where(s => c.StartingRank(s) > 0).OrderByDescending(c.StartingRank).ToArray();
         for (int i = 0; i < skillLabels.Length; i++)
@@ -129,6 +196,7 @@ public class AdventureClassSelectionUI : MonoBehaviour
             bool shown = i < kit.Length;
             kitIcons[i].transform.parent.gameObject.SetActive(shown);
             if (shown) kitIcons[i].sprite = kit[i].icon;
+            FitKitIcon(i, shown && Long(kit[i]));
         }
 
         for (int i = 0; i < pips.Length; i++)

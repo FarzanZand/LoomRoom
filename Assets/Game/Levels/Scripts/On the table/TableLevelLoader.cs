@@ -287,7 +287,8 @@ public class TableLevelLoader : MonoBehaviour
             }
             if (ready && AudioManager.HasInstance)
             {
-                var music = level.MusicFor(FloorNumber, out float musicVolume);
+                // The run's class's own track on a dungeon floor when it has one (the Pianist), else the level's.
+                var music = ClassRunLook.FloorMusic(level, FloorNumber, out float musicVolume);
                 // A floor with the same track as the one above keeps it playing instead of restarting it.
                 if (music == null) AudioManager.Instance.StopMusic(level.musicFadeSeconds);
                 else if (music != AudioManager.Instance.CurrentMusic) AudioManager.Instance.CrossfadeMusic(music, level.loopMusic, level.musicFadeSeconds, musicVolume);

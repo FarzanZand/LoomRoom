@@ -43,6 +43,17 @@ public class AdventurerClass : ScriptableObject
     [AssetsOnly, Tooltip("This class's thing on the writing desk under its poster (World/Art/Class props), shown with the poster. The poster wall prefab holds an instance placed by hand.")]
     public GameObject deskProp;
 
+    [Title("Class"), Tooltip("What every run of this class has from the start, shown on the hero select's class card. Empty: none.")]
+    public ClassPassive passive;
+    [Tooltip("The class's own button, right of the hotbar, used with the Class Action key (X). Empty: the slot is hidden.")]
+    public ClassAction action;
+    [Tooltip("Played on dungeon floors in a run of this class instead of the level's own track. Empty: the level's track.")]
+    public AudioClip dungeonMusic;
+    [Range(0f, 1f)] public float dungeonMusicVolume = 1f;
+    [Tooltip("The camera filter on dungeon floors in a run of this class (ScreenManager's Camera filter is put back in the room and for every other class). Off: the scene's filter.")]
+    public bool ownDungeonFilter;
+    [ShowIf(nameof(ownDungeonFilter))] public ScreenFilter dungeonFilter = ScreenFilter.Noir;
+
     [Title("Starting kit")]
     public ItemData[] equipment = Array.Empty<ItemData>();
     [Tooltip("Gear the class starts with above Common, with properties set here (the Wizard's Rare amulet with mana regeneration): worn like the equipment above. A property is an id from Items/Data/Item Properties (manaregen, mana, crit ...) and its value as the tooltip shows it.")]

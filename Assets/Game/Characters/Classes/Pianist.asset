@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1245925be5b504991286fe52736323, type: 3}
+  m_Name: Pianist
+  m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
+  id: pianist
+  displayName: Pianist
+  description: Plays the dungeon like a piano. Every enemy is a wrong note.
+  portrait: {fileID: 21300000, guid: 383b5f2363b24a94c9b4dddf3c58c70c, type: 3}
+  sheetPortrait: {fileID: 21300000, guid: 38be01d56e5622b4694eec615c0137c2, type: 3}
+  sheetPortraitColour: {fileID: 21300000, guid: 36f9ba44416a97445b93cd6bbcfbbc1f, type: 3}
+  face: {fileID: 21300000, guid: 4191975673774e643934eb5d0d480572, type: 3}
+  miniature: {fileID: 8359977714643996154, guid: 0e9709abfa91f30479739747c4058555, type: 3}
+  unlockFlag: 
+  posterLine:
+    text: The Pianist. Count to eight.
+    voice: {fileID: 0}
+    mumble: 1
+    inPerson: 0
+  deskProp: {fileID: 430356325542042256, guid: bfc214da244c93e43bafeb0bae6ba06c, type: 3}
+  passive: {fileID: 11400000, guid: c203a62a3afe119488dac1d685672fd4, type: 2}
+  action: {fileID: 11400000, guid: 481a59f21076cb44fa2b617ebe6aa119, type: 2}
+  dungeonMusic: {fileID: 8300000, guid: d711df09655d6cf48949a5ce5e4d9a29, type: 3}
+  dungeonMusicVolume: 0.8
+  ownDungeonFilter: 1
+  dungeonFilter: 2
+  equipment:
+  - {fileID: 11400000, guid: 5eeb4a0424f6f2f42a1fe5f9fa6177b2, type: 2}
+  - {fileID: 11400000, guid: c0a72c804c1478642b71f667572a1b4a, type: 2}
+  rolledEquipment: []
+  spells: []
+  supplies:
+  - item: {fileID: 11400000, guid: 19d156fcb4bb95c4e8f0d4d53f3d6f61, type: 2}
+    count: 1
+    used: 0
+  - item: {fileID: 11400000, guid: 69474728574cd6447a0600711d3e224b, type: 2}
+    count: 2
+    used: 0
+  - item: {fileID: 11400000, guid: 24f3271408428c040bcbbd35776848ad, type: 2}
+    count: 2
+    used: 0
+  leftHand: 0
+  strength: 0
+  dexterity: 2
+  constitution: 0
+  intelligence: -1
+  health: 35
+  mana: 40
+  stamina: 25
+  healthPerLevel: 1.5
+  manaPerLevel: 1
+  skills: 14000000000000000a00000000000000000000000f0000000500000000000000i

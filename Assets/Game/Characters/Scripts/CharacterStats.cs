@@ -331,6 +331,10 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         }
 
+        // The Pianist's Crescendo (a run whose class has it): every landed hit counted, the 8th doubled before armour.
+        var crescendo = CrescendoPassive.For(info, Character);
+        if (crescendo != null) crescendo.Count(ref info);
+
         // Blocked: the shield's Block off the hit, then Blocking's share off what is left. Otherwise armour has its share.
         float actual = info.Blocked && !info.Magic
             ? AfterBlock(info.Amount, Block, adventurer != null ? adventurer.BlockedDamageMultiplier : 1f)
@@ -352,6 +356,7 @@ public class CharacterStats : MonoBehaviour, IDamageable, IHealth
 
         if (!spared) CurrentHealth = Mathf.Max(0f, CurrentHealth - actual);
         HealthChanged?.Invoke();
+        if (crescendo != null) crescendo.Play(info, Character);
         Damaged?.Invoke(info);
 
         if (!IsAlive)

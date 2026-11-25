@@ -35,6 +35,8 @@ public class InputManager : Singleton<InputManager>
     public event Action SprintPressed;
     public event Action CrouchPressed;
     public event Action InteractPressed;
+    // The Class Action key (X) was pressed while exploring as the table player (ClassActionRunner.TryUse has run).
+    public event Action ClassActionPressed;
     public event Action MapPressed;       // Room: the second action at an interactable (R at the table: the map)
     public event Action InventoryToggled;
     public event Action CancelPressed;
@@ -177,6 +179,10 @@ public class InputManager : Singleton<InputManager>
         // Found by name, so the map works without it.
         var roomMap = actions.Room.Get().FindAction("Map");
         if (roomMap != null) roomMap.performed += _ => MapPressed?.Invoke();
+        // The class's own button (X, the Pianist's Mood): the Table map is live only while exploring, so it is never used
+        // behind a menu or a cutscene. Found by name, so the map works without it.
+        var classAction = actions.Table.Get().FindAction("ClassAction");
+        if (classAction != null) classAction.performed += _ => { if (gameplayEnabled) { ClassActionPressed?.Invoke(); ClassActionRunner.TryUse(); } };
         actions.Table.Pause.performed += _ => PausePressed?.Invoke();
         actions.Room.Pause.performed  += _ => PausePressed?.Invoke();
         // The UI map is live in cutscenes, conversations and menus. A Pause action there (a pad's Start; not Escape,

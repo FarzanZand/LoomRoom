@@ -33,6 +33,7 @@ public class DungeonCombatFeedback : MonoBehaviour
         public Vector3 position;
         public float started, until, scale=1;
         public bool punch;   // criticals and backstabs grow in
+        public int side;     // kept off the skill popup: 1 above it, -1 below, 0 not yet moved
         public Color color;
     }
     readonly List<EnemyView> enemies=new();
@@ -86,15 +87,18 @@ public class DungeonCombatFeedback : MonoBehaviour
         // A hit that took nothing (a boss shielded while the Dungeon Master's beam pours) says so instead of a number.
         // Where the blow landed, as a number would be (over the head it rose into the boss's name at close range).
         if(info.Spared){ShowNumber(view.character.transform,info.HitPoint!=Vector3.zero ? info.HitPoint:Head(view.character),"IMMUNE",new Color(.78f,.8f,.86f),numberScale);return;}
-        bool special=!info.Blocked && (info.Critical || info.Backstab);
+        bool special=!info.Blocked && (info.Critical || info.Backstab || info.Crescendo);
         float scale=numberScale*(special && CombatManager.HasInstance ? CombatManager.Instance.critNumberScale:1);
         string amount=Mathf.CeilToInt(info.Amount).ToString();
         // The number appears where the blade struck; criticals say so above a bigger number that grows in.
         Vector3 at=info.HitPoint!=Vector3.zero && !info.Blocked ? info.HitPoint:Head(view.character);
         // A shield bash lands nose to nose: its hit point sits low under the view, so its number goes over the head.
         if(info.Weapon!=null && info.Weapon.itemType==ItemType.Shield)at=Head(view.character);
-        ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":info.Backstab ? "<size=55%>BACKSTAB!</size>\n"+amount:info.Critical ? "<size=55%>CRITICAL!</size>\n"+amount:amount,
-            info.Blocked ? new Color(.53f,.85f,1):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
+        // The Pianist's 8th hit (CrescendoPassive) says so as a critical does; a crescendo that is also a critical says both.
+        // Two words stacked, never side by side (one line was wider than the skill popup it ran into).
+        string over=info.Crescendo ? (info.Critical ? "CRESCENDO!\nCRITICAL!":info.Backstab ? "CRESCENDO!\nBACKSTAB!":"CRESCENDO!"):info.Backstab ? "BACKSTAB!":info.Critical ? "CRITICAL!":null;
+        ShowNumber(view.character.transform,at,info.Blocked ? "BLOCK":over!=null ? "<size=55%>"+over+"</size>\n"+amount:amount,
+            info.Blocked ? new Color(.53f,.85f,1):info.Crescendo ? new Color(1f,.82f,.35f):info.Backstab ? new Color(1,.42f,.3f):info.Critical ? new Color(1,.6f,.2f):info.Heavy ? new Color(1,.85f,.45f):Color.white,scale,special);
     }
     void ObjectHit(DungeonDestructible target,DamageInfo info)
     {
@@ -115,7 +119,7 @@ public class DungeonCombatFeedback : MonoBehaviour
     {
         if(popups.Count==0)return;
         var p=popups[popupIndex++%popups.Count];p.target=target;p.position=position;p.started=Time.time;p.until=Time.time+(punch ? 1.3f:numberLifetime);p.color=color;p.label.text=text;p.label.textWrappingMode=TMPro.TextWrappingModes.NoWrap;
-        p.scale=scale;p.punch=punch;p.label.rectTransform.localScale=Vector3.one*scale;
+        p.scale=scale;p.punch=punch;p.side=0;p.label.rectTransform.localScale=Vector3.one*scale;p.label.ForceMeshUpdate();
     }
     void PlayerDamaged(DamageInfo info)
     {
@@ -202,6 +206,7 @@ public class DungeonCombatFeedback : MonoBehaviour
             p.label.gameObject.SetActive(visible && Project(camera,p.position+Vector3.up*((Time.time-p.started)*numberRise),p.label.rectTransform));
             // A critical grows from small to full over .3 s, overshooting a little.
             if(p.punch){float t=Mathf.Clamp01((Time.time-p.started)/.3f);float grow=t<.75f ? Mathf.Lerp(.45f,1.12f,t/.75f):Mathf.Lerp(1.12f,1f,(t-.75f)/.25f);p.label.rectTransform.localScale=Vector3.one*p.scale*grow;}
+            if(p.label.gameObject.activeSelf){KeepUnderTopBar(p);KeepOffPopup(p);}
             var color=p.color;color.a=Mathf.Clamp01((p.until-Time.time)/.25f);p.label.color=color;
         }
         if(impact!=null)impact.gameObject.SetActive(show && Time.time<impactUntil);
@@ -227,6 +232,37 @@ public class DungeonCombatFeedback : MonoBehaviour
             return false;
         }
         return true;
+    }
+    // No number reaches up into the top enemy bar (its name and bar): up close, or on a tall enemy, a hit point high in the
+    // view put the words over the bar, where neither could be read. Overlay canvas only (screen pixels are world units).
+    void KeepUnderTopBar(Popup p)
+    {
+        if(!topBar)return;
+        float bottom=float.MaxValue;
+        foreach(var e in enemies)
+            if(e.root!=null && e.root.gameObject.activeInHierarchy){e.root.GetWorldCorners(corners);bottom=Mathf.Min(bottom,corners[0].y);}
+        if(bottom==float.MaxValue)return;
+        var rt=p.label.rectTransform;var b=p.label.textBounds;
+        if(b.size.x<=0f)return;
+        float top=Mathf.Max(rt.TransformPoint(b.min).y,rt.TransformPoint(b.max).y);
+        const float gap=10f;
+        if(top>bottom-gap)rt.position+=Vector3.down*(top-(bottom-gap));
+    }
+    static readonly Vector3[] corners=new Vector3[4];
+    // A number that would cover the skill popup (its ring and "+10 XP") goes past it, so neither hides the other: below
+    // it, the side kept for the number's life. Overlay canvas only (screen pixels are world units).
+    void KeepOffPopup(Popup p)
+    {
+        if(!ExperienceBarUI.PopupOnScreen(out var popup))return;
+        var rt=p.label.rectTransform;var b=p.label.textBounds;
+        if(b.size.x<=0f)return;
+        Vector3 lo=rt.TransformPoint(b.min),hi=rt.TransformPoint(b.max);
+        var number=Rect.MinMaxRect(Mathf.Min(lo.x,hi.x),Mathf.Min(lo.y,hi.y),Mathf.Max(lo.x,hi.x),Mathf.Max(lo.y,hi.y));
+        if(!number.Overlaps(popup))return;
+        const float gap=8f;
+        // Below it (above, it ran into the enemy's bar at the top), unless that would take it off the bottom of the screen.
+        if(p.side==0)p.side=popup.yMin-gap-number.height>Screen.height*.12f ? -1:1;
+        rt.position+=Vector3.up*(p.side>0 ? popup.yMax+gap-number.yMin:popup.yMin-gap-number.yMax);
     }
     bool Project(Camera camera,Vector3 world,RectTransform rect)
     {

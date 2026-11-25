@@ -41,6 +41,8 @@ public sealed partial class TableLevelReveal : MonoBehaviour
     public bool IsPlaying { get; private set; }
     public bool SkipRequested { get; set; }
     public bool HasArrived { get; private set; }
+    // Share of the flight in, at its end, over which a run's class's own look comes in (it waits until then).
+    const float ClassLookIn = .5f;
 
     public IEnumerator Play(DungeonGenerator generated, TableLevelRevealSettings settings, System.Action beginEntry = null)
     {
@@ -182,7 +184,13 @@ public sealed partial class TableLevelReveal : MonoBehaviour
             // output under our control, and hold first-person hands until the flight ends.
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Table);
             // The room's screen look is gone while the view is still over the table, not on the way into the dark floor.
-            if (ScreenManager.HasInstance) ScreenManager.Instance.BlendEffectsWithin(settings.approachSeconds * .4f);
+            // A run's class's own look (the Pianist's noir) comes in only as the view drops into the floor, never over the room.
+            float approach = SkipRequested ? .3f : settings.approachSeconds;
+            if (ScreenManager.HasInstance)
+            {
+                ScreenManager.Instance.BlendEffectsWithin(settings.approachSeconds * .4f);
+                ScreenManager.Instance.BlendClassFilterWithin(approach * ClassLookIn, approach * (1f - ClassLookIn));
+            }
             HoldCeilings();
             // The way in is the spawn room's skylight. Without one (a resumed floor), lift the
             // ceiling over the spawn point for the flight only.
@@ -205,8 +213,7 @@ public sealed partial class TableLevelReveal : MonoBehaviour
             var targetProjection = Matrix4x4.Perspective(target.Lens.FieldOfView, output.aspect, target.Lens.NearClipPlane, target.Lens.FarClipPlane);
             beginEntry?.Invoke();
             // Fly over the entrance and descend through its temporarily open roof.
-            yield return MoveCamera(target.GetFinalPosition(), target.GetFinalOrientation(), targetProjection,
-                SkipRequested ? .3f : settings.approachSeconds, true, targetCamera);
+            yield return MoveCamera(target.GetFinalPosition(), target.GetFinalOrientation(), targetProjection, approach, true, targetCamera);
             output.fieldOfView = target.Lens.FieldOfView;
             HasArrived = true;
             ShowStartWall();

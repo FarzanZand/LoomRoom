@@ -84,6 +84,17 @@ public class ScreenManager : Singleton<ScreenManager>
     public ScreenFilterLook[] filterLooks = new ScreenFilterLook[0];
     [FoldoutGroup("Camera filter"), LabelText("F5 cycle"), Tooltip("Drag looks here: F5 in Play mode (Dev map, Editor and development builds) steps through Standard and these, in this order.")]
     public ScreenFilterLook[] cycleLooks = new ScreenFilterLook[0];
+    [FoldoutGroup("Camera filter"), LabelText("Class filter fade"), Min(0f), Tooltip("Seconds a run's class's own filter (the Pianist's noir, ClassRunLook) takes to come or go when its Mood is switched. Flying into a floor and back out, it comes and goes with the flight instead.")]
+    public float classFilterFade = .3f;
+
+    // A run's class's own filter blended over the scene's: 0 the scene's, 1 the class's (ClassRunLook.DungeonFilter).
+    // It comes in as the view drops into the floor and goes as it rises out (the flights call BlendClassFilterWithin),
+    // so the bedroom is never seen in the class's look. classLook stays the class's look while it fades out.
+    float classWeight, classBlendWithin, classBlendDelay, monoMix;
+    ScreenFilterLook classLook, blendLook, plainLook;
+    static readonly int MonoMixId = Shader.PropertyToID("_RetroMonoMix");
+    // The next change of the class's filter takes this long, after waiting delay seconds (once; then classFilterFade again).
+    public void BlendClassFilterWithin(float seconds, float delay = 0f) { classBlendWithin = Mathf.Max(.01f, seconds); classBlendDelay = Mathf.Max(0f, delay); }
 
     [FoldoutGroup("Pixel lighting"), LabelText("Enabled"), OnValueChanged(nameof(ApplyPixelLighting))]
     [Tooltip("The game's materials lit like pixel art (LoomRoom/Pixel Lit: light per texel, stepped into bands) instead of smooth URP lighting. No camera filter. F3 flips it in Play mode. The materials are listed on the library (Tools > LoomRoom > Pixel Look > Register Pixel Lighting Materials).")]
@@ -307,6 +318,7 @@ public class ScreenManager : Singleton<ScreenManager>
         float step = seconds > 0f ? Time.unscaledDeltaTime / seconds : 1f;
         tableWeight = Mathf.MoveTowards(tableWeight, TargetTableWeight, step);
         if (Mathf.Approximately(tableWeight, TargetTableWeight)) blendWithin = 0f;
+        UpdateClassFilter();
         ApplyRenderingEffects();
     }
 
@@ -320,6 +332,9 @@ public class ScreenManager : Singleton<ScreenManager>
         tableLayer.Destroy();
         deathLayer.Destroy();
         if (filterVolume != null) Destroy(filterVolume.gameObject);
+        if (blendLook != null) Destroy(blendLook);
+        if (plainLook != null) Destroy(plainLook);
+        Shader.SetGlobalFloat(MonoMixId, 0f);
         effectsInitialized = false;
     }
 
@@ -375,12 +390,13 @@ public class ScreenManager : Singleton<ScreenManager>
         float strength = roomRetro + tableRetro;
         float lines = PixelLinesFor(retro), levels = retro.colorBanding ? retro.colorLevels : 0, dither = retro.dither;
 
-        var look = FilterLook;
+        var look = CurrentLook(lines, levels);
         var profile = look != null ? look.profile : null;
         filterVolume.enabled = profile != null;
         if (filterVolume.sharedProfile != profile) filterVolume.sharedProfile = profile;
         bool filtered = look != null && UsesPass(look);
         Shader.SetGlobalFloat(FilterOnId, filtered ? 1f : 0f);
+        Shader.SetGlobalFloat(MonoMixId, filtered ? monoMix : 0f);
         if (filtered)
         {
             if (look.pixelLines > 0) lines = look.pixelLines;
@@ -398,14 +414,94 @@ public class ScreenManager : Singleton<ScreenManager>
 
     // ── Camera filter ─────────────────────────────────────────────────
 
-    ScreenFilterLook FilterLook
+    // The filter on screen: the scene's (Camera filter), or on a dungeon floor of a run whose class has its own (the
+    // Pianist's Noir while its Mood is on, ClassRunLook) that one, once it is more than half in. Read every frame.
+    public ScreenFilter ShownFilter => classWeight >= .5f && classLook != null ? classLook.filter : cameraFilter;
+
+    // The look for a filter: the scene's list, then (for a class's filter the list doesn't hold) the F5 cycle's.
+    ScreenFilterLook LookFor(ScreenFilter filter, bool orCycle)
     {
-        get
-        {
-            if (cameraFilter == ScreenFilter.Standard || filterLooks == null) return null;
-            foreach (var look in filterLooks) if (look != null && look.filter == cameraFilter) return look;
-            return null;
-        }
+        if (filter == ScreenFilter.Standard) return null;
+        if (filterLooks != null) foreach (var look in filterLooks) if (look != null && look.filter == filter) return look;
+        if (orCycle && cycleLooks != null) foreach (var look in cycleLooks) if (look != null && look.filter == filter) return look;
+        return null;
+    }
+
+    void UpdateClassFilter()
+    {
+        bool on = ClassRunLook.DungeonFilter(out var own);
+        if (on) { var look = LookFor(own, true); if (look != null) classLook = look; else on = false; }
+        float target = on ? 1f : 0f;
+        if (Mathf.Approximately(classWeight, target)) { classWeight = target; classBlendWithin = 0f; classBlendDelay = 0f; return; }
+        if (classBlendDelay > 0f) { classBlendDelay -= Time.unscaledDeltaTime; return; }
+        float seconds = classBlendWithin > 0f ? classBlendWithin : classFilterFade;
+        classWeight = seconds > 0f ? Mathf.MoveTowards(classWeight, target, Time.unscaledDeltaTime / seconds) : target;
+    }
+
+    // The look drawn now: the scene's, the class's, or one between them while the class's comes or goes.
+    ScreenFilterLook CurrentLook(float lines, float levels)
+    {
+        monoMix = 0f;
+        var scene = LookFor(cameraFilter, false);
+        if (classWeight <= 0f || classLook == null) return scene;
+        if (classWeight >= 1f) return classLook;
+        return Blended(scene, classLook, Mathf.SmoothStep(0f, 1f, classWeight), lines, levels);
+    }
+
+    // A look w of the way from a to b. Numbers are blended; when one of the two is black and white (Mono) and the other
+    // not, the pass draws the colour one and mixes the grey one over it (_RetroMonoMix), so both ends are exactly the
+    // looks themselves. What can't be blended (dither pattern, palette, profile) is the nearer one's.
+    ScreenFilterLook Blended(ScreenFilterLook a, ScreenFilterLook b, float w, float lines, float levels)
+    {
+        if (plainLook == null) plainLook = NewLook("Plain look");
+        if (blendLook == null) blendLook = NewLook("Blended look");
+        a = a != null ? a : plainLook;
+        var o = blendLook;
+        var near = w < .5f ? a : b;
+        o.filter = near.filter; o.profile = near.profile;
+        // 0 lines is the full picture: blended as the screen's own height (from 0 it went through a few huge pixels).
+        float full = Mathf.Max(lines, Screen.height);
+        float linesA = a.pixelLines > 0 ? a.pixelLines : lines > 0 ? lines : full, linesB = b.pixelLines > 0 ? b.pixelLines : lines > 0 ? lines : full;
+        o.pixelLines = Mathf.RoundToInt(Mathf.Lerp(linesA, linesB, w));
+        o.colourLevels = Mathf.RoundToInt(Mathf.Lerp(a.colourLevels > 0 ? a.colourLevels : levels, b.colourLevels > 0 ? b.colourLevels : levels, w));
+        o.dither = Mathf.Lerp(a.dither, b.dither, w);
+        o.ditherSize = near.ditherSize; o.ditherScale = near.ditherScale; o.ditherBrightness = near.ditherBrightness;
+        o.ditherBand = Mathf.Lerp(a.ditherBand, b.ditherBand, w);
+        o.blackLift = Mathf.Lerp(a.blackLift, b.blackLift, w);
+        o.glowGrid = Mathf.Lerp(a.glowGrid, b.glowGrid, w);
+        o.sharpen = Mathf.Lerp(a.sharpen, b.sharpen, w);
+        const ScreenFilterLook.ColourMode Mono = ScreenFilterLook.ColourMode.Mono;
+        bool monoA = a.colour == Mono, monoB = b.colour == Mono;
+        var grey = monoB ? b : a;
+        if (monoA != monoB) { o.colour = monoA ? b.colour : a.colour; monoMix = monoB ? w : 1f - w; }
+        else o.colour = near.colour;
+        o.saturation = Mathf.Lerp(a.saturation, b.saturation, w);
+        o.contrast = Mathf.Lerp(a.contrast, b.contrast, w);
+        o.crush = Mathf.Lerp(a.crush, b.crush, w);
+        o.shadowTint = Color.Lerp(a.shadowTint, b.shadowTint, w);
+        o.lightTint = Color.Lerp(a.lightTint, b.lightTint, w);
+        bool bothGrey = monoA && monoB;
+        o.monoDark = bothGrey ? Color.Lerp(a.monoDark, b.monoDark, w) : grey.monoDark;
+        o.monoLight = bothGrey ? Color.Lerp(a.monoLight, b.monoLight, w) : grey.monoLight;
+        o.keepRed = bothGrey ? Mathf.Lerp(a.keepRed, b.keepRed, w) : grey.keepRed;
+        o.lift = bothGrey ? Mathf.Lerp(a.lift, b.lift, w) : grey.lift;
+        o.palette = near.palette;
+        o.curvature = Mathf.Lerp(a.curvature, b.curvature, w);
+        o.scanlines = Mathf.Lerp(a.scanlines, b.scanlines, w);
+        o.scanlineCount = Mathf.RoundToInt(Mathf.Lerp(a.scanlineCount, b.scanlineCount, w));
+        o.mask = Mathf.Lerp(a.mask, b.mask, w);
+        o.colourBleed = Mathf.Lerp(a.colourBleed, b.colourBleed, w);
+        o.wobble = Mathf.Lerp(a.wobble, b.wobble, w);
+        o.vignette = Mathf.Lerp(a.vignette, b.vignette, w);
+        o.grain = Mathf.Lerp(a.grain, b.grain, w);
+        return o;
+    }
+
+    static ScreenFilterLook NewLook(string name)
+    {
+        var look = ScriptableObject.CreateInstance<ScreenFilterLook>();
+        look.name = name; look.hideFlags = HideFlags.HideAndDontSave;
+        return look;
     }
 
     // F5: Standard, then each look in the cycle list, then Standard again.
@@ -415,7 +511,7 @@ public class ScreenManager : Singleton<ScreenManager>
         if (cycleLooks != null) foreach (var look in cycleLooks) if (look != null && !stops.Contains(look.filter)) stops.Add(look.filter);
         int at = stops.IndexOf(cameraFilter);
         cameraFilter = stops[(at + 1) % stops.Count];
-        if (cameraFilter != ScreenFilter.Standard && FilterLook == null && cycleLooks != null)
+        if (cameraFilter != ScreenFilter.Standard && LookFor(cameraFilter, false) == null && cycleLooks != null)
             foreach (var look in cycleLooks) if (look != null && look.filter == cameraFilter) { filterLooks = AddLook(filterLooks, look); break; }
         ApplyRenderingEffects();
         AnnouncementUI.Show(cameraFilter.ToString(), "F5");

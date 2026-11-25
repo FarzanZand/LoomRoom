@@ -232,9 +232,20 @@ public class TooltipUI : Singleton<TooltipUI>
         FollowMouse();
     }
 
+    // At a fixed screen point with the tooltip's corner there chosen by the caller (0,0 = it opens up and to the right),
+    // not by the screen half the point is in: the class slot opens it to its right, over open ground, where above the
+    // hotbar's middle it covered the Dungeon Master's line and the notices.
+    public void ShowTextAt(string title, string subtitle, string description, Vector2 screen, Vector2 corner)
+    {
+        ShowText(title, subtitle, description);
+        point = screen;
+        fixedCorner = corner;
+        FollowMouse();
+    }
+
     public void ShowText(string title, string subtitle, string description)
     {
-        anchor = null; point = null;
+        anchor = null; point = null; fixedCorner = null;
         ShowLines(title, subtitle, description);
         // A text tooltip with no body (a stat with nothing to list) is its title alone, no line under it.
         if (rarityLine != null && string.IsNullOrEmpty(description)) rarityLine.gameObject.SetActive(false);
@@ -281,6 +292,7 @@ public class TooltipUI : Singleton<TooltipUI>
     Vector2? point;
     // An area the tooltip stays wholly to one side of (screen pixels), with an anchor; null: just the anchor.
     Rect? keepClear;
+    Vector2? fixedCorner;
 
     void FollowMouse()
     {
@@ -297,8 +309,8 @@ public class TooltipUI : Singleton<TooltipUI>
             if (keepClear is Rect area) { mouse.x = area.center.x; halfWidth = area.width * .5f; }
         }
         else mouse = point ?? Mouse.current.position.ReadValue();
-        float pivotX = mouse.x < Screen.width  * 0.5f ? 0f : 1f;
-        float pivotY = mouse.y < Screen.height * 0.5f ? 0f : 1f;
+        float pivotX = fixedCorner is Vector2 fx ? fx.x : mouse.x < Screen.width  * 0.5f ? 0f : 1f;
+        float pivotY = fixedCorner is Vector2 fy ? fy.y : mouse.y < Screen.height * 0.5f ? 0f : 1f;
         rect.pivot = new Vector2(pivotX, pivotY);
         float ox = pivotX == 0f ?  16f + halfWidth : -16f - halfWidth;
         float oy = pivotY == 0f ?  16f : -16f;

@@ -132,6 +132,39 @@ public class ExperienceBarUI : MonoBehaviour
     public static bool Playing => current != null && current.popupRoutine != null && current.popupRoutine.IsActive();
     public static void Resume() { if (current != null && !Playing) current.NextPopup(); }
 
+    // Where the skill popup's ring, icon and words are on screen while it shows (DungeonCombatFeedback keeps damage
+    // numbers off it). Only an overlay canvas, where screen pixels are world units.
+    static readonly Vector3[] corners = new Vector3[4];
+    public static bool PopupOnScreen(out Rect rect)
+    {
+        rect = default;
+        var group = current != null ? current.popup : null;
+        if (group == null || !group.gameObject.activeInHierarchy || group.alpha < .05f) return false;
+        var canvas = group.GetComponentInParent<Canvas>();
+        if (canvas == null || canvas.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay) return false;
+        bool any = false;
+        foreach (var graphic in group.GetComponentsInChildren<UnityEngine.UI.Graphic>())
+        {
+            if (!graphic.enabled || graphic.color.a <= .01f) continue;
+            Rect r;
+            if (graphic is TMPro.TMP_Text text)
+            {
+                if (string.IsNullOrEmpty(text.text)) continue;
+                var b = text.textBounds; if (b.size.x <= 0f) continue;
+                Vector3 lo = text.rectTransform.TransformPoint(b.min), hi = text.rectTransform.TransformPoint(b.max);
+                r = Rect.MinMaxRect(Mathf.Min(lo.x, hi.x), Mathf.Min(lo.y, hi.y), Mathf.Max(lo.x, hi.x), Mathf.Max(lo.y, hi.y));
+            }
+            else
+            {
+                graphic.rectTransform.GetWorldCorners(corners);
+                r = Rect.MinMaxRect(corners[0].x, corners[0].y, corners[2].x, corners[2].y);
+            }
+            rect = any ? Rect.MinMaxRect(Mathf.Min(rect.xMin, r.xMin), Mathf.Min(rect.yMin, r.yMin), Mathf.Max(rect.xMax, r.xMax), Mathf.Max(rect.yMax, r.yMax)) : r;
+            any = true;
+        }
+        return any;
+    }
+
     void NextPopup()
     {
         popupRoutine = null; activeGain = null;

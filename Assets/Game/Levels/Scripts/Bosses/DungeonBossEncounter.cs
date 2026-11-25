@@ -95,7 +95,7 @@ public class DungeonBossEncounter : MonoBehaviour
         if (dungeon != null) StartCoroutine(BossChest(boss.transform.position));
         if (AudioManager.HasInstance && dungeon != null)
         {
-            var music = dungeon.LevelData.MusicFor(dungeon.FloorNumber, out float volume);
+            var music = ClassRunLook.FloorMusic(dungeon.LevelData, dungeon.FloorNumber, out float volume);
             if (music != null) AudioManager.Instance.CrossfadeMusic(music, dungeon.LevelData.loopMusic, 3f, volume);
             else AudioManager.Instance.StopMusic(3f);
         }

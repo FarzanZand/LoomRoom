@@ -3304,6 +3304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CampaignPoint
   encounter: {fileID: 11400000, guid: ffada713b3f1ff943955248d41bd14a9, type: 2}
   radius: 5.8
+  figureBeyond: 3.7
   showBase: 0
   glow: {fileID: 9165984410765592348}
 --- !u!1 &5336732282923609073

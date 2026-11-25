@@ -15,6 +15,9 @@ public sealed class TableLevelExit : MonoBehaviour
     CinemachineBrain brain;
     bool brainEnabled, captured, completed;
     public bool IsPlaying { get; private set; }
+    // Share of the flight, from its start, over which a run's class's own look fades out: short, since the view is
+    // over the room a tenth of a second after it leaves the floor.
+    const float ClassLookOut = .15f;
     // A way back is in flight (the Dungeon Master takes his chair at once, as under a black screen).
     public static bool Flying { get; private set; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void ResetStatics() => Flying = false;
@@ -39,6 +42,8 @@ public sealed class TableLevelExit : MonoBehaviour
             output.projectionMatrix = startProjection;
             // The room player takes over under the flight; their body stays hidden until the view is in their head.
             PlayerManager.Instance.SwapToPlayerImmediately(PlayerKind.Room);
+            // A run's class's own look (the Pianist's noir) goes while the view rises out of the floor, before the room shows.
+            if (ScreenManager.HasInstance) ScreenManager.Instance.BlendClassFilterWithin(Mathf.Max(.1f, settings.exitSeconds) * ClassLookOut);
             foreach (var r in room.ActivationRoot.GetComponentsInChildren<Renderer>(true))
             { roomRenderers.Add((r, r.forceRenderingOff)); r.forceRenderingOff = true; }
             // Seen from the room again: the open tops (WorldManager.hideTopForGenerations) let the view rise straight out.
@@ -71,6 +76,7 @@ public sealed class TableLevelExit : MonoBehaviour
                 output.projectionMatrix = matrix;
                 yield return null;
             }
+            if (Skipped && ScreenManager.HasInstance) ScreenManager.Instance.BlendClassFilterWithin(.1f);
             target.InternalUpdateCameraState(Vector3.up, GameManager.CutsceneDelta);
             output.transform.SetPositionAndRotation(target.State.GetFinalPosition(), target.State.GetFinalOrientation());
             output.fieldOfView = target.State.Lens.FieldOfView;

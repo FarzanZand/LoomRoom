@@ -744,6 +744,16 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""priority"": 0
                 },
                 {
+                    ""name"": ""ClassAction"",
+                    ""type"": ""Button"",
+                    ""id"": ""1c38510b-e217-45d5-a91b-1fc485caff2a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false,
+                    ""priority"": 0
+                },
+                {
                     ""name"": ""LeanLeft"",
                     ""type"": ""Button"",
                     ""id"": ""0ae4ea2f-fb18-4f61-938a-fdb7795a666c"",
@@ -1155,6 +1165,28 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""Inventory"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""17703f61-2f4c-4411-b2a4-eb08e65202f8"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ClassAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""77b627ba-e078-4cf9-990f-243e0263cfa2"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ClassAction"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1585,6 +1617,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Table_Hotbar4 = m_Table.FindAction("Hotbar4", throwIfNotFound: true);
         m_Table_Hotbar5 = m_Table.FindAction("Hotbar5", throwIfNotFound: true);
         m_Table_Hotbar6 = m_Table.FindAction("Hotbar6", throwIfNotFound: true);
+        m_Table_ClassAction = m_Table.FindAction("ClassAction", throwIfNotFound: true);
         m_Table_LeanLeft = m_Table.FindAction("LeanLeft", throwIfNotFound: true);
         m_Table_LeanRight = m_Table.FindAction("LeanRight", throwIfNotFound: true);
         m_Table_PrimaryAction = m_Table.FindAction("PrimaryAction", throwIfNotFound: true);
@@ -1951,6 +1984,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Table_Hotbar4;
     private readonly InputAction m_Table_Hotbar5;
     private readonly InputAction m_Table_Hotbar6;
+    private readonly InputAction m_Table_ClassAction;
     private readonly InputAction m_Table_LeanLeft;
     private readonly InputAction m_Table_LeanRight;
     private readonly InputAction m_Table_PrimaryAction;
@@ -2019,6 +2053,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Table/Hotbar6".
         /// </summary>
         public InputAction @Hotbar6 => m_Wrapper.m_Table_Hotbar6;
+        /// <summary>
+        /// Provides access to the underlying input action "Table/ClassAction".
+        /// </summary>
+        public InputAction @ClassAction => m_Wrapper.m_Table_ClassAction;
         /// <summary>
         /// Provides access to the underlying input action "Table/LeanLeft".
         /// </summary>
@@ -2104,6 +2142,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Hotbar6.started += instance.OnHotbar6;
             @Hotbar6.performed += instance.OnHotbar6;
             @Hotbar6.canceled += instance.OnHotbar6;
+            @ClassAction.started += instance.OnClassAction;
+            @ClassAction.performed += instance.OnClassAction;
+            @ClassAction.canceled += instance.OnClassAction;
             @LeanLeft.started += instance.OnLeanLeft;
             @LeanLeft.performed += instance.OnLeanLeft;
             @LeanLeft.canceled += instance.OnLeanLeft;
@@ -2169,6 +2210,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @Hotbar6.started -= instance.OnHotbar6;
             @Hotbar6.performed -= instance.OnHotbar6;
             @Hotbar6.canceled -= instance.OnHotbar6;
+            @ClassAction.started -= instance.OnClassAction;
+            @ClassAction.performed -= instance.OnClassAction;
+            @ClassAction.canceled -= instance.OnClassAction;
             @LeanLeft.started -= instance.OnLeanLeft;
             @LeanLeft.performed -= instance.OnLeanLeft;
             @LeanLeft.canceled -= instance.OnLeanLeft;
@@ -2719,6 +2763,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnHotbar6(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ClassAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnClassAction(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "LeanLeft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

@@ -126,6 +126,79 @@ public static class CampaignSetup
         return "rebuilt the hero select";
     }
 
+    // The hero select panel's top above the screen's middle (1920 x 1080 canvas).
+    const float HeroPanelTop = 382f;
+
+    // Only the hero select panel's fixed top, in the scene's hero select as it is (from an eval:
+    // CampaignSetup.HeroSelectFixedTop()). Safe to run again.
+    public static string HeroSelectFixedTop()
+    {
+        var hud = Object.FindAnyObjectByType<HudCanvas>(FindObjectsInactive.Include);
+        var panel = hud != null ? hud.transform.Find("Campaign hero select/Details") as RectTransform : null;
+        if (panel == null) return "no hero select panel in the open scene";
+        panel.pivot = new Vector2(1f, 1f);
+        panel.anchoredPosition = new Vector2(panel.anchoredPosition.x, HeroPanelTop);
+        EditorUtility.SetDirty(panel);
+        PrefabUtility.RecordPrefabInstancePropertyModifications(panel);
+        EditorSceneManager.MarkSceneDirty(panel.gameObject.scene);
+        return $"hero select panel: pivot {panel.pivot}, at {panel.anchoredPosition}";
+    }
+
+    // Only the passive row on the hero select's class card, put into the scene's hero select as it is (from an eval:
+    // CampaignSetup.AddHeroSelectPassive()). Safe to run again: it replaces the row it made before.
+    public static string AddHeroSelectPassive()
+    {
+        var hud = Object.FindAnyObjectByType<HudCanvas>(FindObjectsInactive.Include);
+        var details = hud != null ? hud.transform.Find("Campaign hero select/Details")?.GetComponent<AdventureClassSelectionUI>() : null;
+        if (details == null || details.transform.Find("Top") == null) return "no hero select class card in the open scene";
+        // The first try stood in the name column, under the description (2026-11-25): it made the column 88 px taller
+        // than the portrait.
+        var older = details.transform.Find("Top/Name block/Passive");
+        if (older != null) Object.DestroyImmediate(older.gameObject);
+        var title = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator-Bold.asset");
+        var body = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Game/UI/Fonts/PixelOperator.asset");
+        var bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Game/UI/Fonts/PixelOperator Underlay.mat");
+        AddPassive(details, title, body, bodyMaterial);
+        EditorUtility.SetDirty(details);
+        PrefabUtility.RecordPrefabInstancePropertyModifications(details);
+        EditorSceneManager.MarkSceneDirty(details.gameObject.scene);
+        return "added the passive to the hero select";
+    }
+
+    // The class's passive (AdventurerClass.passive; hidden for a class without one) on a row of its own across the
+    // panel under the portrait and the column: a PASSIVE heading like the others, then its icon, its name and its line
+    // on one line. In the column it would push the kit below the portrait's foot.
+    static void AddPassive(AdventureClassSelectionUI details, TMP_FontAsset title, TMP_FontAsset body, Material bodyMaterial)
+    {
+        var panel = details.transform;
+        var old = panel.Find("Passive");
+        if (old != null) Object.DestroyImmediate(old.gameObject);
+        var dim = new Color(.66f, .64f, .6f); var light = new Color(.93f, .9f, .84f);
+        var block = MakeRect("Passive", panel, typeof(VerticalLayoutGroup));
+        var top = panel.Find("Top");
+        if (top != null) block.SetSiblingIndex(top.GetSiblingIndex() + 1);
+        var bv = block.GetComponent<VerticalLayoutGroup>();
+        bv.childControlWidth = bv.childControlHeight = true; bv.childForceExpandWidth = true; bv.childForceExpandHeight = false;
+        bv.spacing = 6f;
+        Text("Passive heading", block, title, 22f, dim, null, true).text = "PASSIVE";
+        var row = MakeRect("Passive row", block, typeof(HorizontalLayoutGroup));
+        var h = row.GetComponent<HorizontalLayoutGroup>();
+        h.spacing = 12f; h.childAlignment = TextAnchor.MiddleLeft;
+        h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = h.childForceExpandHeight = false;
+        var icon = MakeRect("Icon", row, typeof(Image), typeof(LayoutElement));
+        var ile = icon.GetComponent<LayoutElement>(); ile.minWidth = ile.preferredWidth = 36f; ile.minHeight = ile.preferredHeight = 36f; ile.flexibleWidth = 0f;
+        var iconImage = icon.GetComponent<Image>(); iconImage.preserveAspect = true; iconImage.raycastTarget = false;
+        var name = Text("Name", row, title, 24f, Gold, null, true);
+        name.textWrappingMode = TextWrappingModes.NoWrap;
+        var line = Text("Line", row, body, 24f, light, bodyMaterial, false);
+        line.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+        details.passiveRoot = block.gameObject;
+        details.passiveIcon = iconImage;
+        details.passiveName = name;
+        details.passiveLine = line;
+        block.gameObject.SetActive(false);
+    }
+
     // The hero select: a shade over the map, a title, a row of hero cards at the bottom between two arrows, and the
     // chosen hero's details in a panel at the right (the class card's content). Replaces any older one.
     static CampaignHeroSelectUI BuildHeroSelect(Transform hud, TMP_FontAsset title, TMP_FontAsset body, Material bodyMaterial)
@@ -157,8 +230,11 @@ public static class CampaignSetup
 
         // The details panel at the right.
         var panel = MakeRect("Details", root, typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter), typeof(AdventureClassSelectionUI));
-        panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(1f, .5f);
-        panel.anchoredPosition = new Vector2(-64f, 40f); panel.sizeDelta = new Vector2(724f, 0f);   // the info column 286 wide: its widest line (an attribute row) fills it, so both sides keep the 40 px margin
+        // Its top is fixed and it grows downward, so a class with a passive row only lengthens it at the foot (a
+        // centred panel jumped about 50 px as the classes were stepped through). The top is where the centred panel's
+        // top was with the passive row (684 tall, centre 40 above the screen's middle).
+        panel.anchorMin = panel.anchorMax = new Vector2(1f, .5f); panel.pivot = new Vector2(1f, 1f);
+        panel.anchoredPosition = new Vector2(-64f, HeroPanelTop); panel.sizeDelta = new Vector2(724f, 0f);   // the info column 286 wide: its widest line (an attribute row) fills it, so both sides keep the 40 px margin
         panel.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         var panelImage = panel.GetComponent<Image>();
         panelImage.sprite = frameSprite; panelImage.type = Image.Type.Tiled; panelImage.pixelsPerUnitMultiplier = 1f; panelImage.color = new Color(.85f, .85f, .85f, .97f);
@@ -210,6 +286,7 @@ public static class CampaignSetup
         var kit = Row("Kit", nameBlock, 8f, 50f);
         details.kitIcons = new Image[5];
         for (int i = 0; i < 5; i++) details.kitIcons[i] = Icon("Icon", Slot($"Kit {i + 1}", kit, slotSprite, 50f, 50f), 6f);
+        AddPassive(details, title, body, bodyMaterial);
         var buttons = Row("Buttons", panel, 16f, 58f);
         ui.back = MakeButton("Back", buttons, slotSprite, title, "Back");
         ui.choose = MakeButton("Choose", buttons, slotSprite, title, "Choose");

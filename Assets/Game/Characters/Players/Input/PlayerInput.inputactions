@@ -630,6 +630,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "ClassAction",
+                    "type": "Button",
+                    "id": "1c38510b-e217-45d5-a91b-1fc485caff2a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "LeanLeft",
                     "type": "Button",
                     "id": "0ae4ea2f-fb18-4f61-938a-fdb7795a666c",
@@ -1036,6 +1045,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Inventory",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "17703f61-2f4c-4411-b2a4-eb08e65202f8",
+                    "path": "<Keyboard>/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ClassAction",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "77b627ba-e078-4cf9-990f-243e0263cfa2",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ClassAction",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

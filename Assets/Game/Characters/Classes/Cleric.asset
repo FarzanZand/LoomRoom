@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AdventurerClass
   id: cleric
   displayName: Cleric
-  description: Mace, shield and a Heal Tome.
+  description: A prayer in one hand, a mace in the other. The mace gets used more.
   portrait: {fileID: 21300000, guid: f7de42acf6ca0cd4f941d83d70d75703, type: 3}
   sheetPortrait: {fileID: 21300000, guid: a6309da93e05fac4f93b91d68de20239, type: 3}
   sheetPortraitColour: {fileID: 21300000, guid: 79a58f9b20846b54d8a2302ef6482832, type: 3}
